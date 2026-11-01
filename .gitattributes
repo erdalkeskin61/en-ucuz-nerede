@@ -1,0 +1,15 @@
+# Satır sonlarını normalize et (Windows/Linux karışıklığını önle)
+* text=auto eol=lf
+
+# İkili dosyalar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Dil istatistiklerinde gürültüyü azalt
+public/vendor/* linguist-vendored
+package-lock.json linguist-generated

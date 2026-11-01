@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>En Ucuz Nerede?</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 360px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .header img {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #475569;
+      margin-left: auto;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-badge.online {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .status-badge.offline {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .url-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .url-input:focus { border-color: #2563eb; }
+    .page-info {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.4;
+      max-height: 40px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      font-weight: 500;
+    }
+    .site-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #eff6ff;
+      color: #2563eb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s, transform 0.05s;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:active { transform: scale(0.99); }
+    .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+    .quick-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .btn-sub {
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: white;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-sub:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .server-settings {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+      font-size: 11px;
+    }
+    .server-toggle {
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+    .server-panel {
+      margin-top: 8px;
+      display: none;
+    }
+    .server-panel.open {
+      display: block;
+    }
+    .server-input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .server-input {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+    .btn-save {
+      padding: 6px 10px;
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icon32.png" alt="Logo">
+    <h1>En Ucuz Nerede?</h1>
+    <span class="status-badge" id="appStatus">● Kontrol...</span>
+  </div>
+
+  <div class="card" id="pageCard">
+    <div class="card-title">
+      <span>Görüntülenen Sayfa</span>
+      <span id="productDetectedBadge" style="display:none; color:#16a34a;">✔ Ürün Sayfası</span>
+    </div>
+    <div id="siteTag" class="site-tag" style="display:none;"></div>
+    <div id="pageTitle" class="page-info">Mevcut sekme alınıyor...</div>
+    <input type="url" id="productUrl" class="url-input" style="margin-top:8px;" placeholder="Ürün linki..." />
+  </div>
+
+  <button id="compareBtn" class="btn-primary">
+    <span>🚀</span>
+    <span id="compareBtnText">54 Sitede Karşılaştır</span>
+  </button>
+
+  <div class="quick-links">
+    <button class="btn-sub" id="openAppBtn">🏠 Ana Sayfayı Aç</button>
+    <button class="btn-sub" id="openSettingsBtn">🔔 Takipler & Ayarlar</button>
+  </div>
+
+  <div class="server-settings">
+    <div class="server-toggle" id="toggleServerPanel">
+      <span id="serverInfoLabel">Sunucu: http://localhost:3000</span>
+      <span>⚙️</span>
+    </div>
+    <div class="server-panel" id="serverPanel">
+      <div style="color:#64748b; margin-bottom:4px;">Sunucu Adresi (Local veya Ağ IP'si):</div>
+      <div class="server-input-row">
+        <input type="text" id="serverUrlInput" class="server-input" value="http://localhost:3000" />
+        <button id="saveServerBtn" class="btn-save">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

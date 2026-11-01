@@ -1,0 +1,50 @@
+{
+  "name": "En Ucuz Nerede? — Fiyat Karşılaştırma",
+  "short_name": "En Ucuz Nerede",
+  "description": "Türkiye'deki 60 alışveriş sitesinde aynı ürünün gerçek en ucuz fiyatını bulur. Barkod okut, fotoğraftan ürün ara, sepetini böl.",
+  "lang": "tr",
+  "dir": "ltr",
+  "start_url": "/?pwa=1",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F8FAFC",
+  "theme_color": "#4338CA",
+  "categories": ["shopping", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/ikon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ikon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ikon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Barkod okut",
+      "short_name": "Barkod",
+      "description": "Raftaki ürünün barkodunu okut, internet fiyatını gör",
+      "url": "/?pwa=1&arac=barkod",
+      "icons": [{ "src": "/ikon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Fotoğraftan ara",
+      "short_name": "Fotoğraf",
+      "description": "Ürünün fotoğrafını çek, sitelerde ara",
+      "url": "/?pwa=1&arac=gorsel",
+      "icons": [{ "src": "/ikon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  // Antigravity (VS Code tabanlı) ve VS Code için proje ayarları.
+  // Amaç: data/cache ~4,2 GB / 7.682 dosya — editörün arama ve dosya izleyicisini
+  // boğmasın diye dışlanır. Bu klasör yalnızca kazıma önbelleğidir, silinse de
+  // uygulama çalışır (ilk isteklerde yeniden dolar).
+  "files.exclude": {
+    "**/node_modules": true,
+    "data/cache": true,
+    "data/explore": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "data/cache": true,
+    "data/explore": true,
+    "package-lock.json": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "data/cache/**": true,
+    "data/explore/**": true
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+  "[javascript]": {
+    "editor.tabSize": 2
+  },
+  "[html]": {
+    "editor.tabSize": 2
+  },
+  "[css]": {
+    "editor.tabSize": 2
+  }
+}

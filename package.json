@@ -1,0 +1,38 @@
+{
+  "name": "en-ucuz-nerede",
+  "version": "1.0.0",
+  "description": "Türkiye'deki alışveriş sitelerinde aynı ürünün gerçek en ucuz fiyatını bulan karşılaştırma uygulaması",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check:ai": "node scripts/check-ai.mjs",
+    "check:scraper": "node scripts/check-scraper.mjs",
+    "test:swr": "node scripts/test-swr.mjs",
+    "test:firsat": "node scripts/test-firsat-kanali.mjs",
+    "test:3d": "node scripts/test-3d-baski-uzmanlik.mjs",
+    "test:ui": "node scripts/test-ui-redesign.mjs",
+    "test:link": "node scripts/test-link-arama.mjs",
+    "test:kdv": "node scripts/test-kdv.mjs",
+    "test:gecmis": "node scripts/test-gecmis-link.mjs",
+    "test:push": "node scripts/test-push-paylas.mjs",
+    "test:bakim": "node scripts/test-db-bakim.mjs",
+    "test:ayar": "node scripts/test-ayar-kayit.mjs",
+    "test:ux": "node scripts/test-ui-ux-2026.mjs",
+    "test:typeahead": "node scripts/test-typeahead-birim.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "html5-qrcode": "^2.3.8",
+    "nodemailer": "^6.9.14",
+    "playwright": "^1.64.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "undici": "^8.12.3",
+    "web-push": "^3.6.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

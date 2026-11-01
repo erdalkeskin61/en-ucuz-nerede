@@ -1,0 +1,38 @@
+# Bağımlılıklar
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Gizli yapılandırma (API anahtarları, bot token, şifreler)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Veritabanı, önbellek, log ve arşivler (14+ GB olabilir)
+data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+logs/
+*.jsonl
+*.jsonl.gz
+
+# İşletim sistemi / editör
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/settings.json
+.idea/
+
+# Test çıktıları
+coverage/
+*.tmp
+plays/
+
+# Playwright / Puppeteer indirmeleri
+.cache/
+.puppeteer/

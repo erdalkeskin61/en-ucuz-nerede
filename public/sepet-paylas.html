@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paylaşılan Sepet — En Ucuz Nerede?</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#4338CA" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    try {
+      const t = localStorage.getItem('tema');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch { /* kapalı */ }
+  </script>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .paylas-sayfa { max-width: 860px; margin: 0 auto; padding: 34px 22px 60px; }
+    .paylas-ust { text-align: center; margin-bottom: 22px; }
+    .paylas-rozet {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 700; color: var(--ana);
+      background: var(--ana-acik); border: 1px solid color-mix(in srgb, var(--ana) 22%, transparent);
+      padding: 6px 13px; border-radius: 999px; margin-bottom: 12px;
+    }
+    .paylas-baslik { font-size: clamp(23px, 4vw, 31px); font-weight: 800; letter-spacing: -.03em; margin: 0 0 6px; }
+    .paylas-alt { color: var(--gri-metin-hafif); font-size: 13.5px; margin: 0; }
+    .paylas-toplam-kart {
+      display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+      background: var(--ana-gradyan); color: #fff; border-radius: 20px;
+      padding: 20px 24px; margin: 20px 0;
+      box-shadow: 0 22px 50px -24px rgba(67,56,202,.75);
+    }
+    .paylas-toplam-etiket { font-size: 11.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; opacity: .85; }
+    .paylas-toplam-deger { font-size: 34px; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; }
+    .paylas-tasarruf {
+      font-size: 13px; font-weight: 700; background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.24); padding: 7px 13px; border-radius: 999px;
+    }
+    .paylas-grup {
+      background: var(--kart); border: 1px solid var(--cizgi); border-radius: 18px;
+      padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--kart-golge);
+    }
+    .paylas-grup-ust { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .paylas-magaza { font-size: 15px; font-weight: 800; color: var(--ana); }
+    .paylas-grup-toplam { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .paylas-urunler { list-style: none; padding: 0; margin: 12px 0 0; }
+    .paylas-urunler li {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+      padding: 9px 0; border-top: 1px solid var(--cizgi); font-size: 13.5px;
+    }
+    .paylas-urunler li:first-child { border-top: 0; }
+    .paylas-urunler a { color: var(--metin); text-decoration: none; font-weight: 600; }
+    .paylas-urunler a:hover { color: var(--ana); text-decoration: underline; text-underline-offset: 3px; }
+    .paylas-urunler .fiyat { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .paylas-kargo { margin-top: 10px; font-size: 12px; color: var(--gri-metin-hafif); }
+    .paylas-butonlar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; justify-content: center; }
+    .paylas-cta {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 13.5px; font-weight: 700; text-decoration: none;
+      padding: 12px 20px; border-radius: 12px;
+      color: #fff; background: var(--ana-gradyan);
+      box-shadow: 0 10px 24px -12px rgba(67,56,202,.9);
+    }
+    .paylas-cta.ikincil { background: var(--kart); color: var(--metin); border: 1px solid var(--cizgi-koyu); box-shadow: var(--golge-yumusak); }
+    .paylas-durum { text-align: center; padding: 70px 20px; color: var(--gri-metin-hafif); }
+    .paylas-durum .buyuk { font-size: 42px; margin-bottom: 10px; }
+    .paylas-not { text-align: center; font-size: 11.5px; color: var(--gri-secil); margin-top: 26px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <header class="ustbar">
+    <div class="kap">
+      <a class="logo" href="/">
+        <span class="logo-isaret">🏷️</span>
+        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      </a>
+      <nav class="menu"><a href="/">Karşılaştır</a></nav>
+    </div>
+  </header>
+
+  <main class="paylas-sayfa">
+    <div class="paylas-ust">
+      <span class="paylas-rozet">🔗 Paylaşılan sepet · salt okunur</span>
+      <h1 class="paylas-baslik" id="paylasBaslik">Sepet yükleniyor…</h1>
+      <p class="paylas-alt" id="paylasAlt">En ucuz mağaza dağılımı hesaplanıyor.</p>
+    </div>
+    <div id="paylasIcerik">
+      <div class="paylas-durum"><div class="buyuk">⏳</div>Sepet getiriliyor…</div>
+    </div>
+    <div class="paylas-butonlar">
+      <a class="paylas-cta" href="/">🔎 Kendi sepetini optimize et</a>
+    </div>
+    <p class="paylas-not">
+      Bu sayfa yalnızca görüntüleme içindir. Fiyatlar paylaşım anındaki tarama sonucudur;
+      satın alma sırasında mağaza fiyatı ve kargo koşulları değişebilir.
+      Bağlantılar satış ortaklığı referansı içerebilir (fiyatı etkilemez).
+    </p>
+  </main>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const tl = (n) => (n == null || isNaN(n)) ? '—'
+      : Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+    const tarih = (ts) => new Date(ts).toLocaleString('tr-TR');
+
+    (async () => {
+      const id = location.pathname.split('/').filter(Boolean).pop();
+      try {
+        const res = await fetch('/api/sepet/paylas/' + encodeURIComponent(id));
+        const veri = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(veri.hata || 'Sepet bulunamadı');
+        ciz(veri.sepet, veri.created_at);
+      } catch (e) {
+        $('#paylasBaslik').textContent = 'Sepet bulunamadı';
+        $('#paylasAlt').textContent = e.message;
+        $('#paylasIcerik').innerHTML = '<div class="paylas-durum"><div class="buyuk">🔍</div>'
+          + 'Bağlantı geçersiz ya da 30 günlük saklama süresi dolmuş olabilir.</div>';
+      }
+    })();
+
+    function ciz(sepet, ts) {
+      const anahtar = sepet?.enIyiAnahtar;
+      const senaryo = anahtar ? (sepet?.senaryolar || {})[anahtar] : null;
+      const gruplar = Array.isArray(senaryo?.gruplar) ? senaryo.gruplar : [];
+      if (!senaryo || !gruplar.length) {
+        $('#paylasIcerik').innerHTML = '<div class="paylas-durum"><div class="buyuk">📦</div>'
+          + 'Bu sepet için mağaza dağılımı bulunamadı.</div>';
+        return;
+      }
+
+      const toplam = Number(sepet.enIyiToplam ?? senaryo.toplam ?? 0);
+      const kazanc = Number(sepet.kazanc || 0);
+      const urunSayisi = gruplar.reduce((t, g) => t + (g.urunler || []).length, 0);
+
+      $('#paylasBaslik').textContent = `${urunSayisi} ürünlük sepet · ${senaryo.etiket || 'en iyi dağılım'}`;
+      $('#paylasAlt').textContent = `${gruplar.length} mağaza · ${tarih(ts)} tarihinde paylaşıldı`;
+
+      const kart = `
+        <div class="paylas-toplam-kart">
+          <div>
+            <div class="paylas-toplam-etiket">Toplam tutar</div>
+            <div class="paylas-toplam-deger">${tl(toplam)}</div>
+          </div>
+          ${kazanc > 0
+            ? `<div class="paylas-tasarruf">💡 ${tl(kazanc)} tasarruf</div>`
+            : ''}
+        </div>`;
+
+      const grupHtml = gruplar.map(g => {
+        const satirlar = (g.urunler || []).map(u => `
+          <li>
+            ${u.url
+              ? `<a href="${esc(u.afiliyeUrl || u.url)}" target="_blank" rel="noopener sponsored">${esc(String(u.ad || '').slice(0, 110))}</a>`
+              : `<span>${esc(String(u.ad || '').slice(0, 110))}</span>`}
+            <span class="fiyat">${tl(u.fiyat)}</span>
+          </li>`).join('');
+        return `
+          <div class="paylas-grup">
+            <div class="paylas-grup-ust">
+              <span class="paylas-magaza">🏪 ${esc(g.siteName)}</span>
+              <span class="paylas-grup-toplam">${tl(g.toplam)}</span>
+            </div>
+            <ul class="paylas-urunler">${satirlar}</ul>
+            <div class="paylas-kargo">
+              Ürünler ${tl(g.araToplam)} · Kargo ${Number(g.kargo) > 0 ? tl(g.kargo) : 'bedava'}
+            </div>
+          </div>`;
+      }).join('');
+
+      $('#paylasIcerik').innerHTML = kart + grupHtml;
+    }
+  </script>
+</body>
+</html>

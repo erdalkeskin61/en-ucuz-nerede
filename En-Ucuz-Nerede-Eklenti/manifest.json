@@ -1,0 +1,77 @@
+﻿{
+  "manifest_version": 3,
+  "name": "En Ucuz Nerede? — Akıllı Fiyat Karşılaştırıcı",
+  "version": "1.1.0",
+  "description": "Baktığınız ürünün Türkiye'deki diğer 54 e-ticaret sitesindeki gerçek en ucuz net fiyatını tek tıkla bulun.",
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "En Ucuz Nerede? — Fiyat Karşılaştırıcı",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*",
+    "http://192.168.*:*/*",
+    "*://*.trendyol.com/*",
+    "*://*.hepsiburada.com/*",
+    "*://*.amazon.com.tr/*",
+    "*://*.vatanbilgisayar.com/*",
+    "*://*.mediamarkt.com.tr/*",
+    "*://*.n11.com/*",
+    "*://*.itopya.com/*",
+    "*://*.pazarama.com/*",
+    "*://*.ciceksepeti.com/*",
+    "*://*.teknosa.com/*",
+    "*://*.incehesap.com/*",
+    "*://*.sinerji.gen.tr/*",
+    "*://*.tebilon.com/*",
+    "*://*.gaming.gen.tr/*",
+    "*://*.robitshop.com/*",
+    "*://*.robotistan.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.trendyol.com/*",
+        "*://*.hepsiburada.com/*",
+        "*://*.amazon.com.tr/*",
+        "*://*.vatanbilgisayar.com/*",
+        "*://*.mediamarkt.com.tr/*",
+        "*://*.n11.com/*",
+        "*://*.itopya.com/*",
+        "*://*.pazarama.com/*",
+        "*://*.ciceksepeti.com/*",
+        "*://*.teknosa.com/*",
+        "*://*.incehesap.com/*",
+        "*://*.sinerji.gen.tr/*",
+        "*://*.tebilon.com/*",
+        "*://*.gaming.gen.tr/*",
+        "*://*.robitshop.com/*",
+        "*://*.robotistan.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

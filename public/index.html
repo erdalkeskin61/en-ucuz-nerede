@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>En Ucuz Nerede? — Fiyat Karşılaştırma</title>
+  <meta name="theme-color" content="#4338CA" />
+  <meta name="description" content="Türkiye'deki 60 alışveriş sitesinde aynı ürünün gerçek en ucuz fiyatını bulur. Barkod okut, fotoğraftan ara, sepetini böl." />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/ikon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="En Ucuz Nerede" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    // Tema, ilk boyamadan ÖNCE uygulanır (karanlık modda beyaz parlama olmasın).
+    try {
+      const t = localStorage.getItem('tema');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch { /* localStorage kapalı */ }
+  </script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="/ikon-192.png" />
+  <script src="/vendor/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="ustbar">
+    <div class="kap">
+      <a class="logo" href="/">
+        <span class="logo-isaret">🏷️</span>
+        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      </a>
+      <nav class="menu">
+        <a href="/" class="etkin">Karşılaştır</a>
+        <a href="/ayarlar.html">Ayarlar</a>
+      </nav>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+    </div>
+  </header>
+
+  <main class="kap">
+    <section class="hero">
+      <div class="hero-ic">
+        <span class="hero-rozet">⚡ 60+ mağaza · gerçek ödenecek tutar</span>
+        <h1>Aynı ürünün <b>gerçek en ucuz</b> fiyatını bul</h1>
+        <p>Etiket fiyatı değil — kargo, kupon ve kampanyalar düşüldükten sonra <b>gerçekte ödeyeceğin</b> tutar karşılaştırılır.</p>
+        <div class="hero-istatistik">
+          <span><b id="heroSiteSayisi">60</b> site taranır</span>
+          <span>🔍 model kodu + barkod eşleştirme</span>
+          <span>🏷️ kampanyalar akıllıca ayrılır</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🚀 All-in-One hibrit arama: link yapıştır ya da doğal dille ara -->
+    <section class="giris-kart hibrit-kart">
+      <!-- 🔗 Linkte ara / 💬 ürün adıyla ara modu -->
+      <div class="arama-modu" role="tablist" aria-label="Arama modu">
+        <button type="button" class="mod-secim aktif" data-mod="oto" role="tab" aria-selected="true">
+          ✨ Otomatik
+        </button>
+        <button type="button" class="mod-secim" data-mod="link" role="tab" aria-selected="false">
+          🔗 Linkte ara
+        </button>
+        <button type="button" class="mod-secim" data-mod="ad" role="tab" aria-selected="false">
+          💬 Ürün adıyla ara
+        </button>
+      </div>
+
+      <div class="hibrit-sarmal">
+        <form id="karsilastirForm" class="hibrit-form" role="search" autocomplete="off">
+          <span class="hibrit-ikon" aria-hidden="true">🔎</span>
+          <input type="text" id="urunUrl" autocomplete="off" spellcheck="false"
+            role="combobox" aria-autocomplete="list" aria-expanded="false"
+            aria-controls="onerilerKutusu" aria-haspopup="listbox"
+            placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;iPhone 15&quot;" />
+          <button type="submit" id="araBtn">Fiyatları Bul</button>
+        </form>
+
+        <!-- 🔍 Canlı öneriler (typeahead) — klavye ile gezilebilir -->
+        <div id="onerilerKutusu" class="oneriler-kutusu arama-onerileri" role="listbox"
+          aria-label="Arama önerileri" hidden></div>
+      </div>
+
+      <!-- Link algılandığında canlı önizleme (mağaza + ürün adı) -->
+      <div id="linkOnizleme" class="link-onizleme" hidden>
+        <span class="link-onizleme-ikon" id="linkOnizlemeIkon">🔗</span>
+        <div class="link-onizleme-metin">
+          <div class="link-onizleme-baslik" id="linkOnizlemeBaslik"></div>
+          <div class="link-onizleme-alt" id="linkOnizlemeAlt"></div>
+        </div>
+        <div class="link-onizleme-eylem">
+          <button type="button" class="link-eylem-btn" id="linkteAraBtn" hidden>🔗 Linkte Ara</button>
+          <button type="button" class="link-eylem-btn ikincil-link" id="linkAdiylaAraBtn" hidden>💬 Ürün adıyla ara</button>
+        </div>
+      </div>
+
+      <div class="hizli-arama">
+        <span class="hizli-etiket">Popüler:</span>
+        <button type="button" class="hizli-cip" data-hizli="eSun PLA+">eSun PLA+</button>
+        <button type="button" class="hizli-cip" data-hizli="Bambu Lab P1S">Bambu Lab P1S</button>
+        <button type="button" class="hizli-cip" data-hizli="Ender 3 V3">Ender 3 V3</button>
+        <button type="button" class="hizli-cip" data-hizli="AirPods Pro 2">AirPods Pro 2</button>
+      </div>
+
+      <p class="hibrit-ipucu">
+        ⚡ <b>Link yapıştır</b> ya da <b>ürün adı yaz</b>, <b id="kartSiteSayisi">60</b> mağazada en ucuz fiyatı bulalım ·
+        💬 Danışmak istersen yapay zekaya ihtiyacını yaz (ör. "spor için kulaklık").
+      </p>
+
+      <!-- Doğal dil / öneri akışı: aynı form kimlikleri korunur, görsel olarak gizlidir -->
+      <form id="oneriForm" class="oneri-form oneri-gizli" hidden aria-hidden="true">
+        <textarea id="ihtiyacMetni" rows="2" placeholder="Örn. spor için kablosuz kulaklık, bütçem 3.000 TL"></textarea>
+        <button type="submit" id="oneriBtn">Öneri al</button>
+      </form>
+
+      <div id="hata" class="hata-kutusu" hidden></div>
+      <div id="oneriHata" class="hata-kutusu" hidden></div>
+    </section>
+
+    <section id="oneriDurum" class="oneri-durum" hidden>
+      <div id="oneriFazNotu" class="faz-notu"></div>
+      <div id="oneriCipleri" class="cip-satiri"></div>
+    </section>
+
+    <section id="oneriSonuc" hidden>
+      <h2 class="bolum-baslik" id="oneriBaslik">Sana uygun modeller</h2>
+      <div id="oneriKartlar" class="oneri-izgarasi"></div>
+    </section>
+
+    <div id="sonAramaNotu" class="son-arama-notu" hidden>
+      <span id="sonAramaNotuMetin"></span>
+      <button type="button" id="sifirdanTaraBtn" class="sifirdan-tara-btn" hidden>↻ Sıfırdan Tara</button>
+    </div>
+
+    <section id="durumAlani" hidden>
+      <div class="durum-baslik-satiri">
+        <h2 class="bolum-baslik">Siteler araştırılıyor…</h2>
+        <button type="button" id="iptalBtn" class="iptal-btn">✕ İptal</button>
+      </div>
+      <div class="tarama-ozet">
+        <div class="tarama-bar"><div class="tarama-dolgu"></div></div>
+        <span id="taramaSayac" class="tarama-sayac"></span>
+      </div>
+      <div id="siteCipleri" class="cip-satiri"></div>
+
+      <!-- Skeleton / shimmer: tarama sürerken boş ekran yerine iskelet kartlar -->
+      <div class="skeleton-izgara" aria-hidden="true">
+        <div class="skeleton-kart">
+          <div class="skeleton-ust"><span class="skeleton-kutu skeleton-resim"></span>
+            <div class="skeleton-metin"><span class="skeleton-cizgi w-70"></span><span class="skeleton-cizgi w-90"></span><span class="skeleton-cizgi w-40"></span></div>
+          </div>
+          <span class="skeleton-cizgi w-50"></span><span class="skeleton-cizgi w-100"></span>
+        </div>
+        <div class="skeleton-kart">
+          <div class="skeleton-ust"><span class="skeleton-kutu skeleton-resim"></span>
+            <div class="skeleton-metin"><span class="skeleton-cizgi w-60"></span><span class="skeleton-cizgi w-90"></span><span class="skeleton-cizgi w-30"></span></div>
+          </div>
+          <span class="skeleton-cizgi w-40"></span><span class="skeleton-cizgi w-100"></span>
+        </div>
+        <div class="skeleton-kart">
+          <div class="skeleton-ust"><span class="skeleton-kutu skeleton-resim"></span>
+            <div class="skeleton-metin"><span class="skeleton-cizgi w-80"></span><span class="skeleton-cizgi w-90"></span><span class="skeleton-cizgi w-50"></span></div>
+          </div>
+          <span class="skeleton-cizgi w-60"></span><span class="skeleton-cizgi w-100"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="sonucAlani" hidden>
+      <div class="sonuc-ust">
+        <div>
+          <h2 id="kaynakBaslik" class="bolum-baslik"></h2>
+          <div id="kaynakBilgi" class="kaynak-bilgi"></div>
+        </div>
+        <div id="ozetKutu" class="ozet-kutu"></div>
+      </div>
+
+      <!-- 🧱 Bento özet: spotlight + fiyat trendi + dağılım (2026-11-01) -->
+      <div id="bentoOzet" class="bento-ozet" hidden aria-live="polite"></div>
+
+      <!-- 🧠 Alışveriş Zekası Karar Paneli — 2026-10-30 -->
+      <div id="fiyatZekaAlani" class="fiyat-zeka-kart" hidden>
+        <div class="fiyat-zeka-sol">
+          <span class="fiyat-zeka-ikon">🧠</span>
+          <div>
+            <div class="fiyat-zeka-rozet" id="fiyatZekaRozet">—</div>
+            <div class="fiyat-zeka-alt" id="fiyatZekaAlt"></div>
+          </div>
+        </div>
+        <div class="fiyat-zeka-sag">
+          <div class="fiyat-zeka-fark" id="fiyatZekaFark"></div>
+          <div class="fiyat-zeka-bar"><span id="fiyatZekaBarDolgu"></span></div>
+          <div class="fiyat-zeka-istatistik" id="fiyatZekaIstatistik"></div>
+        </div>
+        <div class="fiyat-zeka-mesaj" id="fiyatZekaMesaj"></div>
+      </div>
+
+      
+      <!-- Neden Daha Ucuz? Açıklayıcı Kartı -->
+      <div id="nedenUcuzAlani" class="neden-ucuz-kart" hidden>
+        <div class="neden-ucuz-baslik">💡 Neden Daha Ucuz? (Yapay Zeka Analizi)</div>
+        <p id="nedenUcuzMetin"></p>
+      </div>
+
+      <!-- Birim fiyat (₺/kg / ₺/L) + "sahte ucuz" uyarısı — 2026-10-29 -->
+      <div id="birimAlani" class="birim-kart" hidden>
+        <div class="birim-ust">
+          <div class="birim-baslik-alani">
+            <span class="birim-ikon">⚖️</span>
+            <div>
+              <h3 class="birim-baslik" id="birimBaslik">Kilogram başına fiyat</h3>
+              <span class="birim-aciklama" id="birimAciklama"></span>
+            </div>
+          </div>
+        </div>
+        <div id="birimIcerik"></div>
+      </div>
+
+      <!-- Muadil (alternatif) ürün önerileri — stok yoksa / bütçe aşılırsa -->
+      <div id="muadilAlani" class="muadil-kart" hidden>
+        <div class="muadil-ust">
+          <div class="muadil-baslik-alani">
+            <span class="muadil-ikon" id="muadilIkon">🔄</span>
+            <div>
+              <h3 class="muadil-baslik" id="muadilBaslik">Muadil ürün önerileri</h3>
+              <span class="muadil-altmetin" id="muadilAciklama"></span>
+            </div>
+          </div>
+          <button type="button" class="ikincil-btn" id="muadilYenileBtn">Muadili ara</button>
+        </div>
+        <div id="muadilIcerik"></div>
+      </div>
+
+      <!-- 30 Günlük Fiyat Trendi ve İndirim Analizi Kartı -->
+      <div id="fiyatGecmisiAlani" class="fiyat-gecmisi-karti" hidden>
+        <div class="fiyat-gecmisi-ust">
+          <div class="fiyat-gecmisi-baslik-alani">
+            <span class="fiyat-gecmisi-ikon">📈</span>
+            <div>
+              <h3 class="fiyat-gecmisi-baslik">30 Günlük Fiyat Trendi & İndirim Analizi</h3>
+              <span id="fiyatTrendOzetMetin" class="fiyat-trend-altmetin">Fiyat dalgalanmaları ve piyasa analizi</span>
+            </div>
+          </div>
+          <div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">🔥 En Düşük Seviyede</div>
+        </div>
+
+        <div class="fiyat-istatistik-izgarasi">
+          <div class="istatistik-kutu">
+            <div class="istatistik-etiket" id="istatistikEtiketDusuk">🟢 Son 30 Günün En Düşüğü</div>
+            <div id="istatistikEnDusuk" class="istatistik-deger">—</div>
+            <div class="istatistik-alt">Piyasa dip noktası</div>
+          </div>
+          <div class="istatistik-kutu">
+            <div class="istatistik-etiket" id="istatistikEtiketOrtalama">📊 Son 30 Günün Ortalaması</div>
+            <div id="istatistikOrtalama" class="istatistik-deger">—</div>
+            <div id="istatistikFark" class="istatistik-alt">—</div>
+          </div>
+          <div class="istatistik-kutu">
+            <div class="istatistik-etiket" id="istatistikEtiketYuksek">🔴 Son 30 Günün En Yükseği</div>
+            <div id="istatistikEnYuksek" class="istatistik-deger">—</div>
+            <div class="istatistik-alt">Piyasa tavanı</div>
+          </div>
+          <div class="istatistik-kutu">
+            <div class="istatistik-etiket">🎯 İndirim Oranı</div>
+            <div id="istatistikIndirimOrani" class="istatistik-deger font-yesil">—</div>
+            <div class="istatistik-alt">Ortalamaya göre</div>
+          </div>
+        </div>
+
+        <div class="grafik-kapsayici">
+          <canvas id="fiyatGrafigiCanvas"></canvas>
+        </div>
+
+        <!-- Veri yetersizse grafik yerine dürüst açıklama gösterilir (uydurma çizgi yok) -->
+        <p id="fiyatGecmisNotu" class="fiyat-trend-notu" hidden></p>
+      </div>
+
+
+      <!-- Filtre Barı -->
+      <div id="filtreBar" class="filtre-bar" hidden>
+        <span class="filtre-etiket">Filtrele:</span>
+        <button type="button" class="filtre-chip aktif" data-filtre="hepsi">Tümü</button>
+        <button type="button" class="filtre-chip" data-filtre="stokta_var">🟢 Stokta Var</button>
+        <button type="button" class="filtre-chip" data-filtre="stokta_yok">🔴 Stokta Yok</button>
+        <button type="button" class="filtre-chip" data-filtre="kargo">📦 Kargo Bedava</button>
+        <button type="button" class="filtre-chip" data-filtre="resmi">🏢 Resmi Satıcı</button>
+        <button type="button" class="filtre-chip" data-filtre="taksit">💳 Vade Farksız Taksit</button>
+        <!-- 🧵 Birim fiyata göre sıralama (₺/kg en ucuz) — 2026-11-01 -->
+        <button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">🏷️ ₺/kg En Ucuz</button>
+        <!-- 🖨️ Çap filtresi (1.75mm / 2.85mm) — sonuca göre doldurulur -->
+        <span id="capFiltreleri" class="filtre-grup"></span>
+        <!-- 🧪 Hammadde türü filtresi (PLA, PETG, reçine…) — sonuca göre doldurulur -->
+        <span id="hammaddeFiltreleri" class="filtre-grup"></span>
+      </div>
+
+      <div class="sonuc-lejant">
+        <span><span class="ok-isaret">✓</span> <b>Gerçek fiyat</b> = satış fiyatı − herkesin alabileceği indirimler + kargo</span>
+        <span><span class="uyari-isaret">⚠</span> <b>Koşullu kampanyalar</b> (uygulama / kart / üyelik) fiyata dahil değildir</span>
+        <span><span class="uyari-isaret">🚚</span> Kargo: ücreti bilinen sitelerde toplama eklenir; eşiği aşan ürünlerde bedava</span>
+        <span><span class="uyari-isaret">🎨</span> Farklı renkli ürünler en ucuz yarışından çıkarılır</span>
+      </div>
+
+      <div id="kartlar" class="kart-izgarasi"></div>
+
+      <details class="tablo-sarma">
+        <summary>Özet tablo (site, ürün, renk, fiyat, kampanyalar, kargo, istek)</summary>
+        <div class="tablo-kaydir">
+          <table id="ozetTablo">
+            <thead>
+              <tr>
+                <th>Site</th><th>Bulunan ürün</th><th>Renk</th><th>Stok</th><th>Gerçek fiyat</th>
+                <th>Koşullu kampanyalar</th><th>Kargo</th><th>İstek</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <div class="takip-alani" id="takipAlani">
+        <h3 class="bolum-baslik">Fiyat alarmı kur</h3>
+        <div class="takip-satir">
+          <label>Hedef fiyat (TL): <input type="number" id="hedefFiyat" min="1" step="0.01" placeholder="Örn. 1500" /></label>
+          <button id="takipBtn">Bu ürünü takibe al</button>
+          <span class="ipucu">Alarm e-postası Ayarlar sayfasından atanır.</span>
+        </div>
+        <!-- 🔔 Web Push (2026-11-01): e-posta/Telegram'dan bağımsız cihaz bildirimi -->
+        <div class="push-satir">
+          <button type="button" id="pushBtn" class="push-btn">🔔 Bu Cihaza Bildirim Gönder</button>
+          <span id="pushDurum" class="push-durum" aria-live="polite"></span>
+        </div>
+        <div id="takipMesaj" class="takip-mesaj"></div>
+      </div>
+    </section>
+
+    <section class="giris-kart sepet-kart">
+      <h1><span class="kart-ikon">🛒</span> Sepetini böl — daha az öde</h1>
+      <p class="aciklama">2–10 ürün linki ekle. Motor her ürünü sitelerde arar, <b>kargo eşiklerini
+        hesaplayarak</b> üç senaryo çıkarır: tek mağaza kolaylığı, akıllı bölünmüş sepet ve maksimum tasarruf.
+        <br><span class="ipucu">Her ürün ayrı ayrı aranır: 2 ürün ≈ 2–4 dk, 5 ürün ≈ 8–10 dk. İlerlemeyi aşağıda görürsün, dilediğin an iptal edebilirsin.</span></p>
+      <div class="sepet-giris">
+        <textarea id="sepetUrls" rows="4" autocomplete="off"
+          placeholder="Her satıra bir ürün linki&#10;https://www.trendyol.com/...&#10;https://www.hepsiburada.com/..."></textarea>
+        <div class="sepet-butonlar">
+          <button type="button" id="sepetBtn">Sepeti optimize et</button>
+          <button type="button" id="sepetIptalBtn" class="iptal-btn" hidden>✕ İptal</button>
+          <label class="sepet-hizli" title="Hızlı mod ~30 mağazada arar; kapatırsanız 60 mağazanın tamamı taranır (daha yavaş, daha kapsamlı).">
+            <input type="checkbox" id="sepetHizli" checked /> Hızlı mod (30 site)
+          </label>
+          <span id="sepetSayac" class="ipucu">0/10 ürün</span>
+        </div>
+      </div>
+      <div id="sepetHata" class="hata-kutusu" hidden></div>
+    </section>
+
+    <section id="sepetDurumAlani" hidden>
+      <div class="durum-baslik-satiri">
+        <h2 class="bolum-baslik">Sepet hesaplanıyor…</h2>
+      </div>
+      <div id="sepetDurumNotu" class="faz-notu"></div>
+      <div id="sepetIlerleme" class="sepet-ilerleme"></div>
+    </section>
+
+    <section id="sepetSonuc" hidden>
+      <h2 class="bolum-baslik">Sepet senaryoları</h2>
+      <div id="sepetKazanc" class="sepet-kazanc"></div>
+      <div id="sepetSenaryolar" class="sepet-izgara"></div>
+
+      <!-- Kupon otomasyonu: sepet tutarına göre uygun kuponlar + kopyalama düğmeleri -->
+      <div id="sepetKuponAlani" class="sepet-kupon-kart" hidden>
+        <div class="sepet-kupon-ust">
+          <h3 class="sepet-kupon-baslik">🎟️ Sepetine uyan kuponlar</h3>
+          <span class="sepet-kupon-alt">Kodu tek tıkla kopyala, ödeme adımında yapıştır</span>
+        </div>
+        <div id="sepetKuponIcerik"></div>
+      </div>
+
+      <!-- 📤 Sepet paylaşımı (2026-11-01): WhatsApp + kalıcı link -->
+      <div id="sepetPaylasAlani" class="sepet-paylas-kart">
+        <div class="sepet-paylas-ust">
+          <h3 class="sepet-paylas-baslik">📤 Sepeti paylaş</h3>
+          <span class="sepet-paylas-alt">Listeyi WhatsApp'ta gönder ya da herkese açık link oluştur</span>
+        </div>
+        <div class="sepet-paylas-butonlar">
+          <button type="button" id="sepetWhatsappBtn" class="paylas-btn wa">💬 WhatsApp ile Paylaş</button>
+          <button type="button" id="sepetLinkBtn" class="paylas-btn link">🔗 Paylaşım Linki Oluştur</button>
+          <button type="button" id="sepetKopyaBtn" class="paylas-btn kopya" hidden>📋 Linki Kopyala</button>
+        </div>
+        <div id="sepetPaylasSonuc" class="sepet-paylas-sonuc" aria-live="polite"></div>
+      </div>
+
+      <p class="sepet-not">Fiyatlar kargo hariç ürün tutarlarıdır; her senaryoda o mağazanın kargo eşiği
+        ayrıca hesaplanır. Kupon indirimleri ayrı panelde gösterilir, toplama otomatik eklenmez.</p>
+    </section>
+
+    <section class="giris-kart tarayici-kart">
+      <h1><span class="kart-ikon">📱</span> Mağazada mısın? Barkodu okut</h1>
+      <p class="aciklama">Raftaki ürünün barkodunu (EAN-13/UPC) kameraya tut; internet fiyatını
+        saniyeler içinde gör. Raftaki fiyatı da yazarsan <b>ne kadar tasarruf edeceğin</b> hesaplanır.</p>
+
+      <div class="tarayici-sekmeler">
+        <button type="button" class="tarayici-sekme aktif" data-tarayici-sekme="barkod">📷 Barkod okut</button>
+        <button type="button" class="tarayici-sekme" data-tarayici-sekme="gorsel">🖼️ Fotoğraftan ara</button>
+        <button type="button" class="tarayici-sekme" data-tarayici-sekme="elle">⌨️ Barkodu yaz</button>
+      </div>
+
+      <!-- Barkod kamera -->
+      <div id="barkodKameraAlani" class="tarayici-panel">
+        <div id="barkodOkuyucu" class="barkod-okuyucu"></div>
+        <div class="tarayici-butonlar">
+          <button type="button" id="kameraBaslatBtn">Kamerayı aç</button>
+          <button type="button" id="kameraDurdurBtn" class="ikincil" hidden>Kamerayı kapat</button>
+          <label class="raf-fiyat-alani">
+            Raf fiyatı (TL):
+            <input type="text" id="rafFiyatBarkod" inputmode="decimal" maxlength="14"
+              placeholder="ör. 4299 veya 4.299,90" autocomplete="off" />
+          </label>
+        </div>
+        <div id="barkodKameraNot" class="ipucu">Kamera izni gerekiyor. HTTPS ya da localhost üzerinden çalışmalıdır.</div>
+      </div>
+
+      <!-- Fotoğraftan ara -->
+      <div id="gorselPanel" class="tarayici-panel" hidden>
+        <div class="gorsel-yukle-alani">
+          <input type="file" id="gorselDosya" accept="image/*" capture="environment" hidden />
+          <button type="button" id="gorselSecBtn" class="gorsel-sec-btn">
+            <span class="gorsel-ikon">📸</span>
+            <span><b>Fotoğraf çek</b> ya da galeriden seç</span>
+            <span class="ipucu">Ürünün net göründüğü bir kare yeterli (en fazla 4 MB)</span>
+          </button>
+          <img id="gorselOnizleme" class="gorsel-onizleme" hidden alt="Seçilen ürün fotoğrafı" />
+        </div>
+        <label class="gorsel-ipucu-alani">
+          İpucu (isteğe bağlı):
+          <input type="text" id="gorselIpucu" placeholder="ör. erkek spor ayakkabı, beyaz" maxlength="120" />
+        </label>
+        <div class="tarayici-butonlar">
+          <button type="button" id="gorselAraBtn" disabled>Fotoğraftan ara</button>
+          <button type="button" id="gorselIptalBtn" class="ikincil" hidden>✕ İptal</button>
+        </div>
+        <div id="gorselNot" class="ipucu"></div>
+      </div>
+
+      <!-- Barkodu elle yaz -->
+      <div id="ellePanel" class="tarayici-panel" hidden>
+        <div class="elle-barkod">
+          <input type="text" id="barkodElle" inputmode="numeric" pattern="[0-9]*" maxlength="14"
+            placeholder="8682008472281" autocomplete="off" />
+          <label class="raf-fiyat-alani">
+            Raf fiyatı (TL):
+            <input type="text" id="rafFiyatElle" inputmode="decimal" maxlength="14"
+              placeholder="ör. 4299 veya 4.299,90" autocomplete="off" />
+          </label>
+          <button type="button" id="barkodAraBtn">Ara</button>
+        </div>
+        <div class="ipucu">Barkod kutunun arkasında/altında, çoğunlukla 13 hanelidir. Kamerayı kullanamıyorsan buraya yaz.</div>
+      </div>
+
+      <div id="tarayiciHata" class="hata-kutusu" hidden></div>
+    </section>
+
+    <section id="barkodDurum" hidden>
+      <div class="durum-baslik-satiri">
+        <h2 class="bolum-baslik" id="barkodDurumBaslik">Barkod aranıyor…</h2>
+        <button type="button" id="barkodIptalBtn" class="iptal-btn">✕ İptal</button>
+      </div>
+      <div id="barkodDurumNotu" class="faz-notu"></div>
+    </section>
+
+    <section id="barkodSonuc" hidden>
+      <div id="barkodOzet" class="barkod-ozet"></div>
+      <div id="barkodKartlar" class="kart-izgarasi"></div>
+    </section>
+
+    <section id="gorselDurum" hidden>
+      <div class="durum-baslik-satiri">
+        <h2 class="bolum-baslik" id="gorselDurumBaslik">Görsel inceleniyor…</h2>
+        <button type="button" id="gorselDurumIptalBtn" class="iptal-btn">✕ İptal</button>
+      </div>
+      <div id="gorselDurumNotu" class="faz-notu"></div>
+    </section>
+
+    <section id="gorselSonuc" hidden>
+      <div id="gorselOzet" class="barkod-ozet"></div>
+      <div id="gorselKartlar" class="gorsel-izgara"></div>
+    </section>
+
+    <section id="gecmisAlani" hidden>
+      <h2 class="bolum-baslik">Son aramalar</h2>
+      <ul id="gecmisListe" class="gecmis-liste"></ul>
+    </section>
+  </main>
+
+  <footer class="altbar">
+    <div class="kap">
+      <p>
+        Fiyatlar sitelerden anlık okunur; etiket fiyatı yerine gerçekte ödenecek tutar gösterilir.
+        Taksitler indirim sayılmaz, koşullu kampanyalar ayrıca belirtilir.
+      </p>
+      <p class="afiliye-bildirim">
+        <b>Şeffaflık:</b> "Ürüne git" bağlantıları satış ortaklığı referansı içerebilir.
+        Bu referans yalnızca hangi siteden yönlendirildiğini bildirir; <b>fiyatı, sıralamayı
+        ve "en ucuz" seçimini değiştirmez</b> ve size <b>ek maliyet yüklemez</b>.
+      </p>
+      <p class="footer-siteler-baslik">Karşılaştırılan siteler (<span id="footerSiteSayisi">—</span>):</p>
+      <ul id="footerSiteler" class="footer-siteler"></ul>
+    </div>
+  </footer>
+
+  <!-- 📱 Mobil alt navigasyon (yalnızca <768px) — 2026-11-01 -->
+  <nav id="altNav" class="alt-nav" aria-label="Hızlı gezinme">
+    <button type="button" class="alt-nav-oge aktif" data-nav="karsilastir" aria-current="page">
+      <span class="alt-nav-ikon" aria-hidden="true">🔍</span><span>Karşılaştır</span>
+    </button>
+    <button type="button" class="alt-nav-oge" data-nav="takipler">
+      <span class="alt-nav-ikon" aria-hidden="true">🔔</span><span>Takiplerim</span>
+    </button>
+    <button type="button" class="alt-nav-oge" data-nav="firsatlar">
+      <span class="alt-nav-ikon" aria-hidden="true">📢</span><span>Fırsatlar</span>
+    </button>
+    <button type="button" class="alt-nav-oge" data-nav="sepet">
+      <span class="alt-nav-ikon" aria-hidden="true">🛒</span><span>Sepetim</span>
+    </button>
+    <a class="alt-nav-oge" data-nav="ayarlar" href="/ayarlar.html">
+      <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>Ayarlar</span>
+    </a>
+  </nav>
+
+  <!-- 📱 Alt navigasyon modalı (Takiplerim / Fırsatlar) -->
+  <div id="altModal" class="alt-modal" hidden>
+    <div class="alt-modal-perde" data-modal-kapat></div>
+    <div class="alt-modal-kutu" role="dialog" aria-modal="true" aria-labelledby="altModalBaslik">
+      <div class="alt-modal-ust">
+        <h2 id="altModalBaslik">—</h2>
+        <button type="button" class="alt-modal-kapat" data-modal-kapat aria-label="Kapat">✕</button>
+      </div>
+      <div id="altModalIcerik" class="alt-modal-icerik"></div>
+    </div>
+  </div>
+
+  <script src="/erisim.js"></script>
+  <script src="/tema.js"></script>
+  <script src="/vendor/html5-qrcode.min.js"></script>
+  <script src="/app.js"></script>
+  <script src="/tarayici.js"></script>
+  <script>
+    // PWA service worker (2026-10-28): yalnızca güvenli bağlamda (https/localhost)
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js?v=5').catch(() => { /* PWA olmadan da çalışır */ });
+      });
+    }
+  </script>
+</body>
+</html>
+
