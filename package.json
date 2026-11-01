@@ -19,7 +19,8 @@
     "test:bakim": "node scripts/test-db-bakim.mjs",
     "test:ayar": "node scripts/test-ayar-kayit.mjs",
     "test:ux": "node scripts/test-ui-ux-2026.mjs",
-    "test:typeahead": "node scripts/test-typeahead-birim.mjs"
+    "test:typeahead": "node scripts/test-typeahead-birim.mjs",
+    "test:telegram": "node scripts/test-telegram-bot.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

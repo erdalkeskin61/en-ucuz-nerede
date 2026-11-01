@@ -1,13 +1,48 @@
 ﻿import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
+/**
+ * Genel erişim adresi: PUBLIC_URL → ilk yerel ağ IPv4 → localhost.
+ * Telegram botunun "Sitede Detaylı İncele" linki telefonda açılabilsin diye
+ * LAN adresi tercih edilir (yalnızca aynı ağdaki cihazlar için geçerli).
+ */
+function yerelAdres() {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
+  const port = process.env.PORT || '3000';
+  try {
+    const arayuzler = os.networkInterfaces();
+    const adaylar = [];
+    for (const [ad, liste] of Object.entries(arayuzler)) {
+      for (const a of liste || []) {
+        if (!a || a.family !== 'IPv4' || a.internal) continue;
+        if (a.address.startsWith('169.254.')) continue; // APIPA
+        // Ev/ofis Wi-Fi genelde 192.168.* veya 10.*; 172.16–31 çoğu zaman
+        // WSL/Hyper-V/Docker sanal ağıdır → en sona at.
+        let puan = 3;
+        if (a.address.startsWith('192.168.')) puan = 0;
+        else if (a.address.startsWith('10.')) puan = 1;
+        else if (/^172\.(1[6-9]|2\d|3[01])\./.test(a.address)) puan = 4;
+        if (/vEthernet|WSL|Loopback|VirtualBox|VMware|Hyper-V/i.test(ad)) puan += 2;
+        adaylar.push({ adres: a.address, puan });
+      }
+    }
+    adaylar.sort((x, y) => x.puan - y.puan);
+    if (adaylar.length) return `http://${adaylar[0].adres}:${port}`;
+  } catch { /* yoksay */ }
+  return `http://localhost:${port}`;
+}
+
 const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
+  // Telegram botunun "Sitede detaylı incele" gibi mutlak linkler üretmesi için.
+  // PUBLIC_URL tanımlıysa o kullanılır; yoksa yerel ağ IP'si, o da yoksa localhost.
+  publicUrl: yerelAdres(),
   // Yayında erişim kısıtı: .env'de ERISIM_ANAHTARI tanımlanırsa yalnızca anahtarı bilen
   // istekler kabul edilir (giriş sistemi değil, tek paylaşımlı anahtar; boşsa kısıt yok).
   erisimAnahtari: process.env.ERISIM_ANAHTARI || '',

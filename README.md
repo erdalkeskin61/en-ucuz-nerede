@@ -85,7 +85,7 @@ tuzakları ayrıca işaretlenir.
 - **PWA**: mobil alt navigasyon, çevrimdışı kabuk, service worker.
 - Barkod kamera, fotoğraftan arama, raf fiyatı karşılaştırması.
 
-### 🧹 Bakım
+## 🧹 Bakım
 - Her gece 04:00: WAL checkpoint (TRUNCATE), `PRAGMA optimize`, eski kayıt ve
   önbellek temizliği, log rotasyonu.
 - Ayarlar sayfasından tek tıkla çalıştırma + kuru tarama (dry-run).
@@ -159,6 +159,7 @@ pm2 save
 | `MAX_CANDIDATES` | Site başına aday ürün sayısı |
 | `ALARM_CHECK_MINUTES`, `ALARM_SAATLERI` | Alarm zamanlaması |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push (boşsa otomatik üretilir) |
+| `PUBLIC_URL` | Mutlak linkler için genel adres (Telegram botu) |
 | `BASKI_YAZICI_GUC_W`, `BASKI_ELEKTRIK_KWH_TL`, `BASKI_GRAM_SAAT` | 3D maliyet varsayımları |
 
 ---
@@ -188,6 +189,64 @@ pm2 save
 Tam liste için `server.js` içindeki `app.get/post` tanımlarına bakın.
 
 ---
+
+## 🤖 Telegram Asistanı (`@erdal_fiyat_takip_bot`)
+
+Bot iki yönlü çalışır: **ürün linki** veya **düz ürün adı** gönderilebilir.
+
+### Metin araması
+`Bambu Lab P1S`, `eSun PLA+ Siyah`, `Creality K1 Max` gibi metinler
+`hizliKaynakUrunBul()` ile kanonik ürün sayfasına çevrilir ve 61 mağazada
+karşılaştırılır. Eşleşme yoksa model adını detaylandırma önerisi verilir.
+
+### Yanıt biçimi
+
+```
+🏷️ Bambu Lab P1S Combo 3D Yazıcı
+━━━━━━━━━━━━━━━━━━━━
+🏆 En Ucuz: ₺34.899,00 (Robotistan)
+🚚 Kargo: Kargo Bedava
+📦 Stok: 🟢 5 mağazada var
+━━━━━━━━━━━━━━━━━━━━
+📊 Mağaza Karşılaştırması (61 Site):
+1. 🥇 Robotistan — ₺34.899,00 (Kargo Bedava)
+2. 🥈 Robitshop — ₺35.250,00 (+₺45,00 Kargo)
+3. 🥉 3DMarketim — ₺36.100,00 (Kargo Bedava)
+💡 En ucuz mağaza ile diğerleri arasında ₺2.600,00 tasarruf farkı var!
+```
+
+Filamentlerde ek satırlar:
+
+```
+⚖️ Birim Fiyat: ₺440,00 / kg
+🧮 En iyi birim fiyat: Hepsiburada — ₺350,00 / kg (2,5 kg makara)
+```
+
+> Etiket fiyatı en düşük olan 500 g makara ₺440/kg iken, 2.5 kg makara
+> ₺350/kg olabilir; bot bunu ayrıca belirtir. Reçinelerde `₺/L` gösterilir.
+
+### Butonlar
+| Buton | Davranış |
+|---|---|
+| 🛒 En Ucuz Mağazaya Git | Afiliye linkle mağazayı açar |
+| 🔔 Fiyatı Takibe Al | `addTracked()` ile hedef fiyat = mevcut en ucuz |
+| 🌐 Sitede Detaylı İncele | `PUBLIC_URL/?url=…` karşılaştırma sayfası |
+
+### SWR
+Son **2 saat** içinde taranmış ürün önbellekten **anında** yanıtlanır:
+`⚡ (Son kontrol: 15 dk önce)`.
+
+### Komutlar
+`/start`, `/yardim`, `/liste`, `/takipler`
+
+### Dayanıklılık
+- Token yoksa bot çökmez; uyarı basıp bekler. Token geçersizse (401/404) polling durur.
+- Tüm metinler `esc()` ile HTML-escape edilir (parse hatası yok).
+- Sohbet başına sıralı kuyruk: peş peşe aramalar botu kilitlemez.
+
+Test: `node scripts/test-telegram-bot.mjs` (82 kontrol).
+Bot token'ı Ayarlar sayfasından girilir (`telegram.botToken`).
+
 
 ## 3D baskı modülü
 

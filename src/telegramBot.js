@@ -1,249 +1,733 @@
 ﻿/**
- * En Ucuz Nerede — Telegram İnteraktif Karşılaştırma Botu
- * 
- * Kullanıcı Telegram'dan bir ürün linki attığında:
- * 1) Linki algılar ve kullanıcıya "54 site taranıyor..." der.
- * 2) Arka planda runComparison çalıştırır.
- * 3) Sonucu en ucuz fiyat, fiyat farkı, diğer mağazalar ve "Neden ucuz?" açıklamasıyla gönderir.
+ * 🤖 En Ucuz Nerede — Telegram Akıllı Fiyat Asistanı — 2026-11-02
+ *
+ * Bot artık yalnızca URL ile çalışmıyor; iki yönlü bir asistana dönüştürüldü:
+ *
+ *  1) METİN ARAMASI: "Bambu Lab P1S", "eSun PLA+ Siyah" gibi düz ürün adları
+ *     `hizliKaynakUrunBul()` ile kanonik ürün URL'sine çevrilir, ardından
+ *     `runComparison()` 61 mağazada fiyat taraması yapar.
+ *  2) LINK ARAMASI: mesajda http(s) linki varsa mevcut akış aynen çalışır.
+ *  3) ZENGİN YANIT: en ucuz mağaza, kargo, ₺/kg birim fiyat, ilk 5 mağaza ve
+ *     tasarruf farkı tek mesajda.
+ *  4) INLINE BUTONLAR: en ucuz mağazaya git (afiliye), fiyatı takibe al
+ *     (callback → SQLite), sitede detaylı incele.
+ *  5) SWR: son 2 saatte taranmış ürün 0. saniyede önbellekten yanıtlanır ve
+ *     "⚡ (Son kontrol: X dk önce)" notu düşülür.
+ *
+ * GÜVENLİK / DAYANIKLILIK:
+ *  - Token yoksa çökmez; uyarı basıp bekler. Token geçersizse (401/404) polling durur.
+ *  - Tüm kullanıcı metinleri `esc()` ile HTML-escape edilir (Telegram parse hatası yok).
+ *  - İstekler sohbet başına sıraya alınır; peş peşe 10 arama botu kilitlemez.
+ *  - Telegram 4096 karakter sınırına karşı mesaj kısaltılır.
  */
+import crypto from 'node:crypto';
 import { getSettings, getTracked, addTracked } from './store.js';
 import { runComparison } from './pipeline.js';
 import { detectSite } from './sites/index.js';
-import { formatTL } from './util.js';
-import { stokSirala } from './stokSirala.js';
+import { stokSirala, stoktaMi, karsilastirmaFiyati } from './stokSirala.js';
+import { hizliKaynakUrunBul } from './urunArama.js';
+import { birimFiyatHesapla } from './birimFiyat.js';
+import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { anlikAl } from './anlikOnbellek.js';
+import { config } from './config.js';
+
+/** Botun adı (mesaj imzası / loglar). */
+export const BOT_ADI = '@erdal_fiyat_takip_bot';
+
+/** SWR: bot için "taze" sayılan pencere (2 saat). */
+export const BOT_SWR_MS = 2 * 60 * 60 * 1000;
+
+/** Telegram mesaj üst sınırı (güvenli pay bırakılmış). */
+const MESAJ_LIMIT = 4000;
+
+/** Aynı sohbette eşzamanlı işlem yerine sıra (spam koruması). */
+const SOHBET_KUYRUGU = new Map(); // chatId → { kuyruk: Function[], calisiyor: boolean }
+const MAKS_KUYRUK = 5;
+
+/** Takip butonu için bekleyen sonuçlar (hash → kayıt). */
+const TAKIP_BEKLEYEN = new Map();
+const TAKIP_TTL_MS = 3 * 60 * 60 * 1000;
 
 let isPolling = false;
 let stopRequested = false;
 let lastUpdateId = 0;
+let tokenUyarisiVerildi = false;
+let gecersizToken = false;
 
-function esc(str) {
-  if (!str) return '';
+/* ------------------------------------------------------------------ */
+/* Yardımcılar                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Telegram HTML için kaçış. `&` ÖNCE gelmeli (aksi hâlde `&lt;` bozulur).
+ * Çift tırnak da kaçırılır: bazı mesajlarda öznitelik bağlamı oluşabilir.
+ */
+export function esc(str) {
+  if (str == null) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Başlığı tek satırda, güvenli uzunlukta tutar. */
+export function baslikKisalt(s, n = 90) {
+  const t = String(s || '').replace(/\s+/g, ' ').trim();
+  return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t;
+}
+
+/**
+ * Bot mesajlarında para biçimi: `₺34.899,00`.
+ * Uygulamanın `formatTL` çıktısı "34.899,00 TL"dir; Telegram mesajında spec'te
+ * istenen `₺` öneki kullanılır (satır içinde "TL" tekrarı olmaz).
+ */
+export function botPara(n) {
+  if (n == null || !Number.isFinite(Number(n))) return '—';
+  return '₺' + Number(n).toLocaleString('tr-TR', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
+}
+
+/** URL'de http(s) var mı? */
+export function linkVarMi(metin) {
+  return /https?:\/\/[^\s]+/i.test(String(metin || ''));
+}
+
+/** Telegram Bot API çağrısı (ortak). */
+async function api(token, method, body) {
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const veri = await res.json().catch(() => ({}));
+  if (!res.ok || veri.ok === false) {
+    const hata = new Error(veri.description || `Telegram API ${res.status}`);
+    hata.statusCode = res.status;
+    hata.telegram = veri;
+    throw hata;
+  }
+  return veri;
 }
 
 async function sendTelegram(token, chatId, text, opts = {}) {
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const body = {
+  return api(token, 'sendMessage', {
     chat_id: chatId,
-    text,
+    text: String(text).slice(0, MESAJ_LIMIT),
     parse_mode: 'HTML',
-    disable_web_page_preview: opts.disablePreview ?? false,
+    disable_web_page_preview: opts.disablePreview ?? true,
     ...opts.extra,
-  };
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
   });
-  return await res.json();
 }
 
 async function editTelegram(token, chatId, messageId, text, opts = {}) {
-  const url = `https://api.telegram.org/bot${token}/editMessageText`;
-  const body = {
+  return api(token, 'editMessageText', {
     chat_id: chatId,
     message_id: messageId,
-    text,
+    text: String(text).slice(0, MESAJ_LIMIT),
     parse_mode: 'HTML',
-    disable_web_page_preview: opts.disablePreview ?? false,
+    disable_web_page_preview: opts.disablePreview ?? true,
     ...opts.extra,
-  };
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
   });
-  return await res.json();
 }
 
-async function handleMessage(token, msg) {
-  const chatId = msg.chat?.id;
-  const text = (msg.text || '').trim();
-  if (!chatId || !text) return;
-
-  // Komut: /start veya /yardim
-  if (text === '/start' || text === '/yardim' || text === '/help') {
-    const welcome = `🏷️ <b>En Ucuz Nerede? — Fiyat Karşılaştırma Asistanı</b>
-
-Hoş geldiniz! Türkiye'deki 55 e-ticaret sitesinde en net, en ucuz fiyatı bulmak için:
-
-👉 <b>Herhangi bir ürün linkini doğrudan buraya gönderin!</b>
-<i>(Örn: Trendyol, Hepsiburada, Amazon TR, Robitshop, Vatan, MediaMarkt vb.)</i>
-
-📦 <b>Komutlar:</b>
-• /takipler - Aktif fiyat alarmlarınız
-• /yardim - Kullanım kılavuzu`;
-    await sendTelegram(token, chatId, welcome);
-    return;
-  }
-
-  // Komut: /takipler
-  if (text === '/takipler') {
-    const list = getTracked();
-    if (!list || !list.length) {
-      await sendTelegram(token, chatId, '📭 Henüz takibe aldığınız bir ürün bulunmuyor.\n\nBir ürün linki göndererek ya da web arayüzünden hedef fiyat belirleyip alarm kurabilirsiniz.');
-      return;
-    }
-    const lines = list.map((t, idx) => {
-      const u = t.sonuc?.kaynak?.urun || t.urun || 'Ürün';
-      const hedef = t.hedefFiyat ? formatTL(t.hedefFiyat) : '—';
-      const sonFiyat = t.sonuc?.ozet?.enUcuzFiyat ? formatTL(t.sonuc.ozet.enUcuzFiyat) : '—';
-      return `${idx + 1}. <b>${esc(u)}</b>\n   🎯 Hedef: ${hedef} · Son: ${sonFiyat}`;
+async function answerCallback(token, callbackId, text, alert = false) {
+  try {
+    await api(token, 'answerCallbackQuery', {
+      callback_query_id: callbackId,
+      text: String(text || '').slice(0, 200),
+      show_alert: !!alert,
     });
-    await sendTelegram(token, chatId, `🔔 <b>Aktif Fiyat Takipleriniz (${list.length}):</b>\n\n${lines.join('\n\n')}`);
+  } catch { /* kullanıcı butonu çoktan kapatmış olabilir */ }
+}
+
+/**
+ * Sohbet başına sıralı kuyruk. Peş peşe 10 arama gelse bile her sohbet için
+ * işler sırayla yürür; bot kilitlenmez, Telegram'a "sıradasınız" denir.
+ *
+ * @returns {Promise<'hemen'|'kuyrukta'>} işin hemen mi başladığı
+ */
+function kuyrugaAl(chatId, gorev) {
+  const anahtar = String(chatId);
+  let kayit = SOHBET_KUYRUGU.get(anahtar);
+  if (!kayit) {
+    kayit = { kuyruk: [], calisiyor: false };
+    SOHBET_KUYRUGU.set(anahtar, kayit);
+  }
+  const sirada = kayit.calisiyor || kayit.kuyruk.length > 0;
+  if (kayit.kuyruk.length >= MAKS_KUYRUK) {
+    // Kuyruk doldu: yeni işi kabul etme (bellek şişmesin), dürüstçe söyle.
+    return Promise.resolve('dolu');
+  }
+  kayit.kuyruk.push(gorev);
+  calistirKuyruk(anahtar, kayit);
+  return Promise.resolve(sirada ? 'kuyrukta' : 'hemen');
+}
+
+function calistirKuyruk(anahtar, kayit) {
+  if (kayit.calisiyor) return;
+  const gorev = kayit.kuyruk.shift();
+  if (!gorev) {
+    SOHBET_KUYRUGU.delete(anahtar);
     return;
   }
+  kayit.calisiyor = true;
+  Promise.resolve()
+    .then(gorev)
+    .catch((e) => console.error('[Telegram Bot] iş hatası:', String(e?.message || e).slice(0, 200)))
+    .finally(() => {
+      kayit.calisiyor = false;
+      setImmediate(() => calistirKuyruk(anahtar, kayit));
+    });
+}
 
-  // URL Kontrolü
-  const urlMatch = text.match(/https?:\/\/[^\s]+/i);
-  if (!urlMatch) {
-    await sendTelegram(token, chatId, '💡 Bir ürünün Türkiye genelindeki en ucuz fiyatını bulmak için ürün sayfasının linkini gönderebilirsiniz.\n\n<i>Örn: https://www.trendyol.com/... veya https://www.robitshop.com/...</i>');
-    return;
+/** Kargo metni: "Kargo Bedava" / "+₺45,00 Kargo" / "Kargo sepette". */
+export function kargoMetni(r) {
+  const kargo = r?.product?.pricing?.kargo || {};
+  const bedava = r?.kargoBedava === true
+    || kargo.uygulanir === false
+    || Number(kargo.ucret) === 0
+    || /ücretsiz|bedava/i.test(String(kargo.aciklama || ''))
+    || /ücretsiz|bedava/i.test(String(r?.product?.shipping || ''));
+  if (bedava) return 'Kargo Bedava';
+  if (Number(kargo.ucret) > 0 && kargo.uygulanir !== false) return `+${botPara(kargo.ucret)} Kargo`;
+  if (kargo.freeOver) return 'Sepette belli';
+  return 'Kargo bilinmiyor';
+}
+
+/** Sıralama emojisi (1→🥇, 2→🥈, 3→🥉). */
+function siraEmoji(i) {
+  return i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+}
+
+/**
+ * Karşılaştırma sonucundan en ucuz teklifi ve dağılımı çıkarır.
+ * Stok hiyerarşisi korunur: tükenen ürün asla "en ucuz" seçilmez.
+ */
+export function enUcuzTeklif(res) {
+  const bulunan = (res?.sonuclar || []).filter(r => r.status === 'found' && r.product);
+  const stokta = bulunan.filter(r => stoktaMi(r));
+  const havuz = stokta.length ? stokta : bulunan;
+  const fiyatli = havuz.filter(r => Number.isFinite(karsilastirmaFiyati(r)) && karsilastirmaFiyati(r) > 0);
+  const sirali = stokSirala(fiyatli);
+  const enUcuz = sirali[0] || null;
+  const enPahali = sirali.length
+    ? sirali.reduce((a, b) => (karsilastirmaFiyati(b) > karsilastirmaFiyati(a) ? b : a))
+    : null;
+  return {
+    enUcuz,
+    enPahali,
+    sirali,
+    fiyat: enUcuz ? karsilastirmaFiyati(enUcuz) : null,
+    enPahaliFiyat: enPahali ? karsilastirmaFiyati(enPahali) : null,
+    bulunanSayisi: bulunan.length,
+    stoktaSayisi: stokta.length,
+    tamamiTukendi: bulunan.length > 0 && stokta.length === 0,
+  };
+}
+
+/** Ürünün kendi (afiliyesiz) adresi. */
+function hamUrl(r, yedek = null) {
+  return r?.product?.url || yedek || null;
+}
+
+/** Afiliye link (site kimliği + ham URL). */
+function saticiLinki(siteId, url) {
+  try { return afiliyeLink(siteId, url, afiliyeAyarlari()); } catch { return url; }
+}
+
+/**
+ * Zengin sonuç mesajını üretir (spec'teki biçim).
+ *
+ * @param {object} res runComparison / snapshot payload
+ * @param {{yasNotu?:string|null}} opts
+ */
+export function sonucMesajiOlustur(res, opts = {}) {
+  const k = res?.kaynak || {};
+  const o = res?.ozet || {};
+  const d = enUcuzTeklif(res);
+
+  const baslik = baslikKisalt(k.urun || 'Ürün Karşılaştırma Sonucu', 90);
+  const cizgi = '━━━━━━━━━━━━━━━━━━━━';
+
+  if (!d.enUcuz) {
+    return `🏷️ <b>${esc(baslik)}</b>\n${cizgi}\n`
+      + '⚠️ <b>Stokta fiyat bulunamadı.</b>\n'
+      + 'Mağazalar ürünü şu anda fiyatlandırmıyor olabilir. Birkaç dakika sonra tekrar deneyin.';
   }
 
-  const targetUrl = urlMatch[0];
-  const detected = detectSite(targetUrl);
-  if (!detected) {
-    await sendTelegram(token, chatId, '⚠️ Bu e-ticaret sitesi henüz desteklenmiyor.\n\nDesteklenen siteler arasında Trendyol, Hepsiburada, Amazon, Vatan, MediaMarkt, Robitshop, Robotistan, Teknosa, N11 ve 45+ mağaza bulunmaktadır.');
-    return;
+  const p = d.enUcuz.product || {};
+  const siteAdi = d.enUcuz.siteName || d.enUcuz.site || 'Mağaza';
+
+  // Birim fiyat: yalnızca filament/reçinede (yazıcı/aksesuarda null).
+  const birim = birimFiyatHesapla(p.title || baslik, d.fiyat);
+  // Spec biçimi: "⚖️ Birim Fiyat: ₺350,00 / kg"
+  const birimSatiri = birim
+    ? `⚖️ <b>Birim Fiyat:</b> ${botPara(birim.birimFiyat)} / ${birim.birim === 'L' ? 'L' : 'kg'}`
+      + (birim.tur === 'resin' && birim.kg != null ? ` <i>(≈ ${botPara(birim.kg)} / kg)</i>` : '')
+      + `\n`
+    : '';
+
+  // 💡 Gramaj tuzağı: en ucuz ETİKET fiyatı, en iyi BİRİM fiyat olmayabilir.
+  // (500 g makara 220 TL = ₺440/kg, 2.5 kg makara 875 TL = ₺350/kg.)
+  let birimIpucu = '';
+  if (birim && birim.birim === 'kg') {
+    let enIyiBirim = null;
+    for (const r of d.sirali) {
+      const b = birimFiyatHesapla(r.product?.title, karsilastirmaFiyati(r));
+      if (!b || b.birim !== 'kg' || !(b.birimFiyat > 0)) continue;
+      if (!enIyiBirim || b.birimFiyat < enIyiBirim.birimFiyat) {
+        enIyiBirim = { ...b, siteName: r.siteName || r.site, site: r.site };
+      }
+    }
+    if (enIyiBirim
+      && enIyiBirim.site !== d.enUcuz.site
+      && enIyiBirim.birimFiyat < birim.birimFiyat * 0.98) {
+      const makara = enIyiBirim.gram ? `${enIyiBirim.gram >= 1000
+        ? (enIyiBirim.gram / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' kg'
+        : enIyiBirim.gram.toLocaleString('tr-TR') + ' g'} makara` : '';
+      birimIpucu = `🧮 <b>En iyi birim fiyat:</b> ${esc(enIyiBirim.siteName)} — `
+        + `${botPara(enIyiBirim.birimFiyat)} / kg${makara ? ` <i>(${esc(makara)})</i>` : ''}\n`;
+    }
   }
 
-  // 1) Bilgilendirme mesajı gönder
+  const stokSatiri = d.tamamiTukendi
+    ? '⚠️ <b>Durum:</b> Tüm mağazalarda tükendi\n'
+    : (d.bulunanSayisi > 0
+      ? `📦 <b>Stok:</b> 🟢 ${d.stoktaSayisi} mağazada var`
+        + `${d.bulunanSayisi - d.stoktaSayisi > 0 ? ` · 🔴 ${d.bulunanSayisi - d.stoktaSayisi} tükendi` : ''}\n`
+      : '');
+
+  // İlk 5 mağaza (stok hiyerarşisi + fiyat artan).
+  const ilk = d.sirali.slice(0, 5);
+  const satirlar = ilk.map((r, i) => {
+    const ad = r.siteName || r.site || 'Mağaza';
+    const fiyat = botPara(karsilastirmaFiyati(r));
+    const kargo = kargoMetni(r);
+    const rozet = siraEmoji(i);
+    const tukendi = stoktaMi(r) ? '' : '🔴 Tükendi · ';
+    return `${i + 1}. ${rozet ? rozet + ' ' : ''}${tukendi}<b>${esc(ad)}</b> — ${fiyat} <i>(${esc(kargo)})</i>`;
+  }).join('\n');
+
+  // Tasarruf farkı: en ucuz ↔ en pahalı (stokta olanlar arasında).
+  const fark = (d.enPahaliFiyat != null && d.fiyat != null)
+    ? Math.round((d.enPahaliFiyat - d.fiyat) * 100) / 100
+    : 0;
+  const farkSatiri = fark > 0.5
+    ? `\n💡 En ucuz mağaza ile diğerleri arasında <b>${botPara(fark)}</b> tasarruf farkı var!`
+    : '\n💡 Tüm mağazalarda fiyat aynı seviyede.';
+
+  const toplamSite = o.bulunanSiteSayisi ?? d.bulunanSayisi;
+  const swr = opts.yasNotu ? `\n⚡ <i>(Son kontrol: ${esc(opts.yasNotu)})</i>` : '';
+
+  return `🏷️ <b>${esc(baslik)}</b>
+${cizgi}
+🏆 <b>En Ucuz:</b> ${botPara(d.fiyat)} (${esc(siteAdi)})
+🚚 <b>Kargo:</b> ${esc(kargoMetni(d.enUcuz))}
+${birimSatiri}${birimIpucu}${stokSatiri}${cizgi}
+📊 <b>Mağaza Karşılaştırması (${toplamSite} Site):</b>
+${satirlar}${farkSatiri}${swr}
+
+🔗 <a href="https://t.me/${BOT_ADI.replace('@', '')}">${esc(BOT_ADI)}</a> · Gerçek Fiyat Takipçisi`;
+}
+
+/** Bento tarzı inline butonlar. */
+export function butonlariOlustur(res, { takipHash = null, kaynakUrl = null } = {}) {
+  const d = enUcuzTeklif(res);
+  const satirlar = [];
+  if (d.enUcuz) {
+    const url = saticiLinki(d.enUcuz.site, hamUrl(d.enUcuz, kaynakUrl));
+    if (url) {
+      satirlar.push([{ text: `🛒 En Ucuz Mağazaya Git (${botPara(d.fiyat)})`, url }]);
+    }
+  }
+  const ikinci = [];
+  if (takipHash) ikinci.push({ text: '🔔 Fiyatı Takibe Al', callback_data: `takip_${takipHash}` });
+  const detayUrl = kaynakUrl
+    ? `${config.publicUrl}/?url=${encodeURIComponent(kaynakUrl)}`
+    : `${config.publicUrl}/`;
+  ikinci.push({ text: '🌐 Sitede Detaylı İncele', url: detayUrl });
+  satirlar.push(ikinci);
+  return { inline_keyboard: satirlar };
+}
+
+/* ------------------------------------------------------------------ */
+/* Takip (callback)                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Takip butonu için sonucu belleğe alır ve kısa bir hash döndürür. */
+export function takipKaydiOlustur(res, kaynakUrl) {
+  const hash = crypto.randomBytes(6).toString('hex');
+  const d = enUcuzTeklif(res);
+  const k = res?.kaynak || {};
+  const p = d.enUcuz?.product || {};
+  TAKIP_BEKLEYEN.set(hash, {
+    ts: Date.now(),
+    kaynakUrl,
+    urun: baslikKisalt(k.urun || p.title || 'Ürün', 140),
+    modelKodu: k.modelKodu || p.modelCode || null,
+    renk: k.renk || p.color || null,
+    image: k.resim || p.image || null,
+    hedefFiyat: d.fiyat != null ? Math.round(d.fiyat * 100) / 100 : null,
+    urunler: d.enUcuz ? [{ site: d.enUcuz.site, url: hamUrl(d.enUcuz, kaynakUrl) }] : [],
+  });
+  return hash;
+}
+
+/** Süresi geçmiş takip kayıtlarını temizler. */
+function takipTemizle() {
+  const esik = Date.now() - TAKIP_TTL_MS;
+  for (const [h, v] of TAKIP_BEKLEYEN) if (v.ts < esik) TAKIP_BEKLEYEN.delete(h);
+}
+
+/**
+ * `🔔 Fiyatı Takibe Al` butonu.
+ * @returns {{mesaj:string, kayit?:object}}
+ */
+export function takipEt(hash) {
+  takipTemizle();
+  const kayit = TAKIP_BEKLEYEN.get(String(hash || ''));
+  if (!kayit) {
+    return {
+      mesaj: '⏳ Bu sonuç artık geçerli değil (3 saatten eski). Lütfen ürünü yeniden aratın.',
+    };
+  }
+  if (!Array.isArray(kayit.urunler) || !kayit.urunler.length) {
+    return { mesaj: '⚠️ Ürünün mağaza adresi bulunamadı; takip oluşturulamadı.' };
+  }
+  const eklendi = addTracked({
+    urun: kayit.urun,
+    modelKodu: kayit.modelKodu,
+    renk: kayit.renk,
+    image: kayit.image,
+    hedefFiyat: kayit.hedefFiyat,
+    urunler: kayit.urunler,
+  });
+  return {
+    mesaj: `✅ <b>Ürün takibe alındı!</b>\n\n`
+      + `🏷️ ${esc(kayit.urun)}\n`
+      + `🎯 Hedef: <b>${kayit.hedefFiyat != null ? botPara(kayit.hedefFiyat) : '—'}</b> (mevcut en ucuz fiyat)\n\n`
+      + 'Fiyat düşünce bildirim alacaksınız. Takiplerinizi /takipler ile görebilirsiniz.',
+    kayit: eklendi,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Arama akışları                                                      */
+/* ------------------------------------------------------------------ */
+
+/** SWR kontrolü: son 2 saatte taranmışsa anında döner. */
+function onbellektenAl(url) {
+  try {
+    const anlik = anlikAl(url, { maxYasMs: BOT_SWR_MS });
+    if (!anlik?.payload) return null;
+    return anlik;
+  } catch { return null; }
+}
+
+/** Önbellek yaşını "15 dk" gibi kısa metne çevirir. */
+export function kisaYasMetni(yasMs) {
+  const dk = Math.max(0, Math.floor(Number(yasMs || 0) / 60000));
+  if (dk < 1) return 'az önce';
+  if (dk < 60) return `${dk} dk önce`;
+  const sa = Math.floor(dk / 60);
+  const kalan = dk % 60;
+  return kalan ? `${sa} sa ${kalan} dk önce` : `${sa} sa önce`;
+}
+
+/**
+ * Ortak sunum: swr varsa hemen, yoksa taze tarama.
+ *
+ * @returns {Promise<{res:object, yasNotu:string|null}>}
+ */
+async function sonucUret(url, { taze = false } = {}) {
+  if (!taze) {
+    const anlik = onbellektenAl(url);
+    if (anlik) return { res: anlik.payload, yasNotu: kisaYasMetni(anlik.yasMs) };
+  }
+  const res = await runComparison(url);
+  return { res, yasNotu: null };
+}
+
+/**
+ * Ürün adıyla arama: kanonik URL bul → karşılaştır → zengin mesaj.
+ */
+async function metinAramasiYap(token, chatId, sorgu) {
+  const temiz = sorgu.slice(0, 120);
   const initMsg = await sendTelegram(
-    token,
-    chatId,
-    `🔍 <b>${esc(detected.name)} ürünü algılandı!</b>\n\n🚀 Türkiye'deki diğer 54 sitede fiyatlar taranıyor, lütfen birkaç saniye bekleyin... ⏳`
+    token, chatId,
+    `🔍 "<b>${esc(baslikKisalt(temiz, 80))}</b>" için 61 mağaza taranıyor... ⏳`,
   );
   const msgId = initMsg?.result?.message_id;
 
+  let bulunan = null;
   try {
-    // 2) Karşılaştırmayı çalıştır
-    const res = await runComparison(targetUrl);
-    const k = res?.kaynak || {};
-    const o = res?.ozet || {};
+    bulunan = await hizliKaynakUrunBul(temiz);
+  } catch (e) {
+    console.warn('[Telegram Bot] ürün arama hatası:', String(e?.message || e).slice(0, 140));
+  }
 
-    const baseResult = (res?.sonuclar || []).find(r => r.matchBasis === 'kaynak') || (res.sonuclar || [])[0];
-    const basePrice = baseResult?.product?.pricing?.toplam ?? baseResult?.product?.sellingPrice ?? null;
-    const cheapestPrice = o.enUcuzFiyat;
-    const cheapestSite = o.enUcuzSite;
-    const cheapestUrl = o.enUcuzUrl;
+  if (!bulunan?.url) {
+    const mesaj = `🔍 "<b>${esc(baslikKisalt(temiz, 80))}</b>" için eşleşen ürün bulunamadı.\n\n`
+      + 'Lütfen model adını biraz daha detaylandırın.\n'
+      + '<i>Örn: "Bambu Lab P1S", "eSun PLA+ Siyah 1kg", "Creality K1 Max"</i>';
+    if (msgId) await editTelegram(token, chatId, msgId, mesaj);
+    else await sendTelegram(token, chatId, mesaj);
+    return;
+  }
 
-    let farkMetni = '';
-    if (basePrice && cheapestPrice) {
-      const diff = basePrice - cheapestPrice;
-      if (diff > 1) {
-        farkMetni = `💰 <b>Kazanç:</b> 🟢 <b>${formatTL(diff)} daha ucuz!</b>`;
-      } else if (diff < -1) {
-        farkMetni = `ℹ️ <i>Baktığınız sitedeki fiyat şu an diğer sitelerden daha uygun.</i>`;
-      } else {
-        farkMetni = `⚖️ <i>Diğer sitelerdeki en ucuz fiyat bu siteyle aynı seviyede.</i>`;
-      }
+  await sonucGonderVeBitir(token, chatId, msgId, bulunan.url, {
+    onBilgi: async () => {
+      const satir = `🔍 "<b>${esc(baslikKisalt(temiz, 60))}</b>" → <b>${esc(baslikKisalt(bulunan.title, 70))}</b>\n`
+        + '🚀 61 mağazada fiyatlar karşılaştırılıyor... ⏳';
+      if (msgId) await editTelegram(token, chatId, msgId, satir).catch(() => {});
+    },
+  });
+}
+
+/**
+ * URL ile arama: mevcut akış + SWR + zengin mesaj.
+ */
+async function linkAramasiYap(token, chatId, targetUrl, detected) {
+  const initMsg = await sendTelegram(
+    token, chatId,
+    `🔍 <b>${esc(detected?.name || 'Mağaza')} ürünü algılandı!</b>\n\n`
+    + '🚀 Türkiye\'deki 61 sitede fiyatlar taranıyor, lütfen birkaç saniye bekleyin... ⏳',
+  );
+  await sonucGonderVeBitir(token, chatId, initMsg?.result?.message_id, targetUrl, {
+    detected,
+  });
+}
+
+/** Sonucu biçimlendirip gönderir; hata olursa dürüst mesaj. */
+async function sonucGonderVeBitir(token, chatId, msgId, url, opts = {}) {
+  if (opts.onBilgi) { try { await opts.onBilgi(); } catch { /* yoksay */ } }
+  try {
+    const { res, yasNotu } = await sonucUret(url);
+    if (!res?.kaynak && !res?.sonuclar) {
+      throw new Error('Sonuç alınamadı');
     }
-
-    // Neden daha ucuz?
-    let nedenMetni = '';
-    if (o.nedenDahaUcuz) {
-      nedenMetni = `\n\n💡 <b>Neden Daha Ucuz?</b>\n${esc(o.nedenDahaUcuz)}`;
-    }
-
-    // Bulunan diğer mağazalar — stok hiyerarşisi (2026-10-30): stokta olanlar önce,
-    // tükenenler sonda. Fiyatı ucuz diye tükenmiş ürün "en ucuz" gibi görünmesin.
-    const digerleri = stokSirala(
-      (res.sonuclar || []).filter(r => r.status === 'found' && r.product && r.site !== detected.id)
-    ).slice(0, 5);
-
-    let digerleriMetni = '';
-    if (digerleri.length) {
-      const satirlar = digerleri.map(d => {
-        const pr = d.product.pricing?.toplam ?? d.product.sellingPrice;
-        const kargoRozet = d.kargoBedava ? ' 📦' : '';
-        const tukendiRozet = d.product.inStock === false ? '🔴 Tükendi · ' : '';
-        return `• <b>${esc(d.siteName || d.site)}:</b> ${tukendiRozet}${formatTL(pr)}${kargoRozet}`;
-      });
-      digerleriMetni = `\n\n📊 <b>Diğer Mağazalar:</b>\n${satirlar.join('\n')}`;
-    }
-
-    const stokSatiri = o.tamamiTukendi
-      ? '⚠️ <b>Tüm mağazalarda tükendi</b>'
-      : (o.stoktaVarSayisi != null
-        ? `📦 <b>Stok:</b> 🟢 ${o.stoktaVarSayisi} mağazada var${o.stoktaYokSayisi ? ` · 🔴 ${o.stoktaYokSayisi} tükendi` : ''}`
-        : '');
-    const enUcuzSatiri = o.tamamiTukendi
-      ? '⚠️ <b>En Ucuz:</b> stokta ürün yok'
-      : `🥇 <b>En Ucuz:</b> <b>${formatTL(cheapestPrice)}</b> (${esc(cheapestSite)})`;
-
-    const sonucMetni = `🏷️ <b>${esc(k.urun || 'Ürün Karşılaştırma Sonucu')}</b>
-
-${enUcuzSatiri}
-🏬 <b>Mevcut Siteniz:</b> ${formatTL(basePrice)} (${esc(detected.name)})
-${stokSatiri ? stokSatiri + '\n' : ''}${farkMetni}${nedenMetni}${digerleriMetni}`;
-
-    // Butonlar
-    const inlineButtons = [];
-    if (cheapestUrl) {
-      inlineButtons.push([{ text: `🛍️ ${cheapestSite}'de Aç (${formatTL(cheapestPrice)})`, url: cheapestUrl }]);
-    }
+    const metin = sonucMesajiOlustur(res, { yasNotu });
+    const hash = takipKaydiOlustur(res, url);
+    const butonlar = butonlariOlustur(res, { takipHash: hash, kaynakUrl: url });
 
     if (msgId) {
-      await editTelegram(token, chatId, msgId, sonucMetni, {
-        extra: inlineButtons.length ? { reply_markup: { inline_keyboard: inlineButtons } } : {},
-      });
+      await editTelegram(token, chatId, msgId, metin, { extra: { reply_markup: butonlar } })
+        .catch(() => sendTelegram(token, chatId, metin, { extra: { reply_markup: butonlar } }));
     } else {
-      await sendTelegram(token, chatId, sonucMetni, {
-        extra: inlineButtons.length ? { reply_markup: { inline_keyboard: inlineButtons } } : {},
-      });
+      await sendTelegram(token, chatId, metin, { extra: { reply_markup: butonlar } });
     }
   } catch (err) {
-    const errMsg = `❌ <b>Karşılaştırma sırasında bir sorun oluştu:</b>\n${esc(err.message || 'Ürün bilgileri alınamadı.')}`;
-    if (msgId) {
-      await editTelegram(token, chatId, msgId, errMsg);
-    } else {
-      await sendTelegram(token, chatId, errMsg);
-    }
+    const mesaj = `❌ <b>Karşılaştırma sırasında bir sorun oluştu:</b>\n${esc(String(err?.message || 'Ürün bilgileri alınamadı.').slice(0, 300))}`;
+    if (msgId) await editTelegram(token, chatId, msgId, mesaj).catch(() => {});
+    else await sendTelegram(token, chatId, mesaj).catch(() => {});
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Komutlar                                                            */
+/* ------------------------------------------------------------------ */
+
+const YARDIM_METNI = `🏷️ <b>En Ucuz Nerede? — Fiyat Asistanı</b>
+
+<b>İki şekilde arama yapabilirsiniz:</b>
+1) 🔗 <b>Ürün linki</b> gönderin — 61 mağazada aynı ürünü arar.
+2) 💬 <b>Ürün adı</b> yazın — ör. <i>Bambu Lab P1S</i>, <i>eSun PLA+</i>, <i>iPhone 15</i>
+
+<b>Komutlar:</b>
+• /liste — aktif fiyat takipleriniz
+• /yardim — bu mesaj
+
+Sonuç mesajındaki butonlarla mağazaya gidebilir, tek tıkla takip kurabilirsiniz.`;
+
+function takipListesiMetni() {
+  const list = getTracked();
+  if (!list?.length) {
+    return '📭 Henüz takibe aldığınız ürün yok.\n\n'
+      + 'Bir ürün aradıktan sonra <b>🔔 Fiyatı Takibe Al</b> butonuna basmanız yeterli.';
+  }
+  const satirlar = list.slice(0, 12).map((t, i) => {
+    const ad = baslikKisalt(t.urun || 'Ürün', 55);
+    const hedef = t.hedefFiyat ? botPara(t.hedefFiyat) : '—';
+    const son = Array.isArray(t.sonFiyatlar) && t.sonFiyatlar.length
+      ? t.sonFiyatlar.find(x => Number.isFinite(Number(x.fiyat)))
+      : null;
+    const sonFiyat = son ? botPara(son.fiyat) : '—';
+    const dot = Number.isFinite(Number(t.hedefFiyat)) && son && Number(son.fiyat) <= Number(t.hedefFiyat)
+      ? '🟢' : '⚪';
+    return `${dot} ${i + 1}. <b>${esc(ad)}</b>\n     🎯 ${hedef} · Son: ${sonFiyat}`;
+  });
+  const kalan = list.length > 12 ? `\n\n<i>… ve ${list.length - 12} takip daha</i>` : '';
+  return `🔔 <b>Aktif Fiyat Takipleriniz (${list.length}):</b>\n\n${satirlar.join('\n')}${kalan}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dağıtıcılar                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Gelen metin mesajını işler. Export: testler doğrudan çağırabilsin.
+ */
+export async function handleMessage(token, msg) {
+  const chatId = msg?.chat?.id;
+  const text = String(msg?.text || '').trim();
+  if (!chatId || !text) return;
+
+  // ---- Komutlar ----
+  if (text === '/start' || text === '/yardim' || text === '/help') {
+    await sendTelegram(token, chatId, YARDIM_METNI);
+    return;
+  }
+  if (text === '/takipler' || text === '/liste') {
+    await sendTelegram(token, chatId, takipListesiMetni());
+    return;
+  }
+
+  // ---- URL mi, ürün adı mı? ----
+  const kaynak = kaynakBul(text);
+
+  if (kaynak.tur === 'link') {
+    await linkAramasiYap(token, chatId, kaynak.url, kaynak.site);
+    return;
+  }
+
+  if (kaynak.tur === 'gecersiz-link') {
+    await sendTelegram(token, chatId,
+      '⚠️ Bu bağlantı desteklenen mağazalar arasında değil.\n\n'
+      + 'Bir <b>ürün adı</b> yazarsanız 61 mağazada kendim ararım.\n'
+      + '<i>Örn: "Bambu Lab P1S"</i>');
+    return;
+  }
+
+  if (kaynak.tur !== 'metin') return;
+
+  // Çok kısa anlamsız girdiler
+  if (kaynak.metin.length < 2) {
+    await sendTelegram(token, chatId, '💡 Aramak için bir ürün adı yazın ya da ürün linki gönderin.');
+    return;
+  }
+  if (kaynak.metin.length > 140) {
+    await sendTelegram(token, chatId, '⚠️ Ürün adı çok uzun. Lütfen model adını kısaltın (en fazla 140 karakter).');
+    return;
+  }
+
+  // ---- Sıraya al (spam koruması) ----
+  const durum = await kuyrugaAl(chatId, () => metinAramasiYap(token, chatId, kaynak.metin));
+  if (durum === 'dolu') {
+    await sendTelegram(token, chatId,
+      '⏳ Çok fazla arama sırada. Lütfen mevcut aramaların bitmesini bekleyin.');
+  } else if (durum === 'kuyrukta') {
+    await sendTelegram(token, chatId, '⏳ Önceki aramanız sürüyor; isteğiniz sıraya alındı.');
+  }
+}
+
+/**
+ * Metni sınıflandırır: link / desteklenmeyen link / düz ürün adı.
+ * Export: testler için.
+ */
+export function kaynakBul(text) {
+  const m = String(text || '').match(/https?:\/\/[^\s]+/i);
+  if (m) {
+    const site = detectSite(m[0]);
+    return site
+      ? { tur: 'link', url: m[0], site }
+      : { tur: 'gecersiz-link', url: m[0] };
+  }
+  return { tur: 'metin', metin: String(text || '').trim() };
+}
+
+/** Inline buton tıklamalarını işler. */
+export async function handleCallbackQuery(token, cb) {
+  const chatId = cb?.message?.chat?.id;
+  const data = String(cb?.data || '');
+  const cbId = cb?.id;
+
+  if (!chatId) return;
+
+  if (data.startsWith('takip_')) {
+    const hash = data.slice('takip_'.length);
+    const sonuc = takipEt(hash);
+    await answerCallback(token, cbId, sonuc.kayit ? 'Takibe alındı ✅' : 'Takip oluşturulamadı', !sonuc.kayit);
+    await sendTelegram(token, chatId, sonuc.mesaj).catch(() => {});
+    return;
+  }
+
+  await answerCallback(token, cbId, 'Bilinmeyen işlem');
+}
+
+/* ------------------------------------------------------------------ */
+/* Polling                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Botu başlatır. Token yoksa ÇÖKMEZ; sessizce uyarıp bekler.
+ * Token geçersizse (401/404) polling durur ve log basılır.
+ */
 export async function startTelegramBot() {
   if (isPolling) return;
   isPolling = true;
   stopRequested = false;
+  gecersizToken = false;
 
-  console.log('[Telegram Bot] İnteraktif sohbet dinleyici başlatılıyor...');
+  console.log('[Telegram Bot] İnteraktif asistan dinleyici başlatılıyor...');
 
   while (!stopRequested) {
-    const settings = getSettings();
-    const token = settings.telegram?.botToken;
-    const enabled = settings.telegram?.enabled;
+    let settings;
+    try { settings = getSettings(); } catch { settings = null; }
+
+    const token = settings?.telegram?.botToken;
+    const enabled = settings?.telegram?.enabled;
 
     if (!enabled || !token) {
-      // Bot aktif değilse 15 saniye bekle ve tekrar kontrol et
-      await new Promise(r => setTimeout(r, 15000));
+      if (!tokenUyarisiVerildi) {
+        console.warn('[Telegram Bot] Token tanımlı değil ya da bot kapalı — polling bekletiliyor. '
+          + 'Ayarlar sayfasından token girip botu etkinleştirin.');
+        tokenUyarisiVerildi = true;
+      }
+      await new Promise(r => setTimeout(r, 30000));
       continue;
+    }
+    tokenUyarisiVerildi = false;
+
+    if (gecersizToken) {
+      console.warn('[Telegram Bot] Token geçersiz — polling durduruldu. '
+        + 'Ayarlar sayfasında tokenı güncelleyip sunucuyu yeniden başlatın.');
+      break;
     }
 
     try {
-      const url = `https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}&timeout=20`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+      const url = `https://api.telegram.org/bot${token}/getUpdates`
+        + `?offset=${lastUpdateId + 1}&timeout=20&allowed_updates=${encodeURIComponent('["message","callback_query"]')}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(35000) });
+
+      // Geçersiz token: 401/404 → kalıcı hata, döngüyü bitir.
+      if (res.status === 401 || res.status === 404) {
+        gecersizToken = true;
+        continue;
+      }
       if (!res.ok) {
         await new Promise(r => setTimeout(r, 5000));
         continue;
       }
+
       const data = await res.json();
-      if (data.ok && Array.isArray(data.result)) {
+      if (data?.ok && Array.isArray(data.result)) {
         for (const update of data.result) {
           lastUpdateId = Math.max(lastUpdateId, update.update_id);
           if (update.message) {
             handleMessage(token, update.message).catch(err => {
-              console.error('[Telegram Bot] Mesaj işleme hatası:', err.message);
+              console.error('[Telegram Bot] Mesaj işleme hatası:', String(err?.message || err).slice(0, 200));
+            });
+          } else if (update.callback_query) {
+            handleCallbackQuery(token, update.callback_query).catch(err => {
+              console.error('[Telegram Bot] Callback hatası:', String(err?.message || err).slice(0, 200));
             });
           }
         }
       }
     } catch (e) {
-      // Ağ kesintisi veya zaman aşımı durumunda sessizce bekle ve devam et
+      // Ağ kesintisi / zaman aşımı: sessizce bekle.
       await new Promise(r => setTimeout(r, 4000));
     }
   }
@@ -254,4 +738,10 @@ export async function startTelegramBot() {
 
 export function stopTelegramBot() {
   stopRequested = true;
+}
+
+/** Test/teşhis: bekleyen takip sayısı. */
+export function bekleyenTakipSayisi() {
+  takipTemizle();
+  return TAKIP_BEKLEYEN.size;
 }
