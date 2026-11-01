@@ -137,6 +137,16 @@ kontrol('makara bilgisi (2,5 kg)', /2,5 kg makara/.test(filDuz));
 const yaziciMesaj = sonucMesajiOlustur(res);
 kontrol('yazıcıda birim fiyat satırı yok', !hamMetin(yaziciMesaj).includes('Birim Fiyat'));
 
+// Gramajsız filament: sayı uydurulmaz, nedeni yazılır
+const gramajsiz = {
+  kaynak: { urun: 'eSun PLA+ Siyah' },
+  sonuclar: [mk('h', 'Hepsiburada', 951.65, { baslik: 'Esun Pla+ Hs Filament - Siyah' })],
+  ozet: { bulunanSiteSayisi: 1, stoktaVarSayisi: 1 },
+};
+const gramajsizDuz = hamMetin(sonucMesajiOlustur(gramajsiz));
+kontrol('gramajsız filamentte dürüst not', /Birim Fiyat: hesaplanamadı/.test(gramajsizDuz), gramajsizDuz.split('\n').find(x => x.includes('Birim')) || '');
+kontrol('gramajsız filamentte uydurma ₺/kg yok', !/₺[\d.]+ \/ kg/.test(gramajsizDuz));
+
 // Reçine L
 const recineRes = {
   kaynak: { urun: 'Anycubic Water Washable Reçine 1000 ml' },
@@ -188,6 +198,11 @@ kontrol('hedef fiyat = mevcut en ucuz', kayit?.hedefFiyat === 34899, String(kayi
 kontrol('ürün adresi kaydedildi', Array.isArray(kayit?.urunler) && kayit.urunler[0]?.url?.includes('robotistan'), JSON.stringify(kayit?.urunler));
 kontrol('model kodu taşındı', kayit?.modelKodu === 'P1S-COMBO', String(kayit?.modelKodu));
 
+// Aynı butona ikinci kez basmak mükerrer kayıt oluşturmamalı
+const ikinciTik = takipEt(hash);
+kontrol('mükerrer tıklama engellendi', /zaten takibe alınmış/.test(hamMetin(ikinciTik.mesaj)), hamMetin(ikinciTik.mesaj).slice(0, 60));
+kontrol('mükerrer tıklama DB şişirmiyor', getTracked().length === oncekiSayi + 1, String(getTracked().length));
+
 // Temizlik: test kaydını sil
 if (kayit?.id) removeTracked(kayit.id);
 kontrol('test kaydı temizlendi', getTracked().length === oncekiSayi, String(getTracked().length));
@@ -206,6 +221,9 @@ kontrol('birimFiyatHesapla kullanılıyor', /birimFiyatHesapla\(/.test(kaynak));
 kontrol('afiliyeLink kullanılıyor', /afiliyeLink\(/.test(kaynak));
 kontrol('addTracked kullanılıyor', /addTracked\(/.test(kaynak));
 kontrol('anlikAl (SWR) kullanılıyor', /anlikAl\(/.test(kaynak));
+kontrol('taze sonuç önbelleğe yazılıyor (SWR beslemesi)', /anlikYaz\(url, res\)/.test(kaynak));
+kontrol('önbellek dürüstlük kuralları (iptal/eksik tarama yazılmaz)',
+  /iptalEdildi/.test(kaynak) && /taranmayanSiteSayisi/.test(kaynak));
 kontrol('SWR 2 saat penceresi', /BOT_SWR_MS = 2 \* 60 \* 60 \* 1000/.test(kaynak));
 kontrol('metin araması akışı', /async function metinAramasiYap/.test(kaynak));
 kontrol('bulunamadı mesajı', /eşleşen ürün bulunamadı/.test(kaynak));

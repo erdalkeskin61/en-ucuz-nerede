@@ -244,7 +244,7 @@ Son **2 saat** içinde taranmış ürün önbellekten **anında** yanıtlanır:
 - Tüm metinler `esc()` ile HTML-escape edilir (parse hatası yok).
 - Sohbet başına sıralı kuyruk: peş peşe aramalar botu kilitlemez.
 
-Test: `node scripts/test-telegram-bot.mjs` (82 kontrol).
+Test: `node scripts/test-telegram-bot.mjs` (88 kontrol).
 Bot token'ı Ayarlar sayfasından girilir (`telegram.botToken`).
 
 

@@ -26,9 +26,9 @@ import { runComparison } from './pipeline.js';
 import { detectSite } from './sites/index.js';
 import { stokSirala, stoktaMi, karsilastirmaFiyati } from './stokSirala.js';
 import { hizliKaynakUrunBul } from './urunArama.js';
-import { birimFiyatHesapla } from './birimFiyat.js';
+import { birimFiyatHesapla, malzemeBul } from './birimFiyat.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
-import { anlikAl } from './anlikOnbellek.js';
+import { anlikAl, anlikYaz } from './anlikOnbellek.js';
 import { config } from './config.js';
 
 /** Botun adı (mesaj imzası / loglar). */
@@ -267,7 +267,10 @@ export function sonucMesajiOlustur(res, opts = {}) {
     ? `⚖️ <b>Birim Fiyat:</b> ${botPara(birim.birimFiyat)} / ${birim.birim === 'L' ? 'L' : 'kg'}`
       + (birim.tur === 'resin' && birim.kg != null ? ` <i>(≈ ${botPara(birim.kg)} / kg)</i>` : '')
       + `\n`
-    : '';
+    // Filament/reçine olduğu hâlde başlıkta gramaj yoksa uydurmuyoruz; nedeni yazıyoruz.
+    : (malzemeBul(p.title || baslik)
+      ? '⚖️ <b>Birim Fiyat:</b> hesaplanamadı <i>(başlıkta gramaj/hacim yok)</i>\n'
+      : '');
 
   // 💡 Gramaj tuzağı: en ucuz ETİKET fiyatı, en iyi BİRİM fiyat olmayabilir.
   // (500 g makara 220 TL = ₺440/kg, 2.5 kg makara 875 TL = ₺350/kg.)
@@ -393,6 +396,13 @@ export function takipEt(hash) {
       mesaj: '⏳ Bu sonuç artık geçerli değil (3 saatten eski). Lütfen ürünü yeniden aratın.',
     };
   }
+  // Aynı butona ikinci kez basılırsa mükerrer takip kaydı oluşmasın.
+  if (kayit.kullanildi) {
+    return {
+      mesaj: `✅ Bu ürün zaten takibe alınmış.\n\n🏷️ ${esc(kayit.urun)}\n`
+        + 'Takiplerinizi /liste ile görebilirsiniz.',
+    };
+  }
   if (!Array.isArray(kayit.urunler) || !kayit.urunler.length) {
     return { mesaj: '⚠️ Ürünün mağaza adresi bulunamadı; takip oluşturulamadı.' };
   }
@@ -404,6 +414,8 @@ export function takipEt(hash) {
     hedefFiyat: kayit.hedefFiyat,
     urunler: kayit.urunler,
   });
+  kayit.kullanildi = true;
+  kayit.takipId = eklendi?.id || null;
   return {
     mesaj: `✅ <b>Ürün takibe alındı!</b>\n\n`
       + `🏷️ ${esc(kayit.urun)}\n`
@@ -439,14 +451,24 @@ export function kisaYasMetni(yasMs) {
 /**
  * Ortak sunum: swr varsa hemen, yoksa taze tarama.
  *
+ * Taze tarama başarılıysa sonuç anlık önbelleğe YAZILIR (web ile aynı dürüstlük
+ * kuralları: iptal edilmemiş, tüm siteler taranmış ve en az bir ürün bulunmuş).
+ * Böylece bottan yapılan arama da sonraki aramalarda 0 saniyede yanıtlanır.
+ *
  * @returns {Promise<{res:object, yasNotu:string|null}>}
  */
-async function sonucUret(url, { taze = false } = {}) {
+export async function sonucUret(url, { taze = false } = {}) {
   if (!taze) {
     const anlik = onbellektenAl(url);
     if (anlik) return { res: anlik.payload, yasNotu: kisaYasMetni(anlik.yasMs) };
   }
   const res = await runComparison(url);
+  try {
+    const iptal = res?.ozet?.iptalEdildi === true;
+    const eksikTarama = Number(res?.ozet?.taranmayanSiteSayisi || 0) > 0;
+    const bulunanVar = (res?.sonuclar || []).some(s => s.status === 'found' && s.product);
+    if (!iptal && !eksikTarama && bulunanVar) anlikYaz(url, res);
+  } catch { /* önbellek yazımı başarısız olsa da sonuç gösterilir */ }
   return { res, yasNotu: null };
 }
 
