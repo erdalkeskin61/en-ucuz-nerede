@@ -59,12 +59,12 @@ export const VARSAYILAN_KATALOG = Object.freeze([
   { ad: 'Sunlu PLA+ Filament 1kg', sorgu: 'Sunlu PLA+ Filament 1kg', kategori: 'filament' },
   // Popüler 3D yazıcılar
   { ad: 'Bambu Lab P1S 3D Yazıcı', sorgu: 'Bambu Lab P1S 3D Yazıcı', kategori: 'yazici' },
-  { ad: 'Bambu Lab A1 Mini 3D Yazıcı', sorgu: 'Bambu Lab A1 Mini', kategori: 'yazici' },
-  { ad: 'Creality K1C 3D Yazıcı', sorgu: 'Creality K1C', kategori: 'yazici' },
-  { ad: 'Creality K1 Max 3D Yazıcı', sorgu: 'Creality K1 Max', kategori: 'yazici' },
-  { ad: 'Creality Ender 3 V3 KE', sorgu: 'Creality Ender 3 V3 KE', kategori: 'yazici' },
-  { ad: 'Anycubic Kobra 2 Neo', sorgu: 'Anycubic Kobra 2 Neo', kategori: 'yazici' },
-  { ad: 'Elegoo Neptune 4 Pro', sorgu: 'Elegoo Neptune 4 Pro', kategori: 'yazici' },
+  { ad: 'Bambu Lab A1 Mini 3D Yazıcı', sorgu: 'Bambu Lab A1 Mini 3D Yazıcı', kategori: 'yazici' },
+  { ad: 'Creality K1C 3D Yazıcı', sorgu: 'Creality K1C 3D Yazıcı', kategori: 'yazici' },
+  { ad: 'Creality K1 Max 3D Yazıcı', sorgu: 'Creality K1 Max 3D Yazıcı', kategori: 'yazici' },
+  { ad: 'Creality Ender 3 V3 KE', sorgu: 'Creality Ender 3 V3 KE 3D Yazıcı', kategori: 'yazici' },
+  { ad: 'Anycubic Kobra 2 Neo', sorgu: 'Anycubic Kobra 2 Neo 3D Yazıcı', kategori: 'yazici' },
+  { ad: 'Elegoo Neptune 4 Pro', sorgu: 'Elegoo Neptune 4 Pro 3D Yazıcı', kategori: 'yazici' },
 ]);
 
 const KATEGORILER = new Set(['filament', 'yazici', 'genel']);
@@ -177,6 +177,20 @@ function tohumla() {
 /* ------------------------------------------------------------------ */
 
 /**
+ * Telegram Chat ID / Kanal adını doğrular ve normalize eder.
+ * Kullanıcı @ koymadan "enucuzneredefirsatlari" yazdıysa başına otomatik @ ekler.
+ */
+export function temizChatId(id) {
+  let s = String(id || '').trim();
+  if (!s) return '';
+  // Sayısal ID (-100... veya 589128...) değilse ve @ ile başlamıyorsa başına @ ekle
+  if (!/^[-0-9]/.test(s) && !s.startsWith('@')) {
+    s = '@' + s;
+  }
+  return s.slice(0, 120);
+}
+
+/**
  * Kayıtlı ayarları varsayılanlarla birleştirir ve sınırlar.
  * @param {object|null} [ayar] test/elle geçersiz kılma için
  */
@@ -193,7 +207,7 @@ export function radarAyar(ayar = null) {
     urunArasiMs: Math.round(sayi(ham.urunArasiMs, RADAR_VARSAYILAN.urunArasiMs, 0, 30000)),
     paylasimAraligiSaat: sayi(ham.paylasimAraligiSaat, RADAR_VARSAYILAN.paylasimAraligiSaat, 1, 720),
     donguBasina: Math.round(sayi(ham.donguBasina, RADAR_VARSAYILAN.donguBasina, 1, 20)),
-    chatId: typeof ham.chatId === 'string' ? ham.chatId.trim().slice(0, 120) : '',
+    chatId: typeof ham.chatId === 'string' ? temizChatId(ham.chatId) : '',
     sonCalisma: typeof ham.sonCalisma === 'string' ? ham.sonCalisma : null,
     sonRapor: ham.sonRapor && typeof ham.sonRapor === 'object' ? ham.sonRapor : null,
   };
@@ -267,14 +281,63 @@ export function katalogSifirla() {
 /* Stok filtresi — "tükenen mağaza asla en ucuz olamaz"                */
 /* ------------------------------------------------------------------ */
 
+/** 3D Yazıcı veya Filament yerine yedek parça/aksesuar tekliflerini yakalayan regex */
+const SATILAMAZ_PARCA_METIN = /\b(termistör|termistor|silikon\s*çorap|silikon\s*corap|çorap|corap|ısıtıcı\s*blok|isitici\s*blok|ısıtıcı\s*fişek|isitici\s*fisek|hotend|nozzle|nozül|nozul|tabla|pei|yay\s*çeliği|kayış|kayis|kasnak|step\s*motor|anakart|bltouch|sensör|sensor|prob|probe|fan|yedek\s*parça|yedek\s*parca|kablo|adaptör|adaptor)\b/i;
+
+/** Bir teklifin kayıt kategorisine (yazıcı / filament) uygunluğunu doğrular */
+export function teklifKategoriyeUygunMu(r, kayit = null) {
+  if (!r?.product) return false;
+  const p = r.product;
+  const fiyat = Number(p.pricing?.toplam ?? p.sellingPrice);
+  const baslik = String(p.title || '');
+  const kat = String(kayit?.kategori || '').toLowerCase();
+  const kayitAd = String(kayit?.ad || '').toLowerCase();
+
+  // 1) 3D Yazıcı Kategorisi Kontrolü
+  if (kat === 'yazici' || /yazıcı|yazici|printer/i.test(kayitAd)) {
+    // 3D Yazıcı fiyatı 2000 TL'nin altında olamaz (parça/aksesuar kesinliği)
+    if (fiyat < 2000) return false;
+    // Başlıkta yedek parça sözcüğü geçiyorsa (hedef ürün açıkça parça istemedikçe) elenir
+    if (SATILAMAZ_PARCA_METIN.test(baslik) && !SATILAMAZ_PARCA_METIN.test(kayitAd)) {
+      return false;
+    }
+  }
+
+  // 2) Filament Kategorisi Kontrolü
+  if (kat === 'filament' || /filament|pla|petg|abs/i.test(kayitAd)) {
+    // 1kg filament fiyatı 150 TL'nin altında olamaz (numune/nozzle kesinliği)
+    if (fiyat < 150) return false;
+    // Başlıkta yedek parça sözcüğü geçiyorsa elenir
+    if (SATILAMAZ_PARCA_METIN.test(baslik) && !SATILAMAZ_PARCA_METIN.test(kayitAd)) {
+      return false;
+    }
+    // Renk Uyuşmazlığı: Eğer kayıt açıkça belirli bir renk istiyorsa (ör. "Gri"),
+    // adayın başlığında bu renk yoksa ve başka estetik renk (ör. "mermer", "siyah") geçiyorsa elenir
+    if (/gri/i.test(kayitAd) && !/gri|grey|gray/i.test(baslik) && /mermer|marble|siyah|black|beyaz|white|kırmızı|red/i.test(baslik)) {
+      return false;
+    }
+    if (/siyah/i.test(kayitAd) && !/siyah|black/i.test(baslik) && /beyaz|white|gri|grey|kırmızı|red/i.test(baslik)) {
+      return false;
+    }
+    if (/beyaz/i.test(kayitAd) && !/beyaz|white/i.test(baslik) && /siyah|black|gri|grey|kırmızı|red/i.test(baslik)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /**
  * Teklif satın alınabilir mi? Yalnızca KANIT varsa eler.
  * @param {object} r pipeline sonuç satırı
+ * @param {object|null} [kayit] katalog kaydı
  */
-export function teklifStoktaMi(r) {
+export function teklifStoktaMi(r, kayit = null) {
   if (!r || r.status !== 'found' || !r.product) return false;
   // Farklı renk/varyant "aynı ürün" sayılmaz (pipeline `renkAyni` üretir).
   if (r.renkAyni === false) return false;
+  // Kategori ve parça uyumluluğu
+  if (!teklifKategoriyeUygunMu(r, kayit)) return false;
 
   const p = r.product;
   const fiyat = Number(p.pricing?.toplam ?? p.sellingPrice);
@@ -308,17 +371,18 @@ function teklifFiyati(r) {
 /**
  * Stokta olan teklifler, fiyat artan sırada.
  * @param {object} sonuc runComparison çıktısı
+ * @param {object|null} [kayit] katalog kaydı
  */
-export function stokluTeklifler(sonuc) {
+export function stokluTeklifler(sonuc, kayit = null) {
   return (sonuc?.sonuclar || [])
-    .filter(teklifStoktaMi)
+    .filter(r => teklifStoktaMi(r, kayit))
     .sort((a, b) => teklifFiyati(a) - teklifFiyati(b));
 }
 
 /** Bu turda kaç mağaza elendi (stok/fiyat nedeniyle)? */
-export function elenenSayisi(sonuc) {
+export function elenenSayisi(sonuc, kayit = null) {
   const bulunan = (sonuc?.sonuclar || []).filter(r => r?.status === 'found' && r?.product);
-  return bulunan.length - stokluTeklifler(sonuc).length;
+  return bulunan.length - stokluTeklifler(sonuc, kayit).length;
 }
 
 /* ------------------------------------------------------------------ */
@@ -334,12 +398,12 @@ function radarKargo(r) {
 
 /**
  * Bir tarama sonucundan radar durumu üretir.
- * @param {{id:number, ad:string}} kayit katalog kaydı
+ * @param {{id:number, ad:string, kategori?:string}} kayit katalog kaydı
  * @param {object} sonuc runComparison çıktısı
  * @param {string} url taranan adres
  */
 export function radarDurumuHesapla(kayit, sonuc, url) {
-  const stoklu = stokluTeklifler(sonuc);
+  const stoklu = stokluTeklifler(sonuc, kayit);
   const enIyi = stoklu[0] || null;
   const enPahali = stoklu.length ? stoklu[stoklu.length - 1] : null;
   const enIyiFiyat = enIyi ? teklifFiyati(enIyi) : null;
@@ -551,9 +615,10 @@ export function radarTelegramIstegi(d, opts = {}) {
 
 /** Hedef sohbet: radar.chatId → telegram.chatId → firsat.kanal. */
 function hedefSohbet(ayar, s) {
-  return String(
+  const raw = String(
     ayar.chatId || s.telegram?.chatId || s.firsat?.kanal || '',
   ).trim();
+  return temizChatId(raw);
 }
 
 /**
@@ -565,7 +630,7 @@ export async function radarGonder(d, opts = {}) {
   const s = getSettings();
   const ayar = radarAyar();
   const token = opts.botToken || s.telegram?.botToken;
-  const chatId = opts.chatId || hedefSohbet(ayar, s);
+  const chatId = temizChatId(opts.chatId || hedefSohbet(ayar, s));
   const kuru = opts.kuru === true;
 
   const istek = radarTelegramIstegi(d, { chatId: chatId || 'mock-kanal' });

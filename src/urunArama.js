@@ -25,10 +25,18 @@ export function dogalDilTavsiyeMi(metin) {
   return false;
 }
 
+const AKSESUAR_REGEX = /\b(silikon\s*çorap|silikon\s*corap|çorap|corap|termistör|termistor|ısıtıcı\s*blok|isitici\s*blok|ısıtıcı|isitici|hotend|nozzle|nozül|nozul|tabla|pei|yay\s*çeliği|kayış|kayis|kasnak|step\s*motor|anakart|bltouch|sensör|sensor|prob|probe|fan|yedek\s*parça|yedek\s*parca|kablo|adaptör|adaptor)\b/i;
+
 export function sorguPuanla(urunBaslik, sorgu) {
   if (!urunBaslik || !sorgu) return 0;
   const b = String(urunBaslik).toLocaleLowerCase('tr-TR');
   const s = String(sorgu).toLocaleLowerCase('tr-TR');
+
+  // Sorguda aksesuar/parça aranmıyorsa, adayda aksesuar geçiyorsa ASLA ana ürün sayılamaz!
+  if (!AKSESUAR_REGEX.test(s) && AKSESUAR_REGEX.test(b)) {
+    return 0;
+  }
+
   const kelimeler = s.split(/\s+/).filter(w => w.length >= 2);
   if (!kelimeler.length) return 0;
   

@@ -745,10 +745,14 @@ function radarMesaj(secici, metin, tur = '') {
 
 function radarFormDegeri() {
   const n = parseInt($('#radarSaatAraligi')?.value, 10);
+  let chat = $('#radarChatId')?.value.trim() || '';
+  if (chat && !/^[-0-9]/.test(chat) && !chat.startsWith('@')) {
+    chat = '@' + chat;
+  }
   return {
     enabled: $('#radarEnabled')?.checked === true,
     saatAraligi: Number.isFinite(n) ? Math.min(24, Math.max(1, n)) : 4,
-    chatId: $('#radarChatId')?.value.trim() || '',
+    chatId: chat,
   };
 }
 

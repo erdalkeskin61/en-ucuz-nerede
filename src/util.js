@@ -1,4 +1,4 @@
-﻿/** Ortak yardımcılar: model kodu, renk, başlık benzerliği, JSON çıkarımı, para biçimi. */
+/** Ortak yardımcılar: model kodu, renk, başlık benzerliği, JSON çıkarımı, para biçimi. */
 
 // Gramaj (net miktar) kontrolü için. birimFiyat.js util.js'i import ETMEZ → döngü yok.
 import { miktarCakismasi } from './birimFiyat.js';
@@ -13,6 +13,8 @@ const TR_COLORS = [
   'somon', 'kiremit', 'bakır', 'bakir', 'bronz', 'çelik', 'celik', 'grafit', 'nefti',
   'vizon', 'buz mavisi', 'saks mavisi', 'bebe mavisi', 'fıstık yeşili', 'fistik yesili',
   'yavruağzı', 'yavruagzi', 'beyazımsı', 'kum rengi', 'taş rengi', 'tas rengi',
+  // 3D Filament estetik varyantları
+  'mermer', 'marble', 'ahşap', 'ahsap', 'wood', 'ipek', 'silk', 'glow', 'simli', 'glitter',
 ];
 
 const EN_TO_TR = {
@@ -28,6 +30,7 @@ const EN_TO_TR = {
   coral: 'turuncu', peach: 'turuncu',
   bronze: 'kahverengi', cocoa: 'kahverengi', chocolate: 'kahverengi', coffee: 'kahverengi',
   ivory: 'beyaz', bone: 'beyaz', clear: 'şeffaf', transparent: 'şeffaf',
+  marble: 'mermer', wood: 'ahşap', silk: 'ipek', glitter: 'simli',
 };
 
 const COLOR_CANON = {
@@ -44,6 +47,7 @@ const COLOR_CANON = {
   coral: 'turuncu', peach: 'turuncu',
   bronze: 'kahverengi', cocoa: 'kahverengi', chocolate: 'kahverengi', coffee: 'kahverengi',
   ivory: 'beyaz', bone: 'beyaz', clear: 'şeffaf', transparent: 'şeffaf',
+  marble: 'mermer', wood: 'ahşap', silk: 'ipek', glitter: 'simli',
   // Türkçe ton adları → temel renk
   eflatun: 'mor', lila: 'mor', fuşya: 'pembe', fusya: 'pembe', haki: 'yeşil',
   hardal: 'sarı', vişne: 'kırmızı', visne: 'kırmızı', mercan: 'turuncu',
@@ -108,6 +112,9 @@ const RENK_AILELERI = {
   'pembe': ['pembe', 'fuşya', 'fusya', 'pink', 'fuchsia', 'magenta'],
   'kahverengi': ['kahverengi', 'bej', 'krem', 'ekru', 'taba', 'brown', 'beige', 'cream', 'bronz', 'bronze', 'bakır', 'bakir', 'vizon', 'kum rengi', 'cocoa', 'chocolate', 'coffee'],
   'turuncu': ['turuncu', 'mercan', 'orange', 'somon', 'kiremit', 'yavruağzı', 'yavruagzi', 'coral', 'peach'],
+  'mermer': ['mermer', 'marble'],
+  'ahşap': ['ahşap', 'ahsap', 'wood'],
+  'ipek': ['ipek', 'silk'],
 };
 
 /** İstenen rengin kabul edilebilir tonlarını (kendisi + aile üyeleri) döndürür. */
@@ -325,8 +332,20 @@ const AKSESUAR_KELIMELERI = [
   'uc', 'ucu', 'adaptor', 'adaptoru', 'aparat', 'aparati', 'aksesuar', 'batarya',
   'bataryasi', 'kilif', 'kilifi', 'hortum', 'hortumu', 'boru', 'borusu', 'hazne',
   'haznesi', 'toz torbasi', 'torbasi', 'firca', 'fircasi', 'paspas', 'mop', 'kartus',
-  'kartusu', 'nozzle', 'hepa', 'tutucu', 'tutucusu', 'stand', 'standi', 'sarj aleti',
+  'kartusu', 'nozzle', 'nozul', 'nozulu', 'hepa', 'tutucu', 'tutucusu', 'stand', 'standi', 'sarj aleti',
   'sarj kablosu', 'kablo', 'kablosu',
+  // 3D Yazıcı & CNC yedek parça ve sarf malzemeleri
+  'termistor', 'termistoru', 'termistorler',
+  'silikon corap', 'silikon kilif', 'corap',
+  'isitici blok', 'isitici bloku', 'isitici fisek', 'isitici',
+  'hotend', 'hotend kit', 'heatblock', 'heatbreak', 'bogaz', 'bogaz borusu',
+  'baski plakasi', 'pei tabla', 'pei plaka', 'cam tabla', 'yay celigi', 'tabla saci',
+  'ekstruder', 'extruder', 'extruder dislisi',
+  'kayis', 'gt2 kayis', 'kasnak', 'gergi',
+  'step motor', 'step motoru',
+  'anakart', 'mainboard', 'motherboard',
+  'bltouch', 'crtouch', 'cr touch', 'sensor', 'sensoru', 'prob', 'probu', 'filament sensoru',
+  'salyangoz fan', 'radyal fan', 'aksiyel fan', 'sogutucu blok', 'heatsink',
 ];
 
 /**

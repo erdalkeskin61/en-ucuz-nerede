@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Kalıcı ayarlar, takip edilen ürünler, arama geçmişi ve fiyat serileri.
  * 
  * SQLite (node:sqlite DatabaseSync) ile yüksek performanslı, WAL modunda
@@ -405,7 +405,11 @@ function radarSinirla(nesne) {
     urunArasiMs: Math.round(sayi(k.urunArasiMs, v.urunArasiMs, 0, 30000)),
     paylasimAraligiSaat: sayi(k.paylasimAraligiSaat, v.paylasimAraligiSaat, 1, 720),
     donguBasina: Math.round(sayi(k.donguBasina, v.donguBasina, 1, 20)),
-    chatId: typeof k.chatId === 'string' ? k.chatId.trim().slice(0, 120) : '',
+    chatId: typeof k.chatId === 'string'
+      ? (k.chatId.trim() && !/^[-0-9]/.test(k.chatId.trim()) && !k.chatId.trim().startsWith('@')
+          ? '@' + k.chatId.trim()
+          : k.chatId.trim()).slice(0, 120)
+      : '',
     sonCalisma: typeof k.sonCalisma === 'string' && !Number.isNaN(Date.parse(k.sonCalisma))
       ? k.sonCalisma : null,
   };
