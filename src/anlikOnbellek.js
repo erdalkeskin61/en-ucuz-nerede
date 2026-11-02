@@ -145,8 +145,92 @@ export function anlikAl(url, opts = {}) {
   }
 }
 
-/** Bir karşılaştırma sonucunu anlık önbelleğe yazar. */
-export function anlikYaz(url, payload, meta = {}) {
+/**
+ * Türkçe-duyarlı arama katlaması: "İSTANBUL" → "istanbul", "Şişli" → "sisli".
+ * SQLite'ın `LIKE`'ı yalnızca ASCII'de büyük/küçük harf duyarsızdır; bu yüzden
+ * eşleştirme JS tarafında yapılır.
+ */
+function katla(metin) {
+  return String(metin || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Kayıtlı karşılaştırmalarda metin araması (Telegram inline mode için).
+ *
+ * Son 7 günün snapshot'ları taranır; ürün adı eşleşmesine göre puanlanır
+ * (tam eşleşme > alt dize > kelime kapsaması) ve en taze kayıtlar öne çıkar.
+ * Ağ isteği YOKTUR: inline sorgu Telegram'ın kısa süre sınırında anında yanıtlanır.
+ *
+ * @param {string} sorgu
+ * @param {{limit?:number, maxYasMs?:number}} [opts]
+ * @returns {Array<{anahtar:string, ts:number, urun:string, enUcuz:number|null,
+ *                  enUcuzSite:string|null, payload:object, puan:number}>}
+ */
+export function snapshotAra(sorgu, opts = {}) {
+  const q = String(sorgu || '').trim();
+  if (q.length < 2) return [];
+  const limit = Math.max(1, Math.min(20, Number(opts.limit) || 8));
+  const maxYas = Number.isFinite(opts.maxYasMs) ? opts.maxYasMs : 7 * 86400000;
+  const esik = Date.now() - maxYas;
+  const hedef = katla(q);
+  if (hedef.length < 2) return [];
+  const kelimeler = hedef.split(' ').filter(w => w.length >= 2);
+
+  try {
+    const satirlar = veritabani().prepare(`
+      SELECT anahtar, ts, urun, en_ucuz, en_ucuz_site, payload
+      FROM snapshot WHERE ts >= ? ORDER BY ts DESC LIMIT 400
+    `).all(esik);
+
+    const puanli = [];
+    for (const r of satirlar) {
+      const ad = katla(r.urun);
+      if (!ad) continue;
+      let puan = 0;
+      if (ad === hedef) puan += 100;
+      else if (ad.includes(hedef)) puan += 60;
+      else if (hedef.includes(ad) && ad.length >= 6) puan += 35;
+      if (kelimeler.length) {
+        let eslesen = 0;
+        for (const w of kelimeler) if (ad.includes(w)) eslesen++;
+        if (eslesen) puan += Math.round((eslesen / kelimeler.length) * 40);
+      }
+      if (puan <= 0) continue;
+      puanli.push({ ...r, puan });
+    }
+
+    puanli.sort((a, b) => (b.puan - a.puan) || (Number(b.ts) - Number(a.ts)));
+    const gorulen = new Set();
+    const sonuc = [];
+    for (const r of puanli) {
+      if (gorulen.has(r.anahtar)) continue;
+      gorulen.add(r.anahtar);
+      let payload = null;
+      try { payload = JSON.parse(r.payload); } catch { payload = null; }
+      if (!payload || !Array.isArray(payload.sonuclar)) continue;
+      sonuc.push({
+        anahtar: r.anahtar,
+        ts: Number(r.ts),
+        urun: r.urun || payload.kaynak?.urun || '',
+        enUcuz: r.en_ucuz ?? null,
+        enUcuzSite: r.en_ucuz_site ?? null,
+        payload,
+        puan: r.puan,
+      });
+      if (sonuc.length >= limit) break;
+    }
+    return sonuc;
+  } catch {
+    return [];
+  }
+}
+
+/** Bir karşılaştırma sonucunu anlık önbelleğe yazar. */export function anlikYaz(url, payload, meta = {}) {
   const anahtar = anahtarCikar(url);
   if (!anahtar) return false;
   if (!payload || !payload.kaynak || !Array.isArray(payload.sonuclar)) return false;

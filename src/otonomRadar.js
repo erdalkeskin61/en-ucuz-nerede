@@ -21,12 +21,15 @@
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from './config.js';
-import { getSettings, saveSettings } from './store.js';
+import { getSettings, saveSettings, addPricePoint } from './store.js';
 import { runComparison } from './pipeline.js';
 import { hizliKaynakUrunBul } from './urunArama.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { birimFiyatHesapla } from './birimFiyat.js';
+import { anlikYaz } from './anlikOnbellek.js';
 import { esc, botPara as para, kargoMetni } from './telegramBot.js';
+import { fiyatSerisi, grafikPng } from './grafik.js';
+import { fotoGonder } from './telegramFoto.js';
 
 /* ------------------------------------------------------------------ */
 /* Sabitler                                                            */
@@ -150,9 +153,25 @@ function veritabani() {
       value TEXT
     );
 
+    -- 2026-11-03: 30-90 günlük trend grafiği için gerçek tarama geçmişi.
+    -- Her ürün için saatte en fazla 1 kayıt (fiyat/stok değişimi anında yazılır).
+    CREATE TABLE IF NOT EXISTS radar_gecmis (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      katalog_id INTEGER NOT NULL,
+      ts         INTEGER NOT NULL,
+      fiyat      REAL,
+      site       TEXT,
+      stokta     INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE INDEX IF NOT EXISTS idx_radar_durum_ts ON radar_durum(ts);
     CREATE INDEX IF NOT EXISTS idx_radar_gonderim_ts ON radar_gonderim(ts);
+    CREATE INDEX IF NOT EXISTS idx_radar_gecmis_k ON radar_gecmis(katalog_id, ts DESC);
   `);
+  // 180 günden eski trend kayıtlarını temizle (grafik 90 gün kullanır).
+  try {
+    db.prepare('DELETE FROM radar_gecmis WHERE ts < ?').run(Date.now() - 180 * 86400000);
+  } catch { /* tablo yeni oluştuysa yoksay */ }
   tohumla();
   return db;
 }
@@ -262,13 +281,14 @@ export function katalogSil(id) {
   const s = veritabani();
   const r = s.prepare('DELETE FROM radar_katalog WHERE id = ?').run(n);
   s.prepare('DELETE FROM radar_durum WHERE katalog_id = ?').run(n);
+  s.prepare('DELETE FROM radar_gecmis WHERE katalog_id = ?').run(n);
   return Number(r.changes || 0) > 0;
 }
 
 /** Katalogu varsayılana döndürür. */
 export function katalogSifirla() {
   const s = veritabani();
-  s.exec('DELETE FROM radar_katalog; DELETE FROM radar_durum;');
+  s.exec('DELETE FROM radar_katalog; DELETE FROM radar_durum; DELETE FROM radar_gecmis;');
   const ekle = s.prepare(`
     INSERT INTO radar_katalog (ad, sorgu, url, kategori, aktif, sira, eklenme)
     VALUES (?, ?, NULL, ?, 1, ?, ?)
@@ -641,11 +661,29 @@ export async function radarGonder(d, opts = {}) {
   const kuru = opts.kuru === true;
 
   const istek = radarTelegramIstegi(d, { chatId: chatId || 'mock-kanal' });
-  if (kuru) return { ok: true, mock: true, ...istek };
+  // 📈 Trend grafiği: en az 2 gerçek fiyat noktası varsa PNG üretilir.
+  let png = null;
+  try { png = radarGrafik(d); } catch { png = null; }
+  if (kuru) return { ok: true, mock: true, ...istek, grafik: png ? { bayt: png.length } : null };
 
   if (!token) throw new Error('Telegram Bot Token tanımlı değil (Ayarlar → Telegram).');
   if (!chatId) {
     throw new Error('Radar bildirimi için sohbet kimliği yok (Ayarlar → Radar sohbeti / Telegram Chat ID).');
+  }
+
+  // Fotoğraflı kart (caption + aynı inline butonlar). Gönderim başarısız olursa
+  // metin kartına düşülür; bildirim asla sessizce kaybolmaz.
+  if (png) {
+    try {
+      const r = await fotoGonder(token, chatId, png, istek.body.text, {
+        replyMarkup: istek.body.reply_markup,
+        dosyaAdi: `fiyat-trendi-${Number(d.katalogId) || 'x'}.png`,
+      });
+      return { ok: true, yontem: 'sendPhoto', messageId: r.messageId, grafik: true };
+    } catch (e) {
+      console.warn('[radar] fotoğraflı kart gönderilemedi, metin kartına dönülüyor:',
+        String(e?.message || e).slice(0, 160));
+    }
   }
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -714,9 +752,97 @@ function durumYaz(d) {
       d.fiyat ?? null, d.stokta ? 1 : 0, d.ts || Date.now(), d.paylasimTs ?? null,
       JSON.stringify(d),
     );
+    gecmiseYaz(d);
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Trend grafiği için geçmişe nokta ekler.
+ * Gürültüyü önlemek için: fiyat/stok değişmediyse en fazla saatte 1 kayıt.
+ * @param {object} d radar durumu
+ */
+function gecmiseYaz(d) {
+  const id = Number(d?.katalogId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  const ts = Number(d.ts) || Date.now();
+  const fiyat = Number.isFinite(Number(d.fiyat)) ? Number(d.fiyat) : null;
+  const stokta = d.stokta ? 1 : 0;
+  try {
+    const s = veritabani();
+    const son = s.prepare(`
+      SELECT ts, fiyat, stokta FROM radar_gecmis
+      WHERE katalog_id = ? ORDER BY ts DESC LIMIT 1
+    `).get(id);
+    const ayni = son
+      && Number(son.stokta) === stokta
+      && (son.fiyat == null ? fiyat == null : Math.abs(Number(son.fiyat) - Number(fiyat)) < 0.009);
+    if (ayni && ts - Number(son.ts) < 3600000) return; // saatlik örnekleme
+    s.prepare(`
+      INSERT INTO radar_gecmis (katalog_id, ts, fiyat, site, stokta)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, ts, fiyat, d.site || null, stokta);
+  } catch { /* geçmiş yazılamazsa bildirim akışı bozulmaz */ }
+}
+
+/**
+ * Bir katalog ürününün gerçek fiyat geçmişi (grafik için).
+ * @param {number|string} katalogId
+ * @param {{gun?:number, limit?:number}} [opts]
+ * @returns {Array<{ts:number, fiyat:number}>}
+ */
+export function radarSerisi(katalogId, opts = {}) {
+  const id = Number(katalogId);
+  if (!Number.isFinite(id) || id <= 0) return [];
+  const gun = Number.isFinite(opts.gun) ? opts.gun : 90;
+  const limit = Number.isFinite(opts.limit) ? opts.limit : 400;
+  const esik = Date.now() - Math.max(1, gun) * 86400000;
+  try {
+    const s = veritabani();
+    const noktalar = s.prepare(`
+      SELECT ts, fiyat FROM radar_gecmis
+      WHERE katalog_id = ? AND fiyat IS NOT NULL AND fiyat > 0 AND ts >= ?
+      ORDER BY ts ASC LIMIT ?
+    `).all(id, esik, Math.max(2, limit))
+      .map(r => ({ ts: Number(r.ts), fiyat: Number(r.fiyat) }));
+
+    // Daha uzun geçmiş: aynı ürünün web taramalarından gelen `price_history`.
+    // Ürün kimliği radar durumunda `pid` olarak saklanır.
+    const pid = durumOku(`katalog:${id}`)?.pid;
+    if (pid) {
+      try {
+        const ph = s.prepare(`
+          SELECT ts, MIN(COALESCE(net_price, price)) fiyat
+          FROM price_history
+          WHERE product_id = ? AND ts >= ? AND COALESCE(net_price, price) > 0
+          GROUP BY ts ORDER BY ts ASC LIMIT ?
+        `).all(String(pid), new Date(esik).toISOString(), Math.max(2, limit));
+        for (const r of ph) {
+          const ts = Date.parse(r.ts);
+          if (Number.isFinite(ts)) noktalar.push({ ts, fiyat: Number(r.fiyat) });
+        }
+      } catch { /* tablo yoksa yalnızca radar geçmişi kullanılır */ }
+    }
+
+    return fiyatSerisi(noktalar, { gun }).slice(-limit);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Radar kartı için trend grafiği (PNG). Yeterli geçmiş yoksa `null`.
+ * @param {object} d
+ * @returns {Buffer|null}
+ */
+export function radarGrafik(d) {
+  if (!d?.stokta || d?.katalogId == null) return null;
+  try {
+    return grafikPng(radarSerisi(d.katalogId));
+  } catch {
+    return null;
   }
 }
 
@@ -807,8 +933,30 @@ export async function radarTara(opts = {}) {
 
         const sonuc = await runComparison(url);
         rapor.taranan++;
+        // Inline mode + SWR için gerçek tarama sonucunu önbelleğe yaz.
+        try { anlikYaz(url, sonuc, { urun: k.ad }); } catch { /* önbellek opsiyonel */ }
+        // Web 30 günlük fiyat grafiği de radar taramalarından beslenir.
+        let pid = null;
+        try {
+          pid = sonuc?.kaynak?.modelKodu || sonuc?.kaynak?.barcode || sonuc?.kaynak?.urun || null;
+          if (pid) {
+            for (const s of sonuc?.sonuclar || []) {
+              if (s.status !== 'found' || !s.product) continue;
+              const pr = s.product.pricing || {};
+              const urunFiyati = pr.araToplam ?? s.product.sellingPrice ?? null;
+              const odenecek = pr.toplam ?? s.product.sellingPrice ?? null;
+              if (odenecek == null || !Number.isFinite(Number(odenecek))) continue;
+              addPricePoint({
+                productId: pid, site: s.site,
+                price: urunFiyati != null ? urunFiyati : odenecek,
+                netPrice: odenecek,
+              });
+            }
+          }
+        } catch { /* fiyat geçmişi opsiyonel */ }
 
         const durum = radarDurumuHesapla(k, sonuc, url);
+        durum.pid = pid || null;
         const eski = durumOku(durum.anahtar);
         durum.paylasimTs = Number(eski?.paylasimTs) || null;
 
@@ -966,6 +1114,7 @@ export function radarDurum() {
     sonRapor: ayar.sonRapor,
     durumlar: durumlar.map(d => ({
       ad: d.ad, site: d.site, fiyat: d.fiyat, stokta: !!d.stokta,
+      katalogId: d.katalogId ?? null,
       stokluSayisi: d.stokluSayisi ?? 0, tukenenSayisi: d.tukenenSayisi ?? 0,
       birimMetni: d.birimMetni ?? null, ts: d.ts,
       paylasimTs: d.paylasimTs ?? null, karar: d.karar ?? null,

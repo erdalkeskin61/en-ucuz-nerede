@@ -28,7 +28,7 @@ import { stokSirala, stoktaMi, karsilastirmaFiyati } from './stokSirala.js';
 import { hizliKaynakUrunBul } from './urunArama.js';
 import { birimFiyatHesapla, malzemeBul } from './birimFiyat.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
-import { anlikAl, anlikYaz } from './anlikOnbellek.js';
+import { anlikAl, anlikYaz, snapshotAra } from './anlikOnbellek.js';
 import { config } from './config.js';
 
 /** Botun adı (mesaj imzası / loglar). */
@@ -166,16 +166,32 @@ async function radarDurumMesaji() {
   };
 }
 
-/** /radar_liste — ID + kategori + ad. */
+/** /radar_liste — ID + kategori + ad + güncel dip fiyat. */
 async function radarListeMesaji() {
   const r = await radarModuluYukle();
   const katalog = r.katalogGetir();
   if (!katalog.length) {
     return '📭 Radar kataloğu boş.\n\nEklemek için: <code>/radar_ekle Ürün Adı 1kg</code>';
   }
+  // Güncel dip fiyatlar: radar_durum özetinden (saatlik taramaların sonucu).
+  let fiyatMap = new Map();
+  try {
+    const d = r.radarDurum();
+    fiyatMap = new Map((d.durumlar || []).map(x => [Number(x.katalogId), x]));
+  } catch { /* durum okunamazsa yalnızca katalog listelenir */ }
+
   const satirlar = katalog.slice(0, 60).map((k, i) => {
     const ikon = k.kategori === 'yazici' ? '🖨️' : k.kategori === 'filament' ? '🧵' : '📦';
-    return `${i + 1}. ${ikon} ${esc(baslikKisalt(k.ad, 55))} [ID: ${Number(k.id)}]`;
+    const d = fiyatMap.get(Number(k.id));
+    let fiyat = '';
+    if (d?.stokta && Number(d.fiyat) > 0) {
+      fiyat = ` — <b>${botPara(d.fiyat)}</b> (${esc(baslikKisalt(d.site || '—', 22))})`;
+    } else if (d) {
+      fiyat = ' — <i>stokta fiyat yok</i>';
+    } else {
+      fiyat = ' — <i>henüz taranmadı</i>';
+    }
+    return `${i + 1}. ${ikon} ${esc(baslikKisalt(k.ad, 55))} [ID: ${Number(k.id)}]${fiyat}`;
   });
   const kalan = katalog.length > 60
     ? `\n\n<i>… ve ${katalog.length - 60} ürün daha</i>` : '';
@@ -276,6 +292,250 @@ async function radarAlarmKur(chatId, katalogId) {
       + 'Fiyat bu seviyenin altına düştüğünde size özel mesaj gönderilecektir.\n'
       + 'Takipleriniz: /liste',
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* 🔎 Telegram Inline Mode (2026-11-03)                                */
+/* ------------------------------------------------------------------ */
+
+/** Inline arama için Türkçe-duyarlı katlama. */
+function inlineKatla(metin) {
+  return String(metin || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * `/start` deep-link yükü: Telegram yalnızca 64 karaktere izin verir.
+ * Metin UTF-8 bayt olarak en fazla 48 bayta kırpılır → base64url ≤ 64.
+ * @param {string} metin
+ * @returns {string}
+ */
+export function startPayloadOlustur(metin) {
+  let s = String(metin || '');
+  while (Buffer.byteLength(s, 'utf8') > 48) s = s.slice(0, -1);
+  return Buffer.from(s, 'utf8').toString('base64url');
+}
+
+/** Deep-link yükünü çözer (geçersizse boş dize). */
+export function startPayloadCoz(yuk) {
+  try {
+    const s = Buffer.from(String(yuk || ''), 'base64url').toString('utf8').trim();
+    return s.slice(0, 140);
+  } catch {
+    return '';
+  }
+}
+
+function botLinki(yuk = '') {
+  const ad = BOT_ADI.replace('@', '');
+  return `https://t.me/${ad}${yuk ? '?start=' + encodeURIComponent(yuk) : ''}`;
+}
+
+/** Sorgu boşken / sonuç yokken gösterilen yönlendirme kartı. */
+function inlineIpucu() {
+  const metin = '🔎 <b>En Ucuz Nerede?</b> — 61 mağazada canlı fiyat karşılaştırması.\n\n'
+    + 'Ürün adını yazın: <i>Creality Ender PLA</i>, <i>Bambu Lab P1S</i>, <i>eSun PLA+</i>…\n\n'
+    + `👉 ${botLinki()}`;
+  return {
+    type: 'article',
+    id: 'ipucu',
+    title: '🔎 Ürün adı yazın — 61 mağazada karşılaştır',
+    description: 'Örn: Creality Ender PLA, Bambu Lab P1S, eSun PLA+ Siyah',
+    input_message_content: {
+      message_text: metin,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+    },
+    reply_markup: {
+      inline_keyboard: [[{ text: '🤖 Bota Git', url: botLinki() }]],
+    },
+  };
+}
+
+/** Önbellekte sonuç yoksa: bota göndererek canlı aramayı başlat. */
+function inlineCanliAra(sorgu) {
+  const q = String(sorgu || '').trim().slice(0, 120);
+  const yuk = 'ara_' + startPayloadOlustur(q);
+  const link = botLinki(yuk);
+  const metin = `🔎 <b>${esc(q)}</b> için 61 mağazada canlı fiyat aranıyor…\n\n`
+    + `👉 ${esc(link)}\n\n`
+    + '<i>Bağlantıya dokunun; bot tüm mağazaları tarayıp en ucuz teklifi gönderir.</i>';
+  return {
+    type: 'article',
+    id: 'canli-' + crypto.createHash('sha1').update(q).digest('hex').slice(0, 10),
+    title: `🔎 "${q}" için canlı ara (61 mağaza)`.slice(0, 95),
+    description: 'Önbellekte sonuç yok — bota gönder, anında taransın.',
+    input_message_content: {
+      message_text: metin,
+      parse_mode: 'HTML',
+      disable_web_page_preview: false,
+    },
+    reply_markup: {
+      inline_keyboard: [[{ text: '🤖 Bota Gönder ve Ara', url: link }]],
+    },
+  };
+}
+
+/** Teklif listesinden inline sonuç paketi üretir. */
+function inlineSonucPaketi({ urun, teklifler, ts = null, kaynakUrl = null, kimlik = null }) {
+  const temiz = (teklifler || [])
+    .filter(t => t && Number.isFinite(Number(t.fiyat)) && Number(t.fiyat) > 0 && t.url)
+    .slice(0, 3);
+  if (!temiz.length || !urun) return null;
+  const enIyi = temiz[0];
+  const yas = ts ? kisaYasMetni(Math.max(0, Date.now() - Number(ts))) : null;
+  const madalya = ['🥇', '🥈', '🥉'];
+  const satirlar = [
+    `🏷️ <b>${esc(baslikKisalt(urun, 120))}</b>`,
+    '',
+    ...temiz.map((t, i) => `${madalya[i]} <b>${botPara(t.fiyat)}</b> — ${esc(t.site || 'Mağaza')}`),
+  ];
+  if (temiz.length === 1) satirlar.push('', '<i>Diğer mağazalar için bota gönderin.</i>');
+  satirlar.push('');
+  satirlar.push(`🔗 <a href="${esc(enIyi.url)}">${esc(enIyi.site || 'En ucuz mağaza')} — satın al</a>`);
+  if (yas) satirlar.push(`🕒 Son tarama: ${esc(yas)}`);
+  satirlar.push('📊 @EnUcuzNerede · 61 mağaza');
+
+  const butonlar = temiz.map(t => ([{
+    text: `🛒 ${String(t.site || 'Mağaza').slice(0, 18)} — ${botPara(t.fiyat)}`,
+    url: t.url,
+  }]));
+  if (kaynakUrl) {
+    butonlar.push([{
+      text: '📊 Karşılaştırmayı Aç',
+      url: `${config.publicUrl}/?url=${encodeURIComponent(kaynakUrl)}`,
+    }]);
+  }
+
+  return {
+    type: 'article',
+    id: 'u-' + String(kimlik || crypto.createHash('sha1').update(urun).digest('hex')).slice(0, 40),
+    title: `${botPara(enIyi.fiyat)} · ${baslikKisalt(urun, 70)}`.slice(0, 95),
+    description: temiz.map((t, i) => `${madalya[i]} ${String(t.site || '').slice(0, 20)} ${botPara(t.fiyat)}`).join('  ')
+      + (yas ? `  ·  ${yas}` : ''),
+    input_message_content: {
+      message_text: satirlar.join('\n').slice(0, 4000),
+      parse_mode: 'HTML',
+      disable_web_page_preview: false,
+    },
+    reply_markup: { inline_keyboard: butonlar },
+  };
+}
+
+/** Snapshot payload'ından en ucuz 3 stoklu teklifi çıkarır. */
+function inlineSnapshotSonucu(kayit) {
+  const payload = kayit?.payload;
+  if (!payload) return null;
+  const d = enUcuzTeklif(payload);
+  if (!d.enUcuz) return null;
+  const stoklu = d.sirali.filter(r => stoktaMi(r));
+  if (!stoklu.length) return null; // tükenen ürün inline'da "fırsat" gibi sunulmaz
+  const teklifler = stoklu.slice(0, 3).map(r => ({
+    site: r.siteName || r.site,
+    siteId: r.site,
+    fiyat: karsilastirmaFiyati(r),
+    url: saticiLinki(r.site, hamUrl(r, payload.kaynak?.url)),
+  })).filter(t => t.fiyat > 0 && t.url);
+  return inlineSonucPaketi({
+    urun: kayit.urun || payload.kaynak?.urun || '',
+    teklifler,
+    ts: kayit.ts,
+    kaynakUrl: payload.kaynak?.url || null,
+    kimlik: crypto.createHash('sha1').update(String(kayit.anahtar || kayit.urun)).digest('hex'),
+  });
+}
+
+/**
+ * Telegram inline sorgusuna verilecek sonuçları üretir (ağ isteği YOK).
+ * @param {string} sorgu
+ * @returns {Promise<Array<object>>}
+ */
+export async function inlineSonuclariOlustur(sorgu) {
+  const q = String(sorgu || '').trim();
+  const hedef = inlineKatla(q);
+  const sonuc = [];
+  const gorulen = new Set();
+
+  if (q.length >= 2) {
+    for (const kayit of snapshotAra(q, { limit: 8 })) {
+      const paket = inlineSnapshotSonucu(kayit);
+      if (!paket) continue;
+      const anahtar = inlineKatla(kayit.urun);
+      if (gorulen.has(anahtar)) continue;
+      gorulen.add(anahtar);
+      sonuc.push(paket);
+    }
+  }
+
+  // Radar kataloğu: saatlik taranan ürünler (snapshot'ta olmasa bile).
+  let radar = null;
+  try { radar = await radarModuluYukle(); } catch { radar = null; }
+  if (radar?.radarDurum) {
+    try {
+      const d = radar.radarDurum();
+      const durumMap = new Map((d.durumlar || []).map(x => [Number(x.katalogId), x]));
+      let adaylar = [];
+      if (q.length >= 2) {
+        adaylar = (d.katalog || []).filter(k => {
+          const a = inlineKatla(k.ad);
+          return a && (a.includes(hedef) || hedef.includes(a));
+        });
+      } else {
+        adaylar = (d.durumlar || []).filter(x => x.stokta).slice(0, 5)
+          .map(x => ({ id: x.katalogId, ad: x.ad }));
+      }
+      for (const k of adaylar) {
+        if (sonuc.length >= 8) break;
+        const anahtar = inlineKatla(k.ad);
+        if (!anahtar || gorulen.has(anahtar)) continue;
+        const durum = durumMap.get(Number(k.id));
+        if (!durum?.stokta || !(Number(durum.fiyat) > 0)) continue;
+        let v = null;
+        try { v = radar.radarDurumVerisi?.(k.id) || null; } catch { v = null; }
+        const url = v?.afiliyeUrl || v?.hamUrl || null;
+        if (!url) continue;
+        gorulen.add(anahtar);
+        const paket = inlineSonucPaketi({
+          urun: k.ad,
+          teklifler: [{ site: durum.site, fiyat: durum.fiyat, url }],
+          ts: durum.ts,
+          kaynakUrl: v?.kaynakUrl || null,
+          kimlik: 'radar-' + k.id,
+        });
+        if (paket) sonuc.push(paket);
+      }
+    } catch { /* radar kapalıysa yalnızca snapshot kullanılır */ }
+  }
+
+  if (q.length >= 2) sonuc.push(inlineCanliAra(q));
+  if (!sonuc.length) sonuc.push(inlineIpucu());
+  return sonuc.slice(0, 10);
+}
+
+/**
+ * `inline_query` güncellemesini yanıtlar.
+ * BotFather'da inline mode açık olmalıdır (`/setinline`).
+ */
+export async function handleInlineQuery(token, iq) {
+  if (!iq?.id) return;
+  let results = [];
+  try {
+    results = await inlineSonuclariOlustur(iq.query);
+  } catch (e) {
+    console.error('[Telegram Bot] inline arama hatası:', String(e?.message || e).slice(0, 180));
+    results = [inlineIpucu()];
+  }
+  if (!results.length) results = [inlineIpucu()];
+  await api(token, 'answerInlineQuery', {
+    inline_query_id: iq.id,
+    results: results.slice(0, 20),
+    cache_time: 120,
+    is_personal: false,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -798,7 +1058,11 @@ const YARDIM_METNI = `🏷️ <b>En Ucuz Nerede? — Fiyat Asistanı</b>
 • /radar_ekle &lt;ürün adı&gt; — kataloğa ekle <i>(yönetici)</i>
 • /radar_sil &lt;ID | ürün adı&gt; — katalogdan çıkar <i>(yönetici)</i>
 
-Sonuç mesajındaki butonlarla mağazaya gidebilir, <b>🔔 tek tıkla kişisel fiyat alarmı</b> kurabilirsiniz.`;
+Sonuç mesajındaki butonlarla mağazaya gidebilir, <b>🔔 tek tıkla kişisel fiyat alarmı</b> kurabilirsiniz.
+
+<b>🔎 Inline mode</b>
+Herhangi bir sohbette <code>@erdal_fiyat_takip_bot ürün adı</code> yazın:
+en ucuz 3 canlı teklif klavyenin üstünde açılır, tek dokunuşla paylaşılır.`;
 
 function takipListesiMetni(chatId) {
   const hepsi = getTracked();
@@ -848,6 +1112,21 @@ export async function handleMessage(token, msg) {
   const komut = komutAyikla(text);
   if (komut) {
     if (komut.komut === '/start' || komut.komut === '/yardim' || komut.komut === '/help') {
+      // 📎 Inline/deep-link: `/start ara_<base64>` → ürünü hemen ara.
+      const yuk = String(komut.args || '');
+      if (yuk.startsWith('ara_')) {
+        const metin = startPayloadCoz(yuk.slice(4));
+        if (metin.length >= 2) {
+          const durum = await kuyrugaAl(chatId, () => metinAramasiYap(token, chatId, metin));
+          if (durum === 'dolu') {
+            await sendTelegram(token, chatId,
+              '⏳ Çok fazla arama sırada. Lütfen mevcut aramaların bitmesini bekleyin.');
+          } else if (durum === 'kuyrukta') {
+            await sendTelegram(token, chatId, '⏳ Önceki aramanız sürüyor; isteğiniz sıraya alındı.');
+          }
+          return;
+        }
+      }
       await sendTelegram(token, chatId, YARDIM_METNI);
       return;
     }
@@ -1029,7 +1308,7 @@ export async function startTelegramBot() {
 
     try {
       const url = `https://api.telegram.org/bot${token}/getUpdates`
-        + `?offset=${lastUpdateId + 1}&timeout=20&allowed_updates=${encodeURIComponent('["message","callback_query"]')}`;
+        + `?offset=${lastUpdateId + 1}&timeout=20&allowed_updates=${encodeURIComponent('["message","callback_query","inline_query"]')}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(35000) });
 
       // Geçersiz token: 401/404 → kalıcı hata, döngüyü bitir.
@@ -1053,6 +1332,10 @@ export async function startTelegramBot() {
           } else if (update.callback_query) {
             handleCallbackQuery(token, update.callback_query).catch(err => {
               console.error('[Telegram Bot] Callback hatası:', String(err?.message || err).slice(0, 200));
+            });
+          } else if (update.inline_query) {
+            handleInlineQuery(token, update.inline_query).catch(err => {
+              console.error('[Telegram Bot] Inline hatası:', String(err?.message || err).slice(0, 200));
             });
           }
         }

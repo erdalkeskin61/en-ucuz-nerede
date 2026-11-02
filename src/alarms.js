@@ -20,6 +20,8 @@ import { classifyCampaigns } from './ai.js';
 import { computePricing } from './pricing.js';
 import { pushGonder } from './push.js';
 import { formatTL } from './util.js';
+import { fiyatSerisi, grafikPng } from './grafik.js';
+import { fotoGonder } from './telegramFoto.js';
 
 const BILDIRIM_SONUK_MS = 24 * 3600 * 1000; // aynı alarm türü için 24 saat sessizlik
 const GECMIS_SINIRI = 200;
@@ -246,10 +248,24 @@ async function tekUrunKontrol(t) {
         '— En Ucuz Nerede';
       let gitti = false;
       let hata = null;
+      // 📈 Trend grafiği: 90 günlük gerçek fiyat geçmişi varsa PNG eklenir.
+      let foto = null;
+      try {
+        const seri = fiyatSerisi(
+          gecmis.map(g => ({ ts: g.ts, fiyat: g.enUcuzFiyat })),
+          { gun: 90 },
+        );
+        if (seri.length >= 2) foto = grafikPng(seri);
+      } catch { foto = null; }
+      const fotoButon = hedefAsan.url
+        ? { inline_keyboard: [[{ text: '🛒 En Ucuz Mağazaya Git', url: hedefAsan.url }]] }
+        : null;
       // 🔔 Web Push: e-posta/Telegram'dan bağımsız, cihaz bildirimi.
       try {
         await bildirimleriGonder(konu, icerik, {
           chatId: t.chatId || undefined,
+          foto,
+          fotoButon,
           push: {
             baslik: `🏷️ Fiyat Düştü: ${String(t.urun).slice(0, 70)}`,
             govde: `${oncekiFiyat != null ? formatTL(oncekiFiyat) : 'önceki fiyat'} ➔ ${formatTL(dogrulanmis.toplam)} (${hedefAsan.siteName})`,
@@ -450,6 +466,22 @@ export async function telegramGonder(konu, icerik, opts = {}) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
   const text = '🔔 <b>' + tg(konu) + '</b>\n\n' + tg(icerik);
+
+  // 📈 Fotoğraflı bildirim: trend grafiği + altyazıda mağaza detayları.
+  // Gönderilemezse metin bildirimi yine gider (alarm kaybolmaz).
+  if (opts.foto && opts.foto.length) {
+    try {
+      const r = await fotoGonder(token, chatId, opts.foto, text, {
+        replyMarkup: opts.fotoButon || null,
+        dosyaAdi: 'fiyat-trendi.png',
+      });
+      return { ok: true, yontem: 'sendPhoto', messageId: r.messageId };
+    } catch (e) {
+      console.warn('[alarm] fotoğraflı bildirim gönderilemedi, metne dönülüyor:',
+        String(e?.message || e).slice(0, 160));
+    }
+  }
+
   const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
   const res = await fetch(url, {
     method: 'POST',
@@ -517,7 +549,11 @@ export async function bildirimleriGonder(konu, icerik, opts = {}) {
   const hedefChat = opts.chatId || s.telegram?.chatId;
   if (s.telegram?.enabled && s.telegram?.botToken && hedefChat) {
     try {
-      await telegramGonder(konu, icerik, { chatId: hedefChat });
+      await telegramGonder(konu, icerik, {
+        chatId: hedefChat,
+        foto: opts.foto || null,
+        fotoButon: opts.fotoButon || null,
+      });
       sonuclar.push({ kanal: 'telegram', durum: 'basarili', chatId: String(hedefChat) });
     } catch (e) {
       sonuclar.push({ kanal: 'telegram', durum: 'hata', hata: e.message });

@@ -249,10 +249,10 @@ Son **2 saat** içinde taranmış ürün önbellekten **anında** yanıtlanır:
 | `/start`, `/yardim` | Herkes | Yardım menüsü (radar komutları dahil) |
 | `/liste`, `/takipler` | Herkes | **Yalnızca o sohbetin** fiyat alarmları |
 | `/radar`, `/radar_durum` | Herkes | 🟢/⚪ durum, katalog sayısı, son tur, stoktaki dip fiyatlar + `[🧪 Şimdi Taramayı Başlat]` |
-| `/radar_liste` | Herkes | Takip kataloğu (ID + kategori + ad) |
+| `/radar_liste` | Herkes | Takip kataloğu (ID + kategori + ad + güncel dip fiyat) |
 | `/radar_tara` | **Yönetici** | `radarBaslat({ zorla:true, gonder:true })` — arka planda 61 mağaza |
 | `/radar_ekle <ürün adı>` | **Yönetici** | `katalogEkle({ ad, sorgu })` — ör. `/radar_ekle Polymaker PolyTerra PLA Beyaz 1kg` |
-| `/radar_sil <ID \| ürün adı>` | **Yönetici** | `katalogSil(id)` — ürün ve `radar_durum` kaydı silinir |
+| `/radar_sil <ID \| ürün adı>` | **Yönetici** | `katalogSil(id)` — ürün, durum ve grafik geçmişi silinir |
 
 Yönetici = `settings.telegram.chatId` (radar bildirim sohbeti de kabul edilir).
 Yabancı kullanıcı yönetim komutunu denerse
@@ -261,6 +261,38 @@ ve kişisel alarmlar herkese açıktır. Radar kartlarındaki
 **🔔 Fiyatı Takibe Al** butonu `alarm:takip:radar:<katalogId>` callback'i ile
 kullanıcıya özel alarm kurar.
 
+### 🔎 Inline mode (viral paylaşım)
+
+Herhangi bir sohbette `@erdal_fiyat_takip_bot Creality Ender PLA` yazıldığında
+klavyenin üstünde **en ucuz 3 canlı teklif** açılır; tek dokunuşla gruba
+gönderilir (mağaza butonları + karşılaştırma linki ile).
+
+- Kaynak: SQLite `snapshot` (son 7 günün gerçek taramaları) + radar kataloğu.
+  **Ağ isteği yapılmaz** → Telegram'ın kısa süre sınırında (≈1 sn) yanıtlanır.
+- Türkçe-duyarlı katlama: `İSTANBUL`/`istanbul`, `Şişli`/`sisli` eşleşir.
+- Tükenen mağazalar inline'da önerilmez.
+- Önbellekte sonuç yoksa "canlı ara" kartı çıkar: bota giden deep-link
+  (`?start=ara_<base64>`, ≤64 karakter) 61 mağaza taramasını başlatır.
+- BotFather'da inline mode **açık olmalı**: `/setinline` →
+  ör. `Fiyat ara (61 mağaza)`; placeholder zorunlu.
+- `cache_time: 120 sn`, `is_personal: false` (herkese aynı, hızlı).
+
+### 📈 Canlı fiyat trend grafiği (fotoğraflı kart)
+
+Radar bildirimi ve kişisel fiyat alarmı artık **`sendPhoto`** ile gider:
+üstte 90 günlük yeşil dip fiyat eğrisi (PNG), altta mağaza/kargo/birim fiyat
+detayları ve satın alma butonları (caption + `reply_markup`).
+
+- `src/grafik.js`: saf Node PNG kodlayıcı (`node:zlib`) — **ek bağımlılık yok**,
+  derleme yok, ~30 KB görsel, ~5 ms çizim. Canvas/sharp gerekmez.
+- Gerçek veri: `radar_gecmis` (saatlik örnekleme, değişimde anında kayıt) +
+  aynı ürünün `price_history` kayıtları (`pid` ile birleşir). **2 noktadan az
+  veri varsa grafik üretilmez** ve metin kartı gönderilir — uydurma eğri yok.
+- `sendPhoto` başarısız olursa (boyut/format/API hatası) otomatik olarak
+  `sendMessage` metin kartına düşer; bildirim kaybolmaz.
+- `katalogSil()` ürünün `radar_gecmis` kayıtlarını da siler; 180 günden eski
+  trend kayıtları açılışta temizlenir.
+
 ### Dayanıklılık
 - Token yoksa bot çökmez; uyarı basıp bekler. Token geçersizse (401/404) polling durur.
 - Tüm metinler `esc()` ile HTML-escape edilir (parse hatası yok).
@@ -268,7 +300,9 @@ kullanıcıya özel alarm kurar.
 
 Test: `node scripts/test-telegram-bot.mjs` (88 kontrol) ·
 `node scripts/test-telegram-radar.mjs` (103 kontrol; admin koruması, komutlar,
-callback'ler ve kişisel alarm `chatId` izolasyonu — ağ isteği yok).
+callback'ler ve kişisel alarm `chatId` izolasyonu) ·
+`node scripts/test-telegram-inline-grafik.mjs` (96 kontrol; inline mode,
+deep-link, PNG grafik, caption sınırı, `radar_gecmis` birleşmesi — ağ isteği yok).
 Bot token'ı Ayarlar sayfasından girilir (`telegram.botToken`).
 
 
@@ -400,6 +434,7 @@ npm run test:firsat       # otonom fırsat kanalı
 npm run test:radar        # otonom 3D fiyat radarı (stok filtresi + cooldown)
 npm run test:telegram     # Telegram asistanı (arama/buton/SWR/takip)
 npm run test:telegram-radar  # Telegram radar komutları + kişisel alarm
+npm run test:telegram-inline # Inline mode + PNG fiyat trend grafiği
 npm run test:link         # linkte ara
 npm run test:gecmis       # son aramalar linkleri
 npm run test:stok         # stok sıralama (npm dışı: node scripts/test-stok.mjs)
