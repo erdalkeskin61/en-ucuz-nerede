@@ -36,6 +36,11 @@ import {
   startFirsatScheduler, firsatIstatistik, firsatTestGonder,
   firsatlariTara, firsatZamanlayiciDurdur, firsatKapat, FIRSAT_VARSAYILAN,
 } from './src/firsatKanali.js';
+import {
+  startRadarScheduler, radarDurum, radarBaslat, radarTara,
+  radarZamanlayiciDurdur, radarKapat, katalogGetir, katalogEkle, katalogSil, katalogSifirla,
+  RADAR_VARSAYILAN,
+} from './src/otonomRadar.js';
 import { birimFiyat } from './src/birimFiyat.js';
 import { birimFiyatHesapla } from './src/birimFiyat.js';
 import { baskiKartiBilgisi, baskiZenginlestir } from './src/baskiMaliyet.js';
@@ -1090,6 +1095,10 @@ app.post('/api/settings', (req, res) => {
   try { startFirsatScheduler(); } catch (e) {
     console.warn('[firsat] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
   }
+  // 🎯 Otonom radar: aralık/açık-kapalı değişince yeniden planlanır.
+  try { startRadarScheduler(); } catch (e) {
+    console.warn('[radar] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
+  }
   res.json(ayarGorunumu(s));
 });
 
@@ -1215,6 +1224,73 @@ app.post('/api/firsat/calistir', async (req, res) => {
     res.json(r);
   } catch (e) {
     res.status(500).json({ hata: e.message });
+  }
+});
+
+// ---- 🎯 Otonom 3D Baskı & Filament Fiyat Avcısı (2026-11-02) ----
+// Katalog SQLite'ta; Ayarlar panelinden eklenip çıkarılabilir.
+app.get('/api/radar/durum', (req, res) => {
+  try {
+    res.json({ ...radarDurum(), varsayilan: RADAR_VARSAYILAN });
+  } catch (e) {
+    res.status(500).json({ hata: String(e.message || e) });
+  }
+});
+
+app.get('/api/radar/katalog', (req, res) => {
+  try {
+    res.json({ katalog: katalogGetir() });
+  } catch (e) {
+    res.status(500).json({ hata: String(e.message || e) });
+  }
+});
+
+app.post('/api/radar/katalog', (req, res) => {
+  try {
+    const { ad, sorgu, url, kategori } = req.body || {};
+    res.json(katalogEkle({ ad, sorgu, url, kategori }));
+  } catch (e) {
+    res.status(400).json({ hata: String(e.message || e) });
+  }
+});
+
+app.delete('/api/radar/katalog/:id', (req, res) => {
+  try {
+    const silindi = katalogSil(req.params.id);
+    if (!silindi) return res.status(404).json({ hata: 'Katalog kaydı bulunamadı' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ hata: String(e.message || e) });
+  }
+});
+
+app.post('/api/radar/katalog/sifirla', (req, res) => {
+  try {
+    res.json({ katalog: katalogSifirla() });
+  } catch (e) {
+    res.status(500).json({ hata: String(e.message || e) });
+  }
+});
+
+// Taramayı başlatır. Varsayılan: arka planda (HTTP isteği beklemez).
+// `{ bekle:true }` → senkron (CLI/test).
+app.post('/api/radar/calistir', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const opts = {
+      gonder: b.gonder !== false,
+      kuru: b.kuru === true,
+      zorla: b.zorla !== false,
+      limit: Number.isFinite(Number(b.limit)) ? Number(b.limit) : undefined,
+      urunArasiMs: Number.isFinite(Number(b.urunArasiMs)) ? Number(b.urunArasiMs) : undefined,
+    };
+    if (b.bekle === true) {
+      const r = await radarTara(opts);
+      return res.json(r);
+    }
+    res.json(radarBaslat(opts));
+  } catch (e) {
+    res.status(500).json({ hata: String(e.message || e) });
   }
 });
 
@@ -1659,6 +1735,13 @@ app.listen(config.port, config.host, () => {
   } catch (e) {
     console.warn('[firsat] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
   }
+  // 🎯 Otonom fiyat radarı: katalogu her `radar.saatAraligi` saatte tarar.
+  // Kapalıysa hiçbir şey yapmaz; "Şimdi çalıştır" butonu yine de çalışır.
+  try {
+    startRadarScheduler();
+  } catch (e) {
+    console.warn('[radar] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
+  }
   // 🔍 Öneri motorunu ısıt: ilk tuş vuruşunda disk/DB gecikmesi olmasın.
   try { onerileriGetir(''); } catch { /* yoksay */ }
   // Adaptör sağlık nöbetçisi: her gece 04:00 (2026-10-29)
@@ -1701,6 +1784,8 @@ for (const sinyal of ['SIGINT', 'SIGTERM']) {
     kapaniyor = true;
     try { firsatZamanlayiciDurdur(); } catch { /* zamanlayıcı yok */ }
     try { firsatKapat(); } catch { /* zaten kapalı */ }
+    try { radarZamanlayiciDurdur(); } catch { /* zamanlayıcı yok */ }
+    try { radarKapat(); } catch { /* zaten kapalı */ }
     try { snapshotKapat(); } catch { /* zaten kapalı */ }
     process.exit(0);
   });

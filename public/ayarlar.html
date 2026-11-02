@@ -258,6 +258,80 @@
     </div>
 
     <div class="ayar-kart">
+      <h2>🎯 Otonom Fiyat Radarı (3D Baskı)</h2>
+      <p class="alt-not">
+        Popüler filament ve 3D yazıcı modellerini <b>61 mağazada</b> otomatik tarar.
+        <b>Yalnızca stokta ve satın alınabilir</b> teklifler değerlendirilir; tükenen mağaza
+        en ucuz olsa bile <b>asla</b> seçilmez. Fiyat düştüğünde, stoktaki en ucuz mağaza
+        değiştiğinde veya son paylaşımdan 48 saat geçtiğinde Telegram'a kart gönderilir.
+        Bot token yukarıdaki Telegram alanından kullanılır.
+      </p>
+
+      <label style="font-weight:400; display:block; margin-bottom:10px">
+        <input type="checkbox" id="radarEnabled" style="width:auto;margin-right:8px" />
+        Otonom 3D Baskı Fiyat Avcısını Etkinleştir
+      </label>
+
+      <div class="form-satir">
+        <div class="ikili">
+          <div>
+            <label for="radarSaatAraligi">Kontrol Aralığı (saat)</label>
+            <input type="number" id="radarSaatAraligi" min="1" max="24" step="1" value="4" />
+          </div>
+          <div>
+            <label for="radarChatId">Bildirim Sohbeti (boşsa Telegram Chat ID)</label>
+            <input type="text" id="radarChatId" placeholder="@kanal veya 123456789" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+        <button type="button" class="kaydet-btn" id="radarKaydetBtn">💾 Radar ayarlarını kaydet</button>
+        <button type="button" class="ikincil-btn" id="radarCalistirBtn">🧪 Şimdi Otomatik Taramayı Çalıştır</button>
+        <span id="radarKaydetMesaj" class="durum-mesaji" aria-live="polite"></span>
+      </div>
+      <div id="radarCalistirMesaj" class="durum-mesaji" style="margin-top:8px" aria-live="polite"></div>
+      <p id="radarDurum" class="alt-not" style="margin-top:8px">—</p>
+      <p class="alt-not" style="margin-top:4px">
+        ℹ️ Değişiklikler <b>otomatik kaydedilir</b>. Ürünler arasında 2 saniye nefes payı bırakılır;
+        tam tarama katalog boyutuna göre birkaç dakika sürebilir.
+      </p>
+
+      <div style="margin-top:16px">
+        <h3 style="font-size:15px; margin-bottom:8px">
+          🗂️ Takip Kataloğu <span id="radarKatalogSayisi" class="alt-not"></span>
+        </h3>
+        <ul id="radarKatalogListe" class="radar-katalog-liste"></ul>
+
+        <div class="form-satir">
+          <div class="ikili">
+            <div>
+              <label for="radarYeniAd">Yeni Ürün Adı</label>
+              <input type="text" id="radarYeniAd" placeholder="ör. Polymaker PolyTerra PLA 1kg" autocomplete="off" />
+            </div>
+            <div>
+              <label for="radarYeniSorgu">Arama Sorgusu (opsiyonel)</label>
+              <input type="text" id="radarYeniSorgu" placeholder="boşsa ürün adı kullanılır" autocomplete="off" />
+            </div>
+          </div>
+          <div>
+            <label for="radarYeniKategori">Kategori</label>
+            <select id="radarYeniKategori">
+              <option value="filament">🧵 Filament</option>
+              <option value="yazici">🖨️ 3D Yazıcı</option>
+              <option value="genel">📦 Diğer</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap">
+          <button type="button" class="ikincil-btn" id="radarEkleBtn">➕ Kataloğa ekle</button>
+          <button type="button" class="ikincil-btn" id="radarSifirlaBtn">↺ Varsayılan kataloğa dön</button>
+        </div>
+        <p id="radarKatalogMesaj" class="durum-mesaji" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="ayar-kart">
       <h2>🔗 Satış ortaklığı (affiliate)</h2>
       <p class="alt-not">
         Fiyat karşılaştırması <b>her zaman tarafsızdır</b>: bu ayarlar fiyatı, sıralamayı ve

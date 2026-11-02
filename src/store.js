@@ -287,6 +287,18 @@ const DEFAULT_SETTINGS = {
     maxTarama: 3,
     donguBasina: 2,
   },
+  // 🎯 Otonom 3D Baskı & Filament Fiyat Avcısı (2026-11-02)
+  // Katalog SQLite'ta (radar_katalog); burada yalnızca çalışma ayarları.
+  radar: {
+    enabled: false,
+    saatAraligi: 4,
+    urunArasiMs: 2000,
+    paylasimAraligiSaat: 48,
+    donguBasina: 5,
+    chatId: '',
+    sonCalisma: null,
+    sonRapor: null,
+  },
   // Satış ortaklığı (2026-10-28): fiyatı etkilemez, yalnızca dışa giden linke
   // referans ekler. Yapılandırma src/afiliye.js tarafından doğrulanır.
   afiliye: null,
@@ -328,6 +340,10 @@ const FIRSAT_ANAHTARLARI = [
   'enabled', 'kanal', 'minIndirim', 'gunlukMax',
   'saatAraligi', 'cooldownSaat', 'maxTarama', 'donguBasina',
 ];
+const RADAR_ANAHTARLARI = [
+  'enabled', 'saatAraligi', 'urunArasiMs', 'paylasimAraligiSaat',
+  'donguBasina', 'chatId', 'sonCalisma', 'sonRapor',
+];
 const WEBPUSH_ANAHTARLARI = ['publicKey', 'privateKey', 'subject'];
 const DBBAKIM_ANAHTARLARI = ['sonCalisma', 'sureMs', 'ok', 'temizlenenDosya', 'kazanilanMb', 'walMb'];
 
@@ -358,6 +374,45 @@ function firsatSinirla(nesne) {
   };
 }
 
+/**
+ * 🎯 Otonom radar ayarlarını doğrular ve sınırlar (2026-11-02).
+ * Katalog burada değil, `radar_katalog` tablosunda tutulur.
+ */
+function radarSinirla(nesne) {
+  const k = sinirla(nesne, RADAR_ANAHTARLARI);
+  const v = DEFAULT_SETTINGS.radar;
+  const sayi = (deger, varsayilan, min, max) => {
+    const n = Number(deger);
+    if (!Number.isFinite(n)) return varsayilan;
+    return Math.min(max, Math.max(min, n));
+  };
+  const rapor = (() => {
+    if (k.sonRapor === null) return null;
+    if (!k.sonRapor || typeof k.sonRapor !== 'object') return undefined;
+    const r = k.sonRapor;
+    return {
+      sureMs: Math.max(0, Number(r.sureMs) || 0),
+      taranan: Math.max(0, Number(r.taranan) || 0),
+      stoktaBulunan: Math.max(0, Number(r.stoktaBulunan) || 0),
+      gonderilen: Math.max(0, Number(r.gonderilen) || 0),
+      atlanan: Math.max(0, Number(r.atlanan) || 0),
+      hataSayisi: Math.max(0, Number(r.hataSayisi) || 0),
+    };
+  })();
+  const cikti = {
+    enabled: k.enabled === true,
+    saatAraligi: sayi(k.saatAraligi, v.saatAraligi, 1, 24),
+    urunArasiMs: Math.round(sayi(k.urunArasiMs, v.urunArasiMs, 0, 30000)),
+    paylasimAraligiSaat: sayi(k.paylasimAraligiSaat, v.paylasimAraligiSaat, 1, 720),
+    donguBasina: Math.round(sayi(k.donguBasina, v.donguBasina, 1, 20)),
+    chatId: typeof k.chatId === 'string' ? k.chatId.trim().slice(0, 120) : '',
+    sonCalisma: typeof k.sonCalisma === 'string' && !Number.isNaN(Date.parse(k.sonCalisma))
+      ? k.sonCalisma : null,
+  };
+  if (rapor !== undefined) cikti.sonRapor = rapor;
+  return cikti;
+}
+
 export function saveSettings(patch) {
   const cur = getSettings();
   const next = {
@@ -372,6 +427,8 @@ export function saveSettings(patch) {
     // 📢 Otonom Fırsat Kanalı (2026-10-30): yalnızca bilinen anahtarlar saklanır
     // ve değerler yazma anında sınırlanır (2026-11-01).
     firsat: firsatSinirla({ ...(cur.firsat || {}), ...(patch.firsat || {}) }),
+    // 🎯 Otonom radar ayarları (2026-11-02).
+    radar: radarSinirla({ ...(cur.radar || {}), ...(patch.radar || {}) }),
     // 🔔 Web Push VAPID anahtarları (2026-11-01): ilk üretimde kalıcılaşır.
     // Özel anahtar YALNIZCA sunucuda kalır; /api/push/vapid-key yalnızca public döner.
     webpush: sinirla({ ...(cur.webpush || {}), ...(patch.webpush || {}) }, WEBPUSH_ANAHTARLARI),

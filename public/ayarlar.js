@@ -42,6 +42,10 @@ async function ayarlariYukle() {
     if ($('#firsatMinIndirim')) $('#firsatMinIndirim').value = s.firsat?.minIndirim ?? 15;
     if ($('#firsatGunlukMax')) $('#firsatGunlukMax').value = s.firsat?.gunlukMax ?? 12;
     if ($('#firsatSaatAraligi')) $('#firsatSaatAraligi').value = s.firsat?.saatAraligi ?? 2;
+    // 🎯 Otonom Fiyat Radarı (2026-11-02)
+    if ($('#radarEnabled')) $('#radarEnabled').checked = !!s.radar?.enabled;
+    if ($('#radarSaatAraligi')) $('#radarSaatAraligi').value = s.radar?.saatAraligi ?? 4;
+    if ($('#radarChatId')) $('#radarChatId').value = s.radar?.chatId || '';
   } catch (e) {
     mesaj('Ayarlar yüklenemedi: ' + e.message, false);
   }
@@ -86,6 +90,12 @@ $('#kaydetBtn').addEventListener('click', async () => {
       minIndirim: parseInt($('#firsatMinIndirim')?.value, 10) || 15,
       gunlukMax: parseInt($('#firsatGunlukMax')?.value, 10) || 12,
       saatAraligi: parseInt($('#firsatSaatAraligi')?.value, 10) || 2,
+    },
+    // 🎯 Otonom Fiyat Radarı (2026-11-02)
+    radar: {
+      enabled: $('#radarEnabled')?.checked || false,
+      saatAraligi: parseInt($('#radarSaatAraligi')?.value, 10) || 4,
+      chatId: $('#radarChatId')?.value.trim() || '',
     },
   };
   if (!body.smtp.pass) delete body.smtp.pass;
@@ -713,3 +723,321 @@ async function dbBakimCalistirVeGoster(kuru) {
 $('#dbBakimBtn')?.addEventListener('click', () => dbBakimCalistirVeGoster(false));
 $('#dbBakimKuruBtn')?.addEventListener('click', () => dbBakimCalistirVeGoster(true));
 dbBakimDurumYukle();
+
+/* ================= 🎯 Otonom Fiyat Radarı (2026-11-02) =================
+ *
+ * Katalog SQLite'ta (radar_katalog). Karttaki değişiklikler kısmi gövdeyle
+ * ({ radar: {...} }) anında kaydedilir; diğer ayarlar ezilmez.
+ * "Şimdi çalıştır" arka planda başlar ve /api/radar/durum üzerinden izlenir.
+ */
+
+let radarKaydetTimer = null;
+let radarKaydediliyor = false;
+let radarPollTimer = null;
+let radarKatalog = [];
+
+function radarMesaj(secici, metin, tur = '') {
+  const el = $(secici);
+  if (!el) return;
+  el.textContent = metin;
+  el.className = 'durum-mesaji' + (tur ? ' ' + tur : '');
+}
+
+function radarFormDegeri() {
+  const n = parseInt($('#radarSaatAraligi')?.value, 10);
+  return {
+    enabled: $('#radarEnabled')?.checked === true,
+    saatAraligi: Number.isFinite(n) ? Math.min(24, Math.max(1, n)) : 4,
+    chatId: $('#radarChatId')?.value.trim() || '',
+  };
+}
+
+async function radarAyarlariniKaydet() {
+  if (radarKaydediliyor) return;
+  radarKaydediliyor = true;
+  radarMesaj('#radarKaydetMesaj', 'Kaydediliyor…');
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ radar: radarFormDegeri() }),
+    });
+    const veri = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(veri.hata || 'Kaydedilemedi');
+    const r = veri.radar || {};
+    if ($('#radarEnabled')) $('#radarEnabled').checked = !!r.enabled;
+    if ($('#radarSaatAraligi') && r.saatAraligi != null) $('#radarSaatAraligi').value = r.saatAraligi;
+    if ($('#radarChatId') && typeof r.chatId === 'string') $('#radarChatId').value = r.chatId;
+    radarMesaj('#radarKaydetMesaj',
+      r.enabled ? '✅ Kaydedildi — otonom radar AÇIK' : '✅ Kaydedildi — radar kapalı', 'ok');
+    setTimeout(() => {
+      const el = $('#radarKaydetMesaj');
+      if (el && el.textContent.startsWith('✅')) el.textContent = '';
+    }, 3500);
+    radarDurumuYukle();
+  } catch (e) {
+    radarMesaj('#radarKaydetMesaj', '❌ ' + e.message, 'hata');
+  } finally {
+    radarKaydediliyor = false;
+  }
+}
+
+function radarKaydetGecikmeli() {
+  clearTimeout(radarKaydetTimer);
+  radarMesaj('#radarKaydetMesaj', 'Kaydediliyor…');
+  radarKaydetTimer = setTimeout(radarAyarlariniKaydet, 500);
+}
+
+$('#radarEnabled')?.addEventListener('change', () => {
+  clearTimeout(radarKaydetTimer);
+  radarAyarlariniKaydet();
+});
+for (const sel of ['#radarSaatAraligi', '#radarChatId']) {
+  $(sel)?.addEventListener('input', radarKaydetGecikmeli);
+  $(sel)?.addEventListener('change', radarKaydetGecikmeli);
+}
+window.addEventListener('pagehide', () => {
+  if (!radarKaydetTimer) return;
+  clearTimeout(radarKaydetTimer);
+  radarKaydetTimer = null;
+  try {
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ radar: radarFormDegeri() }),
+      keepalive: true,
+    });
+  } catch { /* yoksay */ }
+});
+
+/* ---- katalog listesi ---- */
+
+function radarKategoriEtiket(k) {
+  if (k === 'filament') return '🧵 Filament';
+  if (k === 'yazici') return '🖨️ Yazıcı';
+  return '📦 Diğer';
+}
+
+function radarKatalogCiz() {
+  const liste = $('#radarKatalogListe');
+  const sayi = $('#radarKatalogSayisi');
+  if (!liste) return;
+  if (sayi) sayi.textContent = `(${radarKatalog.length} ürün)`;
+  if (!radarKatalog.length) {
+    liste.innerHTML = '<li><span class="radar-urun-sorgu">Katalog boş — aşağıdan ürün ekleyin.</span></li>';
+    return;
+  }
+  liste.innerHTML = radarKatalog.map(k => `
+    <li>
+      <span>
+        <span class="radar-urun-ad">${esc(k.ad)}</span>
+        <span class="radar-kategori-rozet">${radarKategoriEtiket(k.kategori)}</span>
+        ${k.sorgu && k.sorgu !== k.ad ? `<span class="radar-urun-sorgu">Arama: ${esc(k.sorgu)}</span>` : ''}
+        ${k.url ? `<span class="radar-urun-sorgu">Sabit link: ${esc(k.url)}</span>` : ''}
+      </span>
+      <button type="button" data-radar-sil="${Number(k.id)}" aria-label="${esc(k.ad)} ürününü katalogdan çıkar">Çıkar</button>
+    </li>
+  `).join('');
+}
+
+$('#radarKatalogListe')?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-radar-sil]');
+  if (!btn) return;
+  const id = Number(btn.dataset.radarSil);
+  if (!Number.isFinite(id)) return;
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/radar/katalog/' + id, { method: 'DELETE' });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.hata || 'Silinemedi');
+    radarMesaj('#radarKatalogMesaj', '✅ Ürün katalogdan çıkarıldı.', 'ok');
+    radarDurumuYukle();
+  } catch (err) {
+    radarMesaj('#radarKatalogMesaj', '❌ ' + err.message, 'hata');
+    btn.disabled = false;
+  }
+});
+
+$('#radarEkleBtn')?.addEventListener('click', async () => {
+  const ad = $('#radarYeniAd')?.value.trim() || '';
+  const sorgu = $('#radarYeniSorgu')?.value.trim() || '';
+  const kategori = $('#radarYeniKategori')?.value || 'genel';
+  if (ad.length < 2) {
+    radarMesaj('#radarKatalogMesaj', '❌ Ürün adı en az 2 karakter olmalı.', 'hata');
+    return;
+  }
+  const btn = $('#radarEkleBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch('/api/radar/katalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ad, sorgu: sorgu || ad, kategori }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.hata || 'Eklenemedi');
+    if ($('#radarYeniAd')) $('#radarYeniAd').value = '';
+    if ($('#radarYeniSorgu')) $('#radarYeniSorgu').value = '';
+    if ($('#radarYeniKategori')) $('#radarYeniKategori').value = 'filament';
+    radarMesaj('#radarKatalogMesaj', `✅ "${d.ad}" kataloğa eklendi.`, 'ok');
+    radarDurumuYukle();
+  } catch (err) {
+    radarMesaj('#radarKatalogMesaj', '❌ ' + err.message, 'hata');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+$('#radarSifirlaBtn')?.addEventListener('click', async () => {
+  if (!confirm('Katalog varsayılan 13 ürüne dönecek. Eklediğiniz ürünler ve kayıtlı radar durumları silinir. Devam?')) return;
+  const btn = $('#radarSifirlaBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch('/api/radar/katalog/sifirla', { method: 'POST' });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.hata || 'Sıfırlanamadı');
+    radarMesaj('#radarKatalogMesaj', '✅ Varsayılan katalog yüklendi.', 'ok');
+    radarDurumuYukle();
+  } catch (err) {
+    radarMesaj('#radarKatalogMesaj', '❌ ' + err.message, 'hata');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+/* ---- durum / ilerleme ---- */
+
+function radarDurumCiz(d) {
+  const el = $('#radarDurum');
+  if (!el) return;
+  const ayar = d.ayar || {};
+  const rapor = d.sonRapor || {};
+  const durumlar = Array.isArray(d.durumlar) ? d.durumlar.filter(x => x.stokta).slice(0, 3) : [];
+  el.innerHTML =
+    `${ayar.enabled
+      ? '<span style="color:#10b981;font-weight:700">🟢 Açık (otomatik tarama aktif)</span>'
+      : '<span style="color:#64748b;font-weight:700">⚪ Kapalı (yalnızca elle çalışır)</span>'}`
+    + ` · Her <b>${ayar.saatAraligi ?? 4} saatte</b> bir tarama`
+    + (d.sonCalisma ? ` · Son tur: <b>${new Date(d.sonCalisma).toLocaleString('tr-TR')}</b>` : ' · Henüz tur çalışmadı')
+    + (rapor.taranan != null
+      ? `<br>Son tur: ${rapor.taranan} ürün tarandı, ${rapor.stoktaBulunan ?? 0} stokta, ${rapor.gonderilen ?? 0} bildirim`
+        + (rapor.hataSayisi ? ` · ⚠️ ${rapor.hataSayisi} hata` : '')
+        + (rapor.sureMs ? ` · ${Math.round(rapor.sureMs / 1000)} sn` : '')
+      : '')
+    + (durumlar.length
+      ? '<br>Stoktaki en ucuz: ' + durumlar.map(x =>
+        `${esc(x.ad)} → <b>${tl(x.fiyat)}</b> (${esc(x.site || '—')})`).join(' · ')
+      : '');
+}
+
+async function radarDurumuYukle() {
+  try {
+    const res = await fetch('/api/radar/durum');
+    const d = await res.json();
+    radarKatalog = Array.isArray(d.katalog) ? d.katalog : [];
+    radarKatalogCiz();
+    radarDurumCiz(d);
+    return d;
+  } catch (e) {
+    const el = $('#radarDurum');
+    if (el) el.textContent = 'Radar durumu okunamadı: ' + e.message;
+    return null;
+  }
+}
+
+function radarPollDurdur() {
+  if (radarPollTimer) clearInterval(radarPollTimer);
+  radarPollTimer = null;
+}
+
+function radarPollBaslat() {
+  radarPollDurdur();
+  const el = $('#radarCalistirMesaj');
+  const btn = $('#radarCalistirBtn');
+  let bitenTur = 0;
+  radarPollTimer = setInterval(async () => {
+    let d = null;
+    try {
+      const res = await fetch('/api/radar/durum');
+      d = await res.json();
+    } catch { return; }
+
+    radarKatalog = Array.isArray(d.katalog) ? d.katalog : radarKatalog;
+    radarKatalogCiz();
+    radarDurumCiz(d);
+
+    const il = d.ilerleme || {};
+    if (il.calisiyor) {
+      const oran = il.toplam ? Math.round((il.tamamlanan / il.toplam) * 100) : 0;
+      if (el) {
+        el.className = 'durum-mesaji';
+        el.innerHTML = `⏳ Taranıyor: <b>${il.tamamlanan}/${il.toplam}</b>`
+          + (il.sonUrun ? ` — ${esc(il.sonUrun)}` : '')
+          + `<div class="radar-ilerleme" aria-hidden="true"><span style="width:${oran}%"></span></div>`;
+      }
+      return;
+    }
+
+    // İlk "bitti" yoklamasında özet göster.
+    bitenTur++;
+    if (bitenTur > 1) return;
+    radarPollDurdur();
+    if (btn) btn.disabled = false;
+    const r = d.sonRapor || {};
+    if (el) {
+      el.className = 'durum-mesaji ok';
+      el.innerHTML = `✅ Tarama tamamlandı — <b>${r.taranan ?? 0}</b> ürün tarandı, `
+        + `<b>${r.stoktaBulunan ?? 0}</b> ürün stokta bulundu, `
+        + `<b>${r.gonderilen ?? 0}</b> Telegram bildirimi gönderildi`
+        + (r.hataSayisi ? ` · ⚠️ ${r.hataSayisi} hata` : '') + '.';
+    }
+    radarDurumuYukle();
+  }, 3000);
+}
+
+$('#radarCalistirBtn')?.addEventListener('click', async () => {
+  const btn = $('#radarCalistirBtn');
+  const el = $('#radarCalistirMesaj');
+  if (!el) return;
+
+  const sohbet = $('#radarChatId')?.value.trim()
+    || $('#telegramChatId')?.value.trim()
+    || $('#firsatKanal')?.value.trim()
+    || '';
+  const gonder = !!sohbet;
+
+  if (!radarKatalog.length) {
+    radarMesaj('#radarCalistirMesaj', '❌ Katalog boş — önce ürün ekleyin.', 'hata');
+    return;
+  }
+
+  // Ayarlar kaydedilmeden tarama başlamasın (özellikle sohbet kimliği).
+  try { await radarAyarlariniKaydet(); } catch { /* hata mesajı zaten yazıldı */ }
+
+  if (btn) btn.disabled = true;
+  el.className = 'durum-mesaji';
+  el.innerHTML = gonder
+    ? `⏳ ${radarKatalog.length} ürün sırayla taranıyor (ürünler arası 2 sn). Bu işlem birkaç dakika sürebilir…`
+    : `⏳ ${radarKatalog.length} ürün taranıyor. <b>Bildirim sohbeti tanımlı olmadığı için Telegram'a mesaj gönderilmeyecek</b> — sonuçlar yalnızca burada gösterilir.`;
+  try {
+    const res = await fetch('/api/radar/calistir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gonder, zorla: true }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.hata || 'Tarama başlatılamadı');
+    if (d.basladi === false) {
+      if (btn) btn.disabled = false;
+      radarMesaj('#radarCalistirMesaj', '⚠️ ' + (d.neden || 'Tarama zaten çalışıyor.'), 'hata');
+      radarPollBaslat();
+      return;
+    }
+    radarPollBaslat();
+  } catch (e) {
+    if (btn) btn.disabled = false;
+    radarMesaj('#radarCalistirMesaj', '❌ ' + e.message, 'hata');
+  }
+});
+
+radarDurumuYukle();

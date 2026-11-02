@@ -183,6 +183,8 @@ pm2 save
 | `GET/POST /api/settings` | Ayarlar |
 | `GET /api/push/vapid-key`, `POST /api/push/subscribe` | Web Push |
 | `GET /api/firsat/durum`, `POST /api/firsat/calistir` | Fırsat kanalı |
+| `GET /api/radar/durum`, `POST /api/radar/calistir` | Otonom 3D fiyat radarı |
+| `GET/POST /api/radar/katalog`, `DELETE /api/radar/katalog/:id` | Radar takip kataloğu |
 | `GET/POST /api/db/bakim` | Veritabanı/önbellek bakımı |
 | `GET /api/durum`, `GET /api/ping` | Sağlık ve site listesi |
 
@@ -248,6 +250,95 @@ Test: `node scripts/test-telegram-bot.mjs` (88 kontrol).
 Bot token'ı Ayarlar sayfasından girilir (`telegram.botToken`).
 
 
+## 🎯 Otonom 3D Baskı & Filament Fiyat Radarı
+
+Kullanıcı müdahalesi olmadan çalışan nöbetçi motor. Popüler filamentleri ve
+3D yazıcıları SQLite'taki katalogdan okur, **61 mağazada** karşılaştırır ve
+yalnızca **stokta + satın alınabilir** en ucuz teklifi Telegram'a kart olarak
+gönderir.
+
+### Katı stok filtresi
+`teklifStoktaMi()` bir teklifi yalnızca **kanıt varsa** eler:
+
+- `inStock:false`, `stock:false/0`, `outOfStock:true`, `addToCart:false`
+- `availability` içinde `OutOfStock` / `SoldOut` / `BackOrder`
+- stok metninde `Tükendi`, `Stokta Yok`, `Gelince Haber Ver`, `Temin Edilemiyor`
+
+Stok bilgisi **hiç yoksa** teklif elenmez (kanıtsız suçlama yok); ancak
+"tükenen mağaza en ucuz olsa bile" asla birinci sıraya yerleşmez. Farklı
+renk/varyant (`renkAyni:false`) da elenir. Fiyat okunamıyorsa teklif sayılmaz.
+
+### Zamanlama ve cooldown
+- Varsayılan **4 saatte bir** (Ayarlar'dan 1–24 saat), ürünler arasında **2 sn**
+  nefes payı (`radar.urunArasiMs`).
+- Aynı ürün için bildirim yalnızca şu durumlarda gider:
+  1. fiyat **düştüyse**,
+  2. stoktaki en ucuz **mağaza değiştiyse**,
+  3. son paylaşımdan **48 saat** geçtiyse.
+- Tek turda en fazla 5 bildirim (`donguBasina`) — ilk kurulumda 13 ürünün
+  hepsi tek seferde gönderilmez.
+- Stokta teklif yoksa sessizce kaydedilir; ürün yeniden stoğa girdiğinde
+  "yeniden stokta" bildirimi gider.
+
+### Kart biçimi
+
+```
+🎯 OTONOM FİYAT RADARI: GÜNCEL EN UCUZ
+━━━━━━━━━━━━━━━━━━━━
+🧵 eSun ePLA-HS (High Speed) PLA Siyah 1kg
+━━━━━━━━━━━━━━━━━━━━
+🏆 Stoktaki En Ucuz: ₺389,00
+🏪 Mağaza: Robotistan
+🚚 Kargo: Ücretsiz Kargo
+⚖️ Birim Fiyat: ₺389,00 / kg
+✅ Stok Durumu: Doğrulandı — Satın Alınabilir
+(⚠️ 3 tükenen/stokta olmayan mağaza elendi)
+━━━━━━━━━━━━━━━━━━━━
+📊 Diğer Stoklu Seçenekler:
+• Robitshop: ₺415,00
+• Trendyol: ₺445,00
+━━━━━━━━━━━━━━━━━━━━
+💡 Diğer mağazalara göre ₺56,00 tasarruf!
+🏷️ @EnUcuzNerede | Otonom Fiyat Radarı
+```
+
+Butonlar: **🛒 Stoktaki En Ucuz Mağazaya Git** (afiliye link) ve
+**🌐 Karşılaştırmayı Aç** (`PUBLIC_URL/?url=…`). Kısmi taramada kart
+"n site yanıt vermedi" notunu düşer; "61 mağazanın en ucuzu" iddia edilmez.
+Gramaj/hacim yoksa `₺/kg` / `₺/L` uydurulmaz; mağaza başlığında gramaj yoksa
+hedef ürünün katalog ağırlığı yedek olarak kullanılır (farklı gramaj varsa
+mağaza başlığı esas alınır).
+
+### Ayarlar
+Ayarlar → **🎯 Otonom Fiyat Radarı (3D Baskı)**:
+
+- `[x] Otonom 3D Baskı Fiyat Avcısını Etkinleştir`
+- Kontrol aralığı (saat) — varsayılan 4
+- Bildirim sohbeti (boşsa `telegram.chatId` → `firsat.kanal`)
+- `[🧪 Şimdi Otomatik Taramayı Çalıştır]` — arka planda başlar, ilerleme
+  çubuğu gösterir; sohbet tanımlı değilse mesaj göndermez, yalnızca tarar.
+- Takip kataloğu: ürün ekle / çıkar / varsayılana dön (13 ürün, `radar_katalog`).
+
+Tüm alanlar **otomatik kaydedilir** (kısmi gövde; diğer ayarlar ezilmez).
+Radar varsayılan olarak **kapalıdır** — açmadan hiçbir tarama yapılmaz.
+
+### API
+
+```bash
+GET    /api/radar/durum                 # ayar + katalog + ilerleme + son gönderimler
+GET    /api/radar/katalog               # takip listesi
+POST   /api/radar/katalog               # { ad, sorgu?, url?, kategori? }
+DELETE /api/radar/katalog/:id
+POST   /api/radar/katalog/sifirla
+POST   /api/radar/calistir              # { gonder?, kuru?, zorla?, limit?, bekle? }
+```
+
+`bekle:true` senkron çalışır (CLI/test); aksi halde arka planda başlar.
+`kuru:true` hiçbir ağ isteği atmadan yalnızca durum üretir.
+
+Test: `npm run test:radar` (177 kontrol, ağ isteği yok).
+
+
 ## 3D baskı modülü
 
 ### Maliyet formülü
@@ -284,6 +375,7 @@ npm run test:ux           # UX + WCAG kontrast + bento
 npm run test:ui           # tasarım sistemi sözleşmesi
 npm run test:ayar         # ayar kaydı kalıcılığı
 npm run test:firsat       # otonom fırsat kanalı
+npm run test:radar        # otonom 3D fiyat radarı (stok filtresi + cooldown)
 npm run test:link         # linkte ara
 npm run test:gecmis       # son aramalar linkleri
 npm run test:stok         # stok sıralama (npm dışı: node scripts/test-stok.mjs)

@@ -2919,3 +2919,93 @@ html[data-theme="dark"] .birim-rozet-resin {
 html[data-theme="dark"] .arama-onerileri {
   box-shadow: 0 22px 50px -18px rgba(0, 0, 0, .8);
 }
+
+/* ---- 🎯 Otonom Fiyat Radarı (2026-11-02) ---- */
+.radar-katalog-liste {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+.radar-katalog-liste li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--zemin);
+  font-size: 14px;
+  transition: border-color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.radar-katalog-liste li:hover {
+  border-color: var(--cizgi-koyu);
+}
+.radar-katalog-liste li .radar-urun-ad {
+  font-weight: 600;
+  color: var(--metin);
+}
+.radar-katalog-liste li .radar-urun-sorgu {
+  display: block;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--metin-hafif);
+  margin-top: 2px;
+}
+.radar-katalog-liste li button {
+  flex: 0 0 auto;
+  border: 1px solid var(--cizgi);
+  background: transparent;
+  color: var(--metin-hafif);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 180ms cubic-bezier(0.4, 0, 0.2, 1), border-color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.radar-katalog-liste li button:hover {
+  color: #DC2626;
+  border-color: #DC2626;
+}
+.radar-ilerleme {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cizgi);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.radar-ilerleme > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563EB, #10B981);
+  transition: width 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-ilerleme > span { transition: none; }
+}
+.form-satir select {
+  width: 100%;
+  font-size: 14.5px;
+  padding: 11px 13px;
+  border: 1.5px solid var(--cizgi);
+  border-radius: 11px;
+  outline: none;
+  font-family: inherit;
+  background: var(--kart);
+  color: var(--metin);
+  transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.form-satir select:focus { border-color: var(--ana); box-shadow: 0 0 0 4px rgba(52, 80, 209, 0.12); }
+.radar-kategori-rozet {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--metin-hafif);
+  background: var(--cizgi);
+}
