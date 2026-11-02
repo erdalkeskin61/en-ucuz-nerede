@@ -75,7 +75,10 @@ db.exec(`
     sonHedefBildirimi TEXT,
     sonDegisimBildirimi TEXT,
     -- 2026-10-30: stok durumu değişim bildirimi (tümü tükendi ↔ yeniden stokta)
-    sonStokBildirimi TEXT
+    sonStokBildirimi TEXT,
+    -- 2026-11-02: Telegram kişisel alarm sahibi (NULL = eski/genel kayıt).
+    -- Hatırlatma yalnızca bu sohbete gider; başka kullanıcı /liste'de görmez.
+    chatId TEXT
   );
 
   CREATE TABLE IF NOT EXISTS history (
@@ -163,6 +166,8 @@ function eksikKolonlariEkle() {
     ['sonDegisimBildirimi', 'TEXT'],
     // 2026-10-30: stok durumu değişim bildirimi (tümü tükendi ↔ yeniden stokta)
     ['sonStokBildirimi', 'TEXT'],
+    // 2026-11-02: Telegram kişisel alarm sahibi (NULL = eski/genel kayıt)
+    ['chatId', 'TEXT'],
   ];
   let eklenen = 0;
   for (const [ad, tip] of eklenecek) {
@@ -531,6 +536,7 @@ function parseTrackedRow(row) {
     sonHedefBildirimi: row.sonHedefBildirimi || null,
     sonDegisimBildirimi: row.sonDegisimBildirimi || null,
     sonStokBildirimi: row.sonStokBildirimi || null,
+    chatId: row.chatId || null,
   };
 }
 
@@ -545,8 +551,8 @@ export function addTracked(entry) {
   const urunlerJson = JSON.stringify((entry.urunler || []).map(x => ({ site: x.site, url: x.url })));
 
   const insert = db.prepare(`
-    INSERT INTO tracked (id, modelKodu, urun, renk, image, hedefFiyat, olusturma, urunler, sonKontrol, sonFiyatlar, sonBildirim)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
+    INSERT INTO tracked (id, modelKodu, urun, renk, image, hedefFiyat, olusturma, urunler, sonKontrol, sonFiyatlar, sonBildirim, chatId)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
   `);
 
   insert.run(
@@ -557,7 +563,8 @@ export function addTracked(entry) {
     entry.image || null,
     Number(entry.hedefFiyat) || null,
     now,
-    urunlerJson
+    urunlerJson,
+    entry.chatId != null ? String(entry.chatId).slice(0, 64) : null
   );
 
   return {
@@ -575,6 +582,7 @@ export function addTracked(entry) {
     fiyatGecmisi: [],
     sonHedefBildirimi: null,
     sonDegisimBildirimi: null,
+    chatId: entry.chatId != null ? String(entry.chatId).slice(0, 64) : null,
   };
 }
 
@@ -605,7 +613,8 @@ export function updateTracked(id, patch) {
       fiyatGecmisi = ?,
       sonHedefBildirimi = ?,
       sonDegisimBildirimi = ?,
-      sonStokBildirimi = ?
+      sonStokBildirimi = ?,
+      chatId = ?
     WHERE id = ?
   `);
 
@@ -623,6 +632,7 @@ export function updateTracked(id, patch) {
     updated.sonHedefBildirimi || null,
     updated.sonDegisimBildirimi || null,
     updated.sonStokBildirimi || null,
+    updated.chatId != null ? String(updated.chatId).slice(0, 64) : null,
     id
   );
 

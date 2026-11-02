@@ -249,6 +249,7 @@ async function tekUrunKontrol(t) {
       // 🔔 Web Push: e-posta/Telegram'dan bağımsız, cihaz bildirimi.
       try {
         await bildirimleriGonder(konu, icerik, {
+          chatId: t.chatId || undefined,
           push: {
             baslik: `🏷️ Fiyat Düştü: ${String(t.urun).slice(0, 70)}`,
             govde: `${oncekiFiyat != null ? formatTL(oncekiFiyat) : 'önceki fiyat'} ➔ ${formatTL(dogrulanmis.toplam)} (${hedefAsan.siteName})`,
@@ -292,6 +293,7 @@ async function tekUrunKontrol(t) {
       let hata = null;
       try {
         await bildirimleriGonder(konu, icerik, {
+          chatId: t.chatId || undefined,
           push: {
             baslik: `🔁 En Ucuz Mağaza Değişti: ${String(t.urun).slice(0, 60)}`,
             govde: `${formatTL(dogrulanmis.toplam)} — ${yeniEnUcuz.siteName}`,
@@ -343,6 +345,7 @@ async function tekUrunKontrol(t) {
       let hata = null;
       try {
         await bildirimleriGonder(konu, icerik, {
+          chatId: t.chatId || undefined,
           push: {
             baslik: `${simdiTukendi ? '📦 Tükendi' : '📦 Yeniden Stokta'}: ${String(t.urun).slice(0, 60)}`,
             govde: yeniEnUcuz ? `${formatTL(yeniEnUcuz.fiyat)} — ${yeniEnUcuz.siteName}` : 'Stok durumu değişti',
@@ -441,7 +444,12 @@ export async function telegramGonder(konu, icerik, opts = {}) {
   if (!token || !chatId) {
     throw new Error('Telegram Bot Token veya Chat ID tanımlı değil.');
   }
-  const text = '🔔 <b>' + konu + '</b>\n\n' + icerik;
+  // Ürün adları mağaza sayfalarından gelir; HTML parse hatası olmaması için kaçır.
+  const tg = (x) => String(x ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const text = '🔔 <b>' + tg(konu) + '</b>\n\n' + tg(icerik);
   const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
   const res = await fetch(url, {
     method: 'POST',
@@ -505,11 +513,12 @@ export async function bildirimleriGonder(konu, icerik, opts = {}) {
     }
   }
 
-  // Telegram
-  if (s.telegram?.enabled && s.telegram?.botToken && s.telegram?.chatId) {
+  // Telegram — kişisel alarmlarda `opts.chatId` (alarm sahibi) önceliklidir.
+  const hedefChat = opts.chatId || s.telegram?.chatId;
+  if (s.telegram?.enabled && s.telegram?.botToken && hedefChat) {
     try {
-      await telegramGonder(konu, icerik);
-      sonuclar.push({ kanal: 'telegram', durum: 'basarili' });
+      await telegramGonder(konu, icerik, { chatId: hedefChat });
+      sonuclar.push({ kanal: 'telegram', durum: 'basarili', chatId: String(hedefChat) });
     } catch (e) {
       sonuclar.push({ kanal: 'telegram', durum: 'hata', hata: e.message });
     }

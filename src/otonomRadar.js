@@ -601,6 +601,13 @@ export function radarTelegramIstegi(d, opts = {}) {
       url: `${config.publicUrl}/?url=${encodeURIComponent(d.kaynakUrl)}`,
     }]);
   }
+  // Kişisel alarm: karta basan kullanıcı için `tracked` kaydı oluşturur.
+  if (d?.stokta && d?.katalogId != null) {
+    satirlar.push([{
+      text: '🔔 Fiyatı Takibe Al',
+      callback_data: `alarm:takip:radar:${Number(d.katalogId)}`,
+    }]);
+  }
   return {
     yontem: 'sendMessage',
     body: {
@@ -672,6 +679,18 @@ function durumOku(anahtar) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Radar kartındaki `🔔 Fiyatı Takibe Al` butonu için son durum kaydı.
+ * Buton callback'i yalnızca katalog id'sini taşır; ürün/fiyat/URL buradan
+ * okunur (bot yeniden başlasa da çalışır).
+ * @param {number|string} katalogId
+ */
+export function radarDurumVerisi(katalogId) {
+  const id = Number(katalogId);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return durumOku(`katalog:${id}`);
 }
 
 function durumYaz(d) {

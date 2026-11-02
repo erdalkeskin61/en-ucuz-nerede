@@ -55,6 +55,230 @@ let tokenUyarisiVerildi = false;
 let gecersizToken = false;
 
 /* ------------------------------------------------------------------ */
+/* 🎯 Radar yönetimi (2026-11-02)                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Radar modülü DİNAMİK yüklenir: `otonomRadar.js`, bu dosyadan `esc`,
+ * `botPara` ve `kargoMetni` alıyor. Statik import döngüsel bağımlılık
+ * oluşturacağı için komut anında yüklenir (ESM döngüleri kırılgan).
+ */
+let radarModuluYukle = () => import('./otonomRadar.js');
+
+/** Test/teşhis: radar modülünü enjekte et (ağ/DB olmadan komut testi). */
+export function __radarModuluAyarla(fn) {
+  radarModuluYukle = typeof fn === 'function' ? fn : () => import('./otonomRadar.js');
+}
+
+/**
+ * Yönetici = `settings.telegram.chatId` (radar bildirim sohbeti de kabul edilir).
+ * Grup/kanal kimlikleri negatif olabilir; karşılaştırma string üzerinden.
+ */
+export function yoneticiMi(chatId) {
+  if (chatId == null) return false;
+  let s;
+  try { s = getSettings(); } catch { return false; }
+  const id = String(chatId).trim();
+  if (!id) return false;
+  const adaylar = [s?.telegram?.chatId, s?.radar?.chatId]
+    .map(x => String(x ?? '').trim())
+    .filter(Boolean);
+  return adaylar.includes(id);
+}
+
+const YONETICI_UYARISI = '⚠️ Bu komut yalnızca sistem yöneticisine açıktır.';
+
+/**
+ * `/radar_ekle@Bot Ad` → `{ komut: '/radar_ekle', args: 'Ad' }`.
+ * Bot adı soneki ve büyük/küçük harf farkı normalize edilir.
+ */
+export function komutAyikla(text) {
+  const m = String(text || '').trim()
+    .match(/^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/);
+  if (!m) return null;
+  return { komut: '/' + m[1].toLowerCase(), args: String(m[2] || '').trim() };
+}
+
+/** "02.11.2026 16:30" biçiminde kısa tarih; geçersizse null. */
+function tarihKisa(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString('tr-TR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+/** Türkçe-duyarlı küçük harf (I/İ sorunu olmadan arama). */
+function trKucult(s) {
+  return String(s || '').toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim();
+}
+
+/** /radar — durum özeti + stoktaki dip fiyatlar + tarama butonu. */
+async function radarDurumMesaji() {
+  const r = await radarModuluYukle();
+  const d = r.radarDurum();
+  const a = d.ayar || {};
+  const saat = Number(a.saatAraligi) || 4;
+  const durum = a.enabled
+    ? `🟢 <b>Açık</b> — her ${saat} saatte bir otomatik tarama`
+    : `⚪ <b>Kapalı</b> — her ${saat} saatte bir (elle çalıştırılabilir)`;
+
+  const rapor = d.sonRapor || null;
+  const son = tarihKisa(d.sonCalisma);
+  const sonSatir = son
+    ? `🕒 Son tur: <b>${esc(son)}</b>` + (rapor
+      ? ` — ${Number(rapor.taranan) || 0} tarandı, ${Number(rapor.stoktaBulunan) || 0} stokta, `
+        + (Number(rapor.hataSayisi) ? `⚠️ ${Number(rapor.hataSayisi)} hata` : 'hata yok')
+      : '')
+    : '🕒 Son tur: <i>henüz çalışmadı</i>';
+
+  const enUcuzlar = (d.durumlar || [])
+    .filter(x => x?.stokta && Number(x.fiyat) > 0)
+    .slice(0, 6)
+    .map(x => `• ${esc(baslikKisalt(x.ad || 'Ürün', 45))} — <b>${botPara(x.fiyat)}</b> `
+      + `(${esc(x.site || '—')})`);
+
+  const satirlar = [
+    '🎯 <b>OTONOM FİYAT RADARI</b>',
+    '━━━━━━━━━━━━━━━━━━━━',
+    durum,
+    `📦 Takipte: <b>${Number(d.katalogSayisi) || 0} ürün</b>`,
+    sonSatir,
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🏆 <b>Stoktaki En Ucuzlar:</b>',
+    ...(enUcuzlar.length
+      ? enUcuzlar
+      : ['<i>Henüz stokta fiyat kaydı yok — ilk taramayı başlatın.</i>']),
+  ];
+  if (Number(d.gonderim?.bugun) > 0) {
+    satirlar.push(`📨 Bugün gönderilen bildirim: <b>${Number(d.gonderim.bugun)}</b>`);
+  }
+  satirlar.push('━━━━━━━━━━━━━━━━━━━━');
+  satirlar.push('🎛️ /radar_liste · /radar_tara · /radar_ekle · /radar_sil');
+
+  return {
+    metin: satirlar.join('\n').slice(0, MESAJ_LIMIT),
+    butonlar: {
+      inline_keyboard: [[{ text: '🧪 Şimdi Taramayı Başlat', callback_data: 'radar_tara' }]],
+    },
+  };
+}
+
+/** /radar_liste — ID + kategori + ad. */
+async function radarListeMesaji() {
+  const r = await radarModuluYukle();
+  const katalog = r.katalogGetir();
+  if (!katalog.length) {
+    return '📭 Radar kataloğu boş.\n\nEklemek için: <code>/radar_ekle Ürün Adı 1kg</code>';
+  }
+  const satirlar = katalog.slice(0, 60).map((k, i) => {
+    const ikon = k.kategori === 'yazici' ? '🖨️' : k.kategori === 'filament' ? '🧵' : '📦';
+    return `${i + 1}. ${ikon} ${esc(baslikKisalt(k.ad, 55))} [ID: ${Number(k.id)}]`;
+  });
+  const kalan = katalog.length > 60
+    ? `\n\n<i>… ve ${katalog.length - 60} ürün daha</i>` : '';
+  return `🗂️ <b>Radar Takip Kataloğu (${katalog.length})</b>\n━━━━━━━━━━━━━━━━━━━━\n`
+    + satirlar.join('\n') + kalan
+    + '\n\n🗑️ Silmek için: <code>/radar_sil 5</code> veya <code>/radar_sil Ürün Adı</code>';
+}
+
+/** /radar_tara — arka planda 61 mağaza taramasını başlatır. */
+async function radarTaramaBaslatMesaji() {
+  const r = await radarModuluYukle();
+  const d = r.radarDurum();
+  const adet = Number(d?.katalogSayisi) || 0;
+  if (!adet) {
+    return '📭 Radar kataloğu boş — önce <code>/radar_ekle</code> ile ürün ekleyin.';
+  }
+  const sonuc = r.radarBaslat({ zorla: true, gonder: true });
+  if (sonuc?.basladi === false) {
+    return '⏳ Otonom radar taraması zaten çalışıyor. Bitmesini bekleyin.';
+  }
+  return '🚀 Otonom radar taraması arka planda başlatıldı!\n\n'
+    + `📦 <b>${adet} ürün</b> 61 mağazada taranıyor, bitince bildirimler kanala iletilecektir.`;
+}
+
+/** /radar_ekle &lt;ürün adı&gt; */
+async function radarEkleMesaji(args) {
+  const ad = String(args || '').replace(/\s+/g, ' ').trim();
+  if (ad.length < 2) {
+    return '💡 Kullanım: <code>/radar_ekle Polymaker PolyTerra PLA Beyaz 1kg</code>';
+  }
+  if (ad.length > 160) return '⚠️ Ürün adı en fazla 160 karakter olabilir.';
+  try {
+    const r = await radarModuluYukle();
+    const kayit = r.katalogEkle({ ad, sorgu: ad });
+    return `✅ "<b>${esc(kayit.ad)}</b>" radar takip kataloğuna eklendi `
+      + `(ID: <b>${Number(kayit.id)}</b>).\nBir sonraki turda 61 mağazada taranacaktır.`;
+  } catch (e) {
+    return '❌ Katalog güncellenemedi: ' + esc(String(e?.message || e).slice(0, 180));
+  }
+}
+
+/** /radar_sil &lt;ID | ürün adı&gt; */
+async function radarSilMesaji(args) {
+  const hedef = String(args || '').trim();
+  if (!hedef) {
+    return '💡 Kullanım: <code>/radar_sil 5</code> veya <code>/radar_sil Ürün Adı</code>';
+  }
+  const r = await radarModuluYukle();
+  const katalog = r.katalogGetir();
+  let kayit = null;
+  if (/^\d+$/.test(hedef)) {
+    kayit = katalog.find(k => Number(k.id) === Number(hedef)) || null;
+  } else {
+    const q = trKucult(hedef);
+    kayit = katalog.find(k => trKucult(k.ad) === q)
+      || katalog.find(k => trKucult(k.sorgu) === q)
+      || katalog.find(k => trKucult(k.ad).includes(q))
+      || null;
+  }
+  if (!kayit) {
+    return `❓ "<b>${esc(baslikKisalt(hedef, 60))}</b>" katalogda bulunamadı.\n`
+      + 'Liste: /radar_liste';
+  }
+  const silindi = r.katalogSil(kayit.id);
+  if (!silindi) return '❌ Ürün silinemedi (kayıt bulunamadı).';
+  return `🗑️ "<b>${esc(kayit.ad)}</b>" radar kataloğundan çıkarıldı.`;
+}
+
+/** Radar kartındaki 🔔 butonu: kullanıcıya özel `tracked` kaydı oluşturur. */
+async function radarAlarmKur(chatId, katalogId) {
+  const r = await radarModuluYukle();
+  const d = r.radarDurumVerisi(Number(katalogId));
+  if (!d?.stokta || !(Number(d.fiyat) > 0)) {
+    return {
+      ok: false,
+      mesaj: '⚠️ Bu ürün için güncel stokta fiyat bulunamadı. '
+        + 'Lütfen /radar_tara ile yeniden taratın.',
+    };
+  }
+  const url = d.hamUrl || d.afiliyeUrl || null;
+  if (!url) {
+    return { ok: false, mesaj: '⚠️ Ürün bağlantısı bulunamadı; alarm kurulamadı.' };
+  }
+  const urun = baslikKisalt(d.ad || d.urun || 'Ürün', 140);
+  const kayit = addTracked({
+    urun,
+    hedefFiyat: Number(d.fiyat),
+    urunler: [{ site: d.siteId || d.site, url }],
+    chatId,
+  });
+  if (!kayit?.id) {
+    return { ok: false, mesaj: '❌ Alarm kaydedilemedi (veritabanı hatası).' };
+  }
+  return {
+    ok: true,
+    mesaj: `🔔 "<b>${esc(urun)}</b>" için fiyat takip alarmınız kuruldu!\n\n`
+      + `🎯 Mevcut en ucuz: <b>${botPara(d.fiyat)}</b> (${esc(d.site || '—')})\n`
+      + 'Fiyat bu seviyenin altına düştüğünde size özel mesaj gönderilecektir.\n'
+      + 'Takipleriniz: /liste',
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Yardımcılar                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -346,7 +570,11 @@ export function butonlariOlustur(res, { takipHash = null, kaynakUrl = null } = {
     }
   }
   const ikinci = [];
-  if (takipHash) ikinci.push({ text: '🔔 Fiyatı Takibe Al', callback_data: `takip_${takipHash}` });
+  if (takipHash) {
+    // 2026-11-02: kişisel alarm callback'i (`alarm:takip:<hash>`).
+    // Eski mesajlardaki `takip_<hash>` biçimi de desteklenmeye devam eder.
+    ikinci.push({ text: '🔔 Fiyatı Takibe Al', callback_data: `alarm:takip:${takipHash}` });
+  }
   const detayUrl = kaynakUrl
     ? `${config.publicUrl}/?url=${encodeURIComponent(kaynakUrl)}`
     : `${config.publicUrl}/`;
@@ -388,7 +616,7 @@ function takipTemizle() {
  * `🔔 Fiyatı Takibe Al` butonu.
  * @returns {{mesaj:string, kayit?:object}}
  */
-export function takipEt(hash) {
+export function takipEt(hash, chatId = null) {
   takipTemizle();
   const kayit = TAKIP_BEKLEYEN.get(String(hash || ''));
   if (!kayit) {
@@ -413,14 +641,16 @@ export function takipEt(hash) {
     image: kayit.image,
     hedefFiyat: kayit.hedefFiyat,
     urunler: kayit.urunler,
+    // Kişisel alarm: bildirim yalnızca bu sohbete gider.
+    chatId,
   });
   kayit.kullanildi = true;
   kayit.takipId = eklendi?.id || null;
   return {
-    mesaj: `✅ <b>Ürün takibe alındı!</b>\n\n`
-      + `🏷️ ${esc(kayit.urun)}\n`
-      + `🎯 Hedef: <b>${kayit.hedefFiyat != null ? botPara(kayit.hedefFiyat) : '—'}</b> (mevcut en ucuz fiyat)\n\n`
-      + 'Fiyat düşünce bildirim alacaksınız. Takiplerinizi /takipler ile görebilirsiniz.',
+    mesaj: `🔔 "<b>${esc(kayit.urun)}</b>" için fiyat takip alarmınız kuruldu!\n\n`
+      + `🎯 Mevcut en ucuz: <b>${kayit.hedefFiyat != null ? botPara(kayit.hedefFiyat) : '—'}</b>\n`
+      + 'Fiyat bu seviyenin altına düştüğünde size özel mesaj gönderilecektir.\n'
+      + 'Takipleriniz: /liste',
     kayit: eklendi,
   };
 }
@@ -558,16 +788,33 @@ const YARDIM_METNI = `🏷️ <b>En Ucuz Nerede? — Fiyat Asistanı</b>
 2) 💬 <b>Ürün adı</b> yazın — ör. <i>Bambu Lab P1S</i>, <i>eSun PLA+</i>, <i>iPhone 15</i>
 
 <b>Komutlar:</b>
-• /liste — aktif fiyat takipleriniz
+• /liste — aktif fiyat alarmlarınız
 • /yardim — bu mesaj
 
-Sonuç mesajındaki butonlarla mağazaya gidebilir, tek tıkla takip kurabilirsiniz.`;
+<b>🎯 Otonom Fiyat Radarı</b>
+• /radar — durum özeti + stoktaki en ucuzlar
+• /radar_liste — takip kataloğu (ID + kategori)
+• /radar_tara — 61 mağazada hemen tara <i>(yönetici)</i>
+• /radar_ekle &lt;ürün adı&gt; — kataloğa ekle <i>(yönetici)</i>
+• /radar_sil &lt;ID | ürün adı&gt; — katalogdan çıkar <i>(yönetici)</i>
 
-function takipListesiMetni() {
-  const list = getTracked();
+Sonuç mesajındaki butonlarla mağazaya gidebilir, <b>🔔 tek tıkla kişisel fiyat alarmı</b> kurabilirsiniz.`;
+
+function takipListesiMetni(chatId) {
+  const hepsi = getTracked();
+  const yonetici = yoneticiMi(chatId);
+  // Genel kullanıcı YALNIZCA kendi alarmlarını görür; yönetici tümünü görür
+  // (chatId'siz eski kayıtlar da yöneticiye aittir).
+  const list = yonetici
+    ? hepsi
+    : hepsi.filter(t => t.chatId && String(t.chatId) === String(chatId));
+
   if (!list?.length) {
-    return '📭 Henüz takibe aldığınız ürün yok.\n\n'
-      + 'Bir ürün aradıktan sonra <b>🔔 Fiyatı Takibe Al</b> butonuna basmanız yeterli.';
+    return yonetici
+      ? '📭 Henüz takibe aldığınız ürün yok.\n\n'
+        + 'Bir ürün aradıktan sonra <b>🔔 Fiyatı Takibe Al</b> butonuna basmanız yeterli.'
+      : '📭 Bu sohbette kayıtlı fiyat alarmınız yok.\n\n'
+        + 'Bir ürün aradıktan sonra <b>🔔 Fiyatı Takibe Al</b> butonuna basın.';
   }
   const satirlar = list.slice(0, 12).map((t, i) => {
     const ad = baslikKisalt(t.urun || 'Ürün', 55);
@@ -578,7 +825,8 @@ function takipListesiMetni() {
     const sonFiyat = son ? botPara(son.fiyat) : '—';
     const dot = Number.isFinite(Number(t.hedefFiyat)) && son && Number(son.fiyat) <= Number(t.hedefFiyat)
       ? '🟢' : '⚪';
-    return `${dot} ${i + 1}. <b>${esc(ad)}</b>\n     🎯 ${hedef} · Son: ${sonFiyat}`;
+    const sahip = yonetici && t.chatId ? ` · 👤 ${esc(t.chatId)}` : '';
+    return `${dot} ${i + 1}. <b>${esc(ad)}</b>${sahip}\n     🎯 ${hedef} · Son: ${sonFiyat}`;
   });
   const kalan = list.length > 12 ? `\n\n<i>… ve ${list.length - 12} takip daha</i>` : '';
   return `🔔 <b>Aktif Fiyat Takipleriniz (${list.length}):</b>\n\n${satirlar.join('\n')}${kalan}`;
@@ -596,14 +844,45 @@ export async function handleMessage(token, msg) {
   const text = String(msg?.text || '').trim();
   if (!chatId || !text) return;
 
-  // ---- Komutlar ----
-  if (text === '/start' || text === '/yardim' || text === '/help') {
-    await sendTelegram(token, chatId, YARDIM_METNI);
-    return;
-  }
-  if (text === '/takipler' || text === '/liste') {
-    await sendTelegram(token, chatId, takipListesiMetni());
-    return;
+  // ---- Komutlar (2026-11-02: radar yönetimi + kişisel alarmlar) ----
+  const komut = komutAyikla(text);
+  if (komut) {
+    if (komut.komut === '/start' || komut.komut === '/yardim' || komut.komut === '/help') {
+      await sendTelegram(token, chatId, YARDIM_METNI);
+      return;
+    }
+    if (komut.komut === '/takipler' || komut.komut === '/liste') {
+      await sendTelegram(token, chatId, takipListesiMetni(chatId));
+      return;
+    }
+    if (komut.komut === '/radar' || komut.komut === '/radar_durum') {
+      const m = await radarDurumMesaji();
+      await sendTelegram(token, chatId, m.metin, { extra: { reply_markup: m.butonlar } });
+      return;
+    }
+    if (komut.komut === '/radar_liste') {
+      await sendTelegram(token, chatId, await radarListeMesaji());
+      return;
+    }
+    if (komut.komut === '/radar_tara' || komut.komut === '/radar_ekle' || komut.komut === '/radar_sil') {
+      if (!yoneticiMi(chatId)) {
+        await sendTelegram(token, chatId, YONETICI_UYARISI);
+        return;
+      }
+      if (komut.komut === '/radar_tara') {
+        await sendTelegram(token, chatId, await radarTaramaBaslatMesaji());
+      } else if (komut.komut === '/radar_ekle') {
+        await sendTelegram(token, chatId, await radarEkleMesaji(komut.args));
+      } else {
+        await sendTelegram(token, chatId, await radarSilMesaji(komut.args));
+      }
+      return;
+    }
+    if (komut.komut.startsWith('/radar')) {
+      await sendTelegram(token, chatId,
+        '❓ Bilinmeyen radar komutu. Komutlar için /yardim yazın.');
+      return;
+    }
   }
 
   // ---- URL mi, ürün adı mı? ----
@@ -667,11 +946,41 @@ export async function handleCallbackQuery(token, cb) {
 
   if (!chatId) return;
 
+  // 🔔 Kişisel alarm: `alarm:takip:<hash>` (arama sonucu) veya
+  //    `alarm:takip:radar:<katalogId>` (radar kartı).
+  if (data.startsWith('alarm:takip:')) {
+    const kalan = data.slice('alarm:takip:'.length);
+    if (kalan.startsWith('radar:')) {
+      const sonuc = await radarAlarmKur(chatId, Number(kalan.slice('radar:'.length)));
+      await answerCallback(token, cbId,
+        sonuc.ok ? 'Fiyat alarmı kuruldu 🔔' : 'Alarm kurulamadı', !sonuc.ok);
+      await sendTelegram(token, chatId, sonuc.mesaj).catch(() => {});
+    } else {
+      const sonuc = takipEt(kalan, chatId);
+      await answerCallback(token, cbId,
+        sonuc.kayit ? 'Fiyat alarmı kuruldu 🔔' : 'Alarm kurulamadı', !sonuc.kayit);
+      await sendTelegram(token, chatId, sonuc.mesaj).catch(() => {});
+    }
+    return;
+  }
+
+  // Eski mesajlardaki `takip_<hash>` biçimi de çalışmaya devam eder.
   if (data.startsWith('takip_')) {
     const hash = data.slice('takip_'.length);
-    const sonuc = takipEt(hash);
+    const sonuc = takipEt(hash, chatId);
     await answerCallback(token, cbId, sonuc.kayit ? 'Takibe alındı ✅' : 'Takip oluşturulamadı', !sonuc.kayit);
     await sendTelegram(token, chatId, sonuc.mesaj).catch(() => {});
+    return;
+  }
+
+  // 🧪 /radar kartındaki "Şimdi Taramayı Başlat" butonu (yönetici).
+  if (data === 'radar_tara') {
+    if (!yoneticiMi(chatId)) {
+      await answerCallback(token, cbId, YONETICI_UYARISI, true);
+      return;
+    }
+    await answerCallback(token, cbId, 'Tarama başlatılıyor…');
+    await sendTelegram(token, chatId, await radarTaramaBaslatMesaji()).catch(() => {});
     return;
   }
 

@@ -231,22 +231,44 @@ Filamentlerde ek satırlar:
 | Buton | Davranış |
 |---|---|
 | 🛒 En Ucuz Mağazaya Git | Afiliye linkle mağazayı açar |
-| 🔔 Fiyatı Takibe Al | `addTracked()` ile hedef fiyat = mevcut en ucuz |
+| 🔔 Fiyatı Takibe Al | `alarm:takip:<hash>` → `addTracked()` (hedef = mevcut en ucuz, **sohbet bazlı**) |
 | 🌐 Sitede Detaylı İncele | `PUBLIC_URL/?url=…` karşılaştırma sayfası |
+
+Kişisel alarm kaydı `tracked.chatId` ile saklanır: fiyat düştüğünde / mağaza
+değiştiğinde bildirim **yalnızca alarmı kuran sohbete** gider (`/liste` de o
+sohbetin alarmlarını gösterir).
 
 ### SWR
 Son **2 saat** içinde taranmış ürün önbellekten **anında** yanıtlanır:
 `⚡ (Son kontrol: 15 dk önce)`.
 
 ### Komutlar
-`/start`, `/yardim`, `/liste`, `/takipler`
+
+| Komut | Yetki | Açıklama |
+|---|---|---|
+| `/start`, `/yardim` | Herkes | Yardım menüsü (radar komutları dahil) |
+| `/liste`, `/takipler` | Herkes | **Yalnızca o sohbetin** fiyat alarmları |
+| `/radar`, `/radar_durum` | Herkes | 🟢/⚪ durum, katalog sayısı, son tur, stoktaki dip fiyatlar + `[🧪 Şimdi Taramayı Başlat]` |
+| `/radar_liste` | Herkes | Takip kataloğu (ID + kategori + ad) |
+| `/radar_tara` | **Yönetici** | `radarBaslat({ zorla:true, gonder:true })` — arka planda 61 mağaza |
+| `/radar_ekle <ürün adı>` | **Yönetici** | `katalogEkle({ ad, sorgu })` — ör. `/radar_ekle Polymaker PolyTerra PLA Beyaz 1kg` |
+| `/radar_sil <ID \| ürün adı>` | **Yönetici** | `katalogSil(id)` — ürün ve `radar_durum` kaydı silinir |
+
+Yönetici = `settings.telegram.chatId` (radar bildirim sohbeti de kabul edilir).
+Yabancı kullanıcı yönetim komutunu denerse
+`⚠️ Bu komut yalnızca sistem yöneticisine açıktır.` yanıtı alır; arama, `/liste`
+ve kişisel alarmlar herkese açıktır. Radar kartlarındaki
+**🔔 Fiyatı Takibe Al** butonu `alarm:takip:radar:<katalogId>` callback'i ile
+kullanıcıya özel alarm kurar.
 
 ### Dayanıklılık
 - Token yoksa bot çökmez; uyarı basıp bekler. Token geçersizse (401/404) polling durur.
 - Tüm metinler `esc()` ile HTML-escape edilir (parse hatası yok).
 - Sohbet başına sıralı kuyruk: peş peşe aramalar botu kilitlemez.
 
-Test: `node scripts/test-telegram-bot.mjs` (88 kontrol).
+Test: `node scripts/test-telegram-bot.mjs` (88 kontrol) ·
+`node scripts/test-telegram-radar.mjs` (103 kontrol; admin koruması, komutlar,
+callback'ler ve kişisel alarm `chatId` izolasyonu — ağ isteği yok).
 Bot token'ı Ayarlar sayfasından girilir (`telegram.botToken`).
 
 
@@ -376,6 +398,8 @@ npm run test:ui           # tasarım sistemi sözleşmesi
 npm run test:ayar         # ayar kaydı kalıcılığı
 npm run test:firsat       # otonom fırsat kanalı
 npm run test:radar        # otonom 3D fiyat radarı (stok filtresi + cooldown)
+npm run test:telegram     # Telegram asistanı (arama/buton/SWR/takip)
+npm run test:telegram-radar  # Telegram radar komutları + kişisel alarm
 npm run test:link         # linkte ara
 npm run test:gecmis       # son aramalar linkleri
 npm run test:stok         # stok sıralama (npm dışı: node scripts/test-stok.mjs)

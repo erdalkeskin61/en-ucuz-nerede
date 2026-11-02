@@ -21,6 +21,7 @@
     "test:ux": "node scripts/test-ui-ux-2026.mjs",
     "test:typeahead": "node scripts/test-typeahead-birim.mjs",
     "test:telegram": "node scripts/test-telegram-bot.mjs",
+    "test:telegram-radar": "node scripts/test-telegram-radar.mjs",
     "test:radar": "node scripts/test-otonom-radar.mjs"
   },
   "dependencies": {
