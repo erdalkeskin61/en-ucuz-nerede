@@ -85,9 +85,32 @@ function sadeleştir(s) {
   return kucult(s).replace(/[\s\-_+/.,()]+/g, '');
 }
 
+/** Levenshtein mesafesi (küçük dizeler; yazım hatası toleransı için). */
+export function mesafe(a, b) {
+  const s = String(a || '');
+  const t = String(b || '');
+  if (!s.length) return t.length;
+  if (!t.length) return s.length;
+  let onceki = Array.from({ length: t.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= s.length; i++) {
+    const simdiki = [i];
+    for (let j = 1; j <= t.length; j++) {
+      const maliyet = s[i - 1] === t[j - 1] ? 0 : 1;
+      simdiki[j] = Math.min(simdiki[j - 1] + 1, onceki[j] + 1, onceki[j - 1] + maliyet);
+    }
+    onceki = simdiki;
+  }
+  return onceki[t.length];
+}
+
 /**
  * Sorgu–aday puanı. Yüksek puan önce gelir.
- * 100 tam eşleşme · 80 baştan · 60 kelime başı · 45 içerir · 25 sadeleşmiş içerir
+ * 100 tam eşleşme · 80 baştan · 60 kelime başı · 55/54 yazım hatası (1 harf)
+ * · 45 içerir · 25 sadeleşmiş içerir
+ *
+ * YAZIM HATASI TOLERANSI (2026-11-03): "ban" yazan kullanıcı "Bambu Lab P1S"
+ * görmeli. Kelimenin ilk harfleriyle Levenshtein mesafesi ≤1 ise eşleşir;
+ * bu puan düz alt-dize eşleşmesinden (45) yüksektir ki doğru ürün öne çıksın.
  */
 export function puanla(metin, sorgu) {
   const m = kucult(metin);
@@ -97,6 +120,18 @@ export function puanla(metin, sorgu) {
   if (m.startsWith(q)) return 80;
   const kelimeler = m.split(/[\s\-_+/.,()]+/).filter(Boolean);
   if (kelimeler.some((k) => k.startsWith(q))) return 60;
+
+  if (q.length >= 3) {
+    let enIyi = 0;
+    for (const k of kelimeler) {
+      if (k.length < q.length) continue;
+      const d = mesafe(q, k.slice(0, q.length));
+      if (d === 1) enIyi = Math.max(enIyi, q.length >= 6 ? 55 : 54);
+      else if (d === 2 && q.length >= 6) enIyi = Math.max(enIyi, 50);
+    }
+    if (enIyi) return enIyi;
+  }
+
   if (m.includes(q)) return 45;
   const ms = sadeleştir(metin);
   const qs = sadeleştir(sorgu);
@@ -166,6 +201,38 @@ export function oneriOnbelleginiTemizle() {
  * @param {{limit?:number, bosSorguPopuler?:boolean}} [opts]
  * @returns {Array<{metin:string, tur:string, etiket:string, url:string|null}>}
  */
+const YAZICI_RE = /(3d\s*yaz[ıi]c[ıi]|yaz[ıi]c[ıi]|printer|bambu\s*lab\s*(a1|p1|x1)|creality\s*(k1|k2|ender|halot)|elegoo|anycubic|prusa|artillery|sovol|qidi|ender\s*\d)/i;
+const FILAMENT_RE = /(filament|pla\+?|petg|tpu|abs|asa|re[çc]ine|resin|polyterra|polycarbonate|nylon|karbon\s*fiber)/i;
+
+/**
+ * Öneri ikonu için ürün kategorisi (uydurma değil; ad üzerinden sınıflandırma).
+ * @returns {'yazici'|'filament'|'genel'}
+ */
+const YAZICI_GUCLU_RE = /(3d\s*yaz[ıi]c[ıi]|\byaz[ıi]c[ıi]\b|\bprinter\b)/i;
+
+/**
+ * Ürün adından kategori çıkarır (uydurma değil; yalnızca metin sınıflandırması).
+ *
+ * Sıra önemli:
+ *  1) Açık "3D Yazıcı / printer" ifadesi → yazıcı
+ *     ("Anycubic Kobra X 3D Yazıcı ... Filament Desteği" başlığı yazıcıdır)
+ *  2) Filament/reçine anahtar kelimesi → filament
+ *     ("Creality Ender PLA+ 1 kg" marka yazıcı olsa da filamente ait)
+ *  3) Yalnızca marka/model geçiyorsa → yazıcı
+ */
+export function kategoriBul(metin) {
+  const s = String(metin || '');
+  if (YAZICI_GUCLU_RE.test(s)) return 'yazici';
+  if (FILAMENT_RE.test(s)) return 'filament';
+  if (YAZICI_RE.test(s)) return 'yazici';
+  return 'genel';
+}
+
+/** Kategori → emoji (typeahead satır ikonu). */
+function kategoriIkon(kategori) {
+  return kategori === 'yazici' ? '🖨️' : (kategori === 'filament' ? '🧵' : '📦');
+}
+
 export function onerileriGetir(sorgu, opts = {}) {
   const q = String(sorgu || '').trim().slice(0, 80);
   const limit = Math.max(1, Math.min(Number(opts.limit) || 8, 20));
@@ -173,7 +240,10 @@ export function onerileriGetir(sorgu, opts = {}) {
   const havuz = [
     ...POPULER_URUNLER.map((m) => ({ metin: m, tur: 'populer', url: null, etiket: 'Popüler' })),
     ...dinamikKayitlar(),
-  ];
+  ].map((k) => {
+    const kategori = kategoriBul(k.metin);
+    return { ...k, kategori, ikon: kategoriIkon(kategori) };
+  });
 
   // Boş sorgu: popüler listeyi döndür (odaklanınca kutu boş kalmasın).
   if (!q) {
@@ -187,8 +257,10 @@ export function onerileriGetir(sorgu, opts = {}) {
     const aday = havuz[i];
     const p = puanla(aday.metin, q);
     if (!p) continue;
-    // Dinamik kayıtlar (kullanıcının kendi araması) eşit puanda öne geçsin.
-    const ekPuan = aday.tur === 'gecmis' ? 6 : (aday.tur === 'takip' ? 8 : 0);
+    // Dinamik kayıtlar (kullanıcının kendi araması) YALNIZCA gerçek eşleşmede
+    // (60+) öne geçsin. Aksi hâlde "ban" gibi yazım-hatası sorgularında rastgele
+    // geçmiş kayıtları "Bambu Lab P1S"in önüne çıkıyordu.
+    const ekPuan = p >= 60 ? (aday.tur === 'gecmis' ? 6 : (aday.tur === 'takip' ? 8 : 0)) : 0;
     puanli.push({ ...aday, _puan: p + ekPuan, _sira: i });
   }
 

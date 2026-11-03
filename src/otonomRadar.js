@@ -1124,6 +1124,112 @@ export function radarDurum() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Canlı vitrin (ana sayfa "borsa" ekranı) — 2026-11-03               */
+/* ------------------------------------------------------------------ */
+
+const VITRIN_KATEGORI_IKON = { filament: '🧵', yazici: '🖨️', genel: '📦' };
+
+/**
+ * Ana sayfadaki canlı "Filament & 3D Yazıcı Borsası" için TEMİZ veri.
+ *
+ * Yalnızca herkese açık alanlar döner (sohbet kimliği, token, PID yok).
+ * Sıralama: stokta olanlar önce, sonra fiyat artan. Stokta olmayanlar
+ * `stokta:false` ile listenin sonunda gösterilir (⚪).
+ *
+ * "En Dip Fiyat" rozeti UYDURULMAZ: yalnızca ürünün gerçek geçmişindeki
+ * minimum fiyata eşitse verilir ve en az 2 geçmiş noktası ister.
+ *
+ * @param {{limit?:number, seriNokta?:number}} [opts]
+ */
+export function vitrinVerisi(opts = {}) {
+  const limit = Math.max(1, Math.min(24, Number(opts.limit) || 12));
+  const seriNokta = Math.max(2, Math.min(40, Number(opts.seriNokta) || 12));
+  let rows = [];
+  try {
+    rows = veritabani().prepare(`
+      SELECT katalog_id, urun, site, site_id, fiyat, stokta, ts, veri
+      FROM radar_durum ORDER BY stokta DESC, fiyat ASC
+    `).all();
+  } catch {
+    return { ok: true, guncelleme: null, toplam: 0, gosterilen: 0, urunler: [] };
+  }
+
+
+  const urunler = [];
+  let guncelleme = 0;
+  for (const r of rows) {
+    if (urunler.length >= limit) break;
+    let d = null;
+    try { d = JSON.parse(r.veri); } catch { d = null; }
+    if (!d || typeof d !== 'object') continue;
+    const id = Number(r.katalog_id ?? d.katalogId);
+    if (!Number.isFinite(id)) continue;
+
+    const fiyat = Number.isFinite(Number(r.fiyat)) ? Number(r.fiyat) : null;
+    if (fiyat == null || fiyat <= 0) continue; // fiyatsız kart borsada işe yaramaz
+    const stokta = Number(r.stokta) === 1;
+    guncelleme = Math.max(guncelleme, Number(r.ts) || 0);
+
+    // Trend serisi (sparkline) + "En Dip" kararı.
+    // radarSerisi() radar_gecmis ile aynı ürünün price_history kayıtlarını
+    // birleştirir → daha uzun GERÇEK geçmiş (uydurma nokta yok).
+    let seri = [];
+    try {
+      seri = radarSerisi(id, { gun: 90, limit: Math.max(seriNokta, 40) })
+        .map(x => Math.round(Number(x.fiyat) * 100) / 100);
+    } catch { seri = []; }
+    const onceki = seri.length >= 2 ? seri[seri.length - 2] : null;
+    const degisim = (onceki != null && fiyat != null)
+      ? Math.round((fiyat - onceki) * 100) / 100
+      : null;
+
+    const enPahali = Number(d.enPahaliFiyat);
+    const tasarruf = Number(d.tasarruf);
+    const indirimYuzde = (Number.isFinite(enPahali) && enPahali > 0 && Number.isFinite(tasarruf) && tasarruf > 0)
+      ? Math.round((tasarruf / enPahali) * 100)
+      : 0;
+
+    // "En Dip Fiyat" yalnızca gerçek geçmiş minimumuna eşitse ve en az 2
+    // gözlem varsa verilir; tek noktadan "dip" iddia edilmez.
+    const gecmisMin = seri.length >= 2 ? Math.min(...seri) : null;
+    const dip = !!(stokta && gecmisMin != null && fiyat != null
+      && fiyat <= gecmisMin + 0.009);
+
+    const url = d.afiliyeUrl || d.hamUrl || null;
+    if (!url) continue;
+
+    urunler.push({
+      id,
+      ad: d.ad || r.urun || 'Ürün',
+      kategori: d.kategori || 'genel',
+      ikon: VITRIN_KATEGORI_IKON[d.kategori] || '📦',
+      site: d.site || r.site || null,
+      siteId: d.siteId || r.site_id || null,
+      fiyat,
+      stokta,
+      birimMetni: d.birimMetni || null,
+      kargo: d.kargo || null,
+      url,
+      afiliye: !!(d.afiliyeUrl && d.afiliyeUrl !== d.hamUrl),
+      dip,
+      indirimYuzde,
+      tasarruf: Number.isFinite(tasarruf) ? tasarruf : 0,
+      degisim,
+      seri: seri.slice(-Math.max(2, seriNokta)),
+      ts: Number(r.ts) || null,
+    });
+  }
+
+  return {
+    ok: true,
+    guncelleme: guncelleme ? new Date(guncelleme).toISOString() : null,
+    toplam: rows.length,
+    gosterilen: urunler.length,
+    urunler,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Zamanlayıcı                                                         */
 /* ------------------------------------------------------------------ */
 

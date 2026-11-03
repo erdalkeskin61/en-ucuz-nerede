@@ -178,7 +178,34 @@ kontrol('app: tlKg artan sıralama', /return av - bv;/.test(app));
 kontrol('app: birim fiyatsızlar sona', /if \(av == null\) return 1;/.test(app));
 
 /* ---------------------------------------------------------------- */
-bolum('E) Canlı API');
+bolum('E) Yazım hatası toleransı + kategori ikonu (2026-11-03)');
+
+// "ban" → "Bambu Lab P1S": Levenshtein mesafesi 1 olan kelime başı eşleşmesi.
+const ban = onerileriGetir('ban', { limit: 6 });
+kontrol('"ban" → Bambu ürünleri', ban.some(x => /Bambu/i.test(x.metin)), ban.map(x => x.metin).join(' | '));
+kontrol('"ban" ilk sonuç yazıcı', /Bambu/i.test(ban[0]?.metin || ''), ban[0]?.metin);
+kontrol('"ban" yazıcı ikonu 🖨️', ban[0]?.ikon === '🖨️', String(ban[0]?.ikon));
+
+const esu = onerileriGetir('esu', { limit: 6 });
+kontrol('"esu" → eSun filamentleri', esu.some(x => /esun/i.test(x.metin)));
+kontrol('"esu" filament ikonu 🧵', esu[0]?.ikon === '🧵', String(esu[0]?.ikon));
+
+const bambFuzzy = onerileriGetir('bamb', { limit: 4 });
+kontrol('"bamb" → 4 Bambu modeli', bambFuzzy.filter(x => /Bambu Lab/i.test(x.metin)).length >= 3);
+kontrol('model adları korunur (P1S, A1 Mini)', bambFuzzy.some(x => /P1S/.test(x.metin)) && bambFuzzy.some(x => /A1 Mini/.test(x.metin)));
+
+// Kategori sınıflandırması: filament anahtar kelimesi markadan önce gelir.
+const ender = onerileriGetir('ender', { limit: 6 });
+const enderFilament = ender.find(x => /PLA/i.test(x.metin));
+kontrol('"Creality Ender PLA" filamente sınıflandı', enderFilament?.ikon === '🧵', String(enderFilament?.ikon));
+
+// Her öneride kategori + ikon alanı bulunur (arayüz ikonu bunları kullanır).
+const hepsi = onerileriGetir('pla', { limit: 8 });
+kontrol('tüm önerilerde kategori alanı', hepsi.every(x => ['filament', 'yazici', 'genel'].includes(x.kategori)));
+kontrol('tüm önerilerde ikon alanı', hepsi.every(x => !!x.ikon));
+kontrol('kategori/ikon uyumlu', hepsi.every(x => (x.kategori === 'filament') === (x.ikon === '🧵')));
+
+bolum('F) Canlı API');
 if (process.argv.includes('--canli')) {
   const taban = (process.env.BASE_URL || `http://127.0.0.1:${config.port}`).replace(/\/+$/, '');
   const h = {};

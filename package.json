@@ -23,6 +23,7 @@
     "test:telegram": "node scripts/test-telegram-bot.mjs",
     "test:telegram-radar": "node scripts/test-telegram-radar.mjs",
     "test:telegram-inline": "node scripts/test-telegram-inline-grafik.mjs",
+    "test:vitrin": "node scripts/test-vitrin-borsa.mjs",
     "test:radar": "node scripts/test-otonom-radar.mjs"
   },
   "dependencies": {

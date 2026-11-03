@@ -115,9 +115,17 @@ kontrol('CSS: bento mobil tek kolon', /@media \(max-width: 720px\)[\s\S]{0,200}\
 /* ---------------------------------------------------------------- */
 bolum('5) Mobil alt navigasyon');
 kontrol('HTML: alt nav', /id="altNav"[^>]*class="alt-nav"/.test(html));
-for (const ad of ['karsilastir', 'takipler', 'firsatlar', 'sepet', 'ayarlar']) {
+for (const ad of ['karsilastir', 'borsa', 'takipler', 'ayarlar']) {
   kontrol(`alt nav öğesi: ${ad}`, new RegExp(`data-nav="${ad}"`).test(html));
 }
+kontrol('alt nav: tam 4 öğe', (html.match(/class="alt-nav-oge[^"]*" data-nav=/g) || []).length === 4);
+kontrol('alt nav: Sepetim yok', !/data-nav="sepet"/.test(html));
+kontrol('alt nav: Dip Fırsatlar etiketi', /data-nav="borsa"[\s\S]{0,180}Dip Fırsatlar</.test(html));
+kontrol('alt nav: Alarmlarım etiketi', />Alarmlarım</.test(html));
+kontrol('alt nav: Ara & Kıyasla etiketi', /Ara &amp; Kıyasla/.test(html));
+kontrol('vitrin: fırsatlar çipi (alt bardan taşındı)', /data-firsat-ac/.test(html));
+kontrol('vitrin: canlı borsa bölümü', /id="vitrinAlani"/.test(html) && /id="vitrinGrid"/.test(html));
+kontrol('vitrin: CSS ızgara', /\.vitrin-grid\s*\{[^}]*grid-template-columns/.test(css));
 kontrol('HTML: modal', /id="altModal"/.test(html) && /role="dialog"/.test(html));
 kontrol('app: takipler modalı', /function altNavTakipler/.test(app) && /\/api\/tracked/.test(app));
 kontrol('app: fırsatlar modalı', /function altNavFirsatlar/.test(app) && /\/api\/firsat\/durum/.test(app));

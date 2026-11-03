@@ -121,6 +121,40 @@
       <div id="oneriHata" class="hata-kutusu" hidden></div>
     </section>
 
+    <!-- 📊 Canlı "Filament & 3D Yazıcı Borsası" vitrini — 2026-11-03 -->
+    <section id="vitrinAlani" class="vitrin" aria-labelledby="vitrinBaslik" hidden>
+      <div class="vitrin-ust">
+        <div class="vitrin-baslik-grup">
+          <h2 id="vitrinBaslik" class="bolum-baslik">
+            <span class="vitrin-nabiz" aria-hidden="true"></span>
+            Canlı Filament &amp; 3D Yazıcı Borsası
+          </h2>
+          <p class="vitrin-alt" id="vitrinGuncelleme">Otonom radarın son stoklu dip fiyatları</p>
+        </div>
+        <div class="vitrin-eylemler">
+          <button type="button" class="vitrin-cip" data-firsat-ac>📢 Fırsatlar</button>
+          <button type="button" class="vitrin-yenile" id="vitrinYenile"
+            aria-label="Borsayı yenile" title="Yenile">↻</button>
+        </div>
+      </div>
+
+      <div id="vitrinGrid" class="vitrin-grid" aria-busy="true" aria-live="polite"></div>
+
+      <div id="vitrinBos" class="vitrin-bos" hidden>
+        <span class="vitrin-bos-ikon" aria-hidden="true">📡</span>
+        <div>
+          <b>Borsa henüz açılmadı.</b>
+          <div class="vitrin-bos-alt">
+            Otonom radar ilk turunu tamamlayınca stoktaki en ucuz fiyatlar burada listelenir.
+          </div>
+        </div>
+      </div>
+
+      <p class="vitrin-dipnot">
+        Fiyatlar otonom radarın son taramasından gelir · <span id="vitrinSayac">—</span>
+      </p>
+    </section>
+
     <section id="oneriDurum" class="oneri-durum" hidden>
       <div id="oneriFazNotu" class="faz-notu"></div>
       <div id="oneriCipleri" class="cip-satiri"></div>
@@ -511,20 +545,20 @@
     </div>
   </footer>
 
-  <!-- 📱 Mobil alt navigasyon (yalnızca <768px) — 2026-11-01 -->
+  <!-- 📱 Mobil alt navigasyon (yalnızca <768px) — 2026-11-01 / 2026-11-03 -->
   <nav id="altNav" class="alt-nav" aria-label="Hızlı gezinme">
     <button type="button" class="alt-nav-oge aktif" data-nav="karsilastir" aria-current="page">
-      <span class="alt-nav-ikon" aria-hidden="true">🔍</span><span>Karşılaştır</span>
+      <span class="alt-nav-ikon" aria-hidden="true">🔍</span><span>Ara &amp; Kıyasla</span>
     </button>
-    <button type="button" class="alt-nav-oge" data-nav="takipler">
-      <span class="alt-nav-ikon" aria-hidden="true">🔔</span><span>Takiplerim</span>
+    <button type="button" class="alt-nav-oge" data-nav="borsa"
+      aria-label="Günün dip fırsatları — canlı fiyat borsası">
+      <span class="alt-nav-ikon" aria-hidden="true">🔥</span><span>Dip Fırsatlar</span>
     </button>
-    <button type="button" class="alt-nav-oge" data-nav="firsatlar">
-      <span class="alt-nav-ikon" aria-hidden="true">📢</span><span>Fırsatlar</span>
+    <button type="button" class="alt-nav-oge" data-nav="takipler"
+      aria-label="Fiyat alarmlarım — takip ettiğim ürünler">
+      <span class="alt-nav-ikon" aria-hidden="true">🔔</span><span>Alarmlarım</span>
     </button>
-    <button type="button" class="alt-nav-oge" data-nav="sepet">
-      <span class="alt-nav-ikon" aria-hidden="true">🛒</span><span>Sepetim</span>
-    </button>
+
     <a class="alt-nav-oge" data-nav="ayarlar" href="/ayarlar.html">
       <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>Ayarlar</span>
     </a>

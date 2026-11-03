@@ -4,7 +4,8 @@
  *
  * Mobilde (<768px) sabit alt bar; masaüstünde CSS ile gizlenir.
  *  - Karşılaştır: arama kutusuna odaklanır
- *  - Takiplerim / Fırsatlar: modal (veri sunucudan)
+ *  - Dip Fırsatlar: vitrin borsasına kaydırır
+ *  - Fiyat Alarmlarım / Fırsatlar: modal (veri sunucudan)
  *  - Sepetim: sepet bölümüne kaydırır
  *  - Ayarlar: /ayarlar.html
  */
@@ -33,18 +34,18 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') altModalKapat();
 });
 
-/** Takiplerim: kayıtlı ürünler + hedef fiyat + son fiyat. */
+/** Fiyat alarmlarım: kayıtlı ürünler + hedef fiyat + son fiyat. */
 async function altNavTakipler() {
-  altModalAc('🔔 Takiplerim', '<div class="alt-modal-bos">Yükleniyor…</div>');
+  altModalAc('🔔 Fiyat Alarmlarım', '<div class="alt-modal-bos">Yükleniyor…</div>');
   try {
     const res = await fetch('/api/tracked');
     const liste = await res.json();
     if (!Array.isArray(liste) || !liste.length) {
-      altModalAc('🔔 Takiplerim', '<div class="alt-modal-bos">Henüz takip ettiğin ürün yok.<br>'
-        + 'Bir ürünü karşılaştırdıktan sonra "Bu ürünü takibe al" ile ekleyebilirsin.</div>');
+      altModalAc('🔔 Fiyat Alarmlarım', '<div class="alt-modal-bos">Henüz fiyat alarmınız yok.<br>'
+        + 'Bir ürünü karşılaştırdıktan sonra "🔔 Fiyatı Takibe Al" ile ekleyin.</div>');
       return;
     }
-    altModalAc('🔔 Takiplerim', liste.map(t => {
+    altModalAc('🔔 Fiyat Alarmlarım', liste.map(t => {
       const url = Array.isArray(t.urunler) && t.urunler[0]?.url ? t.urunler[0].url : null;
       const hedef = t.hedefFiyat ? tl(t.hedefFiyat) : '—';
       return `<a class="alt-liste-oge" ${url ? `href="${esc(url)}" target="_blank" rel="noopener"` : ''}>
@@ -56,7 +57,7 @@ async function altNavTakipler() {
       </a>`;
     }).join(''));
   } catch {
-    altModalAc('🔔 Takiplerim', '<div class="alt-modal-bos">Takipler yüklenemedi.</div>');
+    altModalAc('🔔 Fiyat Alarmlarım', '<div class="alt-modal-bos">Takipler yüklenemedi.</div>');
   }
 }
 
@@ -105,6 +106,10 @@ document.querySelectorAll('.alt-nav-oge').forEach(btn => {
       setTimeout(() => input?.focus({ preventScroll: true }), 260);
       return;
     }
+    if (ad === 'borsa') {
+      borsaGoster(true);
+      return;
+    }
     if (ad === 'takipler') { altNavTakipler(); return; }
     if (ad === 'firsatlar') { altNavFirsatlar(); return; }
     if (ad === 'sepet') {
@@ -116,6 +121,215 @@ document.querySelectorAll('.alt-nav-oge').forEach(btn => {
 });
 
 // Erişim anahtarı yönetimi /erisim.js içinde (modal tabanlı; native prompt() kullanmaz).
+
+/* ================= 📊 Canlı "Borsa" vitrini (2026-11-03) =================
+ *
+ * Ana sayfada otonom radarın (radar_durum) stoktaki dip fiyatlarını finans
+ * ekranı gibi gösterir. Veri /api/vitrin'den gelir (herkese açık, salt okunur;
+ * token/sohbet/PID içermez).
+ *  - 60 sn'de bir sessiz tazeleme (sekme görünürken)
+ *  - "En Dip Fiyat" yalnızca gerçek geçmiş minimumuna eşitse gösterilir
+ *  - Kart tıklaması afiliye mağaza linkine gider; tıklama sayacı çalışır
+ */
+
+const VITRIN_ARALIK_MS = 60 * 1000;
+let vitrinTimer = null;
+let vitrinSonYukleme = 0;
+let vitrinYukleniyor = false;
+
+/** ₺1.234,56 biçimi (tabular-nums ile hizalı). */
+function vitrinPara(n) {
+  const sayi = Number(n);
+  if (!Number.isFinite(sayi)) return '—';
+  return '₺' + sayi.toLocaleString('tr-TR', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
+}
+
+/** "az önce / 12 dk önce / 3 sa önce". */
+function vitrinYas(iso) {
+  const ts = Date.parse(String(iso || ''));
+  if (!Number.isFinite(ts)) return null;
+  const dk = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+  if (dk < 1) return 'az önce';
+  if (dk < 60) return dk + ' dk önce';
+  const sa = Math.floor(dk / 60);
+  if (sa < 24) return sa + ' sa önce';
+  return Math.floor(sa / 24) + ' gün önce';
+}
+
+/** Mini sparkline: yalnızca gerçek geçmiş noktalarından SVG çizgi. */
+function vitrinSparkline(seri) {
+  if (!Array.isArray(seri) || seri.length < 2) return '';
+  const W = 116, H = 30, P = 3;
+  const min = Math.min(...seri);
+  const max = Math.max(...seri);
+  const aralik = max - min || 1;
+  const n = seri.length;
+  const x = (i) => P + (i / (n - 1)) * (W - P * 2);
+  const y = (f) => P + (1 - (f - min) / aralik) * (H - P * 2);
+  const noktalar = seri.map((f, i) => `${x(i).toFixed(1)},${y(f).toFixed(1)}`).join(' ');
+  const dusuyor = seri[n - 1] <= seri[0];
+  const alan = `${P},${H - P} ${noktalar} ${W - P},${H - P}`;
+  return `<svg class="vitrin-spark ${dusuyor ? 'dusuyor' : 'cikiyor'}" viewBox="0 0 ${W} ${H}"
+    preserveAspectRatio="none" role="img" aria-label="Son ${n} fiyat noktası trendi">
+    <polygon class="vitrin-spark-alan" points="${alan}" />
+    <polyline class="vitrin-spark-cizgi" points="${noktalar}" />
+  </svg>`;
+}
+
+/** Tek borsa kartı. */
+function vitrinKartHtml(u) {
+  const rozet = u.dip
+    ? '<span class="vitrin-rozet dip">🔥 En Dip Fiyat</span>'
+    : (Number(u.indirimYuzde) >= 5
+      ? `<span class="vitrin-rozet indirim">%${Number(u.indirimYuzde)} İndirim</span>`
+      : '');
+  const altParcalar = [];
+  if (u.birimMetni) altParcalar.push(esc(u.birimMetni));
+  if (u.kargo) altParcalar.push(esc(u.kargo));
+  if (u.degisim != null && Number(u.degisim) !== 0) {
+    const ok = Number(u.degisim) < 0 ? '↓' : '↑';
+    const sinif = Number(u.degisim) < 0 ? 'dusuk' : 'yuksek';
+    altParcalar.push(`<span class="vitrin-degisim ${sinif}">${ok} ${vitrinPara(Math.abs(u.degisim))}</span>`);
+  }
+  const durumMetni = u.stokta ? 'Stokta' : 'Stokta yok';
+  const afiliyeAttr = u.siteId ? ` data-afiliye-site="${esc(u.siteId)}"` : '';
+  return `<a class="vitrin-kart${u.dip ? ' vitrin-kart-dip' : ''}${u.stokta ? '' : ' vitrin-kart-yok'}"
+    href="${esc(u.url)}" target="_blank" rel="noopener sponsored"${afiliyeAttr}>
+    <span class="vitrin-kart-ust">
+      <span class="vitrin-durum ${u.stokta ? 'var' : 'yok'}" title="${durumMetni}"></span>
+      <span class="vitrin-kategori" aria-hidden="true">${esc(u.ikon || '📦')}</span>
+      ${rozet}
+    </span>
+    <span class="vitrin-urun">${esc(u.ad)}</span>
+    <span class="vitrin-fiyat">${vitrinPara(u.fiyat)}</span>
+    <span class="vitrin-magaza">${esc(u.site || 'Mağaza')}${u.stokta ? '' : ' · stokta yok'}</span>
+    ${altParcalar.length ? `<span class="vitrin-alt-satir">${altParcalar.join(' · ')}</span>` : ''}
+    ${vitrinSparkline(u.seri)}
+    <span class="vitrin-cta">Mağazaya git <span aria-hidden="true">→</span></span>
+  </a>`;
+}
+
+function vitrinIskelet() {
+  return Array.from({ length: 4 }, () => `
+    <div class="vitrin-kart vitrin-iskelet" aria-hidden="true">
+      <span class="skeleton-cizgi w-40"></span>
+      <span class="skeleton-cizgi w-90"></span>
+      <span class="skeleton-cizgi w-60"></span>
+      <span class="skeleton-cizgi w-70"></span>
+    </div>`).join('');
+}
+
+function vitrinZamanla() {
+  if (vitrinTimer) clearTimeout(vitrinTimer);
+  vitrinTimer = setTimeout(() => {
+    if (document.visibilityState === 'visible') vitrinYukle({ sessiz: true });
+    else vitrinZamanla();
+  }, VITRIN_ARALIK_MS);
+}
+
+/** Vitrini yükler. Sunucu boş/hatalıysa bölüm gizlenir (kırık vitrin gösterilmez). */
+async function vitrinYukle({ sessiz = false } = {}) {
+  const alan = document.getElementById('vitrinAlani');
+  const grid = document.getElementById('vitrinGrid');
+  const bos = document.getElementById('vitrinBos');
+  if (!alan || !grid || vitrinYukleniyor) return;
+  vitrinYukleniyor = true;
+  alan.hidden = false;
+  if (!sessiz && !grid.children.length) {
+    grid.innerHTML = vitrinIskelet();
+    grid.setAttribute('aria-busy', 'true');
+  }
+  try {
+    const res = await fetch('/api/vitrin?limit=12', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const urunler = Array.isArray(d?.urunler) ? d.urunler : [];
+    vitrinSonYukleme = Date.now();
+    grid.setAttribute('aria-busy', 'false');
+    if (!urunler.length) {
+      grid.innerHTML = '';
+      if (bos) bos.hidden = false;
+      const sayac = document.getElementById('vitrinSayac');
+      if (sayac) sayac.textContent = 'henüz tarama yok';
+    } else {
+      if (bos) bos.hidden = true;
+      grid.innerHTML = urunler.map(vitrinKartHtml).join('');
+      const yas = vitrinYas(d.guncelleme);
+      const guncel = document.getElementById('vitrinGuncelleme');
+      if (guncel) {
+        guncel.textContent = 'Otonom radar · ' + (yas ? 'son tarama ' + yas : 'canlı fiyatlar');
+      }
+      const sayac = document.getElementById('vitrinSayac');
+      if (sayac) {
+        const stok = urunler.filter(u => u.stokta).length;
+        sayac.textContent = `${stok} ürün stokta · ${urunler.length} kart · 60 sn'de bir yenilenir`;
+      }
+    }
+  } catch {
+    grid.setAttribute('aria-busy', 'false');
+    // Zaten kart varsa eski (gerçek) veriyi koru; hiç yoksa bölümü gizle.
+    if (!grid.children.length) alan.hidden = true;
+  } finally {
+    vitrinYukleniyor = false;
+    vitrinZamanla();
+  }
+}
+
+/**
+ * Vitrini görünür alanın üstüne kaydırır.
+ *
+ * NEDEN elle hesaplama: vitrin sayfanın altına yakın; `scrollIntoView` sabit
+ * üst barın (68px) ve `scroll-padding-top`ın altında kalıyordu. Ayrıca
+ * yumuşak kaydırma, kartlar yeniden çizilirken yarıda kesilebiliyor — bu yüzden
+ * 400 ms sonra bir kez daha hizalanır (ikinci kaydırma zaten hedefteyse görünmez).
+ */
+function vitrineKaydir() {
+  const alan = document.getElementById('vitrinAlani');
+  if (!alan) return;
+  const hedef = () => Math.max(0, alan.getBoundingClientRect().top + window.scrollY - 84);
+  try { window.scrollTo({ top: hedef(), behavior: 'smooth' }); } catch { window.scrollTo(0, hedef()); }
+  setTimeout(() => {
+    if (Math.abs(alan.getBoundingClientRect().top - 84) > 8) {
+      try { window.scrollTo({ top: hedef(), behavior: 'smooth' }); } catch { window.scrollTo(0, hedef()); }
+    }
+  }, 400);
+}
+
+/** "Borsa" sekmesi: vitrini göster, üste kaydır, tazele. */
+function borsaGoster(kaydir = true) {
+  const alan = document.getElementById('vitrinAlani');
+  if (!alan) return;
+  alan.hidden = false;
+  if (kaydir) vitrineKaydir();
+  const grid = document.getElementById('vitrinGrid');
+  if (grid && !grid.children.length) grid.innerHTML = vitrinIskelet();
+  vitrinYukle({ sessiz: true });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!document.getElementById('vitrinAlani')) return;
+  vitrinYukle();
+  document.getElementById('vitrinYenile')?.addEventListener('click', () => {
+    vitrinYukle({ sessiz: true });
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible'
+      && Date.now() - vitrinSonYukleme > VITRIN_ARALIK_MS) {
+      vitrinYukle({ sessiz: true });
+    }
+  });
+});
+
+// 📢 Vitrin başlığındaki "Fırsatlar" çipi (mobil alt bardan kaldırıldı).
+document.addEventListener('click', (e) => {
+  const btn = e.target instanceof Element ? e.target.closest('[data-firsat-ac]') : null;
+  if (!btn) return;
+  e.preventDefault();
+  altNavFirsatlar();
+});
+
 
 // Site listesi sunucudan (/api/durum) dinamik olarak yüklenir; yüklenene kadar
 // bilinen temel siteler gösterilir.
@@ -305,7 +519,10 @@ function oneriAktifSec(index) {
   }
 }
 
-function oneriIkonu(tur) {
+function oneriIkonu(tur, ikon) {
+  // Ürün kategorisi (🧵 filament / 🖨️ yazıcı) sunucudan gelirse o öncelikli;
+  // yoksa kaynağa göre (geçmiş/takip/tarama/popüler) ikon gösterilir.
+  if (ikon) return ikon;
   return tur === 'gecmis' ? '🕘' : (tur === 'takip' ? '🔔' : (tur === 'tarama' ? '📚' : '⭐'));
 }
 
@@ -325,7 +542,7 @@ function onerileriCiz(liste, sorgu) {
   kutu.innerHTML = ONERI_LIST.map((o, i) => `
     <div class="oneri-oge" role="option" id="oneri-oge-${i}" aria-selected="false"
          data-index="${i}" data-deger="${esc(o.url || o.metin)}">
-      <span class="oneri-ikon" aria-hidden="true">${oneriIkonu(o.tur)}</span>
+      <span class="oneri-ikon" aria-hidden="true">${oneriIkonu(o.tur, o.ikon)}</span>
       <span class="oneri-metin">${vurgula(o.metin, sorgu)}</span>
       <span class="oneri-etiket">${esc(o.etiket || '')}</span>
       <span class="oneri-ok" aria-hidden="true">↗</span>

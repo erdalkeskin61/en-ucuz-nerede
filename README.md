@@ -306,6 +306,72 @@ deep-link, PNG grafik, caption sınırı, `radar_gecmis` birleşmesi — ağ ist
 Bot token'ı Ayarlar sayfasından girilir (`telegram.botToken`).
 
 
+## 📊 Canlı "Filament & 3D Yazıcı Borsası" vitrini
+
+Ana sayfa artık boş bir arama kutusuyla açılmıyor: otonom radarın
+`radar_durum` tablosundaki **stoktaki en güncel dip fiyatlar** finans ekranı
+gibi bento kartlarda listelenir.
+
+```
+🟢 🧵 Creality Ender PLA Gri 1kg    ₺758,65    Ventatek   ₺758,65 / kg · Ücretsiz Kargo
+🟢 🧵 Porima PLA Siyah 1.75mm 1kg   ₺823,42    Teknik Filament 3D   %19 İndirim
+🟢 🖨️ Bambu Lab P1S 3D Yazıcı      ₺24.340,41 3Dcim      Ücretsiz Kargo   [sparkline]
+⚪ 🖨️ Elegoo Neptune 4 Pro          ₺55.028,00 Hepsiburada · Kargo bilinmiyor
+```
+
+- **Kart:** stok durumu noktası, kategori ikonu, ürün adı, tabular fiyat,
+  mağaza, ₺/kg (veya ₺/L) birim fiyat, kargo, önceki fiyata göre fark (↑/↓),
+  gerçek geçmişten mini sparkline ve afiliye "Mağazaya git" bağlantısı.
+- **Rozet dürüstlüğü:** `🔥 En Dip Fiyat` yalnızca ürünün **gerçek** birleşik
+  geçmişindeki (radar_gecmis + price_history) minimuma eşitse ve **en az 2
+  gözlem** varsa gösterilir. Aksi hâlde `%N İndirim` (en pahalı mağazaya göre
+  gerçek tasarruftan) veya rozet yok.
+- **Sıralama:** stokta olanlar önce, fiyat artan; tükenenler listenin sonunda
+  ⚪ olarak (gizlenmez, dürüstçe işaretlenir).
+- **Tazeleme:** 60 sn'de bir sessiz yenileme (sekme görünürken) + ↻ düğmesi +
+  `visibilitychange`. Skeleton shimmer ile yüklenir; veri yoksa "Borsa henüz
+  açılmadı" durumu gösterilir.
+- **Gizlilik:** `/api/vitrin` herkese açık, salt okunur ve yalnızca fiyat
+  alanlarını döner (token/chatId/PID yok). Erişim anahtarı tanımlı olsa bile
+  bu **tek GET** ucu muaftır; ziyaretçi anahtar girmeden piyasayı görür.
+- **Erişilebilirlik:** `aria-live="polite"`, odak halkası, 38px dokunma hedefi,
+  `prefers-reduced-motion` desteği, koyu tema ve mobil 2/1 kolon düzeni.
+
+### ⚡ Arama çubuğu: yazım hatası toleransı + kategori ikonu
+
+150 ms debounce'lu typeahead artık harf hatasını da affeder ve satır ikonu
+ürün türünü gösterir:
+
+```
+ban…   → 🖨️ Bambu Lab P1S / 🖨️ Bambu Lab A1 Mini / 🖨️ Bambu Lab X1-Carbon
+esu…   → 🧵 eSun PLA+ Siyah / 🧵 eSun ePLA-HS …
+ender… → 🧵 Creality Ender PLA+ 1kg / 🖨️ Creality Ender 3 V3
+```
+
+- `puanla()`: Levenshtein mesafesi 1 (≥3 harf) → 54/55 puan, mesafe 2 (≥6 harf)
+  → 50. Bu puan düz alt-dize eşleşmesinden (45) yüksektir, böylece doğru ürün
+  öne çıkar; geçmiş/takip bonusu yalnızca gerçek eşleşmede (60+) uygulanır.
+- `kategoriBul()`: "3D Yazıcı/printer" → 🖨️; filament/reçine anahtar kelimesi →
+  🧵 ("Creality Ender PLA+ 1 kg" marka yazıcı olsa da filamente ait);
+  diğerleri 📦.
+
+### 📱 Mobil alt gezinme (4 buton)
+
+| Buton | Davranış |
+|---|---|
+| 🔍 **Ara & Kıyasla** | Arama kutusuna kaydırır ve odaklar |
+| 🔥 **Dip Fırsatlar** | Borsa vitrinini gösterir, üst barın altına hizalar, tazeler |
+| 🔔 **Alarmlarım** | `/api/tracked` → kişisel fiyat alarmları modalı |
+| ⚙️ **Ayarlar** | `/ayarlar.html` |
+
+"📢 Fırsatlar" alt bardan çıkarıldı; vitrin başlığındaki **Fırsatlar** çipi ve
+masaüstü menüsü aynı modalı açar. Sepet sayfa içinde erişilebilir durumda.
+Alt bar `env(safe-area-inset-bottom)` ile çentikli ekranlarda güvenli,
+`grid-template-columns: repeat(4, 1fr)` ile eşit genişlikte.
+
+Test: `npm run test:vitrin` (72 kontrol: sıralama, rozet dürüstlüğü, gizlilik,
+API/erişim muafiyeti, HTML/JS/CSS sözleşmeleri).
+
 ## 🎯 Otonom 3D Baskı & Filament Fiyat Radarı
 
 Kullanıcı müdahalesi olmadan çalışan nöbetçi motor. Popüler filamentleri ve
@@ -435,6 +501,7 @@ npm run test:radar        # otonom 3D fiyat radarı (stok filtresi + cooldown)
 npm run test:telegram     # Telegram asistanı (arama/buton/SWR/takip)
 npm run test:telegram-radar  # Telegram radar komutları + kişisel alarm
 npm run test:telegram-inline # Inline mode + PNG fiyat trend grafiği
+npm run test:vitrin       # canlı borsa vitrini + mobil alt bar
 npm run test:link         # linkte ara
 npm run test:gecmis       # son aramalar linkleri
 npm run test:stok         # stok sıralama (npm dışı: node scripts/test-stok.mjs)

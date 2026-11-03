@@ -39,6 +39,7 @@ import {
 import {
   startRadarScheduler, radarDurum, radarBaslat, radarTara,
   radarZamanlayiciDurdur, radarKapat, katalogGetir, katalogEkle, katalogSil, katalogSifirla,
+  vitrinVerisi,
   RADAR_VARSAYILAN,
 } from './src/otonomRadar.js';
 import { birimFiyat } from './src/birimFiyat.js';
@@ -70,6 +71,9 @@ if (config.erisimAnahtari) {
     // 📤 Paylaşılan sepet linkleri herkese açıktır (linki bilen görüntüler);
     // yalnızca salt okunur GET ucu muaf tutulur, yazma uçları korunur.
     if (req.method === 'GET' && /^\/api\/sepet\/paylas\/[A-Za-z0-9_-]{6,32}$/.test(req.path)) return next();
+    // 📊 Ana sayfa canlı borsa vitrini: yalnızca herkese açık fiyat alanları
+    // döner (token/sohbet/PID yok). Ziyaretçi anahtar girmeden piyasayı görür.
+    if (req.method === 'GET' && req.path === '/api/vitrin') return next();
     if (req.path.startsWith('/api/')) return res.status(401).json({ hata: 'Erişim anahtarı gerekli ya da hatalı' });
     // Sayfalar açık kalır; ön yüz anahtarı sorar ve API isteklerine ekler.
     next();
@@ -1234,6 +1238,20 @@ app.get('/api/radar/durum', (req, res) => {
     res.json({ ...radarDurum(), varsayilan: RADAR_VARSAYILAN });
   } catch (e) {
     res.status(500).json({ hata: String(e.message || e) });
+  }
+});
+
+// 📊 Ana sayfa "borsa" vitrini — yalnızca herkese açık fiyat alanları.
+// Erişim anahtarı tanımlı olsa bile okunabilir (gizli bilgi içermez);
+// böylece ziyaretçi anahtarı girmeden canlı piyasayı görür.
+app.get('/api/vitrin', (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 12;
+    const veri = vitrinVerisi({ limit });
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    res.json(veri);
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
   }
 });
 
