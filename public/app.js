@@ -180,11 +180,14 @@ function vitrinSparkline(seri) {
 
 /** Tek borsa kartı. */
 function vitrinKartHtml(u) {
-  const rozet = u.dip
-    ? '<span class="vitrin-rozet dip">🔥 En Dip Fiyat</span>'
-    : (Number(u.indirimYuzde) >= 5
-      ? `<span class="vitrin-rozet indirim">%${Number(u.indirimYuzde)} İndirim</span>`
-      : '');
+  const rozet = u.gercekFirsat
+    ? '<span class="vitrin-rozet firsat" title="Son 90 günün en düşük fiyatı — gerçek fiyat geçmişinden doğrulandı">🔥 GERÇEK FIRSAT</span>'
+    : (u.dip
+      ? '<span class="vitrin-rozet dip">🔥 En Dip Fiyat</span>'
+      : (Number(u.indirimYuzde) >= 5
+        // Bu oran mağazanın etiket indirimi DEĞİL: stoklu mağazalar arasındaki farktır.
+        ? `<span class="vitrin-rozet indirim" title="Stokta olan mağazalar arasındaki en yüksek fiyata göre fark">Mağazalar arası %${Number(u.indirimYuzde)} fark</span>`
+        : ''));
   const altParcalar = [];
   if (u.birimMetni) altParcalar.push(esc(u.birimMetni));
   if (u.kargo) altParcalar.push(esc(u.kargo));
@@ -242,7 +245,7 @@ async function vitrinYukle({ sessiz = false } = {}) {
     grid.setAttribute('aria-busy', 'true');
   }
   try {
-    const res = await fetch('/api/vitrin?limit=12', { credentials: 'same-origin' });
+    const res = await fetch('/api/vitrin?limit=24', { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
     const urunler = Array.isArray(d?.urunler) ? d.urunler : [];
@@ -2105,10 +2108,12 @@ function fiyatZekasiPaneli(sonuc) {
   if (z.maxFiyat != null) parcalar.push(`En yüksek: <b>${tl(z.maxFiyat)}</b>`);
   ist.innerHTML = parcalar.join(' · ');
 
-  if (z.mesaj) {
-    mesajEl.textContent = z.mesaj;
+  const aktifMesaj = zt?.aciklama || z?.mesaj || null;
+  if (aktifMesaj) {
+    mesajEl.textContent = aktifMesaj;
     mesajEl.hidden = false;
-    mesajEl.className = 'fiyat-zeka-mesaj ' + (z.durum === 'sahte_indirim' ? 'uyari' : z.durum === 'dip_fiyat' ? 'firsat' : '');
+    const stil = (zt?.karar === 'SIMDI_AL' || z?.durum === 'dip_fiyat') ? 'firsat' : (zt?.karar === 'BEKLE' || z?.durum === 'sahte_indirim') ? 'uyari' : '';
+    mesajEl.className = 'fiyat-zeka-mesaj ' + stil;
   } else {
     mesajEl.hidden = true;
   }
@@ -2475,6 +2480,109 @@ document.addEventListener('input', (e) => {
   baskiWidgetlariniGuncelle();
 });
 
+/* ================================================================== */
+/* 🔌 "Sitene Ekle" — gömülebilir canlı fiyat widget'ı (2026-11-05)     */
+/* ================================================================== */
+
+/** Widget iframe kodu üretir (tema + ürün sorgusu). */
+function embedKodu(q, tema) {
+  const taban = location.origin;
+  const src = taban + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema;
+  return '<iframe src="' + src + '" width="320" height="180" '
+    + 'frameborder="0" loading="lazy" '
+    + 'title="Canlı fiyat — En Ucuz Nerede?" '
+    + 'style="border:0;border-radius:12px;overflow:hidden"></iframe>';
+}
+
+/** Modal içeriğini (önizleme + tema + kod) üretir. */
+function embedModalHtml(q, tema) {
+  const src = location.origin + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema;
+  return ''
+    + '<div class="embed-modal">'
+    + '  <div class="embed-onizleme">'
+    + '    <iframe src="' + esc(src) + '" width="320" height="180" frameborder="0" '
+    + 'loading="lazy" title="Widget önizleme"></iframe>'
+    + '  </div>'
+    + '  <div class="embed-ayar">'
+    + '    <span class="embed-etiket">Tema</span>'
+    + '    <div class="embed-tema" role="group" aria-label="Widget teması">'
+    + '      <button type="button" data-embed-tema="dark" class="' + (tema === 'dark' ? 'aktif' : '') + '">🌙 Koyu</button>'
+    + '      <button type="button" data-embed-tema="light" class="' + (tema === 'light' ? 'aktif' : '') + '">☀️ Açık</button>'
+    + '    </div>'
+    + '  </div>'
+    + '  <p class="embed-galeri"><a href="/widget-demo.html" target="_blank" rel="noopener">🔍 Tüm widget\'ları galeride önizle</a></p>'
+    + '  <p class="embed-not">Widget, radar kataloğundaki <b>canlı en ucuz stoklu fiyatı</b> gösterir '
+    + '(5 dakika önbellek). Fiyat değiştikçe blogunuzda kendiliğinden güncellenir.</p>'
+    + '  <textarea class="embed-kod" id="embedKod" readonly rows="3" aria-label="Gömme kodu"></textarea>'
+    + '  <div class="embed-alt">'
+    + '    <button type="button" class="embed-kopyala" id="embedKopyala">📋 Kodu Kopyala</button>'
+    + '    <span class="embed-durum" id="embedDurum" role="status" aria-live="polite"></span>'
+    + '  </div>'
+    + '</div>';
+}
+
+/** Modalı açar ve etkileşimleri bağlar. */
+function embedModalAc(q) {
+  let tema = 'dark';
+  altModalAc('🔌 Sitene Ekle', embedModalHtml(q, tema));
+
+  const kodAlani = document.getElementById('embedKod');
+  const durumEl = document.getElementById('embedDurum');
+  const yaz = () => {
+    if (kodAlani) kodAlani.value = embedKodu(q, tema);
+  };
+  yaz();
+
+  document.querySelectorAll('[data-embed-tema]').forEach((b) => {
+    b.addEventListener('click', () => {
+      tema = b.dataset.embedTema === 'light' ? 'light' : 'dark';
+      document.querySelectorAll('[data-embed-tema]').forEach((x) => {
+        x.classList.toggle('aktif', x === b);
+      });
+      yaz();
+      const cerceve = document.querySelector('.embed-onizleme iframe');
+      if (cerceve) {
+        cerceve.src = location.origin + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema
+          + '&_t=' + Date.now();
+      }
+    });
+  });
+
+  const kopyala = document.getElementById('embedKopyala');
+  if (kopyala) {
+    kopyala.addEventListener('click', async () => {
+      const metin = kodAlani ? kodAlani.value : embedKodu(q, tema);
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(metin);
+          ok = true;
+        }
+      } catch { ok = false; }
+      if (!ok && kodAlani) {
+        kodAlani.removeAttribute('readonly');
+        kodAlani.select();
+        kodAlani.setSelectionRange(0, metin.length);
+        try { ok = document.execCommand('copy'); } catch { ok = false; }
+        kodAlani.setAttribute('readonly', 'readonly');
+      }
+      if (durumEl) {
+        durumEl.textContent = ok ? '✅ Kod kopyalandı' : '⚠️ Kopyalanamadı — kodu seçip elle kopyalayın';
+        durumEl.style.color = ok ? 'var(--yesil)' : 'var(--kirmizi)';
+        setTimeout(() => { durumEl.textContent = ''; }, 3200);
+      }
+    });
+  }
+}
+
+// Kartlardaki butonlar için tek delege dinleyici (kartlar sık yeniden çizilir).
+document.addEventListener('click', (e) => {
+  const b = e.target.closest?.('[data-embed-q]');
+  if (!b) return;
+  e.preventDefault();
+  embedModalAc(b.getAttribute('data-embed-q') || '');
+});
+
 function kartHtml(r) {
   if (r.status !== 'found' || !r.product) {
     return `<div class="bulunamadi-karti">
@@ -2599,10 +2707,11 @@ function kartHtml(r) {
       </div>
     </div>
     <div class="kart-fiyat">
-      ${pr.etiket && pr.etiket > (pr.araToplam ?? pr.taban) ? `<div class="etiket-fiyat">${tl(pr.etiket)}</div>` : ''}
+      ${pr.etiket && pr.etiket > (pr.araToplam ?? pr.taban) ? `<div class="etiket-fiyat ${r.sahteIndirim?.sahteIndirim ? 'supheli' : ''}"${r.sahteIndirim?.sahteIndirim ? ` tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}"` : ''}>${tl(pr.etiket)}</div>` : ''}
       <div class="gercek-fiyat ${r.enUcuz ? 'ek' : ''}">${tl(pr.toplam ?? pr.araToplam ?? p.sellingPrice)}</div>
       ${stoktaYok ? '<span class="stok-fiyat-rozet" title="Ürün şu anda tükendi; gösterilen fiyat son bilinen fiyattır.">Tükendi</span>' : ''}
-      ${r.sisirilmisEtiket ? '<span class="sisirilmis-etiket" title="Bu mağazanın üstü çizili liste fiyatı, son 30 günün piyasa ortalamasının %20\'den fazla üzerinde.">⚠️ Şişirilmiş Etiket</span>' : ''}
+      ${r.sahteIndirim?.sahteIndirim ? `<span class="sahte-indirim-rozet" tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}" data-ipucu="${esc(r.sahteIndirim.tooltip)}">⚠️ Şişirilmiş Liste Fiyatı<small>iddia %${esc(String(r.sahteIndirim.iddiaEdilenIndirim ?? '—'))} · gerçek %${esc(String(r.sahteIndirim.gercekTasarruf ?? '0'))}</small></span>` : ''}
+      ${r.sahteIndirim?.gercekFirsat ? `<span class="gercek-firsat-rozet" title="${esc(r.sahteIndirim.tooltip || 'Son 90 günün en düşük fiyatı')}">🔥 GERÇEK FIRSAT<small>Son 90 günün dip fiyatı</small></span>` : ''}
       <div class="fiyat-at-not">
         ${pr.ekIndirim > 0 ? `Ürüne özel indirim düşüldü: −${tl(pr.ekIndirim)}` : ''}
         ${pr.kargo?.uygulanir ? `+ kargo ${tl(pr.kargo.ucret)}` : ''}
@@ -2631,6 +2740,7 @@ function kartHtml(r) {
       ${dahilHtml}${taksitHtml}
     </div>` : ''}
     <div class="kart-alt">
+      <button type="button" class="embed-btn" data-embed-q="${esc(p.title || '')}" title="Bu ürünün canlı fiyatını kendi sitene ekle">🔌 Sitene Ekle</button>
       <span class="istek-notu">${kac(r.requestsSpent)} istek${(r.queriesTried || []).length ? ' · sorgu: ' + esc((r.queriesTried || []).join(' / ')) : ''}</span>
       <a class="urun-link ${stoktaYok ? 'tukendi' : ''}" href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${stoktaYok ? 'Mağazada Gör (Tükendi)' : 'Mağazada Gör'}</a>
     </div>

@@ -483,7 +483,136 @@ tr.stok-yok .fiyat-hucre {
 .taksit-notu { color: var(--gri-metin); font-size: 12.5px; }
 .dahil-notu { color: var(--yesil); font-size: 12.5px; }
 
-.kart-alt { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 10px; }
+/* ================================================================== */
+/* 🔌 "Sitene Ekle" butonu + gömme modalı (2026-11-05)                */
+/* ================================================================== */
+
+.embed-btn {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--cizgi-koyu);
+  background: var(--kart);
+  color: var(--ana);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+}
+.embed-btn:hover { background: var(--ana-acik); border-color: var(--ana-parlak); }
+.embed-btn:active { transform: scale(0.98); }
+.embed-btn:focus-visible { outline: 2px solid var(--ana-parlak); outline-offset: 2px; }
+
+.embed-modal { display: flex; flex-direction: column; gap: 14px; }
+
+/* Canlı önizleme: iframe gerçek widget'ı gösterir */
+.embed-onizleme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--zemin-2);
+  border: 1px dashed var(--cizgi-koyu);
+  overflow: hidden;
+}
+.embed-onizleme iframe {
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 100%;
+  box-shadow: var(--kart-golge);
+}
+
+.embed-ayar { display: flex; align-items: center; gap: 10px; }
+.embed-etiket { font-size: 12.5px; font-weight: 600; color: var(--gri-metin); }
+.embed-tema { display: inline-flex; gap: 4px; background: var(--zemin-2); border-radius: 999px; padding: 3px; }
+.embed-tema button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border: 0;
+  background: transparent;
+  color: var(--gri-metin);
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.embed-tema button.aktif { background: var(--kart); color: var(--ana); box-shadow: var(--golge-yumusak); }
+
+.embed-not { margin: 0; font-size: 12px; line-height: 1.5; color: var(--gri-metin-hafif); }
+
+.embed-galeri { margin: 0; font-size: 12.5px; }
+.embed-galeri a { color: var(--ana); font-weight: 600; text-decoration: none; }
+.embed-galeri a:hover { text-decoration: underline; }
+
+/* 📢 WhatsApp fırsat kanalı mesaj önizlemesi (2026-11-05) */
+.wa-onizleme {
+  margin: 10px 0 0;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px dashed var(--cizgi-koyu);
+  background: #e7ffdb;              /* WhatsApp'ın kendi balon rengi */
+  color: #111b21;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.8px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 420px;
+  overflow-y: auto;
+}
+html[data-theme="dark"] .wa-onizleme {
+  background: #005c4b;
+  color: #e9edef;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.embed-kod {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cizgi-koyu);
+  background: var(--zemin-2);
+  color: var(--metin-hafif);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  resize: vertical;
+  word-break: break-all;
+}
+.embed-kod:focus { outline: none; border-color: var(--ana-parlak); box-shadow: var(--halka); }
+
+.embed-alt { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.embed-kopyala {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--ana);
+  color: #fff;
+  cursor: pointer;
+  transition: filter 0.14s ease, transform 0.14s ease;
+}
+.embed-kopyala:hover { filter: brightness(1.08); }
+.embed-kopyala:active { transform: scale(0.99); }
+.embed-durum { font-size: 12.5px; font-weight: 600; }
+
+@media (max-width: 560px) {
+  .embed-onizleme { padding: 10px; }
+  .embed-onizleme iframe { width: 100% !important; max-width: 320px; }
+  .embed-kopyala { width: 100%; }
+}
+
+/* Koyu tema: önizleme zemini ve kod alanı */
+html[data-theme="dark"] .embed-onizleme { background: #0b1220; border-color: rgba(148,163,184,0.28); }
+html[data-theme="dark"] .embed-kod { background: #0b1220; border-color: rgba(148,163,184,0.28); color: #cbd5e1; }
+
+.kart-alt { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 10px; flex-wrap: wrap; }
 .istek-notu { font-size: 11.5px; color: #a4abb8; }
 .urun-link {
   font-size: 13.5px; font-weight: 700; color: var(--ana); text-decoration: none;
@@ -1411,6 +1540,30 @@ td.fiyat-hucre { font-weight: 800; white-space: nowrap; }
 .fiyat-zeka-kart.fiyat-zeka-kirmizi { border-color: #fecaca; }
 .fiyat-zeka-kart.fiyat-zeka-kirmizi .fiyat-zeka-rozet { color: #dc2626; }
 .fiyat-zeka-kart.fiyat-zeka-gri .fiyat-zeka-rozet { color: #64748b; }
+
+/* ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" Rozetleri (2026-11-05) */
+.fiyat-zeka-kart.zamanlama-simdi-al {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.85) 0%, rgba(255, 255, 255, 1) 100%);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12);
+}
+.fiyat-zeka-kart.zamanlama-bekle {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(254, 252, 232, 0.85) 0%, rgba(255, 255, 255, 1) 100%);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.12);
+}
+.zamanlama-guven-rozet {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.zamanlama-guven-rozet.yesil { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.zamanlama-guven-rozet.sari { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 @media (max-width: 720px) {
   .fiyat-zeka-kart { grid-template-columns: 1fr; }
   .fiyat-zeka-mesaj { grid-column: 1; }
@@ -2015,6 +2168,112 @@ main.kap { padding-top: 8px; }
   display: inline-flex; margin-left: 8px; vertical-align: middle;
   color: #92400E; background: #FEF3C7; border: 1px solid #FCD34D;
   font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+}
+
+/* ================================================================== */
+/* 🚨 V2 Sahte İndirim / 🔥 Gerçek Fırsat rozetleri (2026-11-05)       */
+/* ================================================================== */
+
+/* Üstü çizili fiyat "şüpheli" ise gözle görülür biçimde işaretlenir.
+   Tooltip, `title` + odaklanabilir öğe ile erişilebilir kalır. */
+.etiket-fiyat.supheli {
+  color: #B45309;
+  text-decoration-color: #F59E0B;
+  text-decoration-thickness: 2px;
+  cursor: help;
+  border-bottom: 1px dashed #F59E0B;
+}
+.etiket-fiyat.supheli:focus-visible { outline: 2px solid #F59E0B; outline-offset: 3px; border-radius: 4px; }
+
+.sahte-indirim-rozet,
+.gercek-firsat-rozet {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 6px 0 0;
+  padding: 6px 11px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  cursor: help;
+  max-width: 100%;
+  position: relative;
+}
+.sahte-indirim-rozet small,
+.gercek-firsat-rozet small {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.85;
+  letter-spacing: 0.01em;
+}
+
+/* Şişirilmiş liste fiyatı: turuncu/kırmızı uyarı */
+.sahte-indirim-rozet {
+  color: #9A3412;
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border: 1px solid #FDBA74;
+  box-shadow: 0 2px 8px -3px rgba(234, 88, 12, 0.45);
+}
+
+/* Gerçek fırsat: yeşil parlayan (glow) */
+.gercek-firsat-rozet {
+  color: #065F46;
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border: 1px solid #6EE7B7;
+  animation: gf-parla 2.6s ease-in-out infinite;
+}
+@keyframes gf-parla {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.42), 0 2px 10px -3px rgba(16, 185, 129, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.10), 0 2px 16px -2px rgba(16, 185, 129, 0.65); }
+}
+
+/* Erişilebilirlik: hareket azaltma tercihinde parlama durur. */
+@media (prefers-reduced-motion: reduce) {
+  .gercek-firsat-rozet,
+  .vitrin-rozet.firsat { animation: none; }
+}
+
+html[data-theme="dark"] .sahte-indirim-rozet {
+  color: #FDBA74;
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.20) 0%, rgba(234, 88, 12, 0.10) 100%);
+  border-color: rgba(253, 186, 116, 0.45);
+}
+html[data-theme="dark"] .gercek-firsat-rozet {
+  color: #6EE7B7;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(16, 185, 129, 0.10) 100%);
+  border-color: rgba(110, 231, 183, 0.45);
+}
+html[data-theme="dark"] .etiket-fiyat.supheli { color: #FCD34D; border-bottom-color: #B45309; }
+
+/* Tooltip: `data-ipucu` taşıyan rozetlerde fare/klavye ile açıklama.
+   Mobilde dokunma da çalışsın diye rozet odaklanabilir (tabindex=0). */
+.sahte-indirim-rozet[data-ipucu]::after {
+  content: attr(data-ipucu);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  width: max-content;
+  max-width: min(320px, 82vw);
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #0F172A;
+  color: #F8FAFC;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.55);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.sahte-indirim-rozet[data-ipucu]:hover::after,
+.sahte-indirim-rozet[data-ipucu]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ---------- Özet tablo ---------- */
@@ -3198,6 +3457,14 @@ html[data-theme="dark"] .arama-onerileri {
 }
 .vitrin-rozet.dip { color: #065F46; background: #D1FAE5; }
 .vitrin-rozet.indirim { color: var(--kirmizi); background: var(--kirmizi-acik); }
+/* V2: gerçek fırsat — yeşil parlayan (2026-11-05) */
+.vitrin-rozet.firsat {
+  color: #065F46;
+  background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+  border: 1px solid #6EE7B7;
+  animation: gf-parla 2.6s ease-in-out infinite;
+  font-weight: 800;
+}
 
 .vitrin-urun {
   font-size: 13.5px;
@@ -3311,6 +3578,11 @@ html[data-theme="dark"] .vitrin-kart-dip {
 }
 html[data-theme="dark"] .vitrin-rozet.dip { color: #A7F3D0; background: rgba(16, 185, 129, 0.20); }
 html[data-theme="dark"] .vitrin-rozet.indirim { color: #FDA4AF; background: rgba(244, 63, 94, 0.16); }
+html[data-theme="dark"] .vitrin-rozet.firsat {
+  color: #6EE7B7;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.26) 0%, rgba(16, 185, 129, 0.14) 100%);
+  border-color: rgba(110, 231, 183, 0.45);
+}
 html[data-theme="dark"] .vitrin-kart-dip .vitrin-fiyat { color: #6EE7B7; }
 
 @media (max-width: 1100px) {
@@ -3336,3 +3608,154 @@ html[data-theme="dark"] .vitrin-kart-dip .vitrin-fiyat { color: #6EE7B7; }
   .vitrin-kart:hover, .vitrin-kart:focus-visible { transform: none; }
   .vitrin-yenile:hover { transform: none; }
 }
+
+/* ================================================================== */
+/* 📸 Görsel ile 3D parça tanıma — rozet, CTA, sürükle-bırak (2026-11-05) */
+/* ================================================================== */
+
+/* Sürükle-bırak hedefi */
+.gorsel-birak-ipucu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 18px 14px;
+  border: 2px dashed var(--ana-parlak);
+  border-radius: var(--radius-md);
+  background: var(--ana-acik);
+  color: var(--ana);
+  font-size: 13.5px;
+  font-weight: 700;
+  animation: gorsel-nabiz 1.4s ease-in-out infinite;
+}
+@keyframes gorsel-nabiz {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gorsel-birak-ipucu { animation: none; }
+}
+.gorsel-yukle-alani.uzerinde {
+  outline: 2px solid var(--ana);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+  background: var(--ana-acik);
+}
+.gorsel-yukle-alani.uzerinde .gorsel-sec-btn { opacity: 0.35; }
+
+/* ✅ Tanınan parça rozeti */
+.gorsel-rozet-alani { margin-bottom: 12px; }
+
+.gorsel-rozet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--yesil-cizgi);
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+  box-shadow: 0 6px 18px -10px rgba(4, 120, 87, 0.5);
+}
+.gorsel-rozet.orta {
+  border-color: #FCD34D;
+  background: linear-gradient(135deg, #fffbeb 0%, #fefce8 100%);
+  box-shadow: 0 6px 18px -10px rgba(180, 83, 9, 0.4);
+}
+.gorsel-rozet.dusuk {
+  border-color: #FDBA74;
+  background: linear-gradient(135deg, #fff7ed 0%, #fff 100%);
+  box-shadow: none;
+}
+.gorsel-rozet-isaret { font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.gorsel-rozet-govde { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.gorsel-rozet-govde b { font-size: 15px; letter-spacing: -0.01em; color: var(--metin); line-height: 1.3; }
+.gorsel-rozet-alt { font-size: 12px; color: var(--gri-metin); line-height: 1.45; }
+.gorsel-rozet-guven {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--yesil);
+  background: #fff;
+  border: 1px solid var(--yesil-cizgi);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-variant-numeric: tabular-nums;
+}
+.gorsel-rozet.orta .gorsel-rozet-guven { color: #B45309; border-color: #FCD34D; }
+.gorsel-rozet.dusuk .gorsel-rozet-guven { color: var(--kirmizi); border-color: #FDBA74; }
+
+html[data-theme="dark"] .gorsel-rozet {
+  background: linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(16,185,129,0.06) 100%);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+html[data-theme="dark"] .gorsel-rozet.orta {
+  background: linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(245,158,11,0.06) 100%);
+  border-color: rgba(252, 211, 77, 0.4);
+}
+html[data-theme="dark"] .gorsel-rozet.dusuk {
+  background: linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(244,63,94,0.05) 100%);
+  border-color: rgba(253, 186, 116, 0.4);
+}
+html[data-theme="dark"] .gorsel-rozet-guven { background: rgba(15,23,42,0.6); }
+
+/* 🏆 En ucuz stoklu mağaza CTA */
+.gorsel-cta-alani { margin: 14px 0 4px; }
+
+.gorsel-cta-kart {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 15px 17px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--yesil-cizgi);
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 100%);
+  box-shadow: 0 10px 26px -14px rgba(4, 120, 87, 0.7);
+}
+.gorsel-cta-sol { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gorsel-cta-rozet {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--yesil);
+}
+.gorsel-cta-site { font-size: 12.5px; font-weight: 600; color: var(--gri-metin); }
+.gorsel-cta-fiyat {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--yesil);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.gorsel-cta-kargo { font-size: 11.5px; color: var(--gri-metin-hafif); }
+.gorsel-cta-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--yesil);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px -8px rgba(4, 120, 87, 0.85);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.gorsel-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(4, 120, 87, 0.9); }
+html[data-theme="dark"] .gorsel-cta-kart {
+  background: linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(59,130,246,0.10) 100%);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+@media (max-width: 560px) {
+  .gorsel-cta-kart { flex-direction: column; align-items: stretch; }
+  .gorsel-cta-btn { width: 100%; min-height: 46px; }
+}
+
+/* Tükenen kart soluk görünsün */
+.gorsel-kart.tukendi { opacity: 0.62; }
+.gorsel-kart.tukendi .gorsel-kart-fiyat { text-decoration: line-through; }

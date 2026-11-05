@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Gerçek ödenecek fiyatın hesaplanması — Net Etkin Fiyat Motoru entegrasyonu.
  *
  * Bu modül, YZ sınıflandırmasından gelen kampanya listesini Net Etkin Fiyat
@@ -533,3 +533,27 @@ export function enUcuzFiyatDegerlendir(sonuclar, analiz) {
     analiz,
   });
 }
+
+/* ------------------------------------------------------------------ */
+/* 🚨 Sahte İndirim Dedektörü V2 (2026-11-05)                          */
+/* ------------------------------------------------------------------ */
+// Uygulama src/sahteIndirim.js içinde; burada yeniden dışa aktarılır ki
+// karşılaştırma motorunun tüm fiyat zekası tek giriş noktasından okunsun.
+export {
+  sahteIndirimAnalizi,
+  sahteIndirimleriIsaretle,
+  ESIK_MAX60_ORAN,
+  ESIK_ORT30_ORAN,
+  ESIK_DIP_TOLERANS,
+  ESIK_NORMAL_BANT,
+} from './sahteIndirim.js';
+
+/* ------------------------------------------------------------------ */
+/* ⏱️ Şimdi mi Almalısın, Beklemeli misin? (2026-11-05)                */
+/* ------------------------------------------------------------------ */
+export {
+  zamanlamaTahminiYap,
+  zamanlamaTahminiYapAI,
+  MAGAZA_DONGULERI,
+  magazaKampanyaKontrol,
+} from './fiyatZamanlama.js';

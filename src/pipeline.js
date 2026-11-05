@@ -18,7 +18,9 @@ import { semanticMatch, explainCheapest } from './ai.js';
 import { config } from './config.js';
 import { adapters, detectSite } from './sites/index.js';
 import { classifyCampaigns } from './ai.js';
-import { computePricing, enUcuzFiyatDegerlendir } from './pricing.js';
+import {
+  computePricing, enUcuzFiyatDegerlendir, sahteIndirimleriIsaretle, zamanlamaTahminiYap,
+} from './pricing.js';
 import { getFiyatAnalizi } from './store.js';
 import { urunIcinKampanyalar } from './kuponlar.js';
 import { matchProducts, sameColor, titleSimilarity, titleTokens, countTokenOverlap, kritikVaryantCakismasi, toLowerTr, normalizeModelCode, normalizeBarcode, brandAyni, brandWords, extractColors, dominantColor } from './util.js';
@@ -29,6 +31,7 @@ import {
 } from './baskiMaliyet.js';
 import { stokSirala, stokOzet } from './stokSirala.js';
 import { HIZLI_SITELER } from './basketOptimizer.js';
+import { kuyrukDurumu } from './scraper.js';
 
 /** Kaynak üründen arama sorguları üretir: önce model kodu, yoksa marka + başlık anahtar kelimeleri. */
 // Renk ton belirteçleri: tek başına renk DEĞİL ama renk ifadesinin parçasıdır
@@ -102,6 +105,81 @@ export function buildQueries(src) {
   return [...new Set(qs.filter(q => q && q.trim().length >= 3))].slice(0, 4);
 }
 
+/**
+ * İLERLEME TEMELLİ ZAMAN AŞIMI (2026-11-03).
+ *
+ * Önceki davranış: site zaman aşımı işin BAŞLANGICINDAN itibaren duvar saatiyle
+ * ölçülüyordu. 61 site paralel taranırken istekler MAX_CONCURRENT (8) yuvalık
+ * genel kuyruğa giriyor; sırada bekleyen site hiç çalışmadan "10 sn içinde yanıt
+ * vermedi" diye düşürülüyordu. Ölçüm: 61 sitenin 38'i timeout; en ucuz teklifi
+ * veren mağazalar (ör. fixx3d) sonuçta hiç görünmüyordu.
+ *
+ * Yeni kural:
+ *  - Kuyrukta beklerken (sistem dolu) süre SAYILMAZ,
+ *  - Site gerçek ilerleme kaydettikçe (aktivite.deger artar) sayaç sıfırlanır,
+ *  - Yalnızca kuyruk boşken sınır boyunca HİÇ ilerleme olmazsa timeout.
+ */
+function zamanAsimliCalistir(calisma, sinirMs, site, aktivite) {
+  if (!(sinirMs > 0)) return calisma();
+
+  return new Promise((resolve) => {
+    let cozuldu = false;
+    let biriken = 0;              // kuyruk dışında geçen, ilerlemesiz süre
+    let sonKontrol = Date.now();
+    let sonAktivite = aktivite ? aktivite.deger : 0;
+    const baslangic = Date.now();
+    // SERT ÜST SINIR (2026-11-03): kuyruk sayaçları bir şekilde tıkanırsa
+    // (ör. yuva sızıntısı) iş sonsuza kadar asılı kalmasın. Bu sınır kuyruk
+    // durumundan BAĞIMSIZDIR.
+    const sertSinir = Math.max(sinirMs * 4, 90000);
+
+    const bitir = (deger) => {
+      if (cozuldu) return;
+      cozuldu = true;
+      clearInterval(izleyici);
+      resolve(deger);
+    };
+
+    const izleyici = setInterval(() => {
+      if (cozuldu) return;
+      const simdi = Date.now();
+      const gecen = simdi - sonKontrol;
+      sonKontrol = simdi;
+
+      if (aktivite && aktivite.deger !== sonAktivite) {
+        sonAktivite = aktivite.deger;
+        biriken = 0;
+        return;
+      }
+
+      let kuyruk = 0;
+      try { kuyruk = kuyrukDurumu().bekleyen; } catch { kuyruk = 0; }
+      if (kuyruk > 0) return;     // sistem dolu → bekleme sahibine yazılmaz
+
+      biriken += gecen;
+      if (biriken >= sinirMs || simdi - baslangic >= sertSinir) {
+        bitir({
+          site: site.id, siteName: site.name, status: 'timeout',
+          reason: 'Bu site ' + Math.round(sinirMs / 1000) + ' sn boyunca ilerleme kaydetmedi'
+            + (simdi - baslangic >= sertSinir ? ' (üst sınır aşıldı)' : ''),
+          product: null, matchBasis: null, renkAyni: null,
+          examined: [], queriesTried: [], requestsSpent: 0,
+        });
+      }
+    }, 400);
+    if (izleyici.unref) izleyici.unref();
+
+    Promise.resolve(calisma).then(bitir, (e) => {
+      bitir({
+        site: site.id, siteName: site.name, status: 'error',
+        reason: String((e && e.message) || e).slice(0, 200),
+        product: null, matchBasis: null, renkAyni: null,
+        examined: [], queriesTried: [], requestsSpent: 0,
+      });
+    });
+  });
+}
+
 /** Adayları kaynak ürüne benzerliğe göre sıralar. */
 function rankCandidates(candidates, src) {
   // Marka disiplini: kaynak markası biliniyorsa, başlığında marka sözcüklerinden
@@ -131,6 +209,9 @@ function rankCandidates(candidates, src) {
  *  Sorgu yedeklemesi: bir sorgunun adayları eşleşme üretmezse sıradaki sorgu
  *  denenir (ilk sorgu bazı arama motorlarında alakasız/popüler liste döndürebilir). */
 async function findOnSite(adapter, src, queries, onProgress, maxCandidates = config.maxCandidatesPerSite, iptalMi = null, opts = {}) {
+  // İlerleme sinyali: zaman aşımı izleyicisi bu sayacın artmasını "çalışıyor" sayar.
+  const aktivite = opts.aktivite || null;
+  const dokun = () => { if (aktivite) aktivite.deger++; };
   const result = {
     site: adapter.id,
     siteName: adapter.name,
@@ -182,6 +263,10 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
 
     let sameColorMatch = null;
     let diffColorMatch = null;
+    // YZ bir adayı "farklı ürün" diye REDDETTİYSE, ondan DAHA ZAYIF benzerlikli bir
+    // adayı kabul etmek yanlış ürünü seçmek demektir (2026-11-03: K1 Max reddedildi,
+    // yerine "Ender 5 Max" eşleşti). En yüksek reddedilen benzerliği tutarız.
+    let llmRedSkor = 0;
     const bakilanUrl = new Set(result.examined.map(e => e.url)); // sorgular arası tekrar inceleme yok
     // Şablon/boş URL koruması: bazı temalar arama listesinde işlenmemiş şablon
     // bağlantısı basıyor (ör. robotizmo "https://robotizmo.net/{{seoName}}"). Böyle bir
@@ -198,12 +283,16 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
       if (durduruldu()) break;
       if (bakilanUrl.has(cand.url)) continue;
       bakilanUrl.add(cand.url);
+      dokun();
       let product;
       try {
         // `opts.taze` → sayfa önbelleğini atla (arka plan tazelemesi gerçekten
         // siteye gitsin; 2026-10-29: aksi hâlde 6 saatlik sayfa önbelleği
         // tazelemeyi "hiçbir şey değişmedi" gibi gösteriyordu).
-        product = await adapter.getProduct(cand.url, ctx, tazeOpts);
+        // `kaynak` (2026-11-03): çok varyantlı mağazalar (Shopify) doğru rengi/
+        // ağırlığı seçebilsin diye kaynak ürün bağlamı adaptöre iletilir. Adaptörler
+        // bu alanı yok sayabilir — geriye dönük uyumlu.
+        product = await adapter.getProduct(cand.url, ctx, { ...tazeOpts, kaynak: src });
       } catch (e) {
         result.examined.push({ url: cand.url, sonuc: 'sayfa okunamadı: ' + String(e.message || e).slice(0, 120) });
         continue;
@@ -236,6 +325,7 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
               semantik: true,
             };
           } else {
+            llmRedSkor = Math.max(llmRedSkor, candBenzerlik);
             result.examined.push({
               url: cand.url,
               sonuc: 'farklı ürün (DeepSeek YZ: ' + (sem.aciklama || 'model uyuşmazlığı') + ')',
@@ -249,8 +339,20 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
 
       if (!match) {
         result.examined.push({ url: cand.url, sonuc: 'aynı ürün değil' });
+        dokun();
         continue;
       }
+      // YZ daha güçlü bir adayı reddettiyse ve bu aday yalnızca BAŞLIK benzerliğiyle
+      // eşleşiyorsa ürünü seçmeyiz: aynı site için dürüst cevap "bulunamadı"dır.
+      // (Model kodu / barkod eşleşmesi bu korumanın DIŞINDADIR — onlar kesin kanıttır.)
+      if (match.eslesme === 'benzerlik' && llmRedSkor > 0 && candBenzerlik <= llmRedSkor + 0.05) {
+        result.examined.push({
+          url: cand.url,
+          sonuc: 'elendi: YZ daha yüksek benzerlikli adayı farklı ürün saydı',
+        });
+        continue;
+      }
+
       const colorSame = sameColor(src.color, product.color);
       result.examined.push({
         url: cand.url,
@@ -276,6 +378,7 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
     for (const q of queries) {
       if (durduruldu()) break;
       result.queriesTried.push(q);
+      dokun();
       let found;
       try {
         found = await adapter.searchProducts(q, ctx);
@@ -483,28 +586,21 @@ export async function runComparison(sourceUrl, opts = {}) {
   const tamamlananlar = [];
   const isler = others.map(a => (async () => {
     if (iptalMi()) return null;
-    const siteZamanAsimi = Math.max(3000, Number(opts.siteTimeoutMs) || 10000);
+    const siteZamanAsimi = Math.max(3000, Number(opts.siteTimeoutMs) || config.siteTimeoutMs);
+    const aktivite = { deger: 0 };
     const arama = findOnSite(a, srcProduct, queries, (id, r) => {
       onProgress(id, r.status === 'found' || r.status === 'error' || r.status === 'not_found'
         ? r
         : { site: id, status: 'running', note: 'Aranıyor...' });
-    }, maxCandidates, iptalMi, { semantik: opts.semantik !== false, taze: opts.taze === true });
+    }, maxCandidates, iptalMi, {
+      semantik: opts.semantik !== false,
+      taze: opts.taze === true,
+      aktivite,
+    });
 
-    // Site bazlı zaman aşımı (sepet gibi toplu işlerde): yavaş bir site tüm işi
-    // kilitlemesin. Uçuştaki istek arka planda kendi bitişini bekler, sonucu yok sayılır.
-    const res = siteZamanAsimi
-      ? await Promise.race([
-        arama,
-        new Promise((cozum) => {
-          const t = setTimeout(() => cozum({
-            site: a.id, siteName: a.name, status: 'timeout',
-            reason: `Bu site ${Math.round(siteZamanAsimi / 1000)} sn içinde yanıt vermedi`,
-            product: null, matchBasis: null, renkAyni: null, examined: [], queriesTried: [], requestsSpent: 0,
-          }), siteZamanAsimi);
-          if (t.unref) t.unref();
-        }),
-      ])
-      : await arama;
+    // Site bazlı zaman aşımı (2026-11-03): duvar saati değil İLERLEME temelli.
+    // Kuyrukta bekleme sayılmaz; yalnızca gerçekten takılan site kesilir.
+    const res = await zamanAsimliCalistir(arama, siteZamanAsimi, a, aktivite);
     if (iptalMi() && res.status !== 'found') {
       return { ...res, status: 'iptal', reason: 'Kullanıcı iptal etti' };
     }
@@ -573,17 +669,14 @@ export async function runComparison(sourceUrl, opts = {}) {
     const pid = srcProduct?.modelCode || srcProduct?.barcode || srcProduct?.title || '';
     fiyatAnalizi = getFiyatAnalizi(pid, srcProduct?.barcode, sourceUrl);
     fiyatZekasi = enUcuzFiyatDegerlendir(allResults, fiyatAnalizi);
-    // Kart bazlı şişirilmiş etiket: mağazanın üstü çizili liste fiyatı, 30 günlük
-    // piyasa ortalamasının %20 üzerindeyse o kart uyarı alır.
-    const ort = fiyatZekasi?.ortFiyat;
-    if (ort > 0) {
-      for (const r of allResults) {
-        if (r.status !== 'found' || !r.product) continue;
-        const etiket = Number(r.product.listPrice ?? r.product.pricing?.etiket);
-        r.sisirilmisEtiket = Number.isFinite(etiket) && etiket > 0 && etiket > ort * 1.2;
-        r.etiketOrani = Number.isFinite(etiket) && etiket > 0 ? Math.round((etiket / ort) * 1000) / 1000 : null;
-      }
-    }
+    // 🚨 V2 SAHTE İNDİRİM DEDEKTÖRÜ (2026-11-05): her mağaza teklifi için
+    // üstü çizili liste fiyatı gerçek geçmişle kıyaslanır.
+    //   Kural A: liste > maxFiyat60 × 1.15  veya  liste > ortFiyat30 × 1.25
+    //   Kural B: satış ≤ minFiyat90 (+tolerans)
+    //   Kural C: |satış − ortFiyat30| ≤ %5 → piyasa normali (rozet yok)
+    // Geçmiş yetersizse (<3 gün) rozet BASILMAZ — cold-start ürünlerde yanıltıcı
+    // etiket üretmek düzeltmeye çalıştığımız sorunun aynısı olurdu.
+    sahteIndirimleriIsaretle(allResults, fiyatAnalizi);
   } catch (e) {
     // Geçmiş okunamazsa karşılaştırma YİNE çalışır; yalnızca radar görünmez.
     fiyatZekasi = { tavsiye: 'veri_yok', durum: null, neden: 'Fiyat geçmişi okunamadı: ' + String(e.message || e).slice(0, 80) };
@@ -612,6 +705,17 @@ export async function runComparison(sourceUrl, opts = {}) {
       ]);
     } catch {}
   }
+
+  // ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" Karar Tahmincisi (2026-11-05)
+  let zamanlamaTavsiyesi = null;
+  try {
+    const enUcuzTutar = cheapest?.product?.pricing?.toplam ?? cheapest?.product?.sellingPrice ?? null;
+    zamanlamaTavsiyesi = zamanlamaTahminiYap({
+      guncelFiyat: enUcuzTutar,
+      analiz: fiyatAnalizi,
+      magazaId: cheapest?.site,
+    });
+  } catch {}
 
   const totalRequests = allResults.reduce((s, r) => s + (r.requestsSpent || 0), 0);
 
@@ -699,6 +803,9 @@ export async function runComparison(sourceUrl, opts = {}) {
         // Birim fiyat (₺/kg, ₺/L) — 2026-10-29. Miktar okunamazsa null'lar döner;
         // uydurma yok. Sıralamayı DEĞİŞTİRMEZ, ayrı bir görünüm sunar.
         birim: birimFiyat(r.product),
+        // Varyant şeffaflığı (2026-11-03): çok varyantlı mağazalarda (Shopify)
+        // hangi varyantın seçildiği ve NEDEN seçildiği görünür olsun.
+        varyant: r.product.varyant || null,
         // 🧵 Filament/reçine birim fiyat rozeti (2026-11-01): yalnızca filament ve
         // reçinede dolu; yazıcı/aksesuarda null.
         birimHesap: birimFiyatHesapla(
@@ -721,6 +828,19 @@ export async function runComparison(sourceUrl, opts = {}) {
       // ---- SAHTE İNDİRİM & DİP FİYAT RADARI (2026-10-30) ----
       // Fiyat geçmişi varsa karar raporu; yoksa `tavsiye:'veri_yok'` (uydurma yok).
       fiyatZekasi: fiyatZekasi || null,
+      // ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" (2026-11-05)
+      zamanlamaTavsiyesi: zamanlamaTavsiyesi || null,
+    // V2: en ucuz stoklu teklifin etiket denetimi (Telegram/radar kartı için).
+    sahteIndirim: (() => {
+      const uygun = allResults.filter(r => r?.status === 'found' && r?.product
+        && r.product.inStock !== false && r.renkAyni !== false
+        && Number.isFinite(Number(r.product.pricing?.toplam ?? r.product.sellingPrice)));
+      if (!uygun.length) return null;
+      const enUcuz = uygun.reduce((a, b) => (
+        Number(b.product.pricing?.toplam ?? b.product.sellingPrice)
+          < Number(a.product.pricing?.toplam ?? a.product.sellingPrice) ? b : a));
+      return enUcuz.sahteIndirim || null;
+    })(),
       fiyatAnalizi: fiyatAnalizi || null,
       // Birim fiyat görünümü (2026-10-29): farklı gramajlı ürünler arasında
       // "sahte ucuz" tuzağını gösterir. Sıralamayı DEĞİŞTİRMEZ.

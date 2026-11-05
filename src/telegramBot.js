@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🤖 En Ucuz Nerede — Telegram Akıllı Fiyat Asistanı — 2026-11-02
  *
  * Bot artık yalnızca URL ile çalışmıyor; iki yönlü bir asistana dönüştürüldü:
@@ -30,6 +30,10 @@ import { birimFiyatHesapla, malzemeBul } from './birimFiyat.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { anlikAl, anlikYaz, snapshotAra } from './anlikOnbellek.js';
 import { config } from './config.js';
+import { zamanlamaTahminiYap } from './fiyatZamanlama.js';
+import {
+  gorselAnaliz, gorselAra, kategoriEtiketi, guvenYuzde,
+} from './gorselArama.js';
 
 /** Botun adı (mesaj imzası / loglar). */
 export const BOT_ADI = '@erdal_fiyat_takip_bot';
@@ -161,7 +165,10 @@ async function radarDurumMesaji() {
   return {
     metin: satirlar.join('\n').slice(0, MESAJ_LIMIT),
     butonlar: {
-      inline_keyboard: [[{ text: '🧪 Şimdi Taramayı Başlat', callback_data: 'radar_tara' }]],
+      inline_keyboard: [
+        [{ text: '🧪 Şimdi Taramayı Başlat', callback_data: 'radar_tara' }],
+        [{ text: '📋 Kataloğu Listele', callback_data: 'radar_liste' }],
+      ],
     },
   };
 }
@@ -805,6 +812,36 @@ export function sonucMesajiOlustur(res, opts = {}) {
     ? `\n💡 En ucuz mağaza ile diğerleri arasında <b>${botPara(fark)}</b> tasarruf farkı var!`
     : '\n💡 Tüm mağazalarda fiyat aynı seviyede.';
 
+  // V2 PIYASA ANALIZI (2026-11-05): yalnizca gercek gecmisten dogrulanmis
+  // iddialar. Veri yoksa satir eklenmez (cold-start urunlerde yaniltici etiket yok).
+  const si = o.sahteIndirim || d.enUcuz?.sahteIndirim || null;
+  let piyasaSatiri = '';
+  if (si?.sahteIndirim) {
+    piyasaSatiri += `⚠️ <b>Etiket Analizi:</b> Mağazanın iddia ettiği %${Number(si.iddiaEdilenIndirim) || 0} indirim yapaydır. `
+      + `Son ${Number(si.pencereAdi) || 30} günün gerçek piyasa ortalaması ${botPara(si.ortFiyat30)}.` + '\n';
+  }
+  if (si?.gercekFirsat) {
+    piyasaSatiri += `🔥 <b>Piyasa Analizi:</b> 🟢 Tarihi Dip Seviye! Son 90 günün en düşük fiyatı yakalandı.\n`;
+  }
+
+  // ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" (2026-11-05)
+  let zt = o.zamanlamaTavsiyesi || res.zamanlamaTavsiyesi || null;
+  if (!zt && d.enUcuz && res.fiyatAnalizi) {
+    try {
+      zt = zamanlamaTahminiYap({
+        guncelFiyat: d.fiyat,
+        analiz: res.fiyatAnalizi,
+        magazaId: d.enUcuz.site,
+      });
+    } catch {}
+  }
+  let zamanlamaSatiri = '';
+  if (zt && zt.karar !== 'NOTR' && zt.aciklama) {
+    const rozetMetni = zt.karar === 'SIMDI_AL'
+      ? `🟢 <b>TAVSİYE: ŞİMDİ AL (%${zt.guven} Güven)</b>`
+      : `🟡 <b>TAVSİYE: BEKLE (%${zt.guven} İhtimalle)</b>`;
+    zamanlamaSatiri = `⏱️ ${rozetMetni}\n<i>💡 ${esc(zt.aciklama)}</i>\n`;
+  }
   const toplamSite = o.bulunanSiteSayisi ?? d.bulunanSayisi;
   const swr = opts.yasNotu ? `\n⚡ <i>(Son kontrol: ${esc(opts.yasNotu)})</i>` : '';
 
@@ -812,7 +849,7 @@ export function sonucMesajiOlustur(res, opts = {}) {
 ${cizgi}
 🏆 <b>En Ucuz:</b> ${botPara(d.fiyat)} (${esc(siteAdi)})
 🚚 <b>Kargo:</b> ${esc(kargoMetni(d.enUcuz))}
-${birimSatiri}${birimIpucu}${stokSatiri}${cizgi}
+${birimSatiri}${birimIpucu}${piyasaSatiri}${zamanlamaSatiri}${stokSatiri}${cizgi}
 📊 <b>Mağaza Karşılaştırması (${toplamSite} Site):</b>
 ${satirlar}${farkSatiri}${swr}
 
@@ -1100,6 +1137,150 @@ function takipListesiMetni(chatId) {
 /* Dağıtıcılar                                                         */
 /* ------------------------------------------------------------------ */
 
+
+/* ------------------------------------------------------------------ */
+/* 📸 Fotoğraf ile 3D parça tanıma (2026-11-05)                        */
+/* ------------------------------------------------------------------ */
+
+/** Telegram görsel indirme üst sınırı (bot API: 20 MB). */
+const TELEGRAM_FOTO_LIMIT = 20 * 1024 * 1024;
+
+/**
+ * Telegram'dan fotoğrafı indirir (getFile → file_path → binary).
+ * @returns {Promise<{base64:string, mime:string, bayt:number}>}
+ */
+export async function telegramFotoIndir(token, fileId) {
+  const bilgi = await api(token, 'getFile', { file_id: fileId });
+  const yol = bilgi?.result?.file_path;
+  if (!yol) throw new Error('Telegram dosya yolunu vermedi.');
+  const boyut = Number(bilgi?.result?.file_size) || 0;
+  if (boyut > TELEGRAM_FOTO_LIMIT) {
+    throw new Error('Fotoğraf çok büyük (en fazla 20 MB). Lütfen daha küçük bir fotoğraf gönderin.');
+  }
+  const url = 'https://api.telegram.org/file/bot' + token + '/' + yol;
+  const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  if (!res.ok) throw new Error('Fotoğraf indirilemedi (HTTP ' + res.status + ').');
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (!buf.length) throw new Error('Fotoğraf boş geldi.');
+  const mime = /\.png$/i.test(yol) ? 'image/png'
+    : /\.webp$/i.test(yol) ? 'image/webp'
+      : 'image/jpeg';
+  return { base64: buf.toString('base64'), mime, bayt: buf.length };
+}
+
+/**
+ * Fotoğrafı EVREN ile analiz eder, 61 mağazada fiyat tarar ve sonucu gönderir.
+ * Hata olsa bile kullanıcıya açıklama gider (sessiz kaybolmaz).
+ */
+async function fotoIleAra(token, chatId, fileId, ipucu = '') {
+  let durumId = null;
+  try {
+    // "upload_photo" yazıyor… göstergesi (kullanıcıya işlem sürüyor izlenimi)
+    await api(token, 'sendChatAction', { chat_id: chatId, action: 'upload_photo' }).catch(() => {});
+    const ilk = await sendTelegram(token, chatId,
+      '🔍 Fotoğrafınız <b>EVREN LLM (qwen3-vl-30b)</b> ile inceleniyor, parça tespit ediliyor…');
+    durumId = ilk?.result?.message_id;
+
+    const foto = await telegramFotoIndir(token, fileId);
+    // 20 MB sınırı Telegram'ın; EYS 4 MB sınırını gorselAnaliz uygular.
+    const analiz = await gorselAnaliz({ base64: foto.base64, mime: foto.mime, ipucu });
+
+    const ozetSatirlar = [
+      '🔬 <b>Tespit Edilen Parça:</b> ' + esc(analiz.urun || analiz.aramaSorgusu),
+      '📂 <b>Kategori:</b> ' + esc(analiz.kategoriEtiketi || kategoriEtiketi(analiz.kategori)),
+    ];
+    if (analiz.marka) ozetSatirlar.push('🏷️ <b>Marka:</b> ' + esc(analiz.marka));
+    if (analiz.teknikDetaylar) {
+      ozetSatirlar.push('🔧 <b>Teknik:</b> ' + esc(analiz.teknikDetaylar));
+    }
+    if (analiz.malzeme) ozetSatirlar.push('🧵 <b>Malzeme:</b> ' + esc(analiz.malzeme));
+    if (analiz.uyumluYazicilar?.length) {
+      ozetSatirlar.push('🖨️ <b>Uyumlu Modeller:</b> ' + esc(analiz.uyumluYazicilar.join(', ')));
+    }
+    ozetSatirlar.push('📊 <b>Güven Skoru:</b> %' + guvenYuzde(analiz.guven)
+      + ' (' + esc(analiz.guven) + ')');
+    ozetSatirlar.push('', '⏳ <b>61 mağazada en ucuz stok aranıyor…</b>');
+
+    if (durumId) {
+      await editTelegram(token, chatId, durumId, ozetSatirlar.join('\n')).catch(() => {});
+    }
+
+    const sonuc = await gorselAra(analiz, {
+      onProgress: () => { /* Telegram'da her adımı güncellemeyiz (rate limit) */ },
+    });
+
+    // Fiyat kartı: kanonik tarama varsa TEST EDİLMİŞ biçimlendiriciyi kullan.
+    if (sonuc.hamSonuc) {
+      const metin = sonucMesajiOlustur(sonuc.hamSonuc, {});
+      const hash = takipKaydiOlustur(sonuc.hamSonuc, sonuc.kanonik?.url || '');
+      const butonlar = butonlariOlustur(sonuc.hamSonuc, {
+        takipHash: hash, kaynakUrl: sonuc.kanonik?.url || null,
+      });
+      const baslik = '🔬 <b>' + esc(analiz.urun || 'Parça') + '</b>\n'
+        + '📊 Güven: %' + guvenYuzde(analiz.guven) + ' · ' + esc(analiz.kategoriEtiketi) + '\n';
+      if (durumId) {
+        await editTelegram(token, chatId, durumId, (baslik + '\n' + metin).slice(0, MESAJ_LIMIT),
+          { extra: { reply_markup: butonlar } })
+          .catch(() => sendTelegram(token, chatId, baslik + '\n' + metin, { extra: { reply_markup: butonlar } }));
+      } else {
+        await sendTelegram(token, chatId, baslik + '\n' + metin, { extra: { reply_markup: butonlar } });
+      }
+      return;
+    }
+
+    // Kanonik yok / yedek site taraması: adaylardan kompakt kart üret.
+    const adaylar = sonuc.adaylar || [];
+    const enUcuz = sonuc.enUcuz || null;
+    if (!adaylar.length) {
+      const neden = sonuc.neden || 'Mağazalarda eşleşen ilan bulunamadı.';
+      const metin = '🔬 <b>' + esc(analiz.urun || 'Parça') + '</b>\n\n'
+        + '⚠️ ' + esc(neden) + '\n\n'
+        + '<i>İpucu: parçanın üzerindeki model kodunu altyazıya yazarsanız daha iyi eşleşir.</i>';
+      if (durumId) await editTelegram(token, chatId, durumId, metin).catch(() => {});
+      else await sendTelegram(token, chatId, metin);
+      return;
+    }
+
+    const satirlar = [
+      '🔬 <b>' + esc(analiz.urun || 'Parça') + '</b>',
+      '📊 Güven: %' + guvenYuzde(analiz.guven) + ' · ' + esc(analiz.kategoriEtiketi),
+      '━━━━━━━━━━━━━━━━━━━━',
+    ];
+    if (enUcuz) {
+      satirlar.push('🏆 <b>Stoktaki En Ucuz:</b> ' + botPara(enUcuz.price)
+        + ' (' + esc(enUcuz.siteName) + ')');
+      satirlar.push('🚚 <b>Kargo:</b> ' + esc(enUcuz.kargo || 'Bilinmiyor'));
+    }
+    satirlar.push('📦 ' + (sonuc.ozet?.stoktaSayisi || 0) + ' stoklu teklif · '
+      + (sonuc.ozet?.tarananSite || 0) + ' site tarandı');
+    const ilk5 = adaylar.slice(0, 5);
+    if (ilk5.length) {
+      satirlar.push('', '<b>Mağaza Karşılaştırması:</b>');
+      for (let i = 0; i < ilk5.length; i++) {
+        const a = ilk5[i];
+        satirlar.push((i + 1) + '. ' + (a.stokta ? '🟢' : '🔴') + ' <b>' + esc(a.siteName) + '</b> — '
+          + botPara(a.price));
+      }
+    }
+    const butonlar = [];
+    if (enUcuz?.url) {
+      butonlar.push([{ text: '🛒 En Ucuz Mağazaya Git (' + botPara(enUcuz.price) + ')', url: enUcuz.url }]);
+    }
+    const metin = satirlar.join('\n');
+    const extra = butonlar.length ? { reply_markup: { inline_keyboard: butonlar } } : undefined;
+    if (durumId) await editTelegram(token, chatId, durumId, metin, { extra }).catch(() => {});
+    else await sendTelegram(token, chatId, metin, { extra });
+  } catch (e) {
+    const mesaj = '❌ <b>Görsel incelenemedi:</b>\n'
+      + esc(String(e?.message || e).slice(0, 240))
+      + '\n\n<i>Daha net, iyi ışıklı ve parçanın tamamının göründüğü bir fotoğraf deneyin.</i>';
+    try {
+      if (durumId) await editTelegram(token, chatId, durumId, mesaj);
+      else await sendTelegram(token, chatId, mesaj);
+    } catch { /* Telegram da erişilemezse sessiz */ }
+  }
+}
+
 /**
  * Gelen metin mesajını işler. Export: testler doğrudan çağırabilsin.
  */
@@ -1107,6 +1288,18 @@ export async function handleMessage(token, msg) {
   const chatId = msg?.chat?.id;
   const text = String(msg?.text || '').trim();
   if (!chatId || !text) return;
+
+  // ---- 📸 Fotoğraf ile 3D parça tanıma (2026-11-05) ----
+  // Kullanıcı bota fotoğraf (veya fotoğraf + altyazı) gönderdiğinde EVREN
+  // qwen3-vl-30b parçayı tanır, 61 mağazada fiyat taranır.
+  const foto = Array.isArray(msg?.photo) && msg.photo.length
+    ? msg.photo[msg.photo.length - 1] // en yüksek çözünürlük son eleman
+    : null;
+  if (foto?.file_id) {
+    const ipucu = String(msg?.caption || '').trim().slice(0, 120);
+    await fotoIleAra(token, chatId, foto.file_id, ipucu);
+    return;
+  }
 
   // ---- Komutlar (2026-11-02: radar yönetimi + kişisel alarmlar) ----
   const komut = komutAyikla(text);
@@ -1140,6 +1333,12 @@ export async function handleMessage(token, msg) {
       return;
     }
     if (komut.komut === '/radar_liste') {
+      // 2026-11-03: katalog listesi yönetici komutudur (spec). Kişisel liste
+      // için herkesin kullanabildiği `/liste` var.
+      if (!yoneticiMi(chatId)) {
+        await sendTelegram(token, chatId, YONETICI_UYARISI);
+        return;
+      }
       await sendTelegram(token, chatId, await radarListeMesaji());
       return;
     }
@@ -1260,6 +1459,17 @@ export async function handleCallbackQuery(token, cb) {
     }
     await answerCallback(token, cbId, 'Tarama başlatılıyor…');
     await sendTelegram(token, chatId, await radarTaramaBaslatMesaji()).catch(() => {});
+    return;
+  }
+
+  // 📋 /radar kartındaki "Kataloğu Listele" butonu (yönetici).
+  if (data === 'radar_liste') {
+    if (!yoneticiMi(chatId)) {
+      await answerCallback(token, cbId, YONETICI_UYARISI, true);
+      return;
+    }
+    await answerCallback(token, cbId, 'Katalog hazırlanıyor…');
+    await sendTelegram(token, chatId, await radarListeMesaji()).catch(() => {});
     return;
   }
 
