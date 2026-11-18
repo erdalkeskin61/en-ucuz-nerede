@@ -167,8 +167,12 @@ kontrol('telegram: stok hiyerarşisi kullanılıyor', /stokSirala\(/.test(tg));
 kontrol('telegram: tükendi rozeti', /🔴 Tükendi · /.test(tg));
 kontrol('telegram: stok özet satırı', /📦 <b>Stok:<\/b>/.test(tg));
 kontrol('telegram: tümü tükendiyse uyarı', /Tüm mağazalarda tükendi/.test(tg));
+// 2026-11-05: fiyat kontrolü tek kaynağa taşındı (karsilastirmaFiyati);
+// filtre artık yardımcı fonksiyon içerdiği için satır bazlı doğrulanır.
 kontrol('pipeline: en ucuz adayları stokta olanlardan',
-  /const eligible = found\.filter\([^)]*inStock !== false\)/.test(pipe));
+  /const eligible = found\.filter\(r => [^;]*inStock !== false\)/.test(pipe));
+kontrol('pipeline: fiyat kuralı tek kaynak (karsilastirmaFiyati)',
+  /uygunFiyatli = \(r\) => Number\.isFinite\(karsilastirmaFiyati\(r\)\)/.test(pipe));
 
 /* ============ 5) Web arayüzü ============ */
 bolum('5) Web arayüzü sözleşmesi');

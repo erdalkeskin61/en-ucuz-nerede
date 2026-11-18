@@ -297,10 +297,12 @@ kontrol('stokta teklif yoksa gönderilmez', bildirimKarari({ stokta: false }, nu
 kontrol('fiyat 0 ise gönderilmez', bildirimKarari({ stokta: true, fiyat: 0 }, null).gonder === false);
 kontrol('ilk tespit gönderilir', bildirimKarari(yeni, null).gonder === true);
 kontrol('ilk tespit nedeni', bildirimKarari(yeni, null).neden === 'ilk tespit');
-kontrol('fiyat düşüşü gönderilir', bildirimKarari(yeni, { stokta: true, fiyat: 420, siteId: 'robotistan', paylasimTs: Date.now() }).gonder === true);
-kontrol('fiyat düşüşü nedeni', bildirimKarari(yeni, { stokta: true, fiyat: 420, siteId: 'robotistan', paylasimTs: Date.now() }).neden === 'fiyat düştü');
-kontrol('mağaza değişimi gönderilir', bildirimKarari(yeni, { stokta: true, fiyat: 389, siteId: 'trendyol', paylasimTs: Date.now() }).gonder === true);
-kontrol('mağaza değişimi nedeni', bildirimKarari(yeni, { stokta: true, fiyat: 389, siteId: 'trendyol', paylasimTs: Date.now() }).neden === 'en ucuz mağaza değişti');
+kontrol('derin fiyat düşüşü (%7,4) gönderilir', bildirimKarari(yeni, { stokta: true, fiyat: 420, siteId: 'robotistan', paylasimTs: Date.now() }).gonder === true);
+// 2026-11-11 Anti-Flapping: 24 saat içinde yalnızca %4+ indirim bildirilir.
+kontrol('derin düşüş nedeni', /derin fiyat düşüşü/.test(bildirimKarari(yeni, { stokta: true, fiyat: 420, siteId: 'robotistan', paylasimTs: Date.now() }).neden));
+// Anti-Flapping: aynı fiyatla mağaza değişimi 24 saat içinde bildirilmez.
+kontrol('mağaza değişimi (aynı fiyat, 24 sa içinde) engellenir', bildirimKarari(yeni, { stokta: true, fiyat: 389, siteId: 'trendyol', paylasimTs: Date.now() }).gonder === false);
+kontrol('mağaza değişimi engel nedeni (anti-flapping)', /anti-flapping/.test(bildirimKarari(yeni, { stokta: true, fiyat: 389, siteId: 'trendyol', paylasimTs: Date.now() }).neden));
 kontrol('aynı ürün/fiyat cooldown içinde gönderilmez', bildirimKarari(yeni, {
   stokta: true, fiyat: 389, siteId: 'robotistan', paylasimTs: Date.now() - 3600 * 1000,
 }).gonder === false);
@@ -320,9 +322,14 @@ kontrol('fiyat aynıysa gönderilmez (cooldown)', bildirimKarari(
   { ...yeni, fiyat: 389 },
   { ...yeni, paylasimTs: Date.now() },
 ).gonder === false);
-kontrol('özel cooldown (1 saat) uygulanır', bildirimKarari(yeni, {
+// 24 saat anti-flapping sabittir: 1 saatlik özet ayarı bile 24 saat içinde
+// kuruş dalgalanmasını bildirmez. 24 saatten sonra özel aralık işler.
+kontrol('özel cooldown 24 sa içinde ezilmez (anti-flapping)', bildirimKarari(yeni, {
   stokta: true, fiyat: 389, siteId: 'robotistan', paylasimTs: Date.now() - 2 * 3600 * 1000,
-}, { paylasimAraligiSaat: 1 }).gonder === true);
+}, { paylasimAraligiSaat: 1 }).gonder === false);
+kontrol('24 saatlik özet ayarı 25 saat sonra uygulanır', bildirimKarari(yeni, {
+  stokta: true, fiyat: 389, siteId: 'robotistan', paylasimTs: Date.now() - 25 * 3600 * 1000,
+}, { paylasimAraligiSaat: 24 }).gonder === true);
 kontrol('paylasimTs yoksa ilk paylaşım', bildirimKarari(yeni, {
   stokta: true, fiyat: 389, siteId: 'robotistan', paylasimTs: null,
 }).neden === 'ilk paylaşım');
@@ -335,7 +342,18 @@ bolum('6) 🗂️ Katalog (SQLite) ve ayar sınırları');
 
 const baslangic = katalogGetir();
 kontrol('katalog boş değil (varsayılan tohumlandı)', baslangic.length >= 12, `adet=${baslangic.length}`);
-kontrol('varsayılan katalog 13 ürün', VARSAYILAN_KATALOG.length === 13, `${VARSAYILAN_KATALOG.length}`);
+// 2026-11-03: Porima girişleri eklendi (13 → 18). Sayı koda bağlandı ki
+// katalog büyüdükçe test elle güncellenmek zorunda kalmasın.
+  kontrol(`varsayılan katalog ${VARSAYILAN_KATALOG.length} ürün`,
+    // Göç sonrası canlı katalog varsayılandan FAZLA olabilir (kullanıcı eklemeleri,
+    // düzeltilmiş eski kayıtlar). Bu yüzden "en az" aranır.
+    VARSAYILAN_KATALOG.length >= 13 && baslangic.length >= VARSAYILAN_KATALOG.length,
+    `beklenen=${VARSAYILAN_KATALOG.length} gelen=${baslangic.length}`);
+  kontrol('katalogda Porima ürünleri var',
+    VARSAYILAN_KATALOG.filter(k => /Porima/i.test(k.ad)).length >= 6,
+    String(VARSAYILAN_KATALOG.filter(k => /Porima/i.test(k.ad)).length));
+  kontrol('Porima girişleri tam varyant URL taşıyor',
+    VARSAYILAN_KATALOG.filter(k => /Porima/i.test(k.ad)).every(k => /\?variant=\d+/.test(String(k.url || ''))));
 kontrol('filament ve yazıcı kategorileri var',
   VARSAYILAN_KATALOG.some(k => k.kategori === 'filament') && VARSAYILAN_KATALOG.some(k => k.kategori === 'yazici'));
 kontrol('eSun ePLA-HS katalogda', baslangic.some(k => k.ad.includes('ePLA-HS')));
@@ -432,7 +450,12 @@ kontrol('zamanlayıcı durdurulur', true);
 
 const ozet = radarDurum();
 kontrol('radarDurum katalog döner', Array.isArray(ozet.katalog) && ozet.katalog.length >= 12);
-kontrol('radarDurum aktifSayisi', ozet.aktifSayisi === ozet.katalog.length);
+// 2026-11-10: katalogda GEREKCELI pasif kayit olabilir (or. uretimden kalkan
+// Anycubic Kobra 2 Neo). Bu yuzden "hepsi aktif" degil, "aktifSayisi = aktif
+// isaretli kayit sayisi" dogrulanir; kayip/sisme olmadigini bu yakalar.
+kontrol('radarDurum aktifSayisi',
+  ozet.aktifSayisi === ozet.katalog.filter(k => k.aktif !== false).length,
+  `aktifSayisi=${ozet.aktifSayisi} katalog=${ozet.katalog.length}`);
 kontrol('radarDurum ilerleme nesnesi', typeof ozet.ilerleme === 'object');
 kontrol('radarDurum gonderim özeti', typeof ozet.gonderim?.toplam === 'number');
 kontrol('radarDurum ayar döner', typeof ozet.ayar?.saatAraligi === 'number');
@@ -447,8 +470,8 @@ const kok = path.resolve(import.meta.dirname, '..');
 const oku = (p) => fs.readFileSync(path.join(kok, p), 'utf8');
 const serverSrc = oku('server.js');
 const radarSrc = oku('src/otonomRadar.js');
-const ayarHtml = oku('public/ayarlar.html');
-const ayarJs = oku('public/ayarlar.js');
+const ayarHtml = oku('public/admin.html');
+const ayarJs = oku('public/admin.js');
 const storeSrc = oku('src/store.js');
 
 kontrol('server: /api/radar/durum', serverSrc.includes("'/api/radar/durum'"));

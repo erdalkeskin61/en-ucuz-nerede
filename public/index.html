@@ -2,10 +2,27 @@
 <html lang="tr" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>En Ucuz Nerede? — Fiyat Karşılaştırma</title>
+  <!-- 2026-11-12: `interactive-widget=resizes-content` — mobil klavye açıldığında
+       görünür alanı klavyeye göre küçültür; arama butonu klavyenin altında kalmaz. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <title>3D Filament &amp; Yazıcı Fiyat Karşılaştırma — En Ucuz Nerede?</title>
   <meta name="theme-color" content="#4338CA" />
-  <meta name="description" content="Türkiye'deki 60 alışveriş sitesinde aynı ürünün gerçek en ucuz fiyatını bulur. Barkod okut, fotoğraftan ara, sepetini böl." />
+  <meta name="description" content="60+ mağazada 3D filament, reçine ve yazıcının gerçek ödenecek fiyatını karşılaştır. Kargo ve kupon dahil. STL yükle, parça maliyetini gör." />
+  <!-- Sosyal paylaşım (Open Graph / Twitter). Alan adı yayına alınınca
+       og:url ve og:image değerlerini TAM adres yapın (ör. https://alanadiniz/og-gorsel.png). -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="En Ucuz Nerede?" />
+  <meta property="og:locale" content="tr_TR" />
+  <meta property="og:title" content="Etiket fiyatı değil, ödenecek tutar — En Ucuz Nerede?" />
+  <meta property="og:description" content="Aynı filamentin kargo, kupon ve kampanya sonrası gerçek en ucuz fiyatını 60+ mağazada bulur. Ücretsiz, üyelik yok." />
+  <meta property="og:image" content="/og-gorsel.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="En Ucuz Nerede? — 60+ mağazada gerçek en ucuz fiyat" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Etiket fiyatı değil, ödenecek tutar — En Ucuz Nerede?" />
+  <meta name="twitter:description" content="60+ mağazada 3D filament ve yazıcının gerçek ödenecek fiyatı. Kargo dahil. Ücretsiz, üyelik yok." />
+  <meta name="twitter:image" content="/og-gorsel.png" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/ikon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -35,7 +52,10 @@
       </a>
       <nav class="menu">
         <a href="/" class="etkin">Karşılaştır</a>
-        <a href="/ayarlar.html">Ayarlar</a>
+        <a href="/maliyet.html">🧮 Maliyet</a>
+        <a href="/sepet.html">🧺 Akıllı Sepet</a>
+        <a href="/slicer.html">🧩 Eklenti</a>
+        <a href="/ayarlar.html">🔔 Alarmlarım</a>
       </nav>
       <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
     </div>
@@ -121,6 +141,111 @@
       <div id="oneriHata" class="hata-kutusu" hidden></div>
     </section>
 
+    <!-- 🧩 Hızlı 3D model maliyeti (2026-11-08): dosya cihazda ayrıştırılır,
+         sunucuya YÜKLENMEZ. Yalnızca filament fiyatı canlı radardan okunur. -->
+    <section class="stl-hizli" id="stlHizli" aria-labelledby="stlHizliBaslik">
+      <div class="stl-hizli-ust">
+        <h2 id="stlHizliBaslik" class="stl-hizli-baslik">
+          🧩 3D modelini bırak, <b>parça maliyetini</b> gör
+        </h2>
+        <span class="stl-hizli-gizlilik">🔒 Dosya cihazından çıkmaz</span>
+      </div>
+
+      <div id="stlHizliBirak" class="stl-hizli-birak" role="button" tabindex="0"
+           aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin">
+        <input type="file" id="stlHizliDosya" accept=".stl,.3mf,model/stl,model/3mf" hidden />
+        <span class="stl-hizli-ikon" aria-hidden="true">📥</span>
+        <span class="stl-hizli-metin">
+          <b>STL / 3MF dosyanı buraya bırak</b>
+          <span class="stl-hizli-alt">Modeline yetecek en ucuz filamenti ve parça başı maliyeti anında hesaplarız</span>
+        </span>
+        <span class="stl-hizli-rozet">⚡ Anında · sunucusuz</span>
+      </div>
+
+      <p class="stl-hizli-durum" id="stlHizliDurum" role="status" aria-live="polite"></p>
+
+      <div class="stl-hizli-sonuc" id="stlHizliSonuc" hidden>
+        <div class="stl-hizli-sonuc-ust">
+          <span id="stlHizliDosyaAd" class="stl-hizli-dosya">—</span>
+          <button type="button" class="stl-hizli-kapat" id="stlHizliTemizle" aria-label="Sonucu kapat">✕</button>
+        </div>
+        <p class="stl-hizli-ozet" id="stlHizliOzet">—</p>
+        <!-- 🎨 2.5D model silüeti (saf Canvas, harici kütüphane yok) -->
+        <div class="stl-hizli-orta">
+          <canvas id="stlSiluetCanvas" class="stl-siluet-canvas" width="110" height="110"
+                  aria-label="Modelin izometrik tel çerçeve silüeti" role="img"></canvas>
+          <div class="stl-hizli-metrikler">
+            <span><b id="stlHizliBoyut">—</b><small>ebat (mm)</small></span>
+            <span><b id="stlHizliHacim">—</b><small>hacim</small></span>
+            <span class="vurgu"><b id="stlHizliGram">—</b><small>filament</small></span>
+          </div>
+        </div>
+        <div class="stl-hizli-kontroller">
+          <label>Doluluk
+            <select id="stlHizliDoluluk">
+              <option value="10">%10</option>
+              <option value="20" selected>%20</option>
+              <option value="40">%40</option>
+              <option value="100">%100</option>
+            </select>
+          </label>
+          <label>Malzeme
+            <select id="stlHizliMalzeme">
+              <option value="PLA" selected>PLA</option>
+              <option value="PETG">PETG</option>
+              <option value="ABS">ABS</option>
+              <option value="TPU">TPU</option>
+            </select>
+          </label>
+        </div>
+        <a class="stl-hizli-cta" id="stlHizliCta" target="_blank" rel="noopener sponsored" hidden>
+          ⚡ Bu Filamenti Satın Al ➔
+        </a>
+        <!-- 🧾 Baskı Teklif Fişi (2026-11-12) -->
+        <button type="button" class="stl-hizli-teklif-btn" id="stlTeklifFisBtn" hidden>
+          🧾 Baskı Teklif Fişi Çıkar
+        </button>
+        <a class="stl-hizli-detay" id="stlHizliDetay" href="/maliyet.html">
+          📊 Kâr, elektrik ve amortismanla tam maliyet hesabı ➔
+        </a>
+      </div>
+    </section>
+
+    <!-- ⭐ Sponsorlu Vitrin / Günün Fırsatı (2026-11-08)
+         Aktif kampanya yoksa ya da süresi dolduysa tamamen gizlenir. -->
+    <section id="sponsorVitrinAlani" class="sponsor-hero-banner" aria-labelledby="sponsorVitrinBaslik" hidden>
+      <div class="sponsor-parilti" aria-hidden="true"></div>
+      <div class="sponsor-icerik">
+        <div class="sponsor-medya">
+          <div class="sponsor-gorsel-sar">
+            <!-- 2026-11-12: LCP önceliği. Sabit 140×140 kutu → CLS yok;
+                 fetchpriority="high" ile hero görseli ilk sırada indirilir. -->
+            <img id="sponsorGorsel" class="sponsor-gorsel" alt=""
+                 width="140" height="140"
+                 loading="eager" decoding="async" fetchpriority="high" />
+            <span class="sponsor-gorsel-yok" id="sponsorGorselYok" aria-hidden="true">🧵</span>
+          </div>
+          <span class="sponsor-marka" id="sponsorMarka">—</span>
+        </div>
+
+        <div class="sponsor-metin">
+          <span class="sponsor-rozet" id="sponsorRozet">⭐ HAFTANIN SPONSORLU FIRSATI</span>
+          <h2 class="sponsor-baslik" id="sponsorVitrinBaslik">—</h2>
+          <p class="sponsor-aciklama" id="sponsorAciklama"></p>
+          <div class="sponsor-fiyat-satiri">
+            <s class="sponsor-eski-fiyat" id="sponsorEskiFiyat" hidden>₺0</s>
+            <strong class="sponsor-yeni-fiyat" id="sponsorYeniFiyat">₺0</strong>
+            <span class="sponsor-indirim" id="sponsorIndirim" hidden></span>
+          </div>
+          <a class="sponsor-cta" id="sponsorCta" target="_blank" rel="noopener sponsored">
+            <span id="sponsorCtaMetin">⚡ Kampanyayı İncele</span>
+            <span class="sponsor-cta-ok" aria-hidden="true">➔</span>
+          </a>
+          <p class="sponsor-dipnot" id="sponsorBitis"></p>
+        </div>
+      </div>
+    </section>
+
     <!-- 📊 Canlı "Filament & 3D Yazıcı Borsası" vitrini — 2026-11-03 -->
     <section id="vitrinAlani" class="vitrin" aria-labelledby="vitrinBaslik" hidden>
       <div class="vitrin-ust">
@@ -136,6 +261,23 @@
           <button type="button" class="vitrin-yenile" id="vitrinYenile"
             aria-label="Borsayı yenile" title="Yenile">↻</button>
         </div>
+      </div>
+
+      <!-- 🗂️ Kategori çipleri (2026-11-10): vitrin artık kategori dengeli.
+           Sayılar sunucudan gelen gerçek dağılımdan yazılır; boş kategori gizlenir. -->
+      <div id="vitrinCipleri" class="vitrin-filtre" role="tablist" aria-label="Borsa kategorileri" hidden>
+        <button type="button" class="vitrin-filtre-cip aktif" data-vitrin-kategori="hepsi" role="tab" aria-selected="true">
+          Hepsi <span class="vitrin-filtre-sayi" data-sayi="hepsi">0</span>
+        </button>
+        <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="filament" role="tab" aria-selected="false">
+          🧵 Filamentler <span class="vitrin-filtre-sayi" data-sayi="filament">0</span>
+        </button>
+        <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="yazici" role="tab" aria-selected="false">
+          🖨️ 3D Yazıcılar <span class="vitrin-filtre-sayi" data-sayi="yazici">0</span>
+        </button>
+        <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="genel" role="tab" aria-selected="false">
+          ⚙️ Parça &amp; Reçine <span class="vitrin-filtre-sayi" data-sayi="genel">0</span>
+        </button>
       </div>
 
       <div id="vitrinGrid" class="vitrin-grid" aria-busy="true" aria-live="polite"></div>
@@ -156,8 +298,17 @@
     </section>
 
     <section id="oneriDurum" class="oneri-durum" hidden>
+      <!-- ⏱️ Canlı sayaç + aşama göstergesi + iptal (2026-11-14) -->
+      <div class="oneri-durum-ust">
+        <span id="oneriSayac" class="oneri-sayac">⏱️ 0 sn</span>
+        <span id="oneriAsama" class="oneri-asama" aria-live="polite"></span>
+        <button type="button" id="oneriDurdurBtn" class="oneri-durdur-btn" hidden>
+          ⏹️ Durdur &amp; Bulunanları Göster
+        </button>
+      </div>
       <div id="oneriFazNotu" class="faz-notu"></div>
       <div id="oneriCipleri" class="cip-satiri"></div>
+      <div id="oneriKismiKartlar" class="oneri-izgarasi oneri-kismi" hidden></div>
     </section>
 
     <section id="oneriSonuc" hidden>
@@ -179,6 +330,8 @@
         <div class="tarama-bar"><div class="tarama-dolgu"></div></div>
         <span id="taramaSayac" class="tarama-sayac"></span>
       </div>
+      <!-- 🗂️ Ürün adı aramasında kaynak bulma aşaması (katalog / canlı arama) -->
+      <div id="katalogFazNotu" class="faz-notu" hidden></div>
       <div id="siteCipleri" class="cip-satiri"></div>
 
       <!-- Skeleton / shimmer: tarama sürerken boş ekran yerine iskelet kartlar -->
@@ -211,6 +364,24 @@
           <div id="kaynakBilgi" class="kaynak-bilgi"></div>
         </div>
         <div id="ozetKutu" class="ozet-kutu"></div>
+      </div>
+
+      <!-- 🎯 Net Tasarruf & Güvenilirlik Bandı (Hero Value Banner) — 2026-11-12
+           Kullanıcı ilk 0.2 sn'de kaç TL kazandığını ve verinin tazeliğini görür. -->
+      <div id="tasarrufVurguBanti" class="tasarruf-vurgu-banti" hidden>
+        <div class="tasarruf-vurgu-sol">
+          <span class="tasarruf-vurgu-ikon" aria-hidden="true">🎉</span>
+          <div>
+            <div class="tasarruf-vurgu-tutar" id="tasarrufVurguTutar">—</div>
+            <div class="tasarruf-vurgu-detay" id="tasarrufVurguDetay">—</div>
+          </div>
+        </div>
+        <div class="tasarruf-vurgu-sag">
+          <div class="dogrulama-muhru" id="dogrulamaMuhru">
+            <span class="dogrulama-nokta" aria-hidden="true"></span>
+            <span id="dogrulamaMetin">🕒 Az önce 62 mağazadan canlı doğrulandı</span>
+          </div>
+        </div>
       </div>
 
       <!-- 🧱 Bento özet: spotlight + fiyat trendi + dağılım (2026-11-01) -->
@@ -459,18 +630,21 @@
 
       <!-- Fotoğraftan ara -->
       <div id="gorselPanel" class="tarayici-panel" hidden>
-        <div class="gorsel-yukle-alani">
+        <div class="gorsel-yukle-alani" id="gorselBirak">
           <input type="file" id="gorselDosya" accept="image/*" capture="environment" hidden />
           <button type="button" id="gorselSecBtn" class="gorsel-sec-btn">
             <span class="gorsel-ikon">📸</span>
-            <span><b>Fotoğraf çek</b> ya da galeriden seç</span>
-            <span class="ipucu">Ürünün net göründüğü bir kare yeterli (en fazla 4 MB)</span>
+            <span><b>Fotoğraf çek</b>, sürükle-bırak ya da <kbd>Ctrl</kbd>+<kbd>V</kbd> ile yapıştır</span>
+            <span class="ipucu">3D parça, hotend, nozzle, step motor veya filament makarası (en fazla 4 MB)</span>
           </button>
-          <img id="gorselOnizleme" class="gorsel-onizleme" hidden alt="Seçilen ürün fotoğrafı" />
+          <div class="gorsel-birak-ipucu" id="gorselBirakIpucu" hidden>
+            📥 Fotoğrafı buraya bırakın
+          </div>
+          <img id="gorselOnizleme" class="gorsel-onizleme" hidden alt="Seçilen parça fotoğrafı" />
         </div>
         <label class="gorsel-ipucu-alani">
           İpucu (isteğe bağlı):
-          <input type="text" id="gorselIpucu" placeholder="ör. erkek spor ayakkabı, beyaz" maxlength="120" />
+          <input type="text" id="gorselIpucu" placeholder="ör. Bambu P1S hotend 0.4mm, eSun PLA siyah" maxlength="120" />
         </label>
         <div class="tarayici-butonlar">
           <button type="button" id="gorselAraBtn" disabled>Fotoğraftan ara</button>
@@ -519,7 +693,9 @@
     </section>
 
     <section id="gorselSonuc" hidden>
+      <div id="gorselRozet" class="gorsel-rozet-alani" aria-live="polite"></div>
       <div id="gorselOzet" class="barkod-ozet"></div>
+      <div id="gorselCta" class="gorsel-cta-alani" hidden></div>
       <div id="gorselKartlar" class="gorsel-izgara"></div>
     </section>
 
@@ -535,7 +711,7 @@
         Fiyatlar sitelerden anlık okunur; etiket fiyatı yerine gerçekte ödenecek tutar gösterilir.
         Taksitler indirim sayılmaz, koşullu kampanyalar ayrıca belirtilir.
       </p>
-      <p class="afiliye-bildirim">
+      <p class="afiliye-bildirim" id="afiliyeBildirim" hidden>
         <b>Şeffaflık:</b> "Ürüne git" bağlantıları satış ortaklığı referansı içerebilir.
         Bu referans yalnızca hangi siteden yönlendirildiğini bildirir; <b>fiyatı, sıralamayı
         ve "en ucuz" seçimini değiştirmez</b> ve size <b>ek maliyet yüklemez</b>.
@@ -560,7 +736,7 @@
     </button>
 
     <a class="alt-nav-oge" data-nav="ayarlar" href="/ayarlar.html">
-      <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>Ayarlar</span>
+      <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>Tercihler</span>
     </a>
   </nav>
 
@@ -580,12 +756,68 @@
   <script src="/tema.js"></script>
   <script src="/vendor/html5-qrcode.min.js"></script>
   <script src="/app.js"></script>
+  <!-- 🍞 Evrensel Mikro Toast Bildirimi (2026-11-12)
+       Kopyalama/paylaşma gibi eylemlerde 1.5 sn'lik anlık onay.
+       role="status" + aria-live="polite": ekran okuyucu nazikçe duyurur. -->
+  <div id="genelToast" class="mikro-toast" role="status" aria-live="polite" hidden>
+    <span id="genelToastIkon" class="mikro-toast-ikon" aria-hidden="true">✓</span>
+    <span id="genelToastMetin" class="mikro-toast-metin">Bağlantı kopyalandı!</span>
+  </div>
   <script src="/tarayici.js"></script>
+  <script src="/stl-hizli.js"></script>
+  <script src="/pwa-install.js"></script>
+
+  <!-- 🧾 Baskı Teklif Fişi modalı (2026-11-12) — termal fiş estetiği -->
+  <div id="teklifFisModal" class="teklif-modal" hidden>
+    <div class="teklif-modal-perde" id="teklifModalKapat"></div>
+    <div class="teklif-fis-kutu" role="dialog" aria-modal="true" aria-labelledby="fisBaslik">
+      <div class="fis-ust-eylemler">
+        <span class="fis-rozet">🧾 3D BASKI TEKLİF FİŞİ</span>
+        <button type="button" class="fis-kapat-btn" id="fisKapatBtn" aria-label="Teklif fişini kapat">✕</button>
+      </div>
+      <!-- Yazdırma alanı: @media print yalnızca bu bloğu görünür bırakır -->
+      <div class="fis-govde" id="fisYazdirAlani">
+        <div class="fis-baslik-satiri">
+          <h3 id="fisBaslik" class="fis-baslik">3D Baskı Maliyet &amp; Teklif Özeti</h3>
+          <span class="fis-tarih" id="fisTarih">—</span>
+        </div>
+        <div class="fis-model-bilgi">
+          <div class="fis-satir"><span>📦 Model:</span> <b id="fisModelAd">—</b></div>
+          <div class="fis-satir"><span>📐 Ebat:</span> <b id="fisEbat">—</b></div>
+          <div class="fis-satir"><span>⚖️ Gramaj:</span> <b id="fisGramaj">—</b></div>
+          <div class="fis-satir"><span>🧵 Malzeme:</span> <b id="fisMalzeme">—</b></div>
+          <div class="fis-satir"><span>⏱️ Tahmini Süre:</span> <b id="fisSure">—</b></div>
+        </div>
+        <div class="fis-cizgi"></div>
+        <div class="fis-kalemler">
+          <div class="fis-satir"><span>Filament Maliyeti:</span> <b id="fisFilamentMaliyet">—</b></div>
+          <div class="fis-satir"><span>Elektrik Tüketimi:</span> <b id="fisElektrikMaliyet">—</b></div>
+          <div class="fis-satir"><span>Cihaz Amortismanı:</span> <b id="fisYipranmaMaliyet">—</b></div>
+          <div class="fis-satir fis-toplam-maliyet"><span>Net Üretim Maliyeti:</span> <b id="fisNetMaliyet">—</b></div>
+        </div>
+        <div class="fis-cizgi-cift"></div>
+        <div class="fis-fiyat-alani">
+          <div class="fis-fiyat-etiket">ÖNERİLEN SATIŞ FİYATI</div>
+          <div class="fis-fiyat-tutar" id="fisSatisFiyat">₺0,00</div>
+          <div class="fis-fiyat-not" id="fisKarNotu">Atölye kâr marjı dahildir</div>
+        </div>
+        <div class="fis-dipnot">
+          <span>⚡ Fiyat Doğrulama: <b>EnUcuzNerede</b> · 62 mağaza canlı radar</span>
+        </div>
+      </div>
+      <div class="fis-alt-butonlar">
+        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">📲 WhatsApp ile Gönder</button>
+        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">📋 Fişi Kopyala</button>
+        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">🖨️ Yazdır / PDF</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // PWA service worker (2026-10-28): yalnızca güvenli bağlamda (https/localhost)
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=5').catch(() => { /* PWA olmadan da çalışır */ });
+        navigator.serviceWorker.register('/sw.js?v=11').catch(() => { /* PWA olmadan da çalışır */ });
       });
     }
   </script>

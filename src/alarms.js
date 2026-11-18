@@ -18,7 +18,7 @@ import { refreshPrices } from './pipeline.js';
 import { adapterById } from './sites/index.js';
 import { classifyCampaigns } from './ai.js';
 import { computePricing } from './pricing.js';
-import { pushGonder } from './push.js';
+import { pushGonder, pushCihazaGonder } from './push.js';
 import { formatTL } from './util.js';
 import { fiyatSerisi, grafikPng } from './grafik.js';
 import { fotoGonder } from './telegramFoto.js';
@@ -148,6 +148,11 @@ async function fiyatiDogrula(site, url, oncekiFiyat) {
   }
 }
 
+/** ₺ biçimli sayı (Web Push gövdesinde "₺449,90" gibi). */
+function sayiTL(n) {
+  return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 /** E-posta için kupon satırı: "Kupona alırsan fiyat şu olur" (kupon yoksa boş). */
 function kuponSatiri(kupon) {
   if (!kupon || kupon.fiyat == null) return '';
@@ -160,24 +165,33 @@ function kuponSatiri(kupon) {
  * Tüm takip edilen ürünleri kontrol eder. Dışarıdan da tetiklenebilir
  * (POST /api/alarm/calistir ya da Ayarlar sayfasındaki düğme).
  */
-export async function checkAlarms() {
+/**
+ * @param {{fiyatKaynagi?:Function, dogrulamaKaynagi?:Function, sessiz?:boolean}} [testHooks]
+ *   Yalnızca otomatik testler içindir. Üretimde boş bırakılır; gerçek ağ
+ *   kaynakları (refreshPrices / fiyatiDogrula) kullanılır.
+ */
+export async function checkAlarms(testHooks = {}) {
   if (calisiyor) return { hata: 'Kontrol zaten çalışıyor' };
   calisiyor = true;
   const basladi = Date.now();
   try {
-    const takipler = getTracked();
+    const takipler = testHooks.sadeceId
+      ? getTracked().filter(t => t.id === testHooks.sadeceId)
+      : getTracked();
     const rapor = [];
     for (const t of takipler) {
       if (!t.urunler?.length) continue;
-      const sonuc = await tekUrunKontrol(t);
+      const sonuc = await tekUrunKontrol(t, testHooks);
       rapor.push(sonuc);
     }
     sonCalisma = new Date().toISOString();
     // 📢 Alarm kontrollerinin hemen ardından fırsat kanalını sessizce tetikle.
     // Yalnızca gerçek snapshot'lardan beslenir; hata alarm akışını ETKİLEMEZ.
-    import('./firsatKanali.js')
-      .then(m => m.firsatlariTara({ taze: false }))
-      .catch(e => console.warn('[firsat] alarm sonrası tarama hatası:', String(e.message || e).slice(0, 120)));
+    if (!testHooks.sessiz) {
+      import('./firsatKanali.js')
+        .then(m => m.firsatlariTara({ taze: false }))
+        .catch(e => console.warn('[firsat] alarm sonrası tarama hatası:', String(e.message || e).slice(0, 120)));
+    }
     return { tamam: true, sureMs: Date.now() - basladi, urunSayisi: takipler.length, sonuclar: rapor };
   } finally {
     calisiyor = false;
@@ -185,8 +199,10 @@ export async function checkAlarms() {
 }
 
 /** Tek takip kaydının kontrolü: fiyat geçmişi + tetikleyiciler + doğrulama + e-posta. */
-async function tekUrunKontrol(t) {
-  const fiyatlar = await refreshPrices(t.urunler, { fresh: true });
+async function tekUrunKontrol(t, testHooks = {}) {
+  const fiyatlar = testHooks.fiyatKaynagi
+    ? await testHooks.fiyatKaynagi(t)
+    : await refreshPrices(t.urunler, { fresh: true });
   const ts = new Date().toISOString();
 
   // Geçmişteki önceki durum (son kayıt)
@@ -208,9 +224,11 @@ async function tekUrunKontrol(t) {
     } else if (f.product?.inStock === false) {
       durum = 'stokta_yok';
     }
-    siteKayitlari.push({ site: f.site, siteName: f.siteName, url: f.url, durum, fiyat, hata: hataNotu, koşullu: f.pricing?.kampanyaKosullu || [], kupon: f.pricing?.kupon || null });
+    // Komisyonlu/afiliye link varsa bildirimde onu kullan (yoksa ürün linki).
+    const urunUrl = f.product?.afiliyeUrl || f.url;
+    siteKayitlari.push({ site: f.site, siteName: f.siteName, url: urunUrl, durum, fiyat, hata: hataNotu, koşullu: f.pricing?.kampanyaKosullu || [], kupon: f.pricing?.kupon || null });
     if (durum === 'ok' && fiyat != null && (!yeniEnUcuz || fiyat < yeniEnUcuz.fiyat)) {
-      yeniEnUcuz = { site: f.site, siteName: f.siteName, url: f.url, fiyat, koşullu: f.pricing?.kampanyaKosullu || [] };
+      yeniEnUcuz = { site: f.site, siteName: f.siteName, url: urunUrl, fiyat, koşullu: f.pricing?.kampanyaKosullu || [] };
     }
   }
 
@@ -228,8 +246,10 @@ async function tekUrunKontrol(t) {
   // 1) Hedef fiyatın altına düştü mü?
   const hedefAsan = yeniEnUcuz && t.hedefFiyat && yeniEnUcuz.fiyat <= t.hedefFiyat ? yeniEnUcuz : null;
   if (hedefAsan && (!t.sonHedefBildirimi || Date.now() - new Date(t.sonHedefBildirimi).getTime() > BILDIRIM_SONUK_MS)) {
-    // Doğrulama: sayfayı bir kez daha çek
-    const dogrulanmis = await fiyatiDogrula(hedefAsan.site, hedefAsan.url, hedefAsan.fiyat);
+    // Doğrulama: sayfayı bir kez daha çek (testte enjekte edilebilir).
+    const dogrulanmis = testHooks.dogrulamaKaynagi
+      ? await testHooks.dogrulamaKaynagi(hedefAsan.site, hedefAsan.url, hedefAsan.fiyat)
+      : await fiyatiDogrula(hedefAsan.site, hedefAsan.url, hedefAsan.fiyat);
     if (dogrulanmis != null && dogrulanmis.toplam != null && dogrulanmis.toplam <= t.hedefFiyat) {
       const oncekiFiyat = oncekiKayit?.enUcuzFiyat ?? null;
       const konu = '🎯 Fiyat alarmı: ' + t.urun.slice(0, 80) + ' — ' + hedefAsan.siteName + ' ' + formatTL(dogrulanmis.toplam);
@@ -260,22 +280,53 @@ async function tekUrunKontrol(t) {
       const fotoButon = hedefAsan.url
         ? { inline_keyboard: [[{ text: '🛒 En Ucuz Mağazaya Git', url: hedefAsan.url }]] }
         : null;
+      // 🔔 Kişiye/cihaza özel Web Push (2026-11-06): e-posta/Telegram/şifre
+      // gerekmeden, yalnızca alarmı kuran cihaza gönderilir. 404/410'da
+      // abonelik sessizce temizlenir (pushCihazaGonder içinde).
+      let kisiselPush = null;
+      if (t.pushSubscription?.endpoint) {
+        kisiselPush = await pushCihazaGonder(t.pushSubscription, {
+          baslik: `🎉 Fiyat Düştü! ${String(t.urun).slice(0, 70)}`,
+          govde: `Hedeflediğiniz ₺${sayiTL(t.hedefFiyat)} altına inerek ₺${sayiTL(dogrulanmis.toplam)} TL oldu (${hedefAsan.siteName}). Satın almak için dokunun!`,
+          url: hedefAsan.url,
+          etiket: 'eun-alarm-' + t.id,
+          veri: {
+            urunId: t.id,
+            site: hedefAsan.site,
+            hedefFiyat: t.hedefFiyat,
+            fiyat: dogrulanmis.toplam,
+          },
+        }).catch(e => ({ basarili: false, hatali: true, kod: 0, hata: String(e.message || e), temizlendi: false }));
+      }
+
       // 🔔 Web Push: e-posta/Telegram'dan bağımsız, cihaz bildirimi.
+      // Kişisel abonelik varsa genel yayına ikinci kez gönderilmez (çift bildirim yok).
       try {
-        await bildirimleriGonder(konu, icerik, {
+        if (testHooks.kanallariAtla) {
+          gitti = true; // testte gerçek e-posta/Telegram/WhatsApp ağına çıkma
+        } else await bildirimleriGonder(konu, icerik, {
           chatId: t.chatId || undefined,
           foto,
           fotoButon,
-          push: {
-            baslik: `🏷️ Fiyat Düştü: ${String(t.urun).slice(0, 70)}`,
-            govde: `${oncekiFiyat != null ? formatTL(oncekiFiyat) : 'önceki fiyat'} ➔ ${formatTL(dogrulanmis.toplam)} (${hedefAsan.siteName})`,
-            url: hedefAsan.url,
-            etiket: 'eun-fiyat-dustu',
-          },
+          push: kisiselPush
+            ? false
+            : {
+              baslik: `🏷️ Fiyat Düştü: ${String(t.urun).slice(0, 70)}`,
+              govde: `${oncekiFiyat != null ? formatTL(oncekiFiyat) : 'önceki fiyat'} ➔ ${formatTL(dogrulanmis.toplam)} (${hedefAsan.siteName})`,
+              url: hedefAsan.url,
+              etiket: 'eun-fiyat-dustu',
+            },
         });
         gitti = true;
       } catch (e) { hata = e.message; }
-      bildirimler.push({ tur: 'hedef', site: hedefAsan.siteName, fiyat: dogrulanmis.toplam, gonderildi: gitti, hata });
+      bildirimler.push({
+        tur: 'hedef',
+        site: hedefAsan.siteName,
+        fiyat: dogrulanmis.toplam,
+        gonderildi: gitti,
+        hata,
+        pushCihaz: kisiselPush,
+      });
       updateTracked(t.id, { sonHedefBildirimi: ts });
     } else {
       bildirimler.push({ tur: 'hedef', site: hedefAsan.siteName, fiyat: hedefAsan.fiyat, gonderildi: false, hata: 'doğrulama başarısız, alarm gönderilmedi' });
@@ -465,7 +516,11 @@ export async function telegramGonder(konu, icerik, opts = {}) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  const text = '🔔 <b>' + tg(konu) + '</b>\n\n' + tg(icerik);
+  const text = opts.hamHtml === true
+    // 2026-11-12: biçimli test kartı gibi ÖNCEDEN kaçırılmış HTML gövdeler için.
+    // Çağıran taraf tüm dinamik alanları kendisi kaçırmakla yükümlüdür.
+    ? String(icerik ?? '')
+    : '🔔 <b>' + tg(konu) + '</b>\n\n' + tg(icerik);
 
   // 📈 Fotoğraflı bildirim: trend grafiği + altyazıda mağaza detayları.
   // Gönderilemezse metin bildirimi yine gider (alarm kaybolmaz).
@@ -572,7 +627,9 @@ export async function bildirimleriGonder(konu, icerik, opts = {}) {
 
   // 🔔 Web Push (2026-11-01): kayıtlı tarayıcı/cihazlara native bildirim.
   // Abone yoksa sessizce atlanır (hata değildir; kanal henüz kurulmamış).
-  try {
+  // 2026-11-06: `opts.push === false` → kişisel cihaz push'u zaten gönderildi;
+  // genel yayına ikinci kez gönderip çift bildirim üretme.
+  if (opts.push !== false) try {
     const p = opts.push || {};
     const r = await pushGonder({
       baslik: p.baslik || konu,
@@ -596,10 +653,56 @@ export async function bildirimleriGonder(konu, icerik, opts = {}) {
 }
 
 export async function sendTestTelegram(opts = {}) {
-  const konu = '🧪 Test Bildirimi — En Ucuz Nerede Telegram';
-  const icerik = 'Tebrikler! Telegram fiyat alarm bildirimleri başarıyla bağlandı. 🚀\n\nTakip ettiğin ürünlerde fiyat düşüşü olduğunda buraya anlık bildirim gönderilecek.';
-  await telegramGonder(konu, icerik, opts);
-  return { ok: true };
+  // 2026-11-12: ham metin yerine biçimli kart + bot kimliği doğrulaması.
+  // `telegramGonder` HTML parse_mode kullanır; burada ham HTML geçiyoruz
+  // (`hamHtml: true`) çünkü tüm dinamik alanlar aşağıda kaçırılıyor.
+  const s = getSettings();
+  const token = opts.botToken || s.telegram?.botToken;
+  const chatId = opts.chatId || s.telegram?.chatId;
+  void chatId; // telegramGonder kendi çözümlemesini yapar
+
+  const tg = (x) => String(x ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const simdi = new Date();
+  const tarih = simdi.toLocaleString('tr-TR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  // Bot kimliği: "hangi bota bağlandım?" sorusunu yanıtlar (canlı bağlantı kanıtı).
+  let bot = null;
+  if (token) {
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const j = await r.json().catch(() => null);
+      if (j?.ok && j.result) {
+        bot = { username: j.result.username || null, ad: j.result.first_name || null };
+      }
+    } catch { /* getMe başarısız olsa da mesaj gönderimi denenir */ }
+  }
+
+  const satirlar = [
+    '🔔 <b>En Ucuz Nerede — Canlı Fiyat Alarmı Testi</b> 🚀',
+    '',
+    '✅ <b>Telegram bildirim hattınız başarıyla bağlandı!</b>',
+    `🕒 <b>Test Zamanı:</b> ${tg(tarih)}`,
+    '📊 <b>Durum:</b> Sistem 7/24 fiyat düşüşlerini tarıyor.',
+  ];
+  if (bot?.username) {
+    satirlar.push(`🤖 <b>Bağlı Bot:</b> @${tg(bot.username)}`);
+  }
+  satirlar.push(
+    '',
+    'Takip ettiğiniz ürünler belirlediğiniz hedef fiyata indiğinde bu kanaldan anında bildirim alacaksınız.',
+    '',
+    '<i>Bu mesajı Ayarlar → Telegram Test Bildirimi ile siz tetiklediniz.</i>',
+  );
+
+  await telegramGonder('', satirlar.join('\n'), { ...opts, hamHtml: true });
+  return { ok: true, tarih, bot };
 }
 
 export async function sendTestWhatsApp(opts = {}) {

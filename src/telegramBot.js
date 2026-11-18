@@ -387,8 +387,23 @@ function inlineCanliAra(sorgu) {
   };
 }
 
-/** Teklif listesinden inline sonuç paketi üretir. */
-function inlineSonucPaketi({ urun, teklifler, ts = null, kaynakUrl = null, kimlik = null }) {
+/**
+ * Teklif listesinden inline sonuç paketi üretir.
+ *
+ * 2026-11-11: kategori ikonu/etiketi, "En Dip Fiyat" ve indirim rozeti
+ * eklendi. Inline listesinde artık yazıcı/reçine/parça kartları da
+ * filamentlerden ayırt edilebiliyor.
+ *
+ * @param {{
+ *   urun: string, teklifler: Array, ts?: number|null, kaynakUrl?: string|null,
+ *   kimlik?: string|null, kategoriIkon?: string, kategoriEtiket?: string,
+ *   dip?: boolean, indirimYuzde?: number,
+ * }} p
+ */
+function inlineSonucPaketi({
+  urun, teklifler, ts = null, kaynakUrl = null, kimlik = null,
+  kategoriIkon = '🏷️', kategoriEtiket = '', dip = false, indirimYuzde = 0,
+}) {
   const temiz = (teklifler || [])
     .filter(t => t && Number.isFinite(Number(t.fiyat)) && Number(t.fiyat) > 0 && t.url)
     .slice(0, 3);
@@ -396,10 +411,18 @@ function inlineSonucPaketi({ urun, teklifler, ts = null, kaynakUrl = null, kimli
   const enIyi = temiz[0];
   const yas = ts ? kisaYasMetni(Math.max(0, Date.now() - Number(ts))) : null;
   const madalya = ['🥇', '🥈', '🥉'];
+
+  // Rozet metinleri: "En Dip Fiyat" öncelikli; yoksa anlamlı indirim yüzdesi.
+  const etiketPrefix = kategoriEtiket ? `[${kategoriEtiket}] ` : '';
+  const yuzde = Math.round(Number(indirimYuzde) || 0);
+  const dipRozeti = dip
+    ? ' 🔥 En Dip Fiyat!'
+    : (yuzde >= 5 ? ` 📉 %${yuzde} İndirim` : '');
+
   const satirlar = [
-    `🏷️ <b>${esc(baslikKisalt(urun, 120))}</b>`,
+    `${kategoriIkon} <b>${etiketPrefix}${esc(baslikKisalt(urun, 110))}</b>`,
     '',
-    ...temiz.map((t, i) => `${madalya[i]} <b>${botPara(t.fiyat)}</b> — ${esc(t.site || 'Mağaza')}`),
+    ...temiz.map((t, i) => `${madalya[i]} <b>${botPara(t.fiyat)}</b> — ${esc(t.site || 'Mağaza')}${i === 0 ? dipRozeti : ''}`),
   ];
   if (temiz.length === 1) satirlar.push('', '<i>Diğer mağazalar için bota gönderin.</i>');
   satirlar.push('');
@@ -418,12 +441,17 @@ function inlineSonucPaketi({ urun, teklifler, ts = null, kaynakUrl = null, kimli
     }]);
   }
 
+  // Telegram kart başlığı (ikon + fiyat + ad) ve açıklaması (etiket + teklifler).
+  const kartBaslik = `${kategoriIkon} ${botPara(enIyi.fiyat)} · ${baslikKisalt(urun, 65)}`.slice(0, 95);
+  const kartAciklama = `${etiketPrefix}${temiz
+    .map((t, i) => `${madalya[i]} ${String(t.site || '').slice(0, 16)} ${botPara(t.fiyat)}`)
+    .join(' ')}${dipRozeti}`.slice(0, 95);
+
   return {
     type: 'article',
     id: 'u-' + String(kimlik || crypto.createHash('sha1').update(urun).digest('hex')).slice(0, 40),
-    title: `${botPara(enIyi.fiyat)} · ${baslikKisalt(urun, 70)}`.slice(0, 95),
-    description: temiz.map((t, i) => `${madalya[i]} ${String(t.site || '').slice(0, 20)} ${botPara(t.fiyat)}`).join('  ')
-      + (yas ? `  ·  ${yas}` : ''),
+    title: kartBaslik,
+    description: kartAciklama,
     input_message_content: {
       message_text: satirlar.join('\n').slice(0, 4000),
       parse_mode: 'HTML',
@@ -457,7 +485,37 @@ function inlineSnapshotSonucu(kayit) {
 }
 
 /**
+ * Inline kart için kategori bilgisi.
+ * Önce radar'ın `urunIkonu()` (PETG 💎, TPU 🌀, reçine 🧪, nozzle 🔧,
+ * kurutucu ♨️) denenir; yoksa kategori varsayılanı kullanılır.
+ */
+const INLINE_KATEGORI = {
+  yazici: { ikon: '🖨️', etiket: '3D Yazıcı' },
+  filament: { ikon: '🧵', etiket: 'Filament' },
+  genel: { ikon: '⚙️', etiket: 'Yedek Parça/Reçine' },
+};
+
+function inlineKategoriBilgi(kategori, ad, urunIkonu) {
+  const kat = String(kategori || 'genel').toLowerCase();
+  const taban = INLINE_KATEGORI[kat] || INLINE_KATEGORI.genel;
+  let ikon = taban.ikon;
+  if (typeof urunIkonu === 'function') {
+    try {
+      const sezgi = urunIkonu({ kategori: kat, ad: String(ad || '') });
+      if (sezgi) ikon = sezgi;
+    } catch { /* sezgisel ikon opsiyonel */ }
+  }
+  return { ikon, etiket: taban.etiket };
+}
+
+/**
  * Telegram inline sorgusuna verilecek sonuçları üretir (ağ isteği YOK).
+ *
+ * 2026-11-11: boş sorgu ("@bot" yazıp bekleme) artık ilk 5 filament yerine
+ * vitrinVerisi()'nin kategori dengeli + jitter rotasyonlu listesini kullanır.
+ * Böylece yazıcılar (₺15.000–35.000) ve reçine/parça ürünleri de inline'da
+ * görünür, aynı ürünler her açılışta tekrar etmez.
+ *
  * @param {string} sorgu
  * @returns {Promise<Array<object>>}
  */
@@ -483,37 +541,97 @@ export async function inlineSonuclariOlustur(sorgu) {
   try { radar = await radarModuluYukle(); } catch { radar = null; }
   if (radar?.radarDurum) {
     try {
-      const d = radar.radarDurum();
-      const durumMap = new Map((d.durumlar || []).map(x => [Number(x.katalogId), x]));
-      let adaylar = [];
       if (q.length >= 2) {
-        adaylar = (d.katalog || []).filter(k => {
+        /* ---------------- ARAMA MODU ---------------- */
+        const d = radar.radarDurum();
+        const durumMap = new Map((d.durumlar || []).map(x => [Number(x.katalogId), x]));
+        const adaylar = (d.katalog || []).filter(k => {
           const a = inlineKatla(k.ad);
           return a && (a.includes(hedef) || hedef.includes(a));
         });
+        for (const k of adaylar) {
+          if (sonuc.length >= 8) break;
+          const anahtar = inlineKatla(k.ad);
+          if (!anahtar || gorulen.has(anahtar)) continue;
+          const durum = durumMap.get(Number(k.id));
+          if (!durum?.stokta || !(Number(durum.fiyat) > 0)) continue;
+          let v = null;
+          try { v = radar.radarDurumVerisi?.(k.id) || null; } catch { v = null; }
+          const url = v?.afiliyeUrl || v?.hamUrl || null;
+          if (!url) continue;
+          gorulen.add(anahtar);
+          const { ikon, etiket } = inlineKategoriBilgi(k.kategori, k.ad, radar.urunIkonu);
+          const paket = inlineSonucPaketi({
+            urun: k.ad,
+            teklifler: [{ site: durum.site, fiyat: durum.fiyat, url }],
+            ts: durum.ts,
+            kaynakUrl: v?.kaynakUrl || null,
+            kimlik: 'radar-' + k.id,
+            kategoriIkon: ikon,
+            kategoriEtiket: etiket,
+          });
+          if (paket) sonuc.push(paket);
+        }
       } else {
-        adaylar = (d.durumlar || []).filter(x => x.stokta).slice(0, 5)
-          .map(x => ({ id: x.katalogId, ad: x.ad }));
-      }
-      for (const k of adaylar) {
-        if (sonuc.length >= 8) break;
-        const anahtar = inlineKatla(k.ad);
-        if (!anahtar || gorulen.has(anahtar)) continue;
-        const durum = durumMap.get(Number(k.id));
-        if (!durum?.stokta || !(Number(durum.fiyat) > 0)) continue;
-        let v = null;
-        try { v = radar.radarDurumVerisi?.(k.id) || null; } catch { v = null; }
-        const url = v?.afiliyeUrl || v?.hamUrl || null;
-        if (!url) continue;
-        gorulen.add(anahtar);
-        const paket = inlineSonucPaketi({
-          urun: k.ad,
-          teklifler: [{ site: durum.site, fiyat: durum.fiyat, url }],
-          ts: durum.ts,
-          kaynakUrl: v?.kaynakUrl || null,
-          kimlik: 'radar-' + k.id,
-        });
-        if (paket) sonuc.push(paket);
+        /* ---------------- BOŞ SORGU: DİNAMİK VİTRİN ---------------- */
+        // Kategori kotası (filament 5 · yazıcı 3 · genel 2) + jitter rotasyonu
+        // vitrinVerisi() içinde; inline yalnızca onu tüketir (tek kaynak).
+        let vitrinKartlari = [];
+        if (typeof radar.vitrinVerisi === 'function') {
+          try {
+            const vv = radar.vitrinVerisi({ limit: 10 });
+            if (Array.isArray(vv?.urunler) && vv.urunler.length) {
+              vitrinKartlari = vv.urunler.filter(u => u && u.stokta !== false);
+              // Tükenenleri elemek listeyi 6'nın altına düşürürse tümünü kullan:
+              // boş inline modunda kart sayısı çeşitlilikten önce gelir.
+              if (vitrinKartlari.length < 6) vitrinKartlari = vv.urunler.filter(Boolean);
+            }
+          } catch { vitrinKartlari = []; }
+        }
+
+        // Fallback (vitrin yoksa / hata verirse): radarDurum'dan kategori grupla.
+        if (!vitrinKartlari.length) {
+          const d = radar.radarDurum();
+          const katMap = new Map((d.katalog || []).map(k => [Number(k.id), k]));
+          const gruplar = { filament: [], yazici: [], genel: [] };
+          for (const x of (d.durumlar || [])) {
+            if (!x.stokta || !(Number(x.fiyat) > 0)) continue;
+            const kat = String(katMap.get(Number(x.katalogId))?.kategori || 'filament').toLowerCase();
+            (gruplar[kat] || gruplar.filament).push({
+              id: x.katalogId, ad: x.ad, site: x.site, fiyat: x.fiyat, ts: x.ts, kategori: kat,
+            });
+          }
+          vitrinKartlari = [
+            ...gruplar.filament.slice(0, 5),
+            ...gruplar.yazici.slice(0, 3),
+            ...gruplar.genel.slice(0, 2),
+          ];
+        }
+
+        for (const u of vitrinKartlari) {
+          if (sonuc.length >= 10) break;
+          const urunAdi = u.katalogAd || u.ad || u.urun || '';
+          const anahtar = inlineKatla(urunAdi);
+          if (!anahtar || gorulen.has(anahtar)) continue;
+          let v = null;
+          try { v = radar.radarDurumVerisi?.(u.id) || null; } catch { v = null; }
+          const url = u.url || v?.afiliyeUrl || v?.hamUrl || null;
+          if (!url) continue;
+          gorulen.add(anahtar);
+          const { ikon, etiket } = inlineKategoriBilgi(u.kategori, urunAdi, radar.urunIkonu);
+          const paket = inlineSonucPaketi({
+            urun: urunAdi,
+            teklifler: [{ site: u.site, fiyat: u.fiyat, url }],
+            ts: u.ts,
+            kaynakUrl: v?.kaynakUrl || u.url || null,
+            kimlik: 'vitrin-' + u.id,
+            kategoriIkon: ikon || u.ikon || '📦',
+            kategoriEtiket: etiket,
+            dip: !!u.dip,
+            indirimYuzde: Number(u.indirimYuzde) || 0,
+          });
+          if (paket) sonuc.push(paket);
+        }
       }
     } catch { /* radar kapalıysa yalnızca snapshot kullanılır */ }
   }
@@ -540,7 +658,9 @@ export async function handleInlineQuery(token, iq) {
   await api(token, 'answerInlineQuery', {
     inline_query_id: iq.id,
     results: results.slice(0, 20),
-    cache_time: 120,
+    // 2026-11-11: 120 sn → 30 sn. Boş sorgu artık jitter'lı vitrin listesi
+    // döndürdüğü için uzun önbellek rotasyonu kullanıcıya hiç yansıtmıyordu.
+    cache_time: 30,
     is_personal: false,
   });
 }
@@ -825,7 +945,7 @@ export function sonucMesajiOlustur(res, opts = {}) {
   }
 
   // ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" (2026-11-05)
-  let zt = o.zamanlamaTavsiyesi || res.zamanlamaTavsiyesi || null;
+  let zt = o.zamanlamaTavsiyesi || res.zamanlamaTavsiyesi || res.ozet?.zamanlamaTavsiyesi || null;
   if (!zt && d.enUcuz && res.fiyatAnalizi) {
     try {
       zt = zamanlamaTahminiYap({
@@ -842,10 +962,21 @@ export function sonucMesajiOlustur(res, opts = {}) {
       : `🟡 <b>TAVSİYE: BEKLE (%${zt.guven} İhtimalle)</b>`;
     zamanlamaSatiri = `⏱️ ${rozetMetni}\n<i>💡 ${esc(zt.aciklama)}</i>\n`;
   }
+
+  // 🟢 FOMO aciliyet satırı (2026-11-08): YALNIZCA gerçek dip/ortalama-altı
+  // fırsatlarda (fomo.aktif). Mesajın en üstünde, tek satır, abartısız.
+  let fomoBaslikSatiri = '';
+  try {
+    const f = zt?.fomo;
+    if (zt?.karar === 'SIMDI_AL' && f?.aktif === true && f.dipFiyatTL != null) {
+      fomoBaslikSatiri = `🟢 <b>ŞİMDİ AL:</b> Ürün son ${Number(zt.metrikler?.gunSayisi) || 60} günün dip seviyesinde (${botPara(f.dipFiyatTL)})! `
+        + `24 saatte tükenme/artış ihtimali %${Number(f.tukenmeRiskiYuzde) || 0}.\n`;
+    }
+  } catch { /* satır eklenmez */ }
   const toplamSite = o.bulunanSiteSayisi ?? d.bulunanSayisi;
   const swr = opts.yasNotu ? `\n⚡ <i>(Son kontrol: ${esc(opts.yasNotu)})</i>` : '';
 
-  return `🏷️ <b>${esc(baslik)}</b>
+  return `${fomoBaslikSatiri}🏷️ <b>${esc(baslik)}</b>
 ${cizgi}
 🏆 <b>En Ucuz:</b> ${botPara(d.fiyat)} (${esc(siteAdi)})
 🚚 <b>Kargo:</b> ${esc(kargoMetni(d.enUcuz))}

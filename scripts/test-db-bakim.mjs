@@ -205,8 +205,8 @@ bolum('6) Kaynak sözleşmesi (entegrasyon)');
   const bakim = oku('src/dbBakim.js');
   const hp = oku('src/healthPulse.js');
   const server = oku('server.js');
-  const html = oku('public/ayarlar.html');
-  const js = oku('public/ayarlar.js');
+  const html = oku('public/admin.html');
+  const js = oku('public/admin.js');
 
   kontrol('store: dbBaglantisi export', /export function dbBaglantisi\(\)/.test(store));
   kontrol('store: dbBakim ayar anahtarları', /DBBAKIM_ANAHTARLARI/.test(store));

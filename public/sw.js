@@ -12,7 +12,7 @@
  *  - Görseller/vendor kütüphanesi: cache-first (nadiren değişir, bant genişliği önemli).
  *  - `/api/*`: hiç önbelleklenmez.
  */
-const SURUM = 'eun-v5';
+const SURUM = 'eun-v11';
 const KABUK_DOSYALARI = [
   '/',
   '/style.css',
@@ -20,6 +20,12 @@ const KABUK_DOSYALARI = [
   '/tarayici.js',
   '/erisim.js',
   '/tema.js',
+  '/pwa-install.js',
+  '/stl-hizli.js',
+  '/stlParser.js',
+  '/stlMaliyet.js',
+  '/sepet.js',
+  '/sepetHesap.js',
   '/manifest.json',
   // Grafik kütüphanesi artık yerel (2026-10-28): CDN yok, çevrimdışı da çalışır.
   '/vendor/chart.umd.min.js',
@@ -137,19 +143,27 @@ self.addEventListener('notificationclick', (event) => {
   } catch {
     hedefUrl = new URL('/', self.location.origin);
   }
-  // Güvenlik: yalnızca kendi origin'imize yönlendir.
-  if (hedefUrl.origin !== self.location.origin) hedefUrl = new URL('/', self.location.origin);
+  // Güvenlik: yalnızca http(s) hedeflerine izin ver (javascript:/data: yok).
+  if (!/^https?:$/.test(hedefUrl.protocol)) hedefUrl = new URL('/', self.location.origin);
 
   event.waitUntil((async () => {
-    const istemciler = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const istemci of istemciler) {
-      try {
-        if (new URL(istemci.url).origin !== self.location.origin) continue;
-        await istemci.focus();
-        if ('navigate' in istemci) await istemci.navigate(hedefUrl.href);
-        return;
-      } catch { /* sonraki istemci */ }
+    const ayniOrigin = hedefUrl.origin === self.location.origin;
+
+    // 1) Uygulama sekmesi açıksa ona odaklan (aynı origin hedefte doğrudan
+    //    ürün sayfasına götür). Mağaza dış linkiyse yeni sekmede açılır.
+    if (ayniOrigin) {
+      const istemciler = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const istemci of istemciler) {
+        try {
+          if (new URL(istemci.url).origin !== self.location.origin) continue;
+          await istemci.focus();
+          if ('navigate' in istemci) await istemci.navigate(hedefUrl.href);
+          return;
+        } catch { /* sonraki istemci */ }
+      }
     }
+
+    // 2) Açık sekme yoksa (veya hedef mağaza linkiyse) doğrudan aç.
     await self.clients.openWindow(hedefUrl.href);
   })());
 });

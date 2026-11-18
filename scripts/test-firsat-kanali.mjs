@@ -180,11 +180,19 @@ const MOCK_URL = 'https://mock-firsat.test/urun-' + Date.now();
   const sn = sonucOlustur({ fiyat: 17000, ortalama: 22000, yeterliVeri: true, resim: 'https://img.test/x.jpg' });
   sn.kaynak.modelKodu = TEST_ONEK + 'mock';
   sn.kaynak.url = MOCK_URL;
+  sn.kaynak.urun = 'Test Fırsat Ürünü ' + TEST_ONEK;
+  sn.sonuclar[0].product.title = 'Test Fırsat Ürünü ' + TEST_ONEK;
   sn.sonuclar[1].product.url = MOCK_URL;
+  sn.sonuclar[1].product.title = 'Test Fırsat Ürünü ' + TEST_ONEK;
   anlikYaz(MOCK_URL, sn);
 
   const { firsatlariTara } = await import('../src/firsatKanali.js');
-  const r = await firsatlariTara({ gonder: true, kuru: true, zorla: true, taze: false });
+  // Yalnızca bu testin adayı değerlendirilir: gerçek ürünler taranmaz ve
+  // gerçek ürünlerin cooldown kaydı kirlenmez.
+  const sadeceTest = (a) => String(a?.sonuc?.kaynak?.urun || '').includes(TEST_ONEK);
+  const r = await firsatlariTara({
+    gonder: true, kuru: true, zorla: true, taze: false, filtre: sadeceTest,
+  });
   const g = (r.gonderimler || [])[0];
   kontrol('mock tur tamamlandı', r.tamam === true, JSON.stringify(r).slice(0, 120));
   kontrol('fırsat aday olarak bulundu', r.uygunSayisi >= 1, String(r.uygunSayisi));
@@ -194,7 +202,9 @@ const MOCK_URL = 'https://mock-firsat.test/urun-' + Date.now();
     .firsatIstatistik().bugun >= 1);
 
   // Aynı ürün tekrar taranırsa cooldown devreye girer
-  const r2 = await firsatlariTara({ gonder: true, kuru: true, zorla: true, taze: false });
+  const r2 = await firsatlariTara({
+    gonder: true, kuru: true, zorla: true, taze: false, filtre: sadeceTest,
+  });
   const g2 = (r2.gonderimler || []).find(x => /cooldown/.test(String(x.neden)));
   kontrol('mock ikinci gönderim cooldown ile engellendi', !!g2, JSON.stringify(r2.gonderimler));
 
@@ -207,9 +217,16 @@ const MOCK_URL = 'https://mock-firsat.test/urun-' + Date.now();
 /* ---------------------------------------------------------------- */
 bolum('4) Spam filtresi');
 temizle();
-const ayar = firsatAyar({ ...FIRSAT_VARSAYILAN, gunlukMax: 2, cooldownSaat: 48, kanal: '@test' });
 const aday = { ...dip, anahtar: TEST_ONEK + 'urun1' };
 const simdi = Date.now();
+// Bugün gerçek kanaldan yapılmış gönderimler de sayılır → taban alınır.
+const taban = spamKontrolu(aday, {
+  ayar: firsatAyar({ ...FIRSAT_VARSAYILAN, gunlukMax: 999, cooldownSaat: 0, kanal: '@test' }),
+  simdi,
+}).bugun || 0;
+const ayar = firsatAyar({
+  ...FIRSAT_VARSAYILAN, gunlukMax: taban + 2, cooldownSaat: 48, kanal: '@test',
+});
 
 kontrol('ilk gönderim serbest', spamKontrolu(aday, { ayar, simdi }).uygun === true);
 firsatKaydet(aday, 'gonderildi', { ts: simdi });
@@ -225,12 +242,12 @@ const aday2 = { ...dip, anahtar: TEST_ONEK + 'urun2' };
 firsatKaydet(aday2, 'gonderildi', { ts: simdi });
 const sinir = spamKontrolu({ ...dip, anahtar: TEST_ONEK + 'urun3' }, { ayar, simdi });
 kontrol('günlük sınır uygulanıyor', sinir.uygun === false && /günlük sınır/.test(sinir.neden), sinir.neden);
-kontrol('günlük sayaç doğru', sinir.bugun === 2, String(sinir.bugun));
+kontrol('günlük sayaç doğru', sinir.bugun === taban + 2, `${sinir.bugun} (taban ${taban})`);
 
 // Hatalı gönderim sayaca DAHİL DEĞİL
 firsatKaydet({ ...dip, anahtar: TEST_ONEK + 'hata' }, 'hata', { hata: 'test', ts: simdi });
 kontrol('hatalı gönderim günlük sayaca dahil değil',
-  spamKontrolu({ ...dip, anahtar: TEST_ONEK + 'urun4' }, { ayar, simdi }).bugun === 2);
+  spamKontrolu({ ...dip, anahtar: TEST_ONEK + 'urun4' }, { ayar, simdi }).bugun === taban + 2);
 
 // Ertesi gün sıfırlanır
 const yarin = simdi + 25 * 3600 * 1000;
@@ -284,16 +301,19 @@ bolum('7) Sunucu / arayüz sözleşmesi');
 {
   const oku = (p) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
   const server = oku('server.js');
-  const html = oku('public/ayarlar.html');
-  const js = oku('public/ayarlar.js');
+  const html = oku('public/admin.html');
+  const js = oku('public/admin.js');
   const alarms = oku('src/alarms.js');
 
   kontrol('sunucu: fırsat durum ucu', /app\.get\('\/api\/firsat\/durum'/.test(server));
   kontrol('sunucu: test paylaşım ucu', /app\.post\('\/api\/firsat\/test'/.test(server));
   kontrol('sunucu: elle çalıştırma ucu', /app\.post\('\/api\/firsat\/calistir'/.test(server));
   kontrol('sunucu: zamanlayıcı başlatılıyor', /startFirsatScheduler\(\)/.test(server));
+  // 2026-11-05: zamanlayıcılar yanıtı bekletmeden (setImmediate) kurulur.
   kontrol('sunucu: ayar kaydında zamanlayıcı yenileniyor',
-    /saveSettings[\s\S]{0,200}startFirsatScheduler\(\)/.test(server));
+    /saveSettings[\s\S]{0,600}startFirsatScheduler\(\)/.test(server));
+  kontrol('sunucu: zamanlayıcı kurulumu yanıtı bekletmez',
+    /setImmediate\(\(\) => \{[\s\S]{0,600}startFirsatScheduler\(\)/.test(server));
   kontrol('sunucu: kapanışta zamanlayıcı durduruluyor', /firsatZamanlayiciDurdur\(\)/.test(server));
   kontrol('alarm sonrası fırsat taraması tetikleniyor',
     /firsatlariTara\(\{ taze: false \}\)/.test(alarms));

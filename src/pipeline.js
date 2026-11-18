@@ -29,9 +29,11 @@ import { birimFiyat, birimSirala, birimFiyatHesapla } from './birimFiyat.js';
 import {
   baskiKartiBilgisi, yuksekBirimMaliyet, baskiOzeti,
 } from './baskiMaliyet.js';
-import { stokSirala, stokOzet } from './stokSirala.js';
+import { stokSirala, stokOzet, karsilastirmaFiyati } from './stokSirala.js';
 import { HIZLI_SITELER } from './basketOptimizer.js';
 import { kuyrukDurumu } from './scraper.js';
+import { katalogSiteAdayi } from './katalogSync.js';
+import { kargoCikar } from './kargo.js';
 
 /** Kaynak üründen arama sorguları üretir: önce model kodu, yoksa marka + başlık anahtar kelimeleri. */
 // Renk ton belirteçleri: tek başına renk DEĞİL ama renk ifadesinin parçasıdır
@@ -205,11 +207,45 @@ function rankCandidates(candidates, src) {
     .sort((a, b) => b.score - a.score);
 }
 
+/**
+ * 🗂️ Katalog kaydından pipeline ürün nesnesi üretir (2026-11-17).
+ *
+ * Fiyat YALNIZCA beslemede yazıyorsa kullanılır; `fiyatKaynagi: 'katalog'` ve
+ * `katalogTs` alanları sonuçla birlikte taşınır → arayüz "X dk önceki katalog
+ * taraması" diyebilir. Kargo, mağaza kurallarından okunur (uydurma değil;
+ * beslemede kargo yoksa "Sepette belli" görünür).
+ */
+function katalogUrunuOlustur(kayit, adapter) {
+  const product = {
+    site: adapter.id,
+    siteName: adapter.name,
+    url: kayit.urunUrl,
+    title: kayit.baslik,
+    brand: kayit.marka || null,
+    modelCode: null,
+    barcode: null,
+    color: dominantColor(kayit.baslik || ''),
+    listPrice: null,
+    sellingPrice: Number(kayit.fiyat),
+    currency: kayit.paraBirimi || 'TRY',
+    inStock: kayit.stokta === null || kayit.stokta === undefined ? null : !!kayit.stokta,
+    seller: null,
+    image: kayit.gorselUrl || null,
+    campaigns: [],
+    shipping: kargoCikar('', adapter.id),
+    fiyatKaynagi: 'katalog',
+    katalogTs: kayit.guncellemeTs || null,
+    katalogYasMs: kayit.yasMs ?? null,
+    katalogTur: kayit.kaynakTur || null,
+  };
+  fiyatlaHizli(product);
+  return product;
+}
+
 /** Bir sitede kaynak ürünü arar; eşleşen ürünü (varsa) döndürür.
  *  Sorgu yedeklemesi: bir sorgunun adayları eşleşme üretmezse sıradaki sorgu
  *  denenir (ilk sorgu bazı arama motorlarında alakasız/popüler liste döndürebilir). */
-async function findOnSite(adapter, src, queries, onProgress, maxCandidates = config.maxCandidatesPerSite, iptalMi = null, opts = {}) {
-  // İlerleme sinyali: zaman aşımı izleyicisi bu sayacın artmasını "çalışıyor" sayar.
+async function findOnSite(adapter, src, queries, onProgress, maxCandidates = config.maxCandidatesPerSite, iptalMi = null, opts = {}) {  // İlerleme sinyali: zaman aşımı izleyicisi bu sayacın artmasını "çalışıyor" sayar.
   const aktivite = opts.aktivite || null;
   const dokun = () => { if (aktivite) aktivite.deger++; };
   const result = {
@@ -229,6 +265,82 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
   // Aksi hâlde 6 saatlik sayfa önbelleği tazelemeyi "değişiklik yok" gibi gösteriyordu.
   const tazeOpts = opts && opts.taze ? { fresh: true } : {};
   const durduruldu = () => !!(iptalMi && iptalMi());
+
+  /* ---- 🗂️ KATALOG KISAYOLU (2026-11-17) -------------------------------
+   * Mağazanın kendi beslemesinden gelen TAZE kayıt varsa arama sayfasını
+   * (ve varsa Chromium'u) hiç açmayız:
+   *   • Kayıtta fiyat VAR   → doğrudan fiyatlı aday (kaynak: katalog).
+   *   • Kayıtta fiyat YOKSA → yalnızca URL keşfi: arama isteği atlanır,
+   *     ürün sayfası bir kez okunur (fiyat oradan gelir).
+   * Kimlik doğrulaması her iki yolda da `matchProducts` ile yapılır.
+   */
+  if (opts.katalog !== false && !durduruldu()) {
+    try {
+      const kayit = katalogSiteAdayi(adapter.id, src, { ttlMs: opts.katalogTtlMs });
+      if (kayit && process.env.KATALOG_DEBUG === '1') {
+        console.log(`[pipeline:katalog] ${adapter.id} aday bulundu: "${kayit.baslik}" fiyat=${kayit.fiyat} para=${kayit.paraBirimi}`);
+      }
+      if (!kayit && process.env.KATALOG_DEBUG === '1') {
+        console.log(`[pipeline:katalog] ${adapter.id} aday YOK — kaynak: "${String(src?.title || '').slice(0, 70)}"`);
+      }
+      if (kayit) {
+        const para = String(kayit.paraBirimi || 'TRY').toUpperCase();
+        // Farklı para birimindeki fiyat TL sanılırsa kıyas bozulur → sayfayı oku.
+        if (kayit.fiyat != null && para === 'TRY') {
+          const product = katalogUrunuOlustur(kayit, adapter);
+          const match = matchProducts(src, product);
+          if (match) {
+            const colorSame = sameColor(src.color, product.color);
+            product.renkAyni = colorSame;
+            product.matchBasis = match.eslesme;
+            result.status = 'found';
+            result.product = product;
+            result.matchBasis = match.eslesme;
+            result.renkAyni = colorSame;
+            result.katalog = {
+              kaynakTur: kayit.kaynakTur,
+              guncellemeTs: kayit.guncellemeTs,
+              yasMs: kayit.yasMs ?? null,
+              fiyatKaynagi: 'katalog',
+            };
+            result.reason = colorSame === false
+              ? 'Katalogda aynı ürün bulundu ancak rengi farklı: ' + (product.color || '?')
+              : '';
+            if (onProgress) onProgress(adapter.id, result);
+            return result;
+          }
+        } else {
+          // Fiyatsız/başka para birimi: URL keşfi + tek sayfa okuması.
+          dokun();
+          const product = await adapter.getProduct(kayit.urunUrl, ctx, { ...tazeOpts, kaynak: src });
+          const match = matchProducts(src, product);
+          if (match) {
+            const colorSame = sameColor(src.color, product.color);
+            product.renkAyni = colorSame;
+            product.matchBasis = match.eslesme;
+            result.status = 'found';
+            result.product = product;
+            result.matchBasis = match.eslesme;
+            result.renkAyni = colorSame;
+            result.katalog = {
+              kaynakTur: kayit.kaynakTur,
+              guncellemeTs: kayit.guncellemeTs,
+              yasMs: kayit.yasMs ?? null,
+              fiyatKaynagi: 'urun-sayfasi',
+            };
+            result.reason = colorSame === false
+              ? 'Aynı ürün bulundu ancak rengi farklı: ' + (product.color || '?')
+              : '';
+            result.queriesTried.push('katalog:' + adapter.id);
+            if (onProgress) onProgress(adapter.id, result);
+            return result;
+          }
+        }
+      }
+    } catch {
+      // Katalog yolu başarısız → normal arama akışına düş (davranış değişmez).
+    }
+  }
 
   /** Sıralı adayları ön elemeden geçirip en iyi N tanesini inceler; seçilen ürünü döndürür. */
   const adaylariIncele = async (candidates) => {
@@ -682,16 +794,21 @@ export async function runComparison(sourceUrl, opts = {}) {
     fiyatZekasi = { tavsiye: 'veri_yok', durum: null, neden: 'Fiyat geçmişi okunamadı: ' + String(e.message || e).slice(0, 80) };
   }
 
-  // 4) En ucuz: aynı renkteki, stoğu olan, fiyatı hesaplanabilen ürünler arasından
-  const eligible = found.filter(r => r.renkAyni !== false && r.product?.pricing?.toplam != null && r.product.inStock !== false);
+  // 4) En ucuz: aynı renkteki, stoğu olan, FİYATI OKUNABİLEN ürünler arasından.
+  //    Fiyat kuralı tek kaynaktan gelir (karsilastirmaFiyati): gerçek ödenecek
+  //    tutar yoksa satış fiyatına düşer. Önceden yalnız `pricing.toplam` aranıyordu;
+  //    kaynak mağazada bu alan boş olduğunda stokta+ucuz teklif eleniyor ve
+  //    "en ucuz bulunamadı" deniyordu (2026-11-05 canlı vaka).
+  const uygunFiyatli = (r) => Number.isFinite(karsilastirmaFiyati(r));
+  const eligible = found.filter(r => r.renkAyni !== false && uygunFiyatli(r) && r.product.inStock !== false);
   let cheapest = null;
   for (const r of eligible) {
-    if (!cheapest || r.product.pricing.toplam < cheapest.product.pricing.toplam) cheapest = r;
+    if (!cheapest || karsilastirmaFiyati(r) < karsilastirmaFiyati(cheapest)) cheapest = r;
   }
   if (cheapest) cheapest.enUcuz = true;
 
   // İkinci en ucuz teklif (neden daha ucuz açıklaması için)
-  const sortedEligible = [...eligible].sort((a, b) => (a.product?.pricing?.toplam || 0) - (b.product?.pricing?.toplam || 0));
+  const sortedEligible = [...eligible].sort((a, b) => karsilastirmaFiyati(a) - karsilastirmaFiyati(b));
   const runnerUp = sortedEligible.length > 1 ? sortedEligible[1] : null;
   let nedenDahaUcuz = null;
   // İptal edildiyse YZ açıklamasını ATLA: bu çağrı yavaş olabiliyor (60-120 sn) ve
@@ -823,7 +940,8 @@ export async function runComparison(sourceUrl, opts = {}) {
       tamamiTukendi: stok.tamamiTukendi,
       ayniRenkSayisi: eligible.length,
       enUcuzSite: cheapest ? cheapest.siteName : null,
-      enUcuzFiyat: cheapest ? cheapest.product.pricing.toplam : null,
+      // Fiyat tek kaynaktan: pricing.toplam yoksa sellingPrice.
+      enUcuzFiyat: cheapest ? karsilastirmaFiyati(cheapest) : null,
       nedenDahaUcuz,
       // ---- SAHTE İNDİRİM & DİP FİYAT RADARI (2026-10-30) ----
       // Fiyat geçmişi varsa karar raporu; yoksa `tavsiye:'veri_yok'` (uydurma yok).
@@ -890,6 +1008,10 @@ export async function runComparison(sourceUrl, opts = {}) {
       taranmayanSiteSayisi: allResults.filter(r => r.status === 'iptal').length,
     },
   };
+
+  // ---- 🟢 FOMO (2026-11-08): istemci `sonuc.zamanlama` alanını okur ----
+  // Aynı nesne `ozet.zamanlamaTavsiyesi` altında da korunur (geriye dönük uyum).
+  sonuc.zamanlama = zamanlamaTavsiyesi || null;
 
   // ---- 🖨️ 3D Baskı Uzmanlık Modülü özeti (2026-10-30) ----
   // Medyan ₺/kg üzerinden "Yüksek Birim Maliyet" işareti ve filtre sayaçları.

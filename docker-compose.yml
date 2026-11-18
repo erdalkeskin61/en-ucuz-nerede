@@ -1,0 +1,91 @@
+# =============================================================================
+# En Ucuz Nerede? — Azure Ubuntu VM üretim yığını
+# =============================================================================
+#   İnternet → Cloudflare (CDN/WAF/SSL) → Caddy (:80/:443) → Node (:3000)
+#
+# Kullanım:
+#   cp .env.example .env      # canlı değerleri doldur
+#   docker compose up -d --build
+#   docker compose logs -f
+#
+# Kalıcı veri: ./data → /app/data (SQLite, WAL, önbellek)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Uygulama (Node 22 + impit + opsiyonel Chromium)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Bellek darsa `PLAYWRIGHT_KUR=0` yapıp TARAYICI_KAPALI=1 kullanın.
+        PLAYWRIGHT_KUR: "${PLAYWRIGHT_KUR:-1}"
+    image: en-ucuz-nerede:latest
+    container_name: eun-app
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      # Ters vekil: Caddy bir atlama. (Caddy değeri .env'den ezebilirsiniz.)
+      TRUST_PROXY: "${TRUST_PROXY:-1}"
+      # Container içinde /app/data volume'a bağlıdır.
+      DATA_DIR: /app/data
+    volumes:
+      - ./data:/app/data
+    # Port yalnızca loopback'e açılır: dışarıya Caddy üzerinden çıkılır.
+    ports:
+      - "127.0.0.1:3000:3000"
+    # Chromium'un /dev/shm kullanımı için (Playwright önerisi).
+    shm_size: "1gb"
+    # 4 GB VM: uygulama 2 GB'ı geçerse yeniden başlat.
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Caddy — otomatik HTTPS + ters vekil
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: eun-caddy
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      # Alan adı ve ACME e-postası Caddyfile içinde kullanılır.
+      # Cloudflare "Full (strict)" kullanılıyorsa Origin Certificate'i
+      # Caddy'ye tanıtın (aşağıdaki Caddyfile notuna bakın).
+      SITE_DOMAIN: "${SITE_DOMAIN:-enucuznerede.com}"
+      ACME_EMAIL: "${ACME_EMAIL:-}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+  caddy_config:

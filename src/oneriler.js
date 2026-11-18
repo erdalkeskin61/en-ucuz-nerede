@@ -16,48 +16,54 @@ import { getHistory, getTracked, dbBaglantisi } from './store.js';
 
 /** Gerçek, yaygın ürün adları (statik öneri havuzu). */
 export const POPULER_URUNLER = Object.freeze([
-  // 3D yazıcılar (FDM)
-  'Bambu Lab P1S',
-  'Bambu Lab A1 Mini',
-  'Bambu Lab A1',
-  'Bambu Lab X1-Carbon',
-  'Creality K1 Max',
-  'Creality K1',
-  'Creality Ender 3 V3',
-  'Anycubic Kobra 2',
-  'Anycubic Kobra X',
-  'Anycubic Kobra 2 Pro',
-  'Prusa MK4S',
-  'Flashforge Creator 5',
+  // 3D yazıcılar (FDM) — adlar ÜRÜN TÜRÜYLE yazılır: typeahead satırı tek başına
+  // anlaşılır olsun ve kategori ikonu (🖨️) doğru çıksın (2026-11-03).
+  'Bambu Lab P1S 3D Yazıcı',
+  'Bambu Lab A1 Mini 3D Yazıcı',
+  'Bambu Lab A1 3D Yazıcı',
+  'Bambu Lab X1-Carbon 3D Yazıcı',
+  'Creality K1 Max 3D Yazıcı',
+  'Creality K1C 3D Yazıcı',
+  'Creality Ender 3 V3 3D Yazıcı',
+  'Anycubic Kobra 2 3D Yazıcı',
+  'Anycubic Kobra 2 Pro 3D Yazıcı',
+  'Elegoo Neptune 4 Pro 3D Yazıcı',
+  'Prusa MK4S 3D Yazıcı',
   // Reçine yazıcılar
-  'Elegoo Saturn 4',
-  'Elegoo Saturn 4 Ultra',
-  'Elegoo Mars 5 Ultra',
-  // Filament markaları / modelleri
-  'eSun PLA+ Siyah',
-  'eSun PLA+',
-  'eSun PETG',
-  'eSun TPU 95A',
-  'Porima PLA',
-  'Microzey PLA',
-  'Bambu Lab PLA Basic',
-  'Polymaker PolyTerra PLA',
-  'Sunlu PETG',
-  'Creality Hyper PLA',
-  'Anycubic PLA',
-  'Devil Design PLA',
-  'Filamentum PLA Extrafill',
+  'Elegoo Saturn 4 Ultra 3D Yazıcı',
+  'Elegoo Mars 5 Ultra 3D Yazıcı',
+  // Filamentler — marka + seri + renk + gramaj (kullanıcının gerçek araması gibi)
+  'eSun PLA+ Beyaz 1kg',
+  'eSun PLA+ Siyah 1kg',
+  'eSun ePLA-HS High Speed Siyah 1kg',
+  'eSun PETG 1kg',
+  'eSun TPU 95A 1kg',
+  'Porima PLA Filament Beyaz 1kg',
+  'Porima PLA Filament Siyah 1kg',
+  'Porima PLA Filament Ten 1kg',
+  'Porima Hyper PLA+ Filament 1kg',
+  'Porima Silk PLA Filament 1kg',
+  'Porima PLA Premium Filament 1kg',
+  'Porima Eco PLA Filament 1kg',
+  'Microzey PLA Filament 1kg',
+  'Bambu Lab PLA Basic 1kg',
+  'Polymaker PolyTerra PLA 1kg',
+  'Sunlu PETG 1kg',
+  'Creality Hyper PLA 1kg',
+  'Anycubic PLA 1kg',
+  'Devil Design PLA 1kg',
+  'Filamentum PLA Extrafill 1kg',
   // Kategoriler
-  'PLA Filament',
-  'PETG Filament',
-  'TPU Filament',
-  'ABS Filament',
-  'Karbon Fiber Filament',
+  'PLA Filament 1kg',
+  'PETG Filament 1kg',
+  'TPU Filament 1kg',
+  'ABS Filament 1kg',
+  'Karbon Fiber Filament 1kg',
   'Reçine',
   // Reçine markaları
   'Anycubic Water Washable Reçine',
   'Elegoo Standard Reçine',
-  'Siraya Tech Blu',
+  'Siraya Tech Blu Reçine',
   // Ekipman / aksesuar
   'Sunlu Filament Kurutucu',
   // Teknoloji
@@ -252,7 +258,11 @@ export function onerileriGetir(sorgu, opts = {}) {
       : havuz.filter((x) => x.tur === 'populer').slice(0, limit);
   }
 
+  // TEKİLLEŞTİRME (2026-11-03): aynı ürün hem geçmişte hem popüler listesinde
+  // olabiliyor ("Creality K1 Max 3d Yazıcı" + "Creality K1 Max 3D Yazıcı").
+  // Normalize metin aynıysa YALNIZCA en yüksek puanlı kayıt tutulur.
   const puanli = [];
+  const gorulen = new Map(); // sadeleştirilmiş metin -> puanlı kayıt
   for (let i = 0; i < havuz.length; i++) {
     const aday = havuz[i];
     const p = puanla(aday.metin, q);
@@ -261,7 +271,22 @@ export function onerileriGetir(sorgu, opts = {}) {
     // (60+) öne geçsin. Aksi hâlde "ban" gibi yazım-hatası sorgularında rastgele
     // geçmiş kayıtları "Bambu Lab P1S"in önüne çıkıyordu.
     const ekPuan = p >= 60 ? (aday.tur === 'gecmis' ? 6 : (aday.tur === 'takip' ? 8 : 0)) : 0;
-    puanli.push({ ...aday, _puan: p + ekPuan, _sira: i });
+    const anahtar = sadeleştir(aday.metin);
+    const mevcut = gorulen.get(anahtar);
+    if (mevcut) {
+      if (p + ekPuan > mevcut._puan) {
+        mevcut._puan = p + ekPuan;
+        mevcut.tur = aday.tur;
+        mevcut.etiket = aday.etiket;
+        mevcut.metin = aday.metin;
+        mevcut.ikon = aday.ikon;
+        mevcut.kategori = aday.kategori;
+      }
+      continue;
+    }
+    const kayit = { ...aday, _puan: p + ekPuan, _sira: i };
+    gorulen.set(anahtar, kayit);
+    puanli.push(kayit);
   }
 
   // Eşit puanda katalog sırası korunur ("bamb" → önce Bambu Lab P1S).

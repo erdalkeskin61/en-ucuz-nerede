@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Filament makarası illüstrasyonu">
+  <defs>
+    <linearGradient id="govde" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3450D1"/>
+      <stop offset="1" stop-color="#6D8BF5"/>
+    </linearGradient>
+    <linearGradient id="ip" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#10B981"/>
+      <stop offset="0.5" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <radialGradient id="isik" cx="0.35" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="200" height="200" rx="28" fill="#F1F5FF"/>
+
+  <!-- makara gövdesi -->
+  <g transform="translate(100 104)">
+    <ellipse cx="0" cy="0" rx="62" ry="62" fill="url(#govde)"/>
+    <ellipse cx="0" cy="0" rx="62" ry="62" fill="url(#isik)"/>
+    <!-- sarılı filament -->
+    <ellipse cx="0" cy="0" rx="52" ry="52" fill="url(#ip)"/>
+    <ellipse cx="0" cy="0" rx="52" ry="52" fill="none" stroke="#065F46" stroke-opacity="0.25" stroke-width="2"/>
+    <!-- sarım çizgileri -->
+    <g stroke="#065F46" stroke-opacity="0.22" stroke-width="1.6" fill="none">
+      <ellipse cx="0" cy="0" rx="44" ry="52"/>
+      <ellipse cx="0" cy="0" rx="30" ry="52"/>
+      <ellipse cx="0" cy="0" rx="16" ry="52"/>
+      <ellipse cx="0" cy="0" rx="52" ry="44"/>
+      <ellipse cx="0" cy="0" rx="52" ry="30"/>
+      <ellipse cx="0" cy="0" rx="52" ry="16"/>
+    </g>
+    <!-- göbek deliği -->
+    <circle cx="0" cy="0" r="20" fill="#F1F5FF"/>
+    <circle cx="0" cy="0" r="20" fill="none" stroke="#3450D1" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cx="0" cy="0" r="9" fill="#CBD5E1"/>
+  </g>
+
+  <!-- dışa uzanan filament ucu -->
+  <path d="M158 96c14 4 22 14 20 26" fill="none" stroke="#10B981" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="178" cy="124" r="4.5" fill="#10B981"/>
+</svg>

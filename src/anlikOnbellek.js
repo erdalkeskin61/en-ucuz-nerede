@@ -20,6 +20,7 @@
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from './config.js';
+import { katalogUrunleriAra } from './katalogSync.js';
 
 /** Snapshot biçimi değişirse artır: eski kayıtlar otomatik geçersizleşir. */
 // 2 (2026-10-30): payload'a `ozet.fiyatZekasi` + stok sayaçları eklendi; eski
@@ -192,15 +193,26 @@ export function snapshotAra(sorgu, opts = {}) {
       const ad = katla(r.urun);
       if (!ad) continue;
       let puan = 0;
-      if (ad === hedef) puan += 100;
+      const tamEslesme = ad === hedef;
+      const ifadeEslesme = tamEslesme || ad.includes(hedef) || (hedef.includes(ad) && ad.length >= 6);
+      if (tamEslesme) puan += 100;
       else if (ad.includes(hedef)) puan += 60;
       else if (hedef.includes(ad) && ad.length >= 6) puan += 35;
+      // 2026-11-03 DÜZELTME: tek ortak kelime (ör. yalnızca "pla" veya "1kg")
+      // alakasız ürünleri "sonuç" gibi gösteriyordu — Telegram inline'da
+      // "Asistan Inline Test PLA 1kg" araması Porima/Sunlu ürünlerini döndürüyordu.
+      // Artık ifade eşleşmesi yoksa kelime kapsamı en az %50 olmalı.
+      let kapsam = 0;
       if (kelimeler.length) {
         let eslesen = 0;
         for (const w of kelimeler) if (ad.includes(w)) eslesen++;
-        if (eslesen) puan += Math.round((eslesen / kelimeler.length) * 40);
+        kapsam = eslesen / kelimeler.length;
+        if (eslesen && (ifadeEslesme || kapsam >= 0.5)) {
+          puan += Math.round(kapsam * 40);
+        }
       }
       if (puan <= 0) continue;
+      if (!ifadeEslesme && kapsam < 0.5) continue;
       puanli.push({ ...r, puan });
     }
 
@@ -230,7 +242,33 @@ export function snapshotAra(sorgu, opts = {}) {
   }
 }
 
-/** Bir karşılaştırma sonucunu anlık önbelleğe yazar. */export function anlikYaz(url, payload, meta = {}) {
+/**
+ * 🗂️ Birleşik hızlı arama (2026-11-17): önce ANLIK SNAPSHOT (tam karşılaştırma),
+ * yoksa MAĞAZA KATALOĞU indeksi (fiyatlı/fiyatsız ürün adayları).
+ *
+ * İkisi de AĞ İSTEĞİ YAPMAZ. Telegram inline, typeahead ve "son aramalar"
+ * ekranları bu tek fonksiyonla milisaniyeler içinde yanıt üretir.
+ *
+ * @param {string} metin
+ * @param {{limit?:number, maxYasMs?:number, katalogTtlMs?:number}} [opts]
+ * @returns {{tur:'snapshot'|'katalog'|'yok', sonuclar:Array<object>}}
+ */
+export function anlikVeyaKatalogAl(metin, opts = {}) {
+  const snapshotlar = snapshotAra(metin, opts);
+  if (snapshotlar.length) return { tur: 'snapshot', sonuclar: snapshotlar };
+  try {
+    const katalog = katalogUrunleriAra(metin, {
+      limit: Math.max(1, Math.min(20, Number(opts.limit) || 8)),
+      ttlMs: opts.katalogTtlMs,
+    });
+    return { tur: katalog.length ? 'katalog' : 'yok', sonuclar: katalog };
+  } catch {
+    return { tur: 'yok', sonuclar: [] };
+  }
+}
+
+/** Bir karşılaştırma sonucunu anlık önbelleğe yazar. */
+export function anlikYaz(url, payload, meta = {}) {
   const anahtar = anahtarCikar(url);
   if (!anahtar) return false;
   if (!payload || !payload.kaynak || !Array.isArray(payload.sonuclar)) return false;

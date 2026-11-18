@@ -11,7 +11,7 @@
 import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
 import { findJsonLdProduct, dominantColor, decodeEntities, parseNum, jsSayi, absUrl } from '../util.js';
-
+import { extractSelfHealingPrice, extractSelfHealingTitle, extractSelfHealingImage } from '../selfHealingParser.js';
 export function ticimaxSite(cfg) {
   const { id, name, hosts, base, aramaYolu = '/arama?kelime=' } = cfg;
   return {
@@ -93,13 +93,16 @@ export function ticimaxSite(cfg) {
       const kdvDahil = [kdvDahilJs, kdvDahilBlok, kdvDahilStr]
         .find(x => x != null && x > 0)
         ?? (jsonLdFiyat != null && jsonLdFiyat > 0 ? jsonLdFiyat : null);
-      const fiyat = kdvDahil;
+      // 2026-11-13: Ticimax'a özgü alanların tümü tutmazsa self-healing kaskad
+      // (JSON-LD → Meta → DOM → adaptör regex → heuristic) fiyatı kurtarır.
+      const fiyat = kdvDahil ?? extractSelfHealingPrice(html, null, this.name).fiyat;
       if (fiyat == null) throw new Error('Ticimax ürün fiyatı sayfada bulunamadı.');
 
       const urunAdi = html.match(/"product"\s*:\s*\{[^}]*?"urunAdi"\s*:\s*"([^"]{5,200})"/)?.[1];
       const baslikM = urunAdi || html.match(/<h1[^>]*>([\s\S]{5,200}?)<\/h1>/i)?.[1];
       const title = (p?.name && String(p.name).trim())
-        || (baslikM ? decodeEntities(String(baslikM).replace(/\\u([0-9a-f]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))).replace(/\s+/g, ' ').trim() : null);
+        || (baslikM ? decodeEntities(String(baslikM).replace(/\\u([0-9a-f]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))).replace(/\s+/g, ' ').trim() : null)
+        || extractSelfHealingTitle(html);
       if (!title) throw new Error('Ticimax ürün başlığı bulunamadı.');
 
       const marka = html.match(/"product"\s*:\s*\{[\s\S]{0,600}?"marka"\s*:\s*"([^"]{2,50})"/)?.[1] || p?.brand?.name || null;

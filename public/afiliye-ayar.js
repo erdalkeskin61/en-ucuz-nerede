@@ -161,9 +161,14 @@
     return { etkin: !!$('#afiliyeEtkin')?.checked, aglar, siteSablon: durum.siteSablon };
   }
 
+  document.addEventListener('admin:yetkili', () => {
+    if ($('#afiliyePaneli')) yukle();
+  });
+
   document.addEventListener('DOMContentLoaded', () => {
     if (!$('#afiliyePaneli')) return;
-    yukle();
+    // Yönetici kapısı olan sayfada giriş tamamlanınca admin:yetkili tetiklenir.
+    if (!document.getElementById('adminGirisAlani')) yukle();
 
     $('#afiliyeKaydetBtn')?.addEventListener('click', async () => {
       const el = $('#afiliyeMesaj');

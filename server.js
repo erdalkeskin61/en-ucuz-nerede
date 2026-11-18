@@ -39,25 +39,242 @@ import {
 import {
   startRadarScheduler, radarDurum, radarBaslat, radarTara,
   radarZamanlayiciDurdur, radarKapat, katalogGetir, katalogEkle, katalogSil, katalogSifirla,
+  radarDurumVerisi,
   vitrinVerisi,
   RADAR_VARSAYILAN,
 } from './src/otonomRadar.js';
 import { birimFiyat } from './src/birimFiyat.js';
 import { birimFiyatHesapla } from './src/birimFiyat.js';
 import { baskiKartiBilgisi, baskiZenginlestir } from './src/baskiMaliyet.js';
+import { baskiApiBagla } from './src/baskiApi.js';
 import { linkCoz } from './src/linkArama.js';
 import { pushDurum, pushGonder } from './src/push.js';
 import { onerileriGetir } from './src/oneriler.js';
 import { hizliKaynakUrunBul } from './src/urunArama.js';
+import {
+  katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
+  katalogSyncDurumu, katalogUrunleriAra,
+} from './src/katalogSync.js';
+import {
+  widgetVerisi, widgetTiklamaKaydet, widgetIstatistik, widgetOrnekUrunler, refTemizle,
+} from './src/widget.js';
+import {
+  whatsappKanalGonder, whatsappKartOlustur, whatsappAyarDogrula, SAGLAYICILAR,
+} from './src/whatsappKanal.js';
+import { slicerApiBagla } from './src/slicerApi.js';
+import { hizSiniri, hizSiniriDurumu, loopbackMuafMi } from './src/hizSiniri.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+
+/* ---- 🌐 Ters vekil / Cloudflare uyumu (2026-11-18) ---------------------
+ * Canlı ortam: İnternet → Cloudflare → Caddy (TLS) → Node (Docker).
+ * `trust proxy` olmadan req.ip her zaman Caddy konteynerinin IP'si olur;
+ * rate limiting ve loglar anlamsızlaşır, `req.secure` hep false kalır.
+ *
+ * TRUST_PROXY:
+ *   • tanımsız / '1'      → 1 (ilk atlama: Caddy) — varsayılan
+ *   • 'loopback'          → yalnızca yerel vekil (docker dışı kurulum)
+ *   • 'false' / '0'       → kapalı (doğrudan internete açık, vekil yok)
+ *   • sayı ya da CIDR listesi → olduğu gibi Express'e verilir
+ *
+ * ⚠️ `trust proxy` açıkken `req.ip` istemci tarafından gönderilen
+ * `X-Forwarded-For` ile ŞEKİLLENEBİLİR. Bu yüzden yönetici kapısı
+ * (`yerelIstekMi`) ASLA `req.ip` kullanmaz — gerçek soket adresine bakar.
+ */
+const TRUST_PROXY = (() => {
+  const ham = process.env.TRUST_PROXY;
+  if (ham === undefined || String(ham).trim() === '') return 1;
+  const v = String(ham).trim();
+  if (v === 'false' || v === '0' || v === 'off') return false;
+  if (v === 'true') return true;
+  if (/^\d+$/.test(v)) return parseInt(v, 10);
+  return v; // 'loopback' | '10.0.0.0/8,loopback' | ...
+})();
+app.set('trust proxy', TRUST_PROXY);
+
 app.use(express.json({ limit: '1mb' }));
+
+/* ---- 🗄️ API önbellek disiplini (2026-11-18) -----------------------------
+ * Cloudflare, `Cache-Control` başlığı olmayan yanıtları bazen "yumuşak
+ * önbelleğe" alır. Fiyat/karşılaştırma sonuçlarının CDN'de bayatlaması kabul
+ * edilemez; ayrıca JSON'un HTML olarak önbelleklenmesi içerik karışmasına yol
+ * açar. Bu yüzden TÜM `/api/*` yanıtları varsayılan olarak `no-store`.
+ *
+ * İSTİSNALAR: kendi `public, max-age=…` başlığını koyan herkese açık uçlar
+ * (vitrin, widget, sponsor, doğrulanmış mağazalar, slicer embed). Bunlar
+ * gerçekten önbelleklenebilir ve CDN yükünü azaltır.
+ */
+const API_ONBELLEK_ISTISNA = new Set([
+  '/api/vitrin',
+  '/api/widget',
+  '/api/widget/ornekler',
+  '/api/embed/oner',
+  '/api/sponsor/vitrin',
+  '/api/dogrulanmis-magazalar',
+]);
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) return next();
+  if (API_ONBELLEK_ISTISNA.has(req.path)) return next();
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  // Cloudflare: HTML dönüşümü/otomatik minify API gövdesini bozmasın.
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
+
+/* ---- 🚦 Ağır public uçlar için IP bazlı hız sınırı (2026-11-18) ----------
+ * Her biri onlarca mağaza sayfası okuyan "iş başlatan" POST uçları korunur.
+ * `:id` alt yolları (durum/iptal) KASITLI olarak sınırsızdır: kullanıcı
+ * sonucu/iptali her zaman alabilmeli.
+ *
+ * Muafiyet: loopback (yerel geliştirme + mevcut testler) ve GERÇEK yönetici
+ * anahtarı (`ADMIN_ANAHTARI`). Dikkat: paylaşılan `ERISIM_ANAHTARI` muafiyet
+ * SAYILMAZ — aksi halde anahtarı bilen her ziyaretçi sınırsız tarama yapardı.
+ * `RL_LOOPBACK_MUAF=0` ile loopback de sınıra tabi tutulur (canlı doğrulama).
+ * Limitler env ile: RL_COMPARE, RL_ONERI, RL_SEPET, RL_BARKOD, RL_GORSEL,
+ * RL_BASKI (dakikadaki istek sayısı).
+ */
+const gercekAdminMi = (req) => Boolean(process.env.ADMIN_ANAHTARI)
+  && guvenliAnahtarEslesirMi(adminVerilenAnahtar(req), process.env.ADMIN_ANAHTARI);
+const hizMuaf = (req) => (loopbackMuafMi() && yerelIstekMi(req)) || gercekAdminMi(req);
+const hizSinirYap = (ad, limit) => hizSiniri({ ad, limit, ipCoz: istemciIp, muaf: hizMuaf });
+
+const HIZ_AGIR_UCLAR = new Map([
+  ['/api/compare', hizSinirYap('compare', 20)],
+  ['/api/oneri', hizSinirYap('oneri', 20)],
+  ['/api/sepet', hizSinirYap('sepet', 20)],
+  ['/api/barkod', hizSinirYap('barkod', 30)],
+  ['/api/gorsel', hizSinirYap('gorsel', 10)],
+  // İleride eklenecek görsel arama takma adı (spesifikasyon uyumu).
+  ['/api/gorsel-ara', hizSinirYap('gorsel', 10)],
+  ['/api/baski/hesapla', hizSinirYap('baski', 60)],
+]);
+
+app.use((req, res, next) => {
+  if (req.method !== 'POST') return next();
+  const mw = HIZ_AGIR_UCLAR.get(req.path);
+  if (!mw) return next();
+  return mw(req, res, next);
+});
+
+// ---- 🛡️ Güvenlik başlıkları (2026-11-05) ----
+// Yönetim/uygulama sayfaları başka sitelere gömülemez (tıklama hırsızlığına karşı).
+// Yalnızca /widget ve /widget/git HARİCİ sitelere gömülebilir: blog yazarları
+// tek satır iframe ile canlı fiyat gösterir. Widget için X-Frame-Options
+// GÖNDERİLMEZ; yerine standart olan CSP frame-ancestors * kullanılır.
+const WIDGET_YOLU = /^\/(widget|widget\.html|widget\/)/;
+const WIDGET_CSP = [
+  'frame-ancestors *',
+  "default-src 'self'",
+  "img-src 'self' data: https:",
+  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline'",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join('; ');
+
+app.use((req, res, next) => {
+  if (WIDGET_YOLU.test(req.path)) {
+    // Gömülmeye izin ver + 5 dk tarayıcı önbelleği (harici siteleri yormaz).
+    res.setHeader('Content-Security-Policy', WIDGET_CSP);
+    res.removeHeader('X-Frame-Options');
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+    // Gömülü içerikte referrer tam URL sızdırmasın.
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  } else {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+  }
+  next();
+});
 
 // Sağlık ve eklenti kontrol ucu (erişim kısıtından muaf)
 app.get('/api/ping', (req, res) => {
-  res.json({ ok: true, app: 'en-ucuz-nerede', siteler: adapters.length, authGerekli: Boolean(config.erisimAnahtari), pool: getDnsCacheStats() });
+  res.json({ ok: true, app: 'en-ucuz-nerede', siteler: adapters.length, authGerekli: Boolean(config.erisimAnahtari), adminGerekli: Boolean(config.adminAnahtari), pool: getDnsCacheStats() });
 });
+
+// ---- Yönetici kimlik doğrulama yardımcıları (2026-11-15) ----
+function guvenliAnahtarEslesirMi(verilen, beklenen) {
+  if (!verilen || !beklenen) return false;
+  const a = Buffer.from(String(verilen), 'utf8');
+  const b = Buffer.from(String(beklenen), 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * İstemcinin GERÇEK IP'si (2026-11-18).
+ *
+ * Sıra: `CF-Connecting-IP` → `req.ip` (trust proxy sonrası) → ham soket.
+ * Cloudflare bu başlığı her istekte kendisi yazar ve istemcinin gönderdiği
+ * değeri EZER; bu yüzden arkasında çalışırken güvenilirdir. Vekilsiz kurulumda
+ * başlık yoktur → `req.ip` kullanılır.
+ *
+ * Not: Bu değer yalnızca hız sınırı/log içindir. Yetkilendirme kararlarında
+ * KULLANILMAZ (aşağıdaki `yerelIstekMi` gerçek soket adresine bakar).
+ */
+function istemciIp(req) {
+  const cf = String(req.get('cf-connecting-ip') || '').trim();
+  if (cf) return cf.replace(/^::ffff:/, '');
+  const ip = String(req.ip || req.socket?.remoteAddress || '').trim();
+  return ip.replace(/^::ffff:/, '') || 'bilinmiyor';
+}
+
+/**
+ * Yerel (loopback) istek mi?
+ *
+ * 🔒 GÜVENLİK (2026-11-18): Yalnızca **gerçek soket adresi** kontrol edilir.
+ * `req.ip` KULLANILMAZ — `trust proxy` açıkken istemci `X-Forwarded-For:
+ * 127.0.0.1` göndererek yönetici kapısını atlatabilirdi. `X-Forwarded-For`
+ * başlığının varlığı da yeterli değildir (saldırgan göndermeyebilir); karar
+ * tamamen TCP bağlantısının kaynağına dayanır.
+ */
+function yerelIstekMi(req) {
+  const ip = String(req.socket?.remoteAddress || '');
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip === 'localhost';
+}
+
+function cokiOku(req, ad) {
+  const m = req.headers.cookie?.match(new RegExp(`(?:^|;\\s*)${ad}=([^;]+)`));
+  if (!m?.[1]) return '';
+  try { return decodeURIComponent(m[1]); } catch { return m[1]; }
+}
+
+function adminVerilenAnahtar(req) {
+  const bearer = req.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || '';
+  return req.get('x-admin-anahtari')
+    || bearer
+    || cokiOku(req, 'admin_anahtari')
+    || req.get('x-erisim-anahtari')
+    || cokiOku(req, 'erisim_anahtari')
+    || '';
+}
+
+function adminYetkiliMi(req) {
+  if (config.adminAnahtari) {
+    return guvenliAnahtarEslesirMi(adminVerilenAnahtar(req), config.adminAnahtari);
+  }
+  return yerelIstekMi(req);
+}
+
+function adminGerekli(req, res, next) {
+  if (adminYetkiliMi(req)) return next();
+  if (config.adminAnahtari) {
+    return res.status(401).json({
+      ok: false,
+      hata: 'Yönetici anahtarı gerekli ya da hatalı.',
+      adminAuthGerekli: true,
+    });
+  }
+  return res.status(403).json({
+    ok: false,
+    hata: 'Yönetici paneline dış ağdan erişim kapalı (.env içinde ADMIN_ANAHTARI tanımlayın).',
+    adminAuthGerekli: true,
+  });
+}
 
 // ---- Erişim kısıtı (yayın modu) ----
 // ERISIM_ANAHTARI tanımlıysa: istekler x-erisim-anahtari başlığı, ?anahtar= sorgusu ya da
@@ -65,20 +282,277 @@ app.get('/api/ping', (req, res) => {
 if (config.erisimAnahtari) {
   app.use((req, res, next) => {
     const verilen = req.get('x-erisim-anahtari') || req.query.anahtar || req.headers.cookie?.match(/(?:^|;\s*)erisim_anahtari=([^;]+)/)?.[1];
-    const ip = req.ip || req.socket?.remoteAddress || '';
-    const isLocal = ip.includes('127.0.0.1') || ip.includes('::1') || ip === 'localhost';
-    if (isLocal || verilen === config.erisimAnahtari) return next();
+    if (yerelIstekMi(req) || guvenliAnahtarEslesirMi(verilen, config.erisimAnahtari) || adminYetkiliMi(req)) return next();
+    // Yönetici giriş/oturum uçları kendi ADMIN_ANAHTARI doğrulamasını kullanır.
+    if (req.path === '/api/admin/oturum' || req.path === '/api/admin/giris' || req.path === '/api/admin/cikis') return next();
     // 📤 Paylaşılan sepet linkleri herkese açıktır (linki bilen görüntüler);
     // yalnızca salt okunur GET ucu muaf tutulur, yazma uçları korunur.
     if (req.method === 'GET' && /^\/api\/sepet\/paylas\/[A-Za-z0-9_-]{6,32}$/.test(req.path)) return next();
     // 📊 Ana sayfa canlı borsa vitrini: yalnızca herkese açık fiyat alanları
     // döner (token/sohbet/PID yok). Ziyaretçi anahtar girmeden piyasayı görür.
     if (req.method === 'GET' && req.path === '/api/vitrin') return next();
+    // 🔌 Widget: harici bloglara gömülür ve ziyaretçi anahtarı olamaz.
+    // Yalnızca herkese açık fiyat alanları döner (token/PID/sohbet yok).
+    if (req.method === 'GET' && req.path === '/api/widget') return next();
+    // Widget galerisi/oluşturucu önizlemesi: yalnızca ad + mağaza + fiyat.
+    if (req.method === 'GET' && req.path === '/api/widget/ornekler') return next();
+    // 🧩 Slicer eklentileri (Cura/Bambu/Orca/Prusa): masaüstü uygulaması
+    // erişim anahtarı taşıyamaz. Yalnızca herkese açık fiyat alanları döner.
+    if (req.method === 'GET' && req.path === '/api/embed/oner') return next();
+    if (req.method === 'OPTIONS' && req.path === '/api/embed/oner') return next();
+    // Slicer satın alma yönlendiricisi: tıklama kaydı + afiliye 302.
+    if (req.method === 'GET' && req.path === '/yonlendir') return next();
+    // Widget CTA yönlendiricisi: tıklama kaydı + afiliye linkine 302.
+    if (req.method === 'GET' && req.path === '/widget/git') return next();
+    // ⭐ Sponsorlu vitrin & doğrulanmış mağaza rozetleri herkese açıktır:
+    // ana sayfa ziyaretçisi anahtar girmeden reklam alanını ve mavi tikleri görür.
+    // Yalnızca GET okuma uçları muaf; yönetici raporu (`/api/admin/...`) korunur.
+    if (req.method === 'GET' && req.path === '/api/sponsor/vitrin') return next();
+    if (req.method === 'GET' && /^\/api\/sponsor\/tikla\/[A-Za-z0-9_-]{1,64}$/.test(req.path)) return next();
+    if (req.method === 'GET' && req.path === '/api/dogrulanmis-magazalar') return next();
     if (req.path.startsWith('/api/')) return res.status(401).json({ hata: 'Erişim anahtarı gerekli ya da hatalı' });
     // Sayfalar açık kalır; ön yüz anahtarı sorar ve API isteklerine ekler.
     next();
   });
 }
+
+app.get(['/admin', '/admin.html'], (req, res) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/api/admin/oturum', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    ok: true,
+    yetkili: adminYetkiliMi(req),
+    anahtarTanimli: Boolean(config.adminAnahtari),
+    yerel: yerelIstekMi(req),
+  });
+});
+
+app.post('/api/admin/giris', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const anahtar = String(req.body?.anahtar || '');
+  if (!config.adminAnahtari) {
+    if (!yerelIstekMi(req)) {
+      return res.status(403).json({ ok: false, hata: 'ADMIN_ANAHTARI tanımlı değil; dış ağdan giriş kapalı.' });
+    }
+    return res.json({ ok: true, yetkili: true, anahtarTanimli: false });
+  }
+  if (!guvenliAnahtarEslesirMi(anahtar, config.adminAnahtari)) {
+    return res.status(401).json({ ok: false, hata: 'Yönetici anahtarı hatalı.' });
+  }
+  const guvenli = req.secure || req.get('x-forwarded-proto') === 'https';
+  res.setHeader('Set-Cookie', `admin_anahtari=${encodeURIComponent(anahtar)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${guvenli ? '; Secure' : ''}`);
+  return res.json({ ok: true, yetkili: true, anahtarTanimli: true });
+});
+
+app.post('/api/admin/cikis', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Set-Cookie', 'admin_anahtari=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+  return res.json({ ok: true });
+});
+
+app.get('/api/admin/ozet', adminGerekli, (req, res) => {
+  try {
+    const saglik = saglikDurumu();
+    const durumlar = Object.values(saglik.siteDurumlari || {});
+    const saglikOzet = {
+      toplam: adapters.length,
+      ok: durumlar.filter(x => x?.status === 'ok').length,
+      hata: durumlar.filter(x => x?.status && x.status !== 'ok' && x.status !== 'empty').length,
+      bos: durumlar.filter(x => x?.status === 'empty').length,
+      sonKontrol: saglik.sonKontrol || null,
+    };
+    const sponsorlar = store.sponsorRapor();
+    const dogrulanmis = store.dogrulanmisMagazalariGetir();
+    const afiliye = afiliyeOzet(adapters.map(a => a.id));
+    const tikla = tiklaOzet(30);
+    const tracked = store.getTracked();
+    const db = dbBoyutlari();
+    const firsat = firsatIstatistik();
+    const radar = radarDurum();
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      ok: true,
+      saglikOzet,
+      sponsor: {
+        toplam: sponsorlar.length,
+        aktif: sponsorlar.filter(s => s.yayinda).length,
+        gosterim: sponsorlar.reduce((t, s) => t + (s.gosterimSayisi || 0), 0),
+        tiklama: sponsorlar.reduce((t, s) => t + (s.tiklamaSayisi || 0), 0),
+      },
+      dogrulanmisSayisi: dogrulanmis.length,
+      afiliye: { durum: afiliye.durum, etkin: afiliye.etkin, tiklama30g: tikla.toplamTiklama || 0 },
+      takipSayisi: tracked.length,
+      dbMb: db.dbMb,
+      walMb: db.walMb,
+      firsat: { etkin: Boolean(firsat.ayar?.enabled), bugun: firsat.bugun || 0 },
+      radar: { etkin: Boolean(radar.ayar?.enabled), katalogSayisi: (radar.katalog || []).length },
+      katalog: (() => {
+        // 🗂️ Mağaza katalog indeksi (2026-11-17): panel KPI'ları için hafif özet.
+        const kd = katalogSyncDurumu();
+        return {
+          toplam: kd.db.toplam,
+          fiyatli: kd.db.fiyatli,
+          stokta: kd.db.stokta,
+          calisiyor: kd.calisiyor,
+          sonBitis: kd.sonBitis,
+          hedefSayisi: kd.hedefSayisi,
+          hata: kd.hata,
+        };
+      })(),
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* 🗂️ Mağaza katalog senkronizasyonu — panel uçları (2026-11-17)       */
+/* ------------------------------------------------------------------ */
+
+/** GET /api/admin/katalog-sync → senkron durumu + DB sayımları + hedefler. */
+app.get('/api/admin/katalog-sync', adminGerekli, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    res.json({ ok: true, ...katalogSyncDurumu() });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/**
+ * POST /api/admin/katalog-sync → manuel senkron.
+ * Gövde: { siteler?: string[] } — boşsa tüm hedefler.
+ * İş ARKA PLANDA çalışır (panel donmaz); durum aynı uçtan izlenir.
+ */
+app.post('/api/admin/katalog-sync', adminGerekli, (req, res) => {
+  try {
+    const durum = katalogSyncDurumu();
+    if (durum.calisiyor) {
+      return res.json({ ok: true, zatenCalisiyor: true, baslangic: durum.sonBaslangic });
+    }
+    const siteler = Array.isArray(req.body?.siteler)
+      ? req.body.siteler.filter(s => typeof s === 'string').slice(0, 40)
+      : null;
+    katalogSenkronizeEt({ siteler, kaynak: 'panel' }).catch((e) => {
+      console.warn('[katalogSync] panel tetiklemesi hatası:', String(e?.message || e));
+    });
+    res.json({
+      ok: true,
+      baslatildi: true,
+      hedefSayisi: siteler && siteler.length ? siteler.length : durum.hedefSayisi,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/** GET /api/admin/katalog-ara?q=... → panelde indeks aramasını test etme. */
+app.get('/api/admin/katalog-ara', adminGerekli, (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const ttlDk = Number(req.query.ttlDk);
+    const sonuclar = q
+      ? katalogUrunleriAra(q, {
+        limit: Math.min(30, Number(req.query.limit) || 10),
+        ttlMs: Number.isFinite(ttlDk) ? ttlDk * 60000 : undefined,
+      })
+      : [];
+    res.json({ ok: true, sorgu: q, adet: sonuclar.length, sonuclar });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* 🔍 Canlı SEO & sosyal paylaşım (2026-11-18)                          */
+/* ------------------------------------------------------------------ */
+
+/** XML metni için güvenli kaçış (sitemap bozulmasın). */
+function xmlKacis(metin) {
+  return String(metin ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/** Yayın kökü: PUBLIC_URL tanımlıysa o, yoksa isteğin kendi host/protokolu. */
+function yayinKoku(req) {
+  const acik = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  if (acik) return acik;
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+  const host = req.get('x-forwarded-host') || req.get('host') || ('localhost:' + config.port);
+  return `${proto}://${host}`;
+}
+
+/**
+ * GET /sitemap.xml — arama motorları için dinamik site haritası.
+ * Yalnızca GERÇEKTEN yayında olan herkese açık sayfalar listelenir;
+ * /admin ve /api bilinçli olarak yer almaz (robots.txt de engeller).
+ */
+app.get('/sitemap.xml', (req, res) => {
+  try {
+    const taban = yayinKoku(req);
+    const bugun = new Date().toISOString().slice(0, 10);
+    const sayfalar = [
+      { yol: '/', oncelik: '1.0', siklik: 'daily' },
+      { yol: '/maliyet.html', oncelik: '0.8', siklik: 'weekly' },
+      { yol: '/sepet.html', oncelik: '0.8', siklik: 'weekly' },
+      { yol: '/slicer.html', oncelik: '0.7', siklik: 'weekly' },
+      { yol: '/ayarlar.html', oncelik: '0.3', siklik: 'monthly' },
+    ];
+    const govde = sayfalar.map(s => [
+      '  <url>',
+      `    <loc>${xmlKacis(taban + s.yol)}</loc>`,
+      `    <lastmod>${bugun}</lastmod>`,
+      `    <changefreq>${s.siklik}</changefreq>`,
+      `    <priority>${s.oncelik}</priority>`,
+      '  </url>',
+    ].join('\n')).join('\n');
+    const xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+      + govde + '\n</urlset>\n';
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(xml);
+  } catch (e) {
+    res.status(500).type('text/plain').send('sitemap üretilemedi');
+  }
+});
+
+/**
+ * GET / ve /index.html — PUBLIC_URL tanımlıysa sosyal paylaşım etiketlerini
+ * MUTLAK adrese çevirir (WhatsApp/X/LinkedIn önizlemeleri göreli yolu açamaz).
+ * PUBLIC_URL yoksa hiçbir şey değiştirilmez: statik dosya olduğu gibi sunulur.
+ */
+app.get(['/', '/index.html'], (req, res, next) => {
+  const acik = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  if (!acik) return next(); // mevcut statik davranış korunur
+  const dosya = path.join(__dirname, 'public', 'index.html');
+  fs.readFile(dosya, 'utf8', (err, html) => {
+    if (err) return next();
+    const tamKok = yayinKoku(req);
+    const cikti = html
+      // og:image ve twitter:image göreli yolu → tam adres
+      .replace(/content="\/og-gorsel\.png"/g, `content="${tamKok}/og-gorsel.png"`)
+      // og:url + canonical (tek kez, og:image:alt bloğunun önüne)
+      .replace(
+        '<meta property="og:image:alt"',
+        `<meta property="og:url" content="${tamKok}/" />\n  `
+        + `<link rel="canonical" href="${tamKok}/" />\n  `
+        + '<meta property="og:image:alt"',
+      );
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.send(cikti);
+  });
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -147,6 +621,15 @@ function jobGorunum(job) {
     yasMetni: job.anlikYasMs != null ? yasMetni(job.anlikYasMs) : null,
     url: job.url || null,
     site: job.site || null,
+    // 🧭 2026-11-14: ürün adı aramasının ilerleme aşaması (istemci gösterir).
+    faz: job.faz || null,
+    fazNotu: job.fazNotu || null,
+    katman: job.katman ?? null,
+    arananSorgu: job.arananSorgu || null,
+    kaynakAd: job.kaynakAd || null,
+    // 🗂️ Ürün nereden bulundu: yerel katalog indeksi mi, canlı mağaza araması mı?
+    kaynakKatmani: job.kaynakKatmani || null,
+    katalogYasMs: job.katalogYasMs ?? null,
   };
 }
 
@@ -279,11 +762,19 @@ app.post('/api/oneri', (req, res) => {
   const problems = secretProblems();
   if (problems.length) return res.status(500).json({ hata: problems.join(' ') });
 
-  const job = yeniJob('oneri', { ihtiyac });
+  const job = yeniJob('oneri', { ihtiyac, iptalKontrolu: new AbortController() });
   import('./src/oneri.js').then(({ runOneri }) =>
-    runOneri(ihtiyac, { onProgress: (p) => { job.progress = p; } })
+    runOneri(ihtiyac, {
+      onProgress: (p) => { job.progress = p; },
+      signal: job.iptalKontrolu.signal,
+    })
   )
     .then(result => {
+      if (job.iptalIstendi) {
+        job.status = 'done';
+        job.result = result || { oneriler: [], kismi: true, iptalEdildi: true };
+        return;
+      }
       if (!result || typeof result !== 'object') {
         job.status = 'error';
         job.error = 'Öneri servisi geçersiz sonuç döndürdü.';
@@ -292,9 +783,43 @@ app.post('/api/oneri', (req, res) => {
       job.status = 'done';
       job.result = result;
     })
-    .catch(e => { job.status = 'error'; job.error = String(e.message || e); });
+    .catch(e => {
+      if (job.iptalIstendi) { job.status = 'done'; job.result = { oneriler: [], kismi: true, iptalEdildi: true }; return; }
+      job.status = 'error';
+      job.error = String(e.message || e);
+    });
 
   res.json({ id: job.id, isId: job.id });
+});
+
+/**
+ * ⏹️ Öneri akışını iptal eder (2026-11-14).
+ * AbortController tetiklenir; runComparison altındaki fetch istekleri durur.
+ * O ana kadar tamamlanan modeller istemcide zaten kısmi kart olarak gösterildiği
+ * için sunucu tarafında ek iş yapılmaz.
+ */
+app.post('/api/oneri/:id/iptal', (req, res) => {
+  const job = jobBul(req.params.id);
+  if (!job || job.tur !== 'oneri') return res.status(404).json({ hata: 'İş bulunamadı' });
+  job.iptalIstendi = true;
+  try { job.iptalKontrolu?.abort(); } catch { /* zaten iptal edilmiş */ }
+  job.progress = {
+    ...(job.progress || {}),
+    iptal: true,
+    not: 'Kullanıcı taramayı durdurdu',
+  };
+  // İşi HEMEN bitir: bekleyen SSE/polling bağlantıları kapanır. Arka plandaki
+  // runOneri iptali fark ederse sonucu (varsa kısmi) bu sonucun üzerine yazar.
+  if (job.status === 'running' || job.status === 'pending') {
+    job.status = 'done';
+    job.result = {
+      oneriler: [],
+      kismi: true,
+      iptalEdildi: true,
+      tamamlananModel: 0,
+    };
+  }
+  res.json({ ok: true, iptalEdildi: true });
 });
 
 app.get('/api/oneri/:id', (req, res) => {
@@ -532,35 +1057,42 @@ function karsilastirmaCalistir(url, job, formatSonuc) {
     });
 }
 
+/**
+ * 🧭 Katman-0 eşleştirme (2026-11-14): kullanıcı sorgusu ile katalog ürün adını
+ * normalize edilmiş kelime örtüşmesiyle karşılaştırır.
+ *
+ * Amaç: "eSun PLA+ Siyah 1kg" gibi sorguları SQLite kataloğunda 10 ms'de bulup
+ * dış mağazalara hiç çıkmadan karşılaştırma başlatmak. Yanlış eşleşmeyi önlemek
+ * için: sorgunun TÜM anlamlı kelimeleri (≥3 harf) katalog adında geçmelidir.
+ *
+ * @param {string} katalogAd
+ * @param {string} sorgu
+ * @returns {boolean}
+ */
+function adAnahtariBenzer(katalogAd, sorgu) {
+  const norm = (s) => String(s || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[ıİ]/g, 'i')
+    .replace(/[^\p{L}\p{N}+]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const hedef = norm(katalogAd);
+  const kaynak = norm(sorgu);
+  if (!hedef || !kaynak) return false;
+  const kelimeler = kaynak.split(' ').filter(w => w.length >= 3);
+  if (!kelimeler.length) return false;
+  return kelimeler.every(k => hedef.includes(k));
+}
+
 app.post('/api/compare', async (req, res) => {
   let url = String(req.body?.url || req.body?.sorgu || req.body?.q || '').trim();
   if (!url) return res.status(400).json({ hata: 'URL veya ürün adı gerekli' });
 
-  let site = detectSite(url);
-  let arananSorgu = null;
-
-  if (!site) {
-    // ⚡ Ürün adı ile doğrudan hızlı arama (2026-11-01)
-    arananSorgu = url;
-    try {
-      const bulunan = await hizliKaynakUrunBul(url);
-      if (!bulunan || !bulunan.url) {
-        return res.status(404).json({
-          hata: `"${url}" için karşılaştırılabilecek uygun bir ürün bulunamadı. Lütfen ürün modelini biraz daha detaylı yazın veya doğrudan ürün linkini yapıştırın.`,
-        });
-      }
-      url = bulunan.url;
-      site = detectSite(url);
-    } catch (e) {
-      return res.status(500).json({ hata: 'Ürün aranırken hata oluştu: ' + String(e.message || e) });
-    }
-    if (!site) {
-      return res.status(404).json({ hata: 'Bulunan ürünün sitesi desteklenmiyor.' });
-    }
-  }
-
   const problems = secretProblems();
   if (problems.length) return res.status(500).json({ hata: problems.join(' ') });
+
+  let site = detectSite(url);
+  const arananSorgu = site ? null : url;
 
   const formatSonuc = (r) => ({
     site: r.site,
@@ -613,6 +1145,9 @@ app.post('/api/compare', async (req, res) => {
       // Birim fiyat (₺/kg / ₺/L) — canlı kartlarda da görünsün (2026-10-29).
       // Kısmi (onProgress) aşamasında henüz hesaplanmamış olabilir; burada üretilir.
       birim: r.product.birim || birimFiyat(r.product),
+      // Varyant şeffaflığı (2026-11-03): Shopify gibi çok varyantlı mağazalarda
+      // hangi varyantın seçildiği görünür olsun.
+      varyant: r.product.varyant || null,
       // 🧵 Filament/reçine birim fiyat rozeti (2026-11-01).
       birimHesap: birimFiyatHesapla(
         r.product.title,
@@ -624,12 +1159,16 @@ app.post('/api/compare', async (req, res) => {
     baski: r.product ? baskiKartiBilgisi({
       ...r.product,
       birim: r.product.birim || birimFiyat(r.product),
+      // Varyant şeffaflığı (2026-11-03): Shopify gibi çok varyantlı mağazalarda
+      // hangi varyantın seçildiği görünür olsun.
+      varyant: r.product.varyant || null,
     }) : null,
   });
 
   const yeniKarsilastirma = (ek = {}) => yeniJob('compare', {
     url,
-    site: site.id,
+    // Ürün ADI ile gelen aramalarda site henüz çözülmemiştir (asenkron çözülür).
+    site: site?.id || null,
     progress: {},
     kaynak: null,
     partialResults: [],
@@ -641,6 +1180,137 @@ app.post('/api/compare', async (req, res) => {
     iptalKontrolu: new AbortController(),
     ...ek,
   });
+
+  /* ---- 0) ÜRÜN ADIYLA ARAMA: ASENKRON İŞ (2026-11-14) --------------------
+   * ÖNCEKİ SORUN: `await hizliKaynakUrunBul(url)` POST yanıtından ÖNCE
+   * çalışıyordu → en kötü durumda 5 kademe × 3.5 sn = 17.5 sn kör bekleme.
+   * Artık iş ANINDA oluşturulup jobId dönülür; ürün çözümü job içinde
+   * aşamalı olarak yapılır ve SSE üzerinden canlı akar.
+   */
+  if (arananSorgu) {
+    const job = yeniKarsilastirma({ mod: 'arama', faz: 'cozum', arananSorgu });
+    job.arananSorgu = arananSorgu;
+
+    // Arka plan işçisi — yanıt döndükten SONRA çalışır.
+    (async () => {
+      const simdi = () => Date.now();
+      const fazAyarla = (faz, not) => { job.faz = faz; job.fazNotu = not || null; };
+      try {
+        fazAyarla('cozum', 'Ürün aranıyor…');
+
+        // 🧭 Katman 0: yerel katalog/geçmiş (dış mağazaya çıkmadan)
+        let bulunan = null;
+        try {
+          const yerel = katalogGetir({ sadeceAktif: true })
+            .find(k => adAnahtariBenzer(k.ad, arananSorgu));
+          if (yerel) {
+            const durum = radarDurumVerisi(yerel.id);
+            const yerelUrl = durum?.afiliyeUrl || durum?.hamUrl || yerel.url;
+            if (yerelUrl) {
+              bulunan = {
+                url: yerelUrl,
+                siteId: durum?.siteId || null,
+                ad: yerel.ad,
+                katman: 0,
+                kaynak: 'katalog',
+                // Radar kataloğunun son okuma zamanı → istemci "X dk önce" yazar.
+                katalogYasMs: durum?.ts ? Math.max(0, Date.now() - Number(durum.ts)) : null,
+                guncellemeTs: durum?.ts || null,
+              };
+              job.katman = 0;
+            }
+          }
+        } catch { /* katalog okunamadı → katman 1 */ }
+
+        // 🧭 Katman 1+: dış mağaza araması — ÖNCE yerel katalog indeksi denenir
+        // (hizliKaynakUrunBul içinde). Katalogdan geldiyse katman 0 sayılır ve
+        // kaydın yaşı istemciye taşınır (arayüz "X dk önce" yazar).
+        if (!bulunan) {
+          job.katman = 1;
+          fazAyarla('cozum', 'Ürün mağazalarda aranıyor…');
+          const ham = await hizliKaynakUrunBul(arananSorgu, {
+            signal: job.iptalKontrolu?.signal || null,
+          });
+          if (ham?.url) {
+            const katalogdan = ham.kaynak === 'katalog';
+            bulunan = {
+              url: ham.url,
+              siteId: ham.siteId || null,
+              ad: ham.title || null,
+              katman: katalogdan ? 0 : 1,
+              kaynak: ham.kaynak || null,
+              katalogYasMs: ham.katalogYasMs ?? null,
+              guncellemeTs: ham.guncellemeTs ?? null,
+            };
+            if (katalogdan) fazAyarla('cozum', 'Ürün yerel katalog indeksinde bulundu.');
+          }
+        }
+
+        if (!bulunan?.url) {
+          throw new Error(`"${arananSorgu}" için karşılaştırılabilecek uygun bir ürün bulunamadı. `
+            + 'Lütfen ürün modelini biraz daha detaylı yazın veya doğrudan ürün linkini yapıştırın.');
+        }
+        const hedefSite = detectSite(bulunan.url);
+        if (!hedefSite) throw new Error('Bulunan ürünün sitesi desteklenmiyor.');
+
+        job.url = bulunan.url;
+        job.site = hedefSite.id;
+        job.kaynakAd = bulunan.ad || bulunan.title || null;
+        // 🗂️ Kaynağın nereden bulunduğu AÇIKÇA taşınır:
+        //   katalog → yerel indeks (ağ isteği yok), yasMs = kaydın yaşı
+        //   dis-arama → mağazalarda canlı arama
+        job.kaynakKatmani = (bulunan.kaynak === 'katalog' || bulunan.katman === 0) ? 'katalog' : 'dis-arama';
+        job.katalogYasMs = bulunan.katalogYasMs ?? null;
+        if (job.kaynakKatmani === 'katalog') job.katman = 0;
+
+        // Anlık (SWR) sonuç varsa hemen sun, arka planda tazele.
+        const tazeZorla = req.body?.taze === true;
+        const anlikHam = tazeZorla ? null : anlikAl(bulunan.url);
+        const anlik = anlikHam ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) } : null;
+        if (anlik) {
+          job.mod = 'tazeleme';
+          job.tazeleniyor = true;
+          job.surum = 1;
+          job.anlikTs = anlik.ts;
+          job.anlikYasMs = anlik.yasMs;
+          job.status = 'done';
+          job.result = anlik.payload;
+          job.kaynak = anlik.payload.kaynak || null;
+          fazAyarla('bitti', 'Hafızadan gösteriliyor, arka planda tazeleniyor');
+          karsilastirmaCalistir(bulunan.url, job, formatSonuc)
+            .then((yeni) => {
+              job.result = yeni;
+              job.kaynak = yeni.kaynak || job.kaynak;
+              job.tazeleniyor = false;
+              job.tazelemeBitti = true;
+              job.tazelemeFarki = fiyatFarki(anlik.payload, yeni);
+              job.anlikTs = simdi();
+              job.anlikYasMs = 0;
+              job.surum = (job.surum || 1) + 1;
+            })
+            .catch((e) => {
+              job.tazeleniyor = false;
+              job.tazelemeHatasi = String(e.message || e);
+              job.surum = (job.surum || 1) + 1;
+            });
+          return;
+        }
+
+        fazAyarla('tarama', 'Mağazalar taranıyor…');
+        const result = await karsilastirmaCalistir(bulunan.url, job, formatSonuc);
+        job.status = 'done';
+        job.result = result;
+        fazAyarla('bitti', null);
+      } catch (e) {
+        job.status = 'error';
+        job.error = String(e.message || e);
+        fazAyarla('hata', job.error);
+      }
+    })();
+
+    return res.json({ isId: job.id, id: job.id, arama: true, anlik: false, faz: 'cozum' });
+  }
+
   // ---- 1) ANLIK SONUÇ (2026-10-29) ----
   // Ürün son 5 saat içinde taranmışsa: sonucu HEMEN döndür, arka planda tazele.
   const tazeZorla = req.body?.taze === true;
@@ -737,6 +1407,15 @@ app.get('/api/compare/:id', (req, res) => {
     anlikTs: job.anlikTs || null,
     anlikYasMs: job.anlikYasMs ?? null,
     yasMetni: job.anlikYasMs != null ? yasMetni(job.anlikYasMs) : null,
+    // 🧭 Aşama bilgisi (ürün adı araması)
+    faz: job.faz || null,
+    fazNotu: job.fazNotu || null,
+    katman: job.katman ?? null,
+    arananSorgu: job.arananSorgu || null,
+    kaynakKatmani: job.kaynakKatmani || null,
+    katalogYasMs: job.katalogYasMs ?? null,
+    url: job.url || null,
+    kaynakAd: job.kaynakAd || null,
   });
 });
 
@@ -1075,17 +1754,31 @@ function ayarGorunumu(s) {
   return {
     ...s,
     smtp: { ...s.smtp, pass: s.smtp?.pass ? '***' : '' },
+    // 📢 WhatsApp: token yalnızca sunucuda; ön yüze varlığı bildirilir.
+    whatsapp: s.whatsapp
+      ? {
+        ...s.whatsapp,
+        token: '',
+        tokenVar: Boolean(s.whatsapp.token),
+      }
+      : s.whatsapp,
     webpush,
   };
 }
 
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', adminGerekli, (req, res) => {
   res.json(ayarGorunumu(store.getSettings()));
 });
 
-app.post('/api/settings', (req, res) => {
+app.post('/api/settings', adminGerekli, (req, res) => {
   const patch = req.body || {};
   if (patch.smtp?.pass === '***' || patch.smtp?.pass === '') delete patch.smtp.pass;
+  // WhatsApp API token'ı: boş ya da maskeli değer gelirse kayıtlı anahtar korunur.
+  if (patch.whatsapp) {
+    const wa = { ...patch.whatsapp };
+    if (!wa.token || wa.token === '***') delete wa.token;
+    patch.whatsapp = wa;
+  }
   // Özel anahtar yalnızca sunucuda; ön yüzden gelen boş/'***' değerler yazılmaz.
   if (patch.webpush) {
     const wp = { ...patch.webpush };
@@ -1094,21 +1787,32 @@ app.post('/api/settings', (req, res) => {
     patch.webpush = wp;
   }
   const s = store.saveSettings(patch);
-  startAlarmScheduler();
-  // Fırsat kanalı ayarları (aralık/kanal/açık-kapalı) yeniden kurulur.
-  try { startFirsatScheduler(); } catch (e) {
-    console.warn('[firsat] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
-  }
-  // 🎯 Otonom radar: aralık/açık-kapalı değişince yeniden planlanır.
-  try { startRadarScheduler(); } catch (e) {
-    console.warn('[radar] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
-  }
+  // Zamanlayıcıları yeniden kur (yanıtı BEKLETMEDEN): ayar kaydı hızlı kalsın.
+  setImmediate(() => {
+    try { startAlarmScheduler(); } catch (e) {
+      console.warn('[gorev] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
+    }
+    // Fırsat kanalı ayarları (aralık/kanal/açık-kapalı) yeniden kurulur.
+    try { startFirsatScheduler(); } catch (e) {
+      console.warn('[firsat] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
+    }
+    // 🎯 Otonom radar: aralık/açık-kapalı değişince yeniden planlanır.
+    try { startRadarScheduler(); } catch (e) {
+      console.warn('[radar] zamanlayıcı güncellenemedi:', String(e.message || e).slice(0, 120));
+    }
+  });
   res.json(ayarGorunumu(s));
 });
 
 // ---- Takip edilen ürünler ----
+// Güvenlik (2026-11-06): push aboneliğinin endpoint/anahtarları DIŞARI VERİLMEZ;
+// yalnızca "bu alarm bir cihaza bağlı mı" bilgisi döner.
 app.get('/api/tracked', (req, res) => {
-  res.json(store.getTracked());
+  const liste = store.getTracked().map(t => {
+    const { pushSubscription, ...kalan } = t;
+    return { ...kalan, pushAlarm: !!pushSubscription };
+  });
+  res.json(liste);
 });
 
 // Hedef fiyat güncelleme (indirim botu)
@@ -1120,8 +1824,8 @@ app.post('/api/tracked/:id/hedef', (req, res) => {
   res.json(guncel);
 });
 
-// ---- İndirim botu görevi ----
-app.post('/api/alarm/calistir', async (req, res) => {
+// ---- İndirim botu görevi (Yönetici) ----
+app.post('/api/alarm/calistir', adminGerekli, async (req, res) => {
   try {
     const r = await checkAlarms();
     res.json(r);
@@ -1130,7 +1834,7 @@ app.post('/api/alarm/calistir', async (req, res) => {
   }
 });
 
-app.post('/api/alarm/test-email', async (req, res) => {
+app.post('/api/alarm/test-email', adminGerekli, async (req, res) => {
   try {
     const r = await sendTestEmail();
     res.json(r);
@@ -1139,7 +1843,7 @@ app.post('/api/alarm/test-email', async (req, res) => {
   }
 });
 
-app.post('/api/alarm/test-telegram', async (req, res) => {
+app.post('/api/alarm/test-telegram', adminGerekli, async (req, res) => {
   try {
     const { botToken, chatId } = req.body || {};
     const r = await sendTestTelegram({ botToken, chatId });
@@ -1149,7 +1853,60 @@ app.post('/api/alarm/test-telegram', async (req, res) => {
   }
 });
 
-app.post('/api/alarm/test-whatsapp', async (req, res) => {
+/**
+ * 📢 WhatsApp Fırsat Kanalı testi (2026-11-05).
+ * Gövde: { kuru?, ornek? } — ayarlar DB'den okunur, gövdede token taşınmaz.
+ * Döner: { ok, saglayici, yontem, hata?, onizleme? }
+ */
+app.post('/api/alarm/test-whatsapp-kanal', adminGerekli, async (req, res) => {
+  try {
+    const s = store.getSettings();
+    const wa = s.whatsapp || {};
+    const dogrulama = whatsappAyarDogrula(wa);
+    if (!dogrulama.ok) {
+      return res.status(400).json({ ok: false, hata: dogrulama.hatalar.join(' '), hatalar: dogrulama.hatalar });
+    }
+
+    const kuru = req.body?.kuru === true;
+    const ornek = req.body?.ornek && typeof req.body.ornek === 'object' ? req.body.ornek : null;
+
+    // Gerçek ürün varsa onu kullan (daha anlamlı test); yoksa örnek kart.
+    const durum = ornek || {
+      ad: 'Test Ürünü — Creality Ender PLA Gri 1kg',
+      stokta: true,
+      fiyat: 758.65,
+      site: 'Ventatek',
+      kargo: 'Ücretsiz Kargo',
+      birimMetni: '₺758,65 / kg',
+      stokluSayisi: 4,
+      tukenenSayisi: 2,
+      tasarruf: 120.35,
+      digerleri: [
+        { site: 'Koçtaş', fiyat: 785 },
+        { site: 'Hepsiburada', fiyat: 789.99 },
+        { site: 'Trendyol', fiyat: 879 },
+      ],
+      afiliyeUrl: 'https://enucuznerede.com/yonlendir?site=ventatek&sku=ornek',
+    };
+
+    const kart = whatsappKartOlustur(durum);
+    const sonuc = await whatsappKanalGonder(kart, {
+      ayar: wa, kuru, imageUrl: req.body?.imageUrl || null,
+    });
+
+    if (!sonuc.ok) return res.status(502).json({ ok: false, ...sonuc, kart });
+    res.json({ ok: true, ...sonuc, kart });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e).slice(0, 200) });
+  }
+});
+
+/** Sağlayıcı listesi (Ayarlar paneli açılır menüsü). */
+app.get('/api/whatsapp/saglayicilar', (req, res) => {
+  res.json({ ok: true, saglayicilar: SAGLAYICILAR });
+});
+
+app.post('/api/alarm/test-whatsapp', adminGerekli, async (req, res) => {
   try {
     const { webhookUrl, phone } = req.body || {};
     const r = await sendTestWhatsApp({ webhookUrl, phone });
@@ -1207,7 +1964,7 @@ app.get('/api/firsat/durum', (req, res) => {
 
 // Kanala test paylaşımı: gerçek fırsat varsa onu, yoksa uydurma fiyat olmadan
 // yalnızca bağlantı testi mesajını gönderir.
-app.post('/api/firsat/test', async (req, res) => {
+app.post('/api/firsat/test', adminGerekli, async (req, res) => {
   try {
     const { kanal, botToken } = req.body || {};
     const r = await firsatTestGonder({ kanal, botToken });
@@ -1217,8 +1974,8 @@ app.post('/api/firsat/test', async (req, res) => {
   }
 });
 
-// Elle tetikleme (Ayarlar/test). `taze:true` takip ürünlerini de yeniden tarar.
-app.post('/api/firsat/calistir', async (req, res) => {
+// Elle tetikleme (Yönetici/test). `taze:true` takip ürünlerini de yeniden tarar.
+app.post('/api/firsat/calistir', adminGerekli, async (req, res) => {
   try {
     const r = await firsatlariTara({
       taze: req.body?.taze === true,
@@ -1230,6 +1987,10 @@ app.post('/api/firsat/calistir', async (req, res) => {
     res.status(500).json({ hata: e.message });
   }
 });
+
+// ---- 🧮 3D baskı maliyet & kârlılık hesaplayıcı API (2026-11-04) ----
+// GET  /api/baski/yazicilar · GET /api/baski/en-ucuz-filamentler · POST /api/baski/hesapla
+baskiApiBagla(app);
 
 // ---- 🎯 Otonom 3D Baskı & Filament Fiyat Avcısı (2026-11-02) ----
 // Katalog SQLite'ta; Ayarlar panelinden eklenip çıkarılabilir.
@@ -1244,6 +2005,267 @@ app.get('/api/radar/durum', (req, res) => {
 // 📊 Ana sayfa "borsa" vitrini — yalnızca herkese açık fiyat alanları.
 // Erişim anahtarı tanımlı olsa bile okunabilir (gizli bilgi içermez);
 // böylece ziyaretçi anahtarı girmeden canlı piyasayı görür.
+/* ------------------------------------------------------------------ */
+/* 🔌 Gömülebilir Canlı Fiyat Widget'ı (2026-11-05)                    */
+/* ------------------------------------------------------------------ */
+
+/** Widget sayfası: /widget ve /widget.html aynı dosyayı sunar. */
+const widgetSayfasi = (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'widget.html'));
+};
+app.get('/widget', widgetSayfasi);
+app.get('/widget.html', widgetSayfasi);
+
+/**
+ * Widget verisi (HERKESE AÇIK).
+ * Parametreler: ?id=1 · ?urun=bambu-lab-p1s (slug) · ?q=Creality+Ender+PLA
+ * Ek: ?ref=maker-blogu (kampanya atfı, CTA'da korunur)
+ * Yalnızca herkese açık alanlar döner; token/PID/sohbet kimliği sızmaz.
+ */
+app.get('/api/widget', (req, res) => {
+  try {
+    const veri = widgetVerisi({
+      id: req.query.id,
+      slug: req.query.urun || req.query.slug,
+      q: req.query.q,
+      ref: req.query.ref,
+      tema: req.query.tema,
+      tabanUrl: config.publicUrl,
+    });
+    res.json(veri);
+  } catch (e) {
+    res.status(500).json({ ok: false, bulundu: false, neden: String(e.message || e) });
+  }
+});
+
+/**
+ * Widget CTA yönlendiricisi: tıklamayı kaydeder ve afiliye linkine 302 atar.
+ * Böylece hangi blogun kaç tıklama getirdiği ölçülebilir. Hedef yalnızca
+ * kayıtlı üründen türetilir (açık yönlendirme / open-redirect YOK).
+ */
+app.get('/widget/git', (req, res) => {
+  try {
+    const veri = widgetVerisi({
+      id: req.query.id,
+      slug: req.query.urun || req.query.slug,
+      q: req.query.q,
+      ref: req.query.ref,
+      tema: req.query.tema,
+      tabanUrl: config.publicUrl,
+    });
+    if (!veri.bulundu || !veri.hedef) {
+      return res.status(404).send('Ürün bulunamadı ya da fiyat kaydı yok.');
+    }
+    widgetTiklamaKaydet({
+      ref: refTemizle(req.query.ref),
+      katalogId: veri.urun?.id,
+      siteId: veri.urun?.siteId,
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.redirect(302, veri.hedef);
+  } catch {
+    res.status(500).send('Yönlendirme hatası.');
+  }
+});
+
+/** Widget tıklama istatistiği (yönetici; erişim anahtarıyla korunur). */
+app.get('/api/widget/istatistik', (req, res) => {
+  try {
+    res.json(widgetIstatistik({ gun: req.query.gun }));
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/** Widget oluşturucu önizlemesi: gerçek fiyatlı ilk ürünler. */
+app.get('/api/widget/ornekler', (req, res) => {
+  try {
+    res.json({ ok: true, urunler: widgetOrnekUrunler({ limit: req.query.limit }) });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* 🧩 Slicer Öneri API'si (2026-11-06)                                 */
+/* ------------------------------------------------------------------ */
+// GET /api/embed/oner?malzeme=PLA&gramaj=340&renk=Siyah&kaynak=cura
+// CORS (*), 60 sn önbellek, < 50 ms. Cura / Bambu / Orca / Prusa eklentileri
+// dilimleme bittiğinde bu ucu çağırır.
+slicerApiBagla(app);
+
+/**
+ * Slicer satın alma yönlendiricisi: tıklamayı kaydeder ve afiliye linkine 302 atar.
+ * Hedef yalnızca kayıtlı üründen türetilir (açık yönlendirme YOK).
+ */
+app.get('/yonlendir', (req, res) => {
+  try {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    const id = Number(req.query.urunId);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).send('urunId gerekli.');
+    }
+    const kayit = widgetVerisi({ id, tabanUrl: config.publicUrl });
+    if (!kayit.bulundu || !kayit.hedef) {
+      return res.status(404).send('Ürün bulunamadı ya da fiyat kaydı yok.');
+    }
+    const kaynakHam = refTemizle(req.query.kaynak);
+    widgetTiklamaKaydet({
+      ref: kaynakHam ? 'slicer-' + kaynakHam : 'slicer',
+      katalogId: kayit.urun?.id,
+      siteId: kayit.urun?.siteId,
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.redirect(302, kayit.hedef);
+  } catch {
+    res.status(500).send('Yönlendirme hatası.');
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* ⭐ Sponsorlu Vitrin & Doğrulanmış Mağaza (2026-11-08)                */
+/* ------------------------------------------------------------------ */
+// Sabit gelir kanalı: hero banner + mavi tik rozeti. Tüm okuma uçları
+// herkese açıktır (erişim anahtarı muafiyeti yukarıda tanımlı).
+
+/**
+ * GET /api/sponsor/vitrin
+ * Yayındaki kampanyayı döner; gösterim sayacını ARTIRIR.
+ * Aktif kampanya yoksa `{ ok:true, vitrin:null }` (banner gizlenir).
+ */
+app.get('/api/sponsor/vitrin', (req, res) => {
+  try {
+    const vitrin = store.sponsorVitrinGetir();
+    if (!vitrin) {
+      res.set('Cache-Control', 'no-store');
+      return res.json({ ok: true, vitrin: null });
+    }
+    // Sayaç yanıtı bloklamasın: asenkron artır, hatayı yut.
+    setImmediate(() => {
+      try { store.sponsorGosterimArtir(vitrin.id); } catch { /* yoksay */ }
+    });
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, vitrin });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/**
+ * GET /api/sponsor/tikla/:id
+ * Tıklama sayacını artırır ve 302 ile kampanya URL'sine yönlendirir.
+ * Kayıt yoksa/pasifse 404 — açık yönlendirme (open redirect) YOK.
+ */
+app.get('/api/sponsor/tikla/:id', (req, res) => {
+  try {
+    const kayit = store.sponsorTiklamaArtir(req.params.id);
+    if (!kayit) return res.status(404).type('html').send(
+      '<!doctype html><html lang="tr"><meta charset="utf-8"><title>Kampanya bulunamadı</title>'
+      + '<body style="font-family:system-ui;padding:48px;text-align:center;background:#F8FAFC">'
+      + '<h1>🔍 Kampanya bulunamadı</h1><p>Bağlantı geçersiz ya da kampanya sona ermiş olabilir.</p>'
+      + '<a href="/" style="color:#3450D1;font-weight:700">En Ucuz Nerede? ana sayfa</a></body></html>',
+    );
+
+    // Güvenlik: yalnızca http(s). Şemalar veritabanında doğrulanıyor, burada
+    // ikinci savunma katmanı (ileride elle eklenen kayıt için).
+    let hedef;
+    try { hedef = new URL(kayit.yonlendirmeUrl); } catch { return res.status(500).send('Kampanya adresi geçersiz.'); }
+    if (!/^https?:$/.test(hedef.protocol)) return res.status(500).send('Kampanya adresi geçersiz.');
+
+    res.setHeader('Cache-Control', 'no-store');
+    return res.redirect(302, hedef.href);
+  } catch {
+    res.status(500).send('Yönlendirme hatası.');
+  }
+});
+
+/**
+ * GET /api/dogrulanmis-magazalar
+ * Mavi tikli mağazalar + rozet metinleri. 5 dk tarayıcı/CDN önbelleği.
+ */
+app.get('/api/dogrulanmis-magazalar', (req, res) => {
+  try {
+    const magazalar = store.dogrulanmisMagazalariGetir();
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+    res.json({
+      ok: true,
+      magazalar,
+      // Hızlı arama için siteId → rozet sözlüğü (istemci tek sorgu yapsın).
+      harita: Object.fromEntries(magazalar.map(m => [m.siteId, m.rozetMetni])),
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/**
+ * GET /api/admin/sponsor-rapor?id=...
+ * Reklamveren performans raporu (gösterim / tıklama / CTR).
+ * Erişim anahtarı korumalıdır (yukarıdaki genel /api kuralı).
+ */
+app.get('/api/admin/sponsor-rapor', adminGerekli, (req, res) => {
+  try {
+    if (req.query.id) {
+      const tek = store.sponsorRaporTek(req.query.id);
+      if (!tek) return res.status(404).json({ ok: false, hata: 'Kampanya bulunamadı' });
+      return res.json({ ok: true, kampanya: tek });
+    }
+    const kampanyalar = store.sponsorRapor();
+    const toplam = kampanyalar.reduce((s, k) => ({
+      gosterim: s.gosterim + k.gosterimSayisi,
+      tiklama: s.tiklama + k.tiklamaSayisi,
+    }), { gosterim: 0, tiklama: 0 });
+    res.json({
+      ok: true,
+      kampanyalar,
+      toplam: {
+        ...toplam,
+        ctr: toplam.gosterim > 0
+          ? Math.round((toplam.tiklama / toplam.gosterim) * 10000) / 100
+          : null,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/**
+ * POST /api/admin/sponsor-vitrin
+ * Yönetici: kampanya ekle/güncelle. Gövde doğrulanır (URL şeması, tarihler,
+ * pozitif fiyat). Hatalı gövde 400, sessiz kabul YOK.
+ */
+app.post('/api/admin/sponsor-vitrin', adminGerekli, (req, res) => {
+  try {
+    const vitrin = store.sponsorVitrinKaydet(req.body || {});
+    res.json({ ok: true, vitrin });
+  } catch (e) {
+    res.status(400).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/** DELETE /api/admin/sponsor-vitrin/:id — yönetici kampanya silme. */
+app.delete('/api/admin/sponsor-vitrin/:id', adminGerekli, (req, res) => {
+  const silindi = store.sponsorVitrinSil(req.params.id);
+  res.json({ ok: true, silindi });
+});
+
+/** POST /api/admin/dogrulanmis-magaza — yönetici mavi tik ekle/güncelle. */
+app.post('/api/admin/dogrulanmis-magaza', adminGerekli, (req, res) => {
+  try {
+    const magaza = store.dogrulanmisMagazaKaydet(req.body || {});
+    res.json({ ok: true, magaza });
+  } catch (e) {
+    res.status(400).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/** DELETE /api/admin/dogrulanmis-magaza/:siteId — yönetici rozet silme. */
+app.delete('/api/admin/dogrulanmis-magaza/:siteId', adminGerekli, (req, res) => {
+  const silindi = store.dogrulanmisMagazaSil(req.params.siteId);
+  res.json({ ok: true, silindi });
+});
+
 app.get('/api/vitrin', (req, res) => {
   try {
     const limit = Number(req.query.limit) || 12;
@@ -1263,7 +2285,7 @@ app.get('/api/radar/katalog', (req, res) => {
   }
 });
 
-app.post('/api/radar/katalog', (req, res) => {
+app.post('/api/radar/katalog', adminGerekli, (req, res) => {
   try {
     const { ad, sorgu, url, kategori } = req.body || {};
     res.json(katalogEkle({ ad, sorgu, url, kategori }));
@@ -1272,7 +2294,7 @@ app.post('/api/radar/katalog', (req, res) => {
   }
 });
 
-app.delete('/api/radar/katalog/:id', (req, res) => {
+app.delete('/api/radar/katalog/:id', adminGerekli, (req, res) => {
   try {
     const silindi = katalogSil(req.params.id);
     if (!silindi) return res.status(404).json({ hata: 'Katalog kaydı bulunamadı' });
@@ -1282,7 +2304,7 @@ app.delete('/api/radar/katalog/:id', (req, res) => {
   }
 });
 
-app.post('/api/radar/katalog/sifirla', (req, res) => {
+app.post('/api/radar/katalog/sifirla', adminGerekli, (req, res) => {
   try {
     res.json({ katalog: katalogSifirla() });
   } catch (e) {
@@ -1292,7 +2314,7 @@ app.post('/api/radar/katalog/sifirla', (req, res) => {
 
 // Taramayı başlatır. Varsayılan: arka planda (HTTP isteği beklemez).
 // `{ bekle:true }` → senkron (CLI/test).
-app.post('/api/radar/calistir', async (req, res) => {
+app.post('/api/radar/calistir', adminGerekli, async (req, res) => {
   try {
     const b = req.body || {};
     const opts = {
@@ -1300,6 +2322,7 @@ app.post('/api/radar/calistir', async (req, res) => {
       kuru: b.kuru === true,
       zorla: b.zorla !== false,
       limit: Number.isFinite(Number(b.limit)) ? Number(b.limit) : undefined,
+      urunId: Number.isFinite(Number(b.urunId)) ? Number(b.urunId) : undefined,
       urunArasiMs: Number.isFinite(Number(b.urunArasiMs)) ? Number(b.urunArasiMs) : undefined,
     };
     if (b.bekle === true) {
@@ -1312,17 +2335,40 @@ app.post('/api/radar/calistir', async (req, res) => {
   }
 });
 
-app.post('/api/tracked', (req, res) => {
-  const { sonuc, hedefFiyat } = req.body || {};
+// `/api/takip` aynı uç noktanın Türkçe takma adıdır (sıfır sürtünmeli alarm).
+app.post(['/api/tracked', '/api/takip'], (req, res) => {
+  const { sonuc, hedefFiyat, pushSubscription } = req.body || {};
   if (!sonuc?.kaynak) return res.status(400).json({ hata: 'Karşılaştırma sonucu gerekli' });
   const found = (sonuc.sonuclar || []).filter(r => r.status === 'found' && r.product?.pricing);
+  // 🔔 Sıfır sürtünmeli alarm (2026-11-06): abonelik yalnızca bu takibe bağlanır.
+  // E-posta/telefon/şifre istenmez; bozuk abonelik sessizce yok sayılır.
+  const push = store.pushAbonelikNormalize(pushSubscription);
+  const urunler = found.map(r => ({ site: r.site, url: r.product.url }));
+
+  // Aynı cihaz + aynı ürün için ikinci kayıt açma: hedefi ve aboneliği güncelle.
+  if (push) {
+    const anahtar = sonuc.kaynak.modelKodu || sonuc.kaynak.urun;
+    const mevcut = store.getTracked().find(t =>
+      t.pushEndpoint === push.endpoint && (t.modelKodu || t.urun) === anahtar);
+    if (mevcut) {
+      const guncel = store.updateTracked(mevcut.id, {
+        hedefFiyat: Number(hedefFiyat) || mevcut.hedefFiyat,
+        pushSubscription: push,
+        urunler: urunler.length ? urunler : mevcut.urunler,
+        image: found[0]?.product?.image || mevcut.image,
+      });
+      return res.json({ ...guncel, pushAlarm: true, guncellendi: true });
+    }
+  }
+
   const item = store.addTracked({
     modelKodu: sonuc.kaynak.modelKodu,
     urun: sonuc.kaynak.urun,
     renk: sonuc.kaynak.renk,
     image: found[0]?.product?.image || null,
     hedefFiyat,
-    urunler: found.map(r => ({ site: r.site, url: r.product.url })),
+    urunler,
+    pushSubscription: push,
   });
 
   // Telegram aktifse anında teyit bildirimi gönder
@@ -1334,7 +2380,7 @@ app.post('/api/tracked', (req, res) => {
     sendTestTelegram({ botToken: s.telegram.botToken, chatId: s.telegram.chatId, icerik: msg, konu: 'Fiyat Alarmı Kuruldu' }).catch(() => {});
   }
 
-  res.json(item);
+  res.json({ ...item, pushAlarm: !!push });
 });
 
 app.delete('/api/tracked/:id', (req, res) => {
@@ -1403,13 +2449,34 @@ app.post('/api/price-history', (req, res) => {
 let healthCalisiyor = false;
 
 app.get('/api/durum', (req, res) => {
+  let afiliyeAktif = false;
+  try { afiliyeAktif = afiliyeOzet().durum === 'aktif'; } catch { afiliyeAktif = false; }
   res.json({
     scraperApiHazir: !!config.scraperApiKey,
     yzHazir: !!config.ai.apiKey,
     yzModel: config.ai.model,
+    afiliyeAktif,
     desteklenenSiteler: adapters.map(a => a.id),
     siteler: adapters.map(a => ({ id: a.id, ad: a.name })),
     kazimaSaglayicilari: saglayiciDurumu(),
+    // 🗂️ Mağaza katalog indeksi (2026-11-17) — dış istek atmadan aday bulma.
+    katalog: (() => {
+      try {
+        const kd = katalogSyncDurumu();
+        return {
+          toplam: kd.db.toplam,
+          fiyatli: kd.db.fiyatli,
+          stokta: kd.db.stokta,
+          calisiyor: kd.calisiyor,
+          sonBitis: kd.sonBitis,
+          hedefSayisi: kd.hedefSayisi,
+          ttlDk: Math.round(kd.ttlMs / 60000),
+          siteler: kd.db.siteler,
+        };
+      } catch {
+        return { toplam: 0, fiyatli: 0, hedefSayisi: 0 };
+      }
+    })(),
     // Anlık sonuç önbelleği (2026-10-29)
     anlikSonuc: anlikIstatistik(),
     // Adaptör sağlık nöbetçisi + log rotasyonu (2026-10-29)
@@ -1417,6 +2484,16 @@ app.get('/api/durum', (req, res) => {
     log: logDurumu(),
     // Kalıcı iş kuyruğu (2026-10-29)
     isler: { ...store.jobIstatistik(), aktifBellek: jobs.size },
+    // 🚦 IP bazlı hız sınırı özeti (2026-11-18) — IP'ler maskelenir.
+    hizSiniri: hizSiniriDurumu(),
+    // 🌐 Ters vekil yapılandırması (teşhis: XFF/CF başlıkları doğru okunuyor mu?)
+    vekil: {
+      trustProxy: String(TRUST_PROXY),
+      istemciIp: istemciIp(req),
+      protokol: req.protocol,
+      guvenli: req.secure,
+      cfRay: req.get('cf-ray') || null,
+    },
   });
 });
 
@@ -1430,7 +2507,7 @@ app.get('/api/durum', (req, res) => {
  * GET /api/health            → son sağlık durumu (her mağaza)
  * GET /api/health/:site      → tek adaptörün geçmişi
  */
-app.post('/api/health/check', async (req, res) => {
+app.post('/api/health/check', adminGerekli, async (req, res) => {
   if (healthCalisiyor) return res.status(429).json({ hata: 'Sağlık kontrolü zaten çalışıyor' });
   const siteIds = Array.isArray(req.body?.siteIds) ? req.body.siteIds.filter(s => typeof s === 'string') : null;
   const bildir = req.body?.bildir === true;
@@ -1467,11 +2544,11 @@ app.get('/api/health', (req, res) => {
  */
 let bakimCalisiyor = false;
 
-app.get('/api/db/bakim', (req, res) => {
+app.get('/api/db/bakim', adminGerekli, (req, res) => {
   res.json({ ...dbBakimDurumu(), calisiyor: bakimCalisiyor, boyutlar: dbBoyutlari() });
 });
 
-app.post('/api/db/bakim', async (req, res) => {
+app.post('/api/db/bakim', adminGerekli, async (req, res) => {
   if (bakimCalisiyor) return res.status(429).json({ hata: 'Bakım zaten çalışıyor' });
   bakimCalisiyor = true;
   try {
@@ -1493,7 +2570,7 @@ app.post('/api/db/bakim', async (req, res) => {
  * POST /api/log/rotate  → elle döndür
  * POST /api/log/cleanup → 15 günden eski arşivleri sil
  */
-app.post('/api/log/rotate', async (req, res) => {
+app.post('/api/log/rotate', adminGerekli, async (req, res) => {
   try {
     res.json(await logRotasyonuYap('elle'));
   } catch (e) {
@@ -1501,7 +2578,7 @@ app.post('/api/log/rotate', async (req, res) => {
   }
 });
 
-app.post('/api/log/cleanup', async (req, res) => {
+app.post('/api/log/cleanup', adminGerekli, async (req, res) => {
   try {
     res.json(await eskiArsivleriTemizle());
   } catch (e) {
@@ -1628,7 +2705,7 @@ app.post('/api/sepet-kupon', (req, res) => {
  * POST /api/afiliye/tikla    → tıklama sayacı (yerel, kişisel veri yok)
  * GET  /api/afiliye/tikla    → son 30 günün tıklama özeti
  */
-app.get('/api/afiliye', (req, res) => {
+app.get('/api/afiliye', adminGerekli, (req, res) => {
   try {
     res.json({ ...afiliyeOzet(adapters.map(a => a.id)), tiklamalar: tiklaOzet(30) });
   } catch (e) {
@@ -1636,7 +2713,7 @@ app.get('/api/afiliye', (req, res) => {
   }
 });
 
-app.post('/api/afiliye', (req, res) => {
+app.post('/api/afiliye', adminGerekli, (req, res) => {
   try {
     const kayit = afiliyeKaydet(req.body || {});
     res.json({ ok: true, ...afiliyeOzet(), kayit: { etkin: kayit.etkin } });
@@ -1655,13 +2732,13 @@ app.post('/api/afiliye/tikla', (req, res) => {
   res.status(204).end();
 });
 
-app.get('/api/afiliye/tikla', (req, res) => {
+app.get('/api/afiliye/tikla', adminGerekli, (req, res) => {
   res.json(tiklaOzet(30));
 });
 
-// Sağlayıcı kredi panosu (Ayarlar sayfası). Ücretsiz hesap uçlarından okur,
+// Sağlayıcı kredi panosu (Yönetici paneli). Ücretsiz hesap uçlarından okur,
 // sunucu tarafında 10 dk önbelleklenir; ?taze=1 zorla yeniler (Crawlbase oran sınırı korunur).
-app.get('/api/kredi', async (req, res) => {
+app.get('/api/kredi', adminGerekli, async (req, res) => {
   try {
     res.json(await saglayiciKredileri({ taze: req.query.taze === '1' }));
   } catch (e) {
@@ -1669,14 +2746,14 @@ app.get('/api/kredi', async (req, res) => {
   }
 });
 
-// Toplanan kupon / site kampanyaları (Ayarlar panosu)
-app.get('/api/kuponlar', (req, res) => {
+// Toplanan kupon / site kampanyaları (Yönetici panosu)
+app.get('/api/kuponlar', adminGerekli, (req, res) => {
   res.json(getKuponlar());
 });
 
 // Kupon toplayıcıyı hemen çalıştır (site listesi verilebilir)
 let kuponIsi = null;
-app.post('/api/kuponlar/topla', async (req, res) => {
+app.post('/api/kuponlar/topla', adminGerekli, async (req, res) => {
   if (kuponIsi) return res.status(429).json({ hata: 'Toplama zaten çalışıyor' });
   const siteIds = Array.isArray(req.body?.siteler) && req.body.siteler.length ? req.body.siteler : null;
   kuponIsi = tumunuTopla({ fresh: true, siteIds })
@@ -1715,6 +2792,20 @@ app.listen(config.port, config.host, () => {
   const problems = secretProblems();
   console.log('En Ucuz Nerede çalışıyor: http://' + (config.host === '0.0.0.0' ? 'localhost' : config.host) + ':' + config.port);
   if (config.erisimAnahtari) console.log('Erişim kısıtı: AÇIK (ERISIM_ANAHTARI tanımlı)');
+  // 🚨 CANLI GÜVENLİK UYARISI (2026-11-18): 0.0.0.0 tüm arayüzlere bağlanır.
+  // Yönetici anahtarı yoksa panel yalnızca loopback'e açıktır; ama ters vekil
+  // (Caddy/Cloudflare) bağlantıyı loopback'e çevirirse panel İnternet'e açılır.
+  if (config.host === '0.0.0.0' && !config.adminAnahtari) {
+    console.warn(
+      '\n' + '!'.repeat(72) + '\n'
+      + '⚠️  GÜVENLİK UYARISI: HOST=0.0.0.0 (tüm arayüzler) ve ADMIN_ANAHTARI boş!\n'
+      + '    Yönetici paneli (/admin.html) bir ters vekil arkasında HERKESE AÇIK olabilir.\n'
+      + '    Canlıya çıkmadan önce .env dosyasına güçlü bir ADMIN_ANAHTARI yazın\n'
+      + '    (en az 24 karakter, tahmin edilemez) ve ERISIM_ANAHTARI tanımlayın.\n'
+      + '!'.repeat(72) + '\n',
+    );
+  }
+  if (process.env.PUBLIC_URL) console.log('Yayın adresi: ' + String(process.env.PUBLIC_URL).replace(/\/+$/, ''));
   if (problems.length) console.warn('UYARI:', problems.join(' '));
 
   // ---- Kalıcı iş kuyruğu: açılış kurtarma (2026-10-29) ----
@@ -1760,6 +2851,14 @@ app.listen(config.port, config.host, () => {
   } catch (e) {
     console.warn('[radar] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
   }
+  // 🗂️ Mağaza kataloğu senkronizasyonu (2026-11-17): Shopify/Woo/sitemap
+  // beslemelerinden ürün indeksi. Ürün adı aramalarında dış istek atmadan
+  // aday bulmayı sağlar. İlk tur açılıştan 20 sn sonra çalışır.
+  try {
+    katalogSenkronBaslat();
+  } catch (e) {
+    console.warn('[katalogSync] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
+  }
   // 🔍 Öneri motorunu ısıt: ilk tuş vuruşunda disk/DB gecikmesi olmasın.
   try { onerileriGetir(''); } catch { /* yoksay */ }
   // Adaptör sağlık nöbetçisi: her gece 04:00 (2026-10-29)
@@ -1804,6 +2903,7 @@ for (const sinyal of ['SIGINT', 'SIGTERM']) {
     try { firsatKapat(); } catch { /* zaten kapalı */ }
     try { radarZamanlayiciDurdur(); } catch { /* zamanlayıcı yok */ }
     try { radarKapat(); } catch { /* zaten kapalı */ }
+    try { katalogSenkronDurdur(); } catch { /* zamanlayıcı yok */ }
     try { snapshotKapat(); } catch { /* zaten kapalı */ }
     process.exit(0);
   });

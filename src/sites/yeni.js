@@ -12,6 +12,7 @@ import { pttavmSite } from './plt-pttavm.js';
 import { ciceksepetiSite } from './plt-ciceksepeti.js';
 import { urhanshopSite } from './plt-urhanshop.js';
 import { n11Site } from './plt-n11.js';
+import { mintengoSite } from './plt-mintengo.js';
 
 export const yeniSiteler = [
   // PlatinMarket
@@ -24,8 +25,9 @@ export const yeniSiteler = [
   ticimaxSite({ id: '3dultra', name: '3D Ultra', hosts: ['3dultra.com.tr', 'www.3dultra.com.tr'], base: 'https://www.3dultra.com.tr', aramaYolu: '/Arama?kelime=' }),
   ticimaxSite({ id: 'robotizmo', name: 'Robotizmo', hosts: ['robotizmo.net', 'www.robotizmo.net'], base: 'https://robotizmo.net', aramaYolu: '/Arama?kelime=' }),
   ticimaxSite({ id: '3dcim', name: '3Dcim', hosts: ['3dcim.com', 'www.3dcim.com'], base: 'https://3dcim.com', aramaYolu: '/Arama?kelime=' }),
+  // Mintengo (IdeaSoft storefront v2 / catalog/search)
+  mintengoSite({ id: 'mintengo', name: 'Mintengo', hosts: ['mintengo.com', 'www.mintengo.com'], base: 'https://www.mintengo.com' }),
   // IdeaSoft klasik teması
-  ideasoftKlasikSite({ id: 'mintengo', name: 'Mintengo', hosts: ['mintengo.com', 'www.mintengo.com'], base: 'https://mintengo.com' }),
   ideasoftKlasikSite({ id: 'kurumsalit', name: 'Kurumsal IT', hosts: ['kurumsalit.com', 'www.kurumsalit.com'], base: 'https://kurumsalit.com' }),
   ideasoftKlasikSite({ id: 'robotzade', name: 'Robotzade', hosts: ['robotzade.com', 'www.robotzade.com'], base: 'https://www.robotzade.com' }),
   ideasoftKlasikSite({ id: 'robitshop', name: 'Robitshop', hosts: ['robitshop.com', 'www.robitshop.com'], base: 'https://robitshop.com' }),

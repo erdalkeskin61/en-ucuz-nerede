@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#3450D1" />
+  <title>3D Baskı Maliyet & Kârlılık Hesaplayıcı — En Ucuz Nerede?</title>
+  <meta name="description" content="Dilimleyiciden aldığınız gramaj ve baskı süresiyle parça başı hammadde, elektrik, amortisman maliyetini ve önerilen satış fiyatını saniyeler içinde hesaplayın. Filamentin en ucuzunu canlı piyasadan bulun." />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/ikon-192.png" />
+  <link rel="icon" href="/ikon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/maliyet.css" />
+  <script>
+    // Tema: ilk boyamadan önce uygula (beyaz parlama yok).
+    try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tema') === 'dark' ? 'dark' : 'light'); } catch {}
+  </script>
+</head>
+<body class="sayfa-maliyet">
+  <header class="ustbar">
+    <div class="kap">
+      <a class="logo" href="/">
+        <span class="logo-isaret">🏷️</span>
+        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      </a>
+      <nav class="menu">
+        <a href="/">Karşılaştır</a>
+        <a href="/maliyet.html" class="etkin">🧮 Maliyet</a>
+        <a href="/sepet.html">🧺 Akıllı Sepet</a>
+        <a href="/slicer.html">🧩 Eklenti</a>
+        <a href="/ayarlar.html">🔔 Alarmlarım</a>
+      </nav>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+    </div>
+  </header>
+
+  <main class="kap">
+    <section class="hero maliyet-hero">
+      <div class="hero-ic">
+        <span class="hero-rozet">🧮 Atölye & maker · gerçek maliyet</span>
+        <h1>Parçanın <b>gerçek maliyetini</b> ve satış fiyatını hesapla</h1>
+        <p>Dilimleyiciden aldığınız gramaj ve süreyi girin — hammadde, elektrik ve amortisman
+          anında hesaplanır. Filamentin <b>en ucuzunu</b> canlı piyasadan bulun.</p>
+      </div>
+    </section>
+
+    <!-- ================= 🧩 STL / 3MF MODEL RADARI ================= -->
+    <section class="stl-kart" aria-labelledby="stlBaslik">
+      <div class="stl-ust">
+        <h2 id="stlBaslik" class="stl-baslik">🧩 Model dosyanı bırak, gramajı görelim</h2>
+        <span class="stl-gizlilik" title="Dosya cihazınızdan çıkmaz; hiçbir sunucuya yüklenmez.">
+          🔒 %100 cihazında işlenir
+        </span>
+      </div>
+
+      <div id="stlBirak" class="stl-birak" role="button" tabindex="0"
+           aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin">
+        <input type="file" id="stlDosya" accept=".stl,.3mf,model/stl,model/3mf" hidden />
+        <span class="stl-birak-ikon" aria-hidden="true">📥</span>
+        <span class="stl-birak-metin">
+          <b>STL / 3MF dosyasını buraya sürükleyin</b>
+          <span class="stl-birak-alt">ya da tıklayıp seçin · en fazla 100 MB · sunucuya yüklenmez</span>
+        </span>
+      </div>
+
+      <p class="stl-durum" id="stlDurum" role="status" aria-live="polite"></p>
+
+      <!-- Model yüklendiğinde açılan sonuç kartı -->
+      <div class="stl-sonuc" id="stlSonuc" hidden>
+        <div class="stl-sonuc-ust">
+          <span class="stl-dosya-ad" id="stlDosyaAd">—</span>
+          <button type="button" class="stl-temizle" id="stlTemizle" aria-label="Modeli kaldır">✕</button>
+        </div>
+
+        <div class="stl-hizli-orta">
+          <canvas id="stlSiluetCanvas" class="stl-siluet-canvas" width="110" height="110"
+                  aria-label="Modelin izometrik tel çerçeve silüeti" role="img"></canvas>
+          <div class="stl-metrikler">
+          <div class="stl-metrik">
+            <span class="stl-metrik-ad">📏 Boyutlar</span>
+            <strong id="stlBoyut">—</strong>
+            <span class="stl-metrik-alt" id="stlBoyutAlt">G × D × Y mm</span>
+          </div>
+          <div class="stl-metrik">
+            <span class="stl-metrik-ad">🧊 Hacim</span>
+            <strong id="stlHacim">—</strong>
+            <span class="stl-metrik-alt" id="stlHacimAlt">cm³</span>
+          </div>
+          <div class="stl-metrik stl-metrik-vurgu">
+            <span class="stl-metrik-ad">⚖️ Ağırlık</span>
+            <strong id="stlGram">—</strong>
+            <span class="stl-metrik-alt" id="stlGramAlt">%20 doluluk</span>
+          </div>
+          </div>
+        </div>
+
+        <div class="stl-kontroller">
+          <div class="stl-kontrol">
+            <label for="stlDoluluk">Doluluk</label>
+            <select id="stlDoluluk">
+              <option value="10">%10 — taslak</option>
+              <option value="20" selected>%20 — standart</option>
+              <option value="40">%40 — dayanıklı</option>
+              <option value="100">%100 — katı</option>
+            </select>
+          </div>
+          <div class="stl-kontrol">
+            <label for="stlMalzeme">Malzeme</label>
+            <select id="stlMalzeme">
+              <option value="PLA">PLA (1,24 g/cm³)</option>
+              <option value="PETG">PETG (1,27 g/cm³)</option>
+              <option value="ABS">ABS (1,04 g/cm³)</option>
+              <option value="TPU">TPU (1,21 g/cm³)</option>
+              <option value="ASA">ASA (1,07 g/cm³)</option>
+            </select>
+          </div>
+          <div class="stl-kontrol stl-kontrol-slider">
+            <label for="stlDolulukKaydirici">
+              İnce ayar: <b id="stlDolulukEtiket">%20</b>
+            </label>
+            <input type="range" id="stlDolulukKaydirici" min="5" max="100" step="5" value="20"
+                   aria-label="Doluluk oranı ince ayar (%)" />
+          </div>
+        </div>
+
+        <!-- Akıllı satın alma kartı -->
+        <div class="stl-satin" id="stlSatin" hidden>
+          <p class="stl-satin-baslik">🏷️ Bu model için en ekonomik filament tavsiyesi</p>
+          <!-- Tek cümlelik karar özeti (mobilde de tek bakışta okunur) -->
+          <p class="stl-satin-ozet" id="stlSatinOzet"></p>
+          <div class="stl-satin-govde">
+            <div class="stl-satin-bilgi">
+              <span class="stl-satin-satir">
+                <span class="stl-satin-etiket">🏬 Mağaza</span>
+                <span class="stl-satin-site" id="stlSatinSite">—</span>
+              </span>
+              <span class="stl-satin-satir">
+                <span class="stl-satin-etiket">🧵 Ürün</span>
+                <span class="stl-satin-urun" id="stlSatinUrun">—</span>
+              </span>
+              <span class="stl-satin-satir">
+                <span class="stl-satin-etiket">💰 Makara fiyatı</span>
+                <span class="stl-satin-fiyat" id="stlSatinFiyat">—</span>
+              </span>
+              <span class="stl-satin-satir">
+                <span class="stl-satin-etiket">📊 Parça başı hammadde</span>
+                <strong class="stl-satin-parca" id="stlSatinParca">—</strong>
+              </span>
+              <span class="stl-satin-satir">
+                <span class="stl-satin-etiket">📦 Makara verimi</span>
+                <span class="stl-satin-detay" id="stlSatinDetay">—</span>
+              </span>
+            </div>
+            <a class="stl-satin-btn" id="stlSatinBtn" target="_blank" rel="noopener sponsored"
+               aria-describedby="stlSatinDipnot">
+              ⚡ Bu Filamenti Satın Al ➔
+            </a>
+          </div>
+          <p class="stl-satin-dipnot" id="stlSatinDipnot">
+            Buton yeni sekmede doğrudan en ucuz <b>stoklu</b> mağaza sayfasına gider; fiyat canlı radardan gelir.
+          </p>
+        </div>
+
+        <button type="button" class="stl-gramaj-aktar" id="stlAktar">
+          ⬇️ Bu gramajı hesaplayıcıya aktar
+        </button>
+
+        <!-- 🧾 Baskı Teklif Fişi (2026-11-12) -->
+        <button type="button" class="stl-hizli-teklif-btn" id="stlTeklifFisBtn" hidden>
+          🧾 Baskı Teklif Fişi Çıkar
+        </button>
+      </div>
+    </section>
+
+    <div class="mz-duzen">
+      <!-- ============ SOL: GİRDİLER ============ -->
+      <section class="giris-kart mz-girdi" aria-labelledby="girdiBaslik">
+        <h2 id="girdiBaslik" class="mz-baslik">🎛️ Girdiler</h2>
+
+        <!-- 1) Gramaj -->
+        <div class="mz-alan">
+          <div class="mz-alan-ust">
+            <label for="gramaj">⚖️ Model gramajı</label>
+            <span class="mz-rozet-veri" id="gramajEtiket">160 g</span>
+          </div>
+          <div class="mz-sayı-slider">
+            <input type="range" id="gramajKaydirici" min="1" max="1000" step="1" value="160" aria-label="Model gramajı kaydırıcı" />
+            <input type="number" id="gramaj" min="1" max="100000" step="1" value="160" inputmode="numeric" aria-label="Model gramajı (gram)" />
+          </div>
+          <p class="mz-ipucu">Dilimleyicide (Bambu Studio, Cura, OrcaSlicer) “Filament used” değeri.</p>
+        </div>
+
+        <!-- 2) Süre -->
+        <div class="mz-alan">
+          <div class="mz-alan-ust">
+            <label for="sure">⏱️ Baskı süresi (saat)</label>
+            <button type="button" class="mz-mini-btn" id="sureTahmin" title="Gramajdan otomatik tahmin et">✨ Tahmin et</button>
+          </div>
+          <div class="mz-sayı-slider">
+            <input type="range" id="sureKaydirici" min="0.5" max="72" step="0.5" value="4" aria-label="Baskı süresi kaydırıcı" />
+            <input type="number" id="sure" min="0.1" max="720" step="0.1" value="4" inputmode="decimal" aria-label="Baskı süresi (saat)" />
+          </div>
+          <p class="mz-ipucu" id="sureIpucu">Dilimleyicideki tahmini süre.</p>
+        </div>
+
+        <!-- 3) Yazıcı -->
+        <div class="mz-alan">
+          <div class="mz-alan-ust">
+            <label for="yazici">⚡ 3D yazıcı modeli</label>
+            <span class="mz-rozet-veri" id="gucEtiket">150 W</span>
+          </div>
+          <select id="yazici" class="mz-secim" aria-label="3D yazıcı modeli"></select>
+          <div class="mz-hizli" id="yaziciHizli" role="group" aria-label="Hızlı yazıcı seçimi"></div>
+          <div class="mz-manuel" id="gucManuel" hidden>
+            <label for="gucW">Güç (W)</label>
+            <input type="number" id="gucW" min="10" max="3000" step="5" value="150" inputmode="numeric" />
+          </div>
+        </div>
+
+        <!-- 4) Filament -->
+        <div class="mz-alan">
+          <div class="mz-alan-ust">
+            <label>🧵 Filament</label>
+            <div class="mz-sekme" role="tablist" aria-label="Filament fiyat kaynağı">
+              <button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">Canlı piyasa</button>
+              <button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">Manuel</button>
+            </div>
+          </div>
+
+          <div id="filamentCanli" class="mz-filament-liste" aria-live="polite">
+            <p class="mz-yukleniyor">⏳ Canlı filament fiyatları yükleniyor…</p>
+          </div>
+
+          <div id="filamentManuel" hidden>
+            <div class="mz-satir">
+              <div class="mz-kucuk-alan">
+                <label for="manuelTlKg">Fiyat (₺/kg)</label>
+                <input type="number" id="manuelTlKg" min="1" max="100000" step="0.01" value="600" inputmode="decimal" />
+              </div>
+              <div class="mz-kucuk-alan">
+                <label for="manuelAd">Malzeme adı</label>
+                <input type="text" id="manuelAd" maxlength="60" value="PLA" placeholder="ör. PETG Siyah" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5-6-7) Gelişmiş -->
+        <details class="mz-gelismis">
+          <summary>⚙️ Gelişmiş ayarlar (elektrik · amortisman · kâr marjı)</summary>
+          <div class="mz-gelismis-ic">
+            <div class="mz-satir">
+              <div class="mz-kucuk-alan">
+                <label for="kwhTl">💡 Elektrik (₺/kWh)</label>
+                <input type="number" id="kwhTl" min="0.1" max="100" step="0.01" value="2.90" inputmode="decimal" />
+              </div>
+              <div class="mz-kucuk-alan">
+                <label for="yipranma">🛠️ Yıpranma (₺/saat)</label>
+                <input type="number" id="yipranma" min="0" max="500" step="0.5" value="3.00" inputmode="decimal" />
+              </div>
+            </div>
+
+            <div class="mz-alan-ust mz-kar-ust">
+              <label for="karCarpani">💰 Hedef kâr marjı</label>
+              <span class="mz-rozet-veri" id="karEtiket">%150 · 2.5x</span>
+            </div>
+            <div class="mz-sayı-slider">
+              <input type="range" id="karKaydirici" min="50" max="300" step="10" value="150" aria-label="Kâr marjı kaydırıcı" />
+              <div class="mz-carpanlar" id="karCarpanlar" role="group" aria-label="Hızlı kâr çarpanı">
+                <button type="button" data-carpan="1.5">1.5x</button>
+                <button type="button" data-carpan="2">2x</button>
+                <button type="button" data-carpan="2.5" class="aktif">2.5x</button>
+                <button type="button" data-carpan="3">3x</button>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- ============ SAĞ: ÇIKTILAR ============ -->
+      <section class="mz-cikti" aria-labelledby="ciktiBaslik" aria-live="polite">
+        <h2 id="ciktiBaslik" class="mz-baslik">📊 Maliyet dökümü</h2>
+
+        <div class="mz-bento">
+          <article class="mz-kart mz-kart-hammadde">
+            <span class="mz-kart-ikon">🧵</span>
+            <span class="mz-kart-ad">Hammadde</span>
+            <strong class="mz-kart-deger" id="ciktiHammadde">₺0,00</strong>
+            <span class="mz-kart-alt" id="ciktiHammaddeAlt">160 g × ₺0/kg</span>
+          </article>
+
+          <article class="mz-kart mz-kart-elektrik">
+            <span class="mz-kart-ikon">💡</span>
+            <span class="mz-kart-ad">Elektrik</span>
+            <strong class="mz-kart-deger" id="ciktiElektrik">₺0,00</strong>
+            <span class="mz-kart-alt" id="ciktiElektrikAlt">0,60 kWh</span>
+          </article>
+
+          <article class="mz-kart mz-kart-amort">
+            <span class="mz-kart-ikon">🛠️</span>
+            <span class="mz-kart-ad">Amortisman</span>
+            <strong class="mz-kart-deger" id="ciktiAmortisman">₺0,00</strong>
+            <span class="mz-kart-alt" id="ciktiAmortismanAlt">4 sa × ₺3</span>
+          </article>
+
+          <article class="mz-kart mz-kart-toplam">
+            <span class="mz-kart-ikon">🏷️</span>
+            <span class="mz-kart-ad">Toplam net maliyet</span>
+            <strong class="mz-kart-deger" id="ciktiNet">₺0,00</strong>
+            <span class="mz-kart-alt" id="ciktiNetAlt">hammadde + elektrik + amortisman</span>
+          </article>
+        </div>
+
+        <h3 class="mz-alt-baslik">💰 Önerilen satış fiyatı</h3>
+        <div class="mz-fiyat-panosu" id="fiyatPanosu"></div>
+
+        <div class="mz-secilen">
+          <div>
+            <span class="mz-secilen-ad">Seçili fiyat</span>
+            <strong id="secilenFiyat">₺0,00</strong>
+          </div>
+          <div class="mz-secilen-kar">
+            <span>Kâr</span>
+            <strong id="secilenKar">₺0,00</strong>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="mz-cta" id="ctaKart" hidden>
+          <p class="mz-cta-metin" id="ctaMetin"></p>
+          <a class="mz-cta-btn" id="ctaBtn" target="_blank" rel="noopener sponsored">
+            🛒 En Ucuz Filamenti Satın Al
+          </a>
+          <p class="mz-cta-not">Bağlantı komisyonlu olabilir; fiyatınızı değiştirmez.</p>
+        </div>
+
+        <button type="button" class="mz-kopyala" id="kopyalaBtn">📋 Müşteri Fiyat Teklifini Kopyala</button>
+        <p class="mz-kopyala-durum" id="kopyalaDurum" role="status" aria-live="polite"></p>
+        <pre class="mz-teklif" id="teklifOnizleme" hidden></pre>
+
+        <aside class="mz-varsayim" id="varsayimKutu"></aside>
+      </section>
+    </div>
+  </main>
+
+  <footer class="mz-altbilgi">
+    <div class="kap">
+      <p>Elektrik ve amortisman <b>varsayımdır</b>; sonuçla birlikte gösterilir. Fiyatlar KDV hariçtir.
+        Filament fiyatları canlı radar taramasından gelir; her zaman mağazada doğrulayın.</p>
+    </div>
+  </footer>
+
+  <!-- 🧾 Baskı Teklif Fişi modalı (2026-11-12) -->
+  <div id="teklifFisModal" class="teklif-modal" hidden>
+    <div class="teklif-modal-perde" id="teklifModalKapat"></div>
+    <div class="teklif-fis-kutu" role="dialog" aria-modal="true" aria-labelledby="fisBaslik">
+      <div class="fis-ust-eylemler">
+        <span class="fis-rozet">🧾 3D BASKI TEKLİF FİŞİ</span>
+        <button type="button" class="fis-kapat-btn" id="fisKapatBtn" aria-label="Teklif fişini kapat">✕</button>
+      </div>
+      <div class="fis-govde" id="fisYazdirAlani">
+        <div class="fis-baslik-satiri">
+          <h3 id="fisBaslik" class="fis-baslik">3D Baskı Maliyet &amp; Teklif Özeti</h3>
+          <span class="fis-tarih" id="fisTarih">—</span>
+        </div>
+        <div class="fis-model-bilgi">
+          <div class="fis-satir"><span>📦 Model:</span> <b id="fisModelAd">—</b></div>
+          <div class="fis-satir"><span>📐 Ebat:</span> <b id="fisEbat">—</b></div>
+          <div class="fis-satir"><span>⚖️ Gramaj:</span> <b id="fisGramaj">—</b></div>
+          <div class="fis-satir"><span>🧵 Malzeme:</span> <b id="fisMalzeme">—</b></div>
+          <div class="fis-satir"><span>⏱️ Tahmini Süre:</span> <b id="fisSure">—</b></div>
+        </div>
+        <div class="fis-cizgi"></div>
+        <div class="fis-kalemler">
+          <div class="fis-satir"><span>Filament Maliyeti:</span> <b id="fisFilamentMaliyet">—</b></div>
+          <div class="fis-satir"><span>Elektrik Tüketimi:</span> <b id="fisElektrikMaliyet">—</b></div>
+          <div class="fis-satir"><span>Cihaz Amortismanı:</span> <b id="fisYipranmaMaliyet">—</b></div>
+          <div class="fis-satir fis-toplam-maliyet"><span>Net Üretim Maliyeti:</span> <b id="fisNetMaliyet">—</b></div>
+        </div>
+        <div class="fis-cizgi-cift"></div>
+        <div class="fis-fiyat-alani">
+          <div class="fis-fiyat-etiket">ÖNERİLEN SATIŞ FİYATI</div>
+          <div class="fis-fiyat-tutar" id="fisSatisFiyat">₺0,00</div>
+          <div class="fis-fiyat-not" id="fisKarNotu">Atölye kâr marjı dahildir</div>
+        </div>
+        <div class="fis-dipnot">
+          <span>⚡ Fiyat Doğrulama: <b>EnUcuzNerede</b> · 62 mağaza canlı radar</span>
+        </div>
+      </div>
+      <div class="fis-alt-butonlar">
+        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">📲 WhatsApp ile Gönder</button>
+        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">📋 Fişi Kopyala</button>
+        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">🖨️ Yazdır / PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/erisim.js"></script>
+  <script src="/tema.js"></script>
+  <script src="/maliyet.js"></script>
+</body>
+</html>

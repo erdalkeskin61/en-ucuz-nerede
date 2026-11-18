@@ -1,5 +1,85 @@
 /* En Ucuz Nerede — ana sayfa mantığı */
 
+/* ================= 🍞 Mikro Toast + kopyalama geri bildirimi (2026-11-12) =================
+ *
+ * İlke: hiçbir kopyalama/paylaşma eylemi kullanıcıyı yanıtsız bırakmaz.
+ *  - `toastGoster()`: ekranın altında 1.5 sn yüzen tek evrensel bildirim.
+ *  - `panoyaKopyalaVeGeriBildirim()`: panoya yazar, butonu 1.5 sn yeşile
+ *    çevirir ve toast gösterir. Pano API'si yoksa `kopyala()` yedeğine düşer.
+ *
+ * Tek konteyner kullanılır (#genelToast): art arda tıklamalarda üst üste
+ * yığılma olmaz, önceki zamanlayıcı temizlenir.
+ */
+let toastZamanlayici = null;
+let toastKapanisZamanlayici = null;
+
+/**
+ * Ekranda 1.5 saniyelik mikro toast bildirimi gösterir.
+ * @param {string} metin
+ * @param {'basarili'|'bilgi'|'hata'} [tur='basarili']
+ */
+function toastGoster(metin, tur = 'basarili') {
+  const toast = document.getElementById('genelToast');
+  const elMetin = document.getElementById('genelToastMetin');
+  const elIkon = document.getElementById('genelToastIkon');
+  if (!toast || !elMetin) return;
+  if (toastZamanlayici) clearTimeout(toastZamanlayici);
+  if (toastKapanisZamanlayici) clearTimeout(toastKapanisZamanlayici);
+  elMetin.textContent = metin;
+  if (elIkon) elIkon.textContent = tur === 'basarili' ? '✓' : (tur === 'hata' ? '⚠️' : 'ℹ️');
+  // `hidden` kaldırılmadan sınıf değişirse animasyon yeniden başlamaz.
+  toast.hidden = false;
+  toast.className = `mikro-toast ${tur}`;
+  // Animasyonu yeniden tetikle (aynı toast art arda kullanılıyorsa).
+  void toast.offsetWidth;
+  toastZamanlayici = setTimeout(() => {
+    toast.classList.add('kapanis');
+    toastKapanisZamanlayici = setTimeout(() => {
+      toast.hidden = true;
+      toast.classList.remove('kapanis');
+    }, 200);
+  }, 1500);
+}
+
+/**
+ * Panoya kopyalar, tıklanan butonu 1.5 sn yeşil onay durumuna alır ve toast
+ * gösterir. Buton içeriği zamanlayıcıdan sonra eski hâline döner.
+ * @param {string} metin kopyalanacak veri
+ * @param {HTMLElement|null} [btn] tıklanan buton
+ * @param {string} [onayMetni='Bağlantı panoya kopyalandı!']
+ * @returns {Promise<boolean>} kopyalama başarılı mı
+ */
+async function panoyaKopyalaVeGeriBildirim(metin, btn = null, onayMetni = 'Bağlantı panoya kopyalandı!') {
+  let basarili = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(metin);
+      basarili = true;
+    }
+  } catch { basarili = false; }
+  // Güvenli bağlam yoksa (http, eski tarayıcı) mevcut yedeğe düş.
+  if (!basarili && typeof kopyala === 'function') {
+    try { basarili = await kopyala(metin); } catch { basarili = false; }
+  }
+
+  if (!basarili) {
+    toastGoster('Kopyalanamadı, lütfen elle kopyalayın.', 'hata');
+    return false;
+  }
+
+  toastGoster(onayMetni, 'basarili');
+  if (btn) {
+    const orijinalHtml = btn.innerHTML;
+    btn.classList.add('btn-kopyalandi');
+    btn.innerHTML = `✓ ${onayMetni.replace('panoya ', '')}`;
+    setTimeout(() => {
+      btn.innerHTML = orijinalHtml;
+      btn.classList.remove('btn-kopyalandi');
+    }, 1500);
+  }
+  return true;
+}
+
 /* ================= 📱 Alt navigasyon (2026-11-01) =================
  *
  * Mobilde (<768px) sabit alt bar; masaüstünde CSS ile gizlenir.
@@ -12,18 +92,29 @@
 
 function altModalKapat() {
   const m = document.getElementById('altModal');
-  if (!m) return;
-  m.hidden = true;
+  if (m) m.hidden = true;
+  // Kaydırma kilidi HER durumda bırakılır (modal görünmese bile sayfa donmasın).
   document.body.style.overflow = '';
 }
 
+/**
+ * Alt modalı açar.
+ * @returns {boolean} modal gerçekten görünür olduysa true
+ */
 function altModalAc(baslik, html) {
   const m = document.getElementById('altModal');
-  if (!m) return;
-  document.getElementById('altModalBaslik').textContent = baslik;
-  document.getElementById('altModalIcerik').innerHTML = html;
+  const baslikEl = document.getElementById('altModalBaslik');
+  const icerikEl = document.getElementById('altModalIcerik');
+  if (!m || !baslikEl || !icerikEl) return false;
+  baslikEl.textContent = baslik;
+  icerikEl.innerHTML = html;
   m.hidden = false;
-  document.body.style.overflow = 'hidden';
+  // 🐞 2026-11-15: Kaydırma kilidi yalnızca modal GERÇEKTEN görünüyorsa uygulanır.
+  // Önceden `display:none` kalan bir modal için body kilitleniyor, sayfa
+  // "takılmış" gibi donuyordu (Sitene Ekle butonu).
+  const gorunur = getComputedStyle(m).display !== 'none';
+  document.body.style.overflow = gorunur ? 'hidden' : '';
+  return gorunur;
 }
 
 document.addEventListener('click', (e) => {
@@ -174,11 +265,77 @@ function vitrinSparkline(seri) {
   return `<svg class="vitrin-spark ${dusuyor ? 'dusuyor' : 'cikiyor'}" viewBox="0 0 ${W} ${H}"
     preserveAspectRatio="none" role="img" aria-label="Son ${n} fiyat noktası trendi">
     <polygon class="vitrin-spark-alan" points="${alan}" />
-    <polyline class="vitrin-spark-cizgi" points="${noktalar}" />
+    <polyline class="vitrin-spark-cizgi" pathLength="100" points="${noktalar}" />
   </svg>`;
 }
 
 /** Tek borsa kartı. */
+/* ================= 🗂️ Borsa kategori filtreleri (2026-11-10) =================
+ *
+ * Vitrin artık kategori dengeli geliyor (6 filament + 4 yazıcı + 2 parça).
+ * Çipler yalnızca GERÇEKTE var olan kategorileri gösterir; sayılar sunucunun
+ * döndürdüğü listeyle birebir aynıdır (uydurma sayaç yok).
+ */
+
+const VITRIN_KATEGORI_ETIKET = { filament: '🧵 Filamentler', yazici: '🖨️ 3D Yazıcılar', genel: '⚙️ Parça & Reçine' };
+const VITRIN_KATEGORI_SIRA = ['filament', 'yazici', 'genel'];
+
+let vitrinUrunleri = [];
+let vitrinAktifKategori = 'hepsi';
+
+/** Kategori sayılarını çiplere yazar; 0 olan kategoriyi gizler. */
+function vitrinCipleriDoldur(urunler) {
+  const kap = document.getElementById('vitrinCipleri');
+  if (!kap) return;
+  const liste = Array.isArray(urunler) ? urunler : [];
+  const sayim = { hepsi: liste.length, filament: 0, yazici: 0, genel: 0 };
+  for (const u of liste) if (sayim[u.kategori] != null) sayim[u.kategori] += 1;
+
+  // "Hepsi" çipi her zaman görünür; kategori çipleri yalnızca veri varsa.
+  let gorunen = 0;
+  for (const btn of kap.querySelectorAll('[data-vitrin-kategori]')) {
+    const kat = btn.dataset.vitrinKategori;
+    const adet = sayim[kat] || 0;
+    const span = btn.querySelector('.vitrin-filtre-sayi');
+    if (span) span.textContent = String(adet);
+    const goster = kat === 'hepsi' ? liste.length > 0 : adet > 0;
+    btn.hidden = !goster;
+    if (goster) gorunen++;
+    // Seçili kategori artık boşsa "Hepsi"ye dön.
+    if (!goster && vitrinAktifKategori === kat) vitrinAktifKategori = 'hepsi';
+  }
+  for (const btn of kap.querySelectorAll('[data-vitrin-kategori]')) {
+    const secili = btn.dataset.vitrinKategori === vitrinAktifKategori;
+    btn.classList.toggle('aktif', secili);
+    btn.setAttribute('aria-selected', secili ? 'true' : 'false');
+  }
+  kap.hidden = gorunen <= 1;
+}
+
+/** Seçili kategoriye göre kartları çizer (CSS fade animasyonuyla). */
+function vitrinCiz() {
+  const grid = document.getElementById('vitrinGrid');
+  if (!grid) return;
+  const kat = vitrinAktifKategori;
+  const liste = kat === 'hepsi'
+    ? vitrinUrunleri
+    : vitrinUrunleri.filter(u => u.kategori === kat);
+  grid.innerHTML = liste.map(vitrinKartHtml).join('');
+  if (grid.firstElementChild) {
+    grid.firstElementChild.classList.add('vitrin-yeni');
+  }
+}
+
+/** Alt başlık için kısa dağılım metni: "6 filament · 4 yazıcı · 2 parça". */
+function vitrinDagilimMetni(dagilim) {
+  if (!dagilim || typeof dagilim !== 'object') return '';
+  const parcalar = [];
+  if (Number(dagilim.filament) > 0) parcalar.push(`${Number(dagilim.filament)} filament`);
+  if (Number(dagilim.yazici) > 0) parcalar.push(`${Number(dagilim.yazici)} yazıcı`);
+  if (Number(dagilim.genel) > 0) parcalar.push(`${Number(dagilim.genel)} parça/reçine`);
+  return parcalar.join(' · ');
+}
+
 function vitrinKartHtml(u) {
   const rozet = u.gercekFirsat
     ? '<span class="vitrin-rozet firsat" title="Son 90 günün en düşük fiyatı — gerçek fiyat geçmişinden doğrulandı">🔥 GERÇEK FIRSAT</span>'
@@ -233,6 +390,163 @@ function vitrinZamanla() {
 }
 
 /** Vitrini yükler. Sunucu boş/hatalıysa bölüm gizlenir (kırık vitrin gösterilmez). */
+/* ================= ⭐ Sponsorlu Vitrin (Hero Banner) — 2026-11-08 =================
+ *
+ * Aktif kampanya yoksa / süresi dolduysa alan HİÇ açılmaz (sıfır görsel bozulma).
+ * Gösterim sayacı sunucuda `/api/sponsor/vitrin` çağrısında artar; tıklama
+ * sayacı `/api/sponsor/tikla/:id` yönlendirmesinde artar (302 hedef).
+ *
+ * DÜRÜSTLÜK: fiyat/indirim yalnızca kampanya kaydında yazıyorsa gösterilir;
+ * "eski fiyat" yoksa üstü çizili fiyat basılmaz.
+ */
+
+let sponsorVitrinVeri = null;
+
+function sponsorKalanGun(bitisTarihi) {
+  const t = Date.parse(bitisTarihi);
+  if (!Number.isFinite(t)) return null;
+  return Math.ceil((t - Date.now()) / (24 * 3600 * 1000));
+}
+
+function sponsorFiyat(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v) || v <= 0) return null;
+  return '₺' + v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function sponsorVitrinYukle() {
+  const alan = document.getElementById('sponsorVitrinAlani');
+  if (!alan) return null;
+  try {
+    const res = await fetch('/api/sponsor/vitrin', { credentials: 'same-origin' });
+    const d = await res.json().catch(() => ({}));
+    const v = d?.vitrin;
+    // Savunma: son kullanma tarihi geçmiş kayıt gelirse yine gizle.
+    if (!res.ok || !v || !v.id || !/^https?:\/\//i.test(String(v.yonlendirmeUrl || ''))) {
+      alan.hidden = true;
+      return null;
+    }
+    const kalan = sponsorKalanGun(v.bitisTarihi);
+    if (kalan != null && kalan < 0) { alan.hidden = true; return null; }
+
+    sponsorVitrinVeri = v;
+
+    // Banner'ı ÖNCE aç: `loading="lazy"` görseli gizli kapta yüklemiyor
+    // (2026-11-09: kap hidden iken src atanınca görsel hiç istenmiyordu).
+    alan.hidden = false;
+
+    const $ = (id) => document.getElementById(id);
+    $('sponsorRozet').textContent = `⭐ ${v.rozetMetni || 'HAFTANIN SPONSORLU FIRSATI'} · ${String(v.marka || '').toUpperCase()}`;
+    $('sponsorMarka').textContent = v.marka || '';
+    $('sponsorVitrinBaslik').textContent = v.baslik || '';
+    $('sponsorAciklama').textContent = v.aciklama || '';
+    $('sponsorAciklama').hidden = !v.aciklama;
+
+    const yeni = sponsorFiyat(v.kampanyaFiyat);
+    const eski = sponsorFiyat(v.eskiFiyat);
+    const yeniEl = $('sponsorYeniFiyat');
+    const eskiEl = $('sponsorEskiFiyat');
+    const indirimEl = $('sponsorIndirim');
+    if (yeni) yeniEl.textContent = yeni; else yeniEl.hidden = true;
+    if (eski && v.eskiFiyat > v.kampanyaFiyat) {
+      eskiEl.textContent = eski;
+      eskiEl.hidden = false;
+      if (v.indirimTL > 0) {
+        indirimEl.textContent = `−${sponsorFiyat(v.indirimTL)}${v.indirimYuzde ? ` (%${String(v.indirimYuzde).replace('.', ',')})` : ''}`;
+        indirimEl.hidden = false;
+      } else {
+        indirimEl.hidden = true;
+      }
+    } else {
+      eskiEl.hidden = true;
+      indirimEl.hidden = true;
+    }
+
+    const cta = $('sponsorCta');
+    cta.href = '/api/sponsor/tikla/' + encodeURIComponent(v.id);
+    cta.setAttribute('rel', 'noopener sponsored');
+    cta.setAttribute('target', '_blank');
+    $('sponsorCtaMetin').textContent = `⚡ Kampanyayı İncele (${v.marka || 'mağaza'} ➔)`;
+
+    const bitisEl = $('sponsorBitis');
+    if (bitisEl) {
+      bitisEl.textContent = kalan != null && kalan <= 7
+        ? `⏳ Kampanya ${kalan === 0 ? 'bugün' : kalan + ' gün içinde'} sona eriyor · sponsorlu içerik`
+        : 'Sponsorlu içerik · fiyat ve stok mağazada geçerlidir';
+    }
+
+    // Görsel yüklenmezse emoji yer tutucuya düş (kart bozulmasın).
+    const img = $('sponsorGorsel');
+    const yedek = $('sponsorGorselYok');
+    if (img) {
+      img.alt = v.baslik || v.marka || 'Sponsorlu ürün';
+      img.loading = 'eager';          // gizli kapta lazy yükleme başlamıyor
+      img.decoding = 'async';
+      img.onerror = () => { img.hidden = true; if (yedek) yedek.hidden = false; };
+      img.onload = () => { img.hidden = false; if (yedek) yedek.hidden = true; };
+      img.src = v.gorselUrl;
+    }
+
+    // Reklam tıklamasını ölç (yalnızca gerçek kullanıcı tıklaması).
+    cta.addEventListener('click', () => {
+      try {
+        if (window.gtag) window.gtag('event', 'sponsor_tiklama', { kampanya: v.id, marka: v.marka });
+      } catch { /* analitik yoksa sorun değil */ }
+    }, { once: true });
+
+    return v;
+  } catch {
+    alan.hidden = true;   // ağ hatasında banner basma (sayfa bozulmasın)
+    return null;
+  }
+}
+
+/* ================= ✅ Doğrulanmış Mağaza rozetleri — 2026-11-08 =================
+ *
+ * `/api/dogrulanmis-magazalar` 5 dk önbellekli; rozet metni sunucudan gelir.
+ * Fiyat/sıralama DEĞİŞMEZ — yalnızca güven işareti.
+ */
+
+let dogrulanmisHarita = {};
+let dogrulanmisYuklendi = false;
+
+async function dogrulanmisMagazalariYukle() {
+  if (dogrulanmisYuklendi) return dogrulanmisHarita;
+  dogrulanmisYuklendi = true;
+  try {
+    const res = await fetch('/api/dogrulanmis-magazalar', { credentials: 'same-origin' });
+    const d = await res.json().catch(() => ({}));
+    dogrulanmisHarita = (d && d.harita && typeof d.harita === 'object') ? d.harita : {};
+  } catch {
+    dogrulanmisHarita = {};
+  }
+  // Rozetler sonuçtan sonra da yüklenebilir: mevcut kartları tazele.
+  if (sonSonuc) {
+    try { kartlariFiltreleVeCiz(seciliFiltre || 'hepsi'); } catch { /* çizim yoksa yoksay */ }
+    try { tabloDoldur(sonSonuc); } catch { /* yoksay */ }
+  }
+  return dogrulanmisHarita;
+}
+
+/**
+ * Mağaza adı + (varsa) doğrulanmış partner rozeti.
+ * Rozet metni: "Resmi Distribütör · Aynı Gün Kargo" gibi.
+ */
+function dogrulanmisRozetHtml(site) {
+  const anahtar = String(site || '').toLowerCase();
+  const metin = dogrulanmisHarita[anahtar];
+  if (!metin) return '';
+  const kisa = String(metin).split('·')[0].trim();
+  return `<span class="magaza-dogrulanmis" title="${esc('Doğrulanmış Partner: ' + metin)}">`
+    + '<svg class="mavi-tik" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    + '<path d="M12 2.4 14.7 5l3.7.5.6 3.7 2.5 2.8-2.5 2.8-.6 3.7-3.7.6-2.7 2.6-2.7-2.6-3.7-.6-.6-3.7L2.5 12 5 9.2l.6-3.7L9.3 5z" '
+    + 'fill="#1D9BF0"/><path d="M10.6 15.3 7.9 12.6l1.3-1.3 1.4 1.4 3.9-3.9 1.3 1.3z" fill="#fff"/></svg>'
+    + `<span class="dogrulanmis-etiket">${esc(kisa)}</span>`
+    + '</span>';
+}
+
+/* ================= 📊 Canlı "Filament & 3D Yazıcı Borsası" vitrini ================= */
+
 async function vitrinYukle({ sessiz = false } = {}) {
   const alan = document.getElementById('vitrinAlani');
   const grid = document.getElementById('vitrinGrid');
@@ -245,7 +559,7 @@ async function vitrinYukle({ sessiz = false } = {}) {
     grid.setAttribute('aria-busy', 'true');
   }
   try {
-    const res = await fetch('/api/vitrin?limit=24', { credentials: 'same-origin' });
+    const res = await fetch('/api/vitrin?limit=12', { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
     const urunler = Array.isArray(d?.urunler) ? d.urunler : [];
@@ -254,15 +568,22 @@ async function vitrinYukle({ sessiz = false } = {}) {
     if (!urunler.length) {
       grid.innerHTML = '';
       if (bos) bos.hidden = false;
+      vitrinUrunleri = [];
+      vitrinCipleriDoldur([]);
       const sayac = document.getElementById('vitrinSayac');
       if (sayac) sayac.textContent = 'henüz tarama yok';
     } else {
       if (bos) bos.hidden = true;
-      grid.innerHTML = urunler.map(vitrinKartHtml).join('');
+      vitrinUrunleri = urunler;
+      vitrinCipleriDoldur(urunler);
+      vitrinCiz();
       const yas = vitrinYas(d.guncelleme);
       const guncel = document.getElementById('vitrinGuncelleme');
       if (guncel) {
-        guncel.textContent = 'Otonom radar · ' + (yas ? 'son tarama ' + yas : 'canlı fiyatlar');
+        const ozet = vitrinDagilimMetni(d.dagilim);
+        guncel.textContent = 'Otonom radar · '
+          + (yas ? 'son tarama ' + yas : 'canlı fiyatlar')
+          + (ozet ? ' · ' + ozet : '');
       }
       const sayac = document.getElementById('vitrinSayac');
       if (sayac) {
@@ -311,6 +632,13 @@ function borsaGoster(kaydir = true) {
   vitrinYukle({ sessiz: true });
 }
 
+// ⭐ Sponsorlu vitrin + doğrulanmış mağaza rozetleri (2026-11-08)
+// Ana sayfa dışındaki sayfalarda ilgili alan yoksa fonksiyon sessizce çıkar.
+document.addEventListener('DOMContentLoaded', () => {
+  sponsorVitrinYukle();
+  dogrulanmisMagazalariYukle();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   if (!document.getElementById('vitrinAlani')) return;
   vitrinYukle();
@@ -323,6 +651,29 @@ document.addEventListener('DOMContentLoaded', () => {
       vitrinYukle({ sessiz: true });
     }
   });
+});
+
+// 🗂️ Kategori filtre çipleri: seçime göre kartları fade ile yeniden çiz.
+document.addEventListener('click', (e) => {
+  const btn = e.target instanceof Element ? e.target.closest('[data-vitrin-kategori]') : null;
+  if (!btn) return;
+  e.preventDefault();
+  const kat = btn.dataset.vitrinKategori || 'hepsi';
+  if (!['hepsi', ...VITRIN_KATEGORI_SIRA].includes(kat)) return;
+  vitrinAktifKategori = kat;
+  for (const b of document.querySelectorAll('[data-vitrin-kategori]')) {
+    const secili = b.dataset.vitrinKategori === kat;
+    b.classList.toggle('aktif', secili);
+    b.setAttribute('aria-selected', secili ? 'true' : 'false');
+  }
+  const grid = document.getElementById('vitrinGrid');
+  if (grid) {
+    grid.classList.remove('vitrin-gecis');
+    // Küçük bir "yeniden akış" ile CSS fade animasyonu yeniden tetiklenir.
+    void grid.offsetWidth;
+    grid.classList.add('vitrin-gecis');
+  }
+  vitrinCiz();
 });
 
 // 📢 Vitrin başlığındaki "Fırsatlar" çipi (mobil alt bardan kaldırıldı).
@@ -369,6 +720,9 @@ let sitelerHazir = (async () => {
       const el = document.getElementById(id);
       if (el) el.textContent = SITE_SIRASI.length;
     }
+    // Şeffaflık bildirimi yalnızca satış ortaklığı aktifken gösterilir
+    const afBildirim = document.getElementById('afiliyeBildirim');
+    if (afBildirim) afBildirim.hidden = !d.afiliyeAktif;
   } catch { /* sunucuya ulaşılamadıysa temel liste kalır */ }
 })();
 
@@ -692,6 +1046,26 @@ function dogalDilTavsiyeMi(metin) {
   return false;
 }
 
+/**
+ * 🔎 Mod geri bildirimi (2026-11-13).
+ *
+ * Kullanıcı hangi akışta olduğunu tek satırda görsün: "⚡ Ürün karşılaştırma
+ * başlatıldı" veya "🤖 YZ Danışmanı öneri arıyor". Yeni bir DOM öğesi eklemek
+ * yerine mevcut `#sonAramaNotu` şeridi kullanılır (geriye dönük uyumlu).
+ * @param {string} metin
+ */
+function modBilgisiGoster(metin) {
+  const not = $('#sonAramaNotu');
+  if (!not || !metin) return;
+  try {
+    if (typeof notMetniAyarla === 'function') notMetniAyarla(metin);
+  } catch {
+    const el = $('#sonAramaNotuMetin');
+    if (el) el.textContent = metin;
+  }
+  not.hidden = false;
+}
+
 function linkGibiMi(metin) {
   const s = String(metin || '').trim();
   if (!s || /\s/.test(s)) return false;
@@ -890,11 +1264,18 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
   tumAkislariKapat();
   if (!url) return;
 
-  /* ---- 🔗 Moda göre doğru akışı seç (2026-10-31) ---- */
+  /* ---- 🔗 Akıllı Niyet Yönlendirici (2026-11-13) ----
+   * Önceden: "ürün adı" modunda HER sorgu /api/oneri (YZ danışmanı) akışına
+   * gidiyordu — "eSun PLA+" gibi net model adları bile LLM beklemesine takılıyordu.
+   * Artık `dogalDilTavsiyeMi()` gerçekten çağrılıyor:
+   *   • Net ürün/model adı  → hızlı ürün karşılaştırma hattı (LLM YOK)
+   *   • Bütçe/tavsiye cümlesi → YZ danışmanı (/api/oneri)
+   */
   const linkGirdi = linkGibiMi(url);
+  const danismaCumlesi = !linkGirdi && dogalDilTavsiyeMi(url);
 
-  // "Ürün adıyla ara": link olsa bile doğal dil akışına gider.
-  if (aramaModu === 'ad' || (aramaModu === 'oto' && !linkGirdi)) {
+  // "Ürün adıyla ara" modunda: yalnızca GERÇEKTEN danışma cümlesi ise öneri akışı.
+  if (danismaCumlesi) {
     const ihtiyacAlani = $('#ihtiyacMetni');
     const oneriFormu = $('#oneriForm');
     if (ihtiyacAlani && oneriFormu) {
@@ -903,6 +1284,8 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       $('#sonucAlani').hidden = true;
       $('#durumAlani').hidden = true;
       $('#oneriSonuc').hidden = true;
+      // 🔎 Mod geri bildirimi: kullanıcı hangi akışta olduğunu bilsin.
+      modBilgisiGoster('🤖 YZ Danışmanı öneri arıyor');
       if (oneriFormu.requestSubmit) oneriFormu.requestSubmit();
       else $('#oneriBtn').click();
       setTimeout(() => {
@@ -910,6 +1293,11 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       }, 150);
       return;
     }
+  }
+
+  // Net ürün/model adı: doğrudan karşılaştırma (link akışı metin adını da kabul eder).
+  if (!linkGirdi && aramaModu === 'ad') {
+    modBilgisiGoster('⚡ Ürün karşılaştırma başlatıldı');
   }
 
   // "Linkte ara" (veya otomatik modda link): önce bağlantıyı sunucuda çöz.
@@ -944,6 +1332,15 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
   $('#araBtn').textContent = 'Aranıyor…';
   $('#sonucAlani').hidden = true;
   $('#durumAlani').hidden = false;
+  // 📍 Link araması başladı: kullanıcıyı anında tarama durumuna ve mağaza
+  // çiplerine kaydır. 60 ms gecikme, tarayıcının `hidden = false` sonrası
+  // yerleşimi tamamlaması için — aksi halde hedefin yüksekliği henüz 0 olur.
+  setTimeout(() => {
+    const hedef = document.getElementById('durumAlani');
+    if (hedef && !hedef.hidden) {
+      hedef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 60);
   // Yeni aramada eski bento/trend verisi kalmasın (yanlış ürünle eşleşmesin).
   const bento = $('#bentoOzet');
   if (bento) { bento.hidden = true; bento.innerHTML = ''; }
@@ -960,6 +1357,8 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
     iskelet.hidden = false;
   }
   iptalDurumunuSifirla();
+  // ⚡ Yavaş bağlantı: 10 sn sonra (en az 1 mağaza hazırsa) erken sonuç butonu.
+  erkenSonucZamanlayicisiniKur();
   // Site listesi henüz gelmediyse bekle → çipler 61 site ile çizilsin.
   await sitelerHazir;
   $('#siteCipleri').innerHTML = SITE_SIRASI.map(s =>
@@ -988,7 +1387,9 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       sonSonuc = onbellekSonuc;
       $('#durumAlani').hidden = true;
       zamanlaCiz(() => {
-        sonucGoster(onbellekSonuc, { kaydir: false });
+        // 2026-11-12: önbellekten gelen sonuçta mührün "X dk önce" demesi için
+        // sunucunun yaş metni iletilir (bayat veri şüphesini kapatır).
+        sonucGoster(onbellekSonuc, { kaydir: true, yasMetni: data.yasMetni || null });
         anlikNotuGuncelle({
           tazeleniyor: true,
           yasMetni: data.yasMetni,
@@ -1004,7 +1405,26 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
   }
 });
 
-function hataGoster(mesaj) {
+/* ================= 🛡️ Rehberlik eden hata & boş durum (2026-11-12) =================
+ *
+ * Eski davranış: düz kırmızı kutu + ham hata metni. Kullanıcı ne yapacağını
+ * bilmiyordu ve siteden ayrılıyordu.
+ * Yeni davranış: ikon + başlık + "ne yapmalı" açıklaması + TEK TIKLA çalışan
+ * gerçek ürün linkleri. Örnek linkler canlı doğrulanmış ürünlere gider.
+ */
+const REHBER_ORNEK_URUNLER = [
+  { ad: 'Creality Ender PLA Gri', url: 'https://www.trendyol.com/creality/ender-pla-filament-gri-1-75mm-1kg-p-746534543' },
+  { ad: 'Bambu Lab P1S 3D Yazıcı', url: 'https://3dcim.com/bambu-lab-p1s-719' },
+  { ad: 'Porima PETG Filament', url: 'https://porima3d.com/products/porima-petg-filament' },
+  { ad: 'Anycubic UV Reçine', url: 'https://porima3d.com/products/anycubic-standart-recine' },
+];
+
+/**
+ * Kullanıcıyı azarlamayan, ne yapacağını anlatan ve örnek link sunan rehber hata.
+ * @param {string} mesaj sunucudan/istemciden gelen ham mesaj
+ * @param {'kategori'|'gecersiz'|'ag'|'genel'} [tur='genel'] açık tür ipucu
+ */
+function hataGoster(mesaj, tur = 'genel') {
   $('#araBtn').disabled = false;
   $('#araBtn').textContent = MOD_BUTON[aramaModu] || 'Fiyatları Bul';
   $('#durumAlani').hidden = true;
@@ -1014,8 +1434,83 @@ function hataGoster(mesaj) {
   document.querySelectorAll('#kartlar > .skeleton-canli').forEach(el => el.remove());
   sifirdanTaraButonunuGoster(false);
   iptalDurumunuSifirla();
-  $('#hata').textContent = mesaj;
-  $('#hata').hidden = false;
+  erkenSonucButonunuKaldir();
+
+  const kutu = $('#hata');
+  if (!kutu) return;
+
+  // Tür sezimi: açık tür verilmediyse mesaj metninden çıkar.
+  const kucuk = String(mesaj || '').toLocaleLowerCase('tr-TR');
+  let tip = tur;
+  if (tip === 'genel') {
+    if (/kategori|desteklenmiyor|ürün linki|urun linki|ürün sayfas|koleksiyon/.test(kucuk)) tip = 'kategori';
+    else if (/bağlantı|baglanti|network|fetch|internet|zaman aşımı|ulaşılamadı/.test(kucuk)) tip = 'ag';
+  }
+
+  const REHBER = {
+    kategori: {
+      ikon: '🔍',
+      baslik: 'Doğrudan Ürün Linki Gerekiyor',
+      aciklama: 'Bu bir kategori, anasayfa veya arama sayfası bağlantısı gibi görünüyor. '
+        + '61 mağazada anlık fiyat karşılaştırabilmemiz için lütfen ürünün kendi detay '
+        + 'sayfasının linkini yapıştırın. Aşağıdaki örneklerden biriyle hemen deneyebilirsiniz.',
+    },
+    gecersiz: {
+      ikon: '🔍',
+      baslik: 'Ürün Bağlantısı Doğrulanamadı',
+      aciklama: 'Bu bağlantıyı çözümleyemedik. Linkin ürün sayfasına ait olduğundan emin olun '
+        + 'ya da ürün adını yazarak arama yapın.',
+    },
+    ag: {
+      ikon: '📡',
+      baslik: 'İnternet Bağlantısı Hatası',
+      aciklama: 'Mağazalarla bağlantı kurulamadı. İnternet bağlantınızı kontrol edip tekrar '
+        + 'deneyin. Bağlantı düzelince arama kaldığı yerden devam eder.',
+    },
+    genel: {
+      ikon: '🧭',
+      baslik: 'Arama Tamamlanamadı',
+      aciklama: mesaj || 'Beklenmeyen bir durum oluştu. Tekrar deneyebilir veya örnek '
+        + 'linklerden biriyle devam edebilirsiniz.',
+    },
+  };
+  const r = REHBER[tip] || REHBER.genel;
+
+  const orneklerHtml = REHBER_ORNEK_URUNLER.map(o => `
+    <button type="button" class="rehber-ornek-btn" data-ornek-url="${esc(o.url)}">
+      💡 ${esc(o.ad)} ➔
+    </button>
+  `).join('');
+
+  kutu.innerHTML = `
+    <div class="rehber-hata-icerik">
+      <div class="rehber-hata-ikon" aria-hidden="true">${r.ikon}</div>
+      <div class="rehber-hata-metinler">
+        <div class="rehber-hata-baslik">${esc(r.baslik)}</div>
+        <div class="rehber-hata-aciklama">${esc(r.aciklama)}</div>
+        <div class="rehber-ornekler">
+          <span class="rehber-ornek-etiket">Örnek linkle dene:</span>
+          ${orneklerHtml}
+        </div>
+      </div>
+    </div>`;
+  kutu.hidden = false;
+
+  // Örnek linke tıklayınca input'u doldur ve aramayı başlat (tek tık).
+  kutu.querySelectorAll('.rehber-ornek-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const u = btn.dataset.ornekUrl;
+      if (!u) return;
+      const input = $('#urunUrl');
+      if (input) input.value = u;
+      kutu.hidden = true;
+      const form = $('#karsilastirForm');
+      if (form) {
+        if (form.requestSubmit) form.requestSubmit();
+        else $('#araBtn')?.click();
+      }
+    });
+  });
 }
 
 // ---- İptal (2026-10-27) ----
@@ -1054,6 +1549,117 @@ async function karsilastirmayiIptalEt() {
 
 let lastAppFingerprint = '';
 let appRenderFrame = null;
+
+/* ================= ⚡ Yavaş bağlantı kurtarması (2026-11-12) =================
+ *
+ * Sorun: tek bir mağaza adaptörü takıldığında tarama dakikalarca sürebiliyor,
+ * kullanıcı ekranda kilitleniyordu.
+ * Çözüm: tarama 10 sn'yi geçtiğinde ve en az 1 mağaza teklif döndürdüğünde
+ * "Kalanı beklemeden bulunan sonuçları göster (N Mağaza Hazır)" butonu.
+ * Buton `karsilastirmayiIptalEt()` çağırır → sunucu kalan siteleri atlar,
+ * mevcut teklifler sonuç alanına dökülür (mevcut iptal akışı, yeni uç yok).
+ */
+const ERKEN_SONUC_MS = 10000;
+let erkenSonucTimer = null;
+
+/** Oluşturulmuş erken sonuç butonunu kaldırır ve zamanlayıcıyı temizler. */
+function erkenSonucButonunuKaldir() {
+  if (erkenSonucTimer) { clearTimeout(erkenSonucTimer); erkenSonucTimer = null; }
+  const mevcut = document.getElementById('erkenSonucBtn');
+  if (mevcut) mevcut.remove();
+}
+
+/** 10 sn sonra butonu (koşullar oluştuysa) yerleştirir. */
+function erkenSonucZamanlayicisiniKur() {
+  erkenSonucButonunuKaldir();
+  erkenSonucTimer = setTimeout(() => {
+    erkenSonucTimer = null;
+    const durumAlani = $('#durumAlani');
+    if (!durumAlani || durumAlani.hidden) return;
+    if (document.getElementById('erkenSonucBtn')) return;
+
+    // "Mağaza hazır" = teklif döndürmüş mağaza sayısı (çip sınıfı: bulundu).
+    const hazir = document.querySelectorAll('#siteCipleri .cip.bulundu').length;
+    if (hazir < 1) return;
+
+    const buton = document.createElement('button');
+    buton.type = 'button';
+    buton.id = 'erkenSonucBtn';
+    buton.className = 'erken-sonuc-btn';
+    buton.textContent = `⚡ Kalanı beklemeden bulunan sonuçları göster (${hazir} Mağaza Hazır)`;
+    buton.addEventListener('click', () => {
+      buton.disabled = true;
+      buton.textContent = '⏳ Sonuçlar hazırlanıyor…';
+      karsilastirmayiIptalEt();
+    });
+    const baslikSatiri = durumAlani.querySelector('.durum-baslik-satiri');
+    (baslikSatiri || durumAlani).appendChild(buton);
+  }, ERKEN_SONUC_MS);
+}
+
+/* ---- 📡 Ağ durumu bildirimleri (offline / online) ---- */
+window.addEventListener('offline', () => {
+  toastGoster('📡 İnternet bağlantınız koptu. Bağlantı bekleniyor…', 'hata');
+});
+window.addEventListener('online', () => {
+  toastGoster('✓ İnternet bağlantısı yeniden sağlandı.', 'basarili');
+});
+
+/* ================= 📱 Mobil klavye & odak ergonomisi (2026-11-12) =================
+ *
+ * Sorun: mobilde arama kutusuna dokununca sanal klavye açılıyor; form ekranın
+ * üstünde kalıyor ve "Fiyatları Bul" butonu klavyenin ARKASINDA kalıyordu.
+ *
+ * Çözüm:
+ *  - `interactive-widget=resizes-content` (index.html) görünür alanı klavyeye
+ *    göre küçültür → buton klavyenin üstünde kalır.
+ *  - Odaklanınca formu görünür alanın ortasına kaydırırız (klavye animasyonu
+ *    ~250 ms sürdüğü için gecikmeli).
+ *  - `visualViewport.resize` klavye açılıp kapandıkça butonun görünür kalmasını
+ *    garanti eder (iOS Safari `innerHeight`'ı güncellemez).
+ *  - Masaüstünde hiç çalışmaz; reduced-motion tercihinde animasyonsuz kaydırır.
+ */
+function mobilKlavyeErgonomisiAyarla() {
+  const urunInput = document.getElementById('urunUrl');
+  const form = document.getElementById('karsilastirForm');
+  if (!urunInput || !form) return;
+
+  const mobilMi = () => window.innerWidth <= 768;
+  const kaydirmaDavranisi = () => (
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  );
+
+  urunInput.addEventListener('focus', () => {
+    if (!mobilMi()) return;
+    // Klavye açılma animasyonu bitmeden ölçüm yanlış olur → kısa gecikme.
+    setTimeout(() => {
+      if (document.activeElement !== urunInput) return;
+      form.scrollIntoView({ behavior: kaydirmaDavranisi(), block: 'center' });
+    }, 250);
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      if (!mobilMi()) return;
+      if (document.activeElement !== urunInput) return;
+      // Klavye açıkken buton görünür alanın dışına taştıysa nazikçe getir.
+      const btn = document.getElementById('araBtn');
+      if (!btn) return;
+      const kutu = btn.getBoundingClientRect();
+      const gorunurAlt = window.visualViewport.height;
+      if (kutu.bottom > gorunurAlt || kutu.top < 0) {
+        form.scrollIntoView({ behavior: kaydirmaDavranisi(), block: 'nearest' });
+      }
+    });
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mobilKlavyeErgonomisiAyarla);
+} else {
+  mobilKlavyeErgonomisiAyarla();
+}
+
 
 /* ---- Anlık sonuç durumu (2026-10-29) ---- */
 let anlikMod = false;      // mevcut iş bir snapshot tazelemesi mi
@@ -1238,6 +1844,20 @@ function zamanlaCiz(fn) {
  * @returns {'devam'|'bitti'} 'devam' → izlemeye devam, 'bitti' → akışı kapat
  */
 function karsilastirmaIsle(job) {
+  // 🗂️ Ürün adı araması: kaynağın katalogdan mı canlı aramadan mı geldiğini göster.
+  const fazEl = $('#katalogFazNotu');
+  if (fazEl) {
+    let metin = '';
+    if (job.faz === 'cozum') {
+      metin = job.kaynakKatmani === 'katalog'
+        ? '🗂️ Ürün yerel katalog indeksinden bulundu — mağaza fiyatları taranıyor…'
+        : '🔎 Ürün mağazalarda aranıyor…';
+    } else if (job.faz === 'tarama') {
+      metin = '🛒 Mağazalar taranıyor…';
+    }
+    fazEl.textContent = metin;
+    fazEl.hidden = !metin;
+  }
   // ---- Anlık sonuç tazelemesi (2026-10-29) ----
   // İş "done" olsa da `tazeleniyor: true` ise izlemeye devam: sürüm değiştikçe
   // kartlar canlı güncellenir.
@@ -1276,7 +1896,14 @@ function karsilastirmaIsle(job) {
     if (job.result && job.result.kaynak) {
       sonSonuc = job.result;
       zamanlaCiz(() => {
-        sonucGoster(job.result, { keepDurum: true, kaydir: false });
+        // Tazeleme bittiyse veri CANLI → mühür "az önce"; bitmediyse (hata/
+        // durduruldu) bayat yaş korunur (2026-11-12).
+        sonucGoster(job.result, {
+          keepDurum: true,
+          kaydir: false,
+          taze: !!job.tazelemeBitti,
+          yasMetni: job.tazelemeBitti ? null : (job.yasMetni || null),
+        });
         appRenderFrame = null;
         anlikNotuGuncelle({
           tazelemeBitti: !!job.tazelemeBitti,
@@ -1346,8 +1973,18 @@ function karsilastirmaIsle(job) {
   }
   cipleriGuncelle(isProgressFromResult(job.result));
   sonSonuc = job.result;
+  if (fazEl) { fazEl.hidden = true; fazEl.textContent = ''; }
+  // 🗂️ Kaynak katalogdan geldiyse ne zaman çekildiğini AÇIKÇA yaz (bayat veri şüphesi kalmasın).
+  if (job.kaynakKatmani === 'katalog' && job.katalogYasMs != null) {
+    const dk = Math.max(0, Math.round(Number(job.katalogYasMs) / 60000));
+    notMetniAyarla(`🗂️ Ürün kaynağı ${dk < 1 ? 'az önce' : dk + ' dk önce'} yenilenen katalog indeksinden bulundu. `
+      + 'Aşağıdaki mağaza fiyatları canlı tarandı.');
+    const bilgi = $('#sonAramaNotu');
+    if (bilgi) bilgi.hidden = false;
+  }
   zamanlaCiz(() => {
-    sonucGoster(job.result, { kaydir: false });
+    // Canlı tarama tamamlandı: mühür "az önce ... canlı doğrulandı" (2026-11-12).
+    sonucGoster(job.result, { kaydir: true, taze: true });
     appRenderFrame = null;
     // İptal sonrası kısmi sonuç gösteriliyorsa bunu açıkça belirt
     const iptal = job.iptalEdildi || job.result?.ozet?.iptalEdildi;
@@ -1497,6 +2134,85 @@ function baskiFiltreleriniDoldur(sonuc) {
   });
 }
 
+/* ================= 🟢 FOMO — "ŞİMDİ AL" aciliyet kartı (2026-11-08) =================
+ *
+ * DÜRÜSTLÜK: kart YALNIZCA sunucunun deterministik motoru `SIMDI_AL` dediğinde
+ * ve `fomo.aktif === true` ise basılır. Sosyal kanıt satırı yalnızca gerçek
+ * `price_history` gözlemlerinden gelir; veri yoksa satır hiç çıkmaz.
+ */
+
+/** Sonuçtan zamanlama nesnesini çıkarır (yeni `zamanlama`, eski `ozet.zamanlamaTavsiyesi`). */
+function fomoZamanlamasi(sonuc) {
+  return sonuc?.zamanlama || sonuc?.ozet?.zamanlamaTavsiyesi || null;
+}
+
+/** En ucuz, stokta, aynı renk teklifi (yoksa enUcuz işaretli ilk bulunan). */
+function fomoEnUcuzTeklif(sonuc) {
+  const liste = (sonuc?.sonuclar || []).filter(r => r.status === 'found' && r.product);
+  return liste.find(r => r.enUcuz) || null;
+}
+
+/**
+ * @param {object} zamanlama sunucu kararı (SIMDI_AL + fomo)
+ * @param {object} enUcuzTeklif en ucuz mağaza sonucu
+ * @returns {string} HTML (kart basılmayacaksa boş string)
+ */
+function renderFomoUyarisi(zamanlama, enUcuzTeklif) {
+  const f = zamanlama?.fomo;
+  if (!f || f.aktif !== true || zamanlama?.karar !== 'SIMDI_AL') return '';
+
+  // Kartta gösterilen fiyat = KULLANICININ ÖDEYECEĞİ güncel fiyat (uydurma yok).
+  // Tarihi dip ayrı alanda; ikisi karıştırılmaz.
+  const guncel = Number(zamanlama?.metrikler?.guncelFiyat);
+  const fiyat = Number.isFinite(guncel) && guncel > 0 ? guncel : Number(f.dipFiyatTL);
+  if (!Number.isFinite(fiyat) || fiyat <= 0) return '';
+  const tarihiDip = Number(f.dipFiyatTL);
+  const dipNotu = Number.isFinite(tarihiDip) && tarihiDip < fiyat - 0.5
+    ? ` · tarihi dip ${tl(tarihiDip)}`
+    : '';
+  const p = enUcuzTeklif?.product;
+  const hedef = p?.afiliyeUrl || p?.url || '';
+  if (!hedef) return '';
+
+  // Canlı tazelemede en ucuz fiyat değişmişse zamanlama verisi bayatlamıştır:
+  // çelişkili iki fiyat göstermemek için kart basılmaz (dürüstlük).
+  const teklifFiyat = Number(p?.pricing?.toplam);
+  if (Number.isFinite(teklifFiyat) && teklifFiyat > 0 && Math.abs(teklifFiyat - fiyat) / fiyat > 0.005) {
+    return '';
+  }
+
+  const siteAdi = SITE_ADLARI[enUcuzTeklif.site] || enUcuzTeklif.siteName || enUcuzTeklif.site || '';
+  const risk = Number(f.tukenmeRiskiYuzde) || 0;
+  const tasarruf = Number(f.tasarrufTL) || 0;
+  const gun = Number(zamanlama?.metrikler?.gunSayisi) || 60;
+  const sosyal = f.sosyalKanitMetni
+    ? `<div class="fomo-sosyal">👥 ${esc(f.sosyalKanitMetni)}</div>`
+    : '';
+
+  return `<section class="fomo-kart" role="region" aria-label="Şimdi al fırsatı" data-fomo-risk="${risk}">
+    <div class="fomo-ust">
+      <span class="fomo-beacon" aria-hidden="true"></span>
+      <span class="fomo-canli">CANLI RADAR</span>
+      <span class="fomo-rozet">🟢 ŞİMDİ AL — TARİHİ DİP FİYAT SEVİYESİ</span>
+    </div>
+    <p class="fomo-baslik">🔥 %${risk} İhtimalle: Bu ürün son ${gun} günün en dip seviyesinde (<b>${tl(fiyat)}</b>)${dipNotu}!</p>
+    <p class="fomo-detay">Piyasa ortalamasından <b>${tl(tasarruf)}</b> daha ucuz. ${esc(f.sureTahminiMetni || `24 saat içinde fiyat artışı veya tükenme riski %${risk}.`)}</p>
+    ${sosyal}
+    <a class="fomo-cta" href="${esc(hedef)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(enUcuzTeklif.site || '')}">
+      <span class="fomo-cta-metin">${esc(f.ctaMetni || '⚡ Bu Fiyatla Stoklar Bitmeden Al')}</span>
+      <span class="fomo-cta-site">${esc(siteAdi)} ➔</span>
+    </a>
+    <div class="fomo-dipnot">Gerçek fiyat geçmişi (${gun} gün, ${Number(zamanlama?.metrikler?.veriNoktasi) || 0} gözlem) temel alınmıştır.</div>
+  </section>`;
+}
+
+/** Sonuç HTML'ine FOMO kartını (varsa) en üste ekler. Filtreli görünümde basılmaz. */
+function fomoIleBasla(sonuc, htmlGovde, filtre = 'hepsi') {
+  if (filtre && filtre !== 'hepsi') return htmlGovde;
+  const kart = renderFomoUyarisi(fomoZamanlamasi(sonuc), fomoEnUcuzTeklif(sonuc));
+  return kart ? kart + htmlGovde : htmlGovde;
+}
+
 function kartlariFiltreleVeCiz(filtre = 'hepsi') {
   seciliFiltre = filtre;
   if (!sonSonuc || !Array.isArray(sonSonuc.sonuclar)) return;
@@ -1549,7 +2265,11 @@ function kartlariFiltreleVeCiz(filtre = 'hepsi') {
   if (sirali.length === 0) {
     document.getElementById('kartlar').innerHTML = '<div class=\"bulunamadi-karti\" style=\"grid-column: 1 / -1; text-align: center; padding: 24px;\">🔍 Seçilen filtreye uygun ürün bulunamadı.</div>';
   } else {
-    document.getElementById('kartlar').innerHTML = sirali.map(kartHtml).join('');
+    document.getElementById('kartlar').innerHTML = fomoIleBasla(
+      sonSonuc,
+      sirali.map(kartHtml).join(''),
+      filtre,
+    );
   }
 }
 
@@ -1586,13 +2306,13 @@ function faviconUrl(url) {
   }
 }
 
-/** Mağaza adı + favicon (kart ve bento için ortak). */
+/** Mağaza adı + favicon (+ varsa doğrulanmış partner rozeti). */
 function siteAdiHtml(site, siteAdi, url) {
   const fav = faviconUrl(url);
   const harf = String(siteAdi || site || '?').trim().charAt(0).toUpperCase();
   return `<span class="site-favicon" aria-hidden="true">${fav
-    ? `<img src="${esc(fav)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${esc(harf)}'))">`
-    : esc(harf)}</span><span class="site-adi-metin">${esc(siteAdi || site || '')}</span>`;
+    ? `<img src="${esc(fav)}" alt="" width="14" height="14" loading="lazy" decoding="async" onerror="this.onerror=null; this.replaceWith(document.createTextNode('${esc(harf)}'))">`
+    : esc(harf)}</span><span class="site-adi-metin">${esc(siteAdi || site || '')}</span>${dogrulanmisRozetHtml(site)}`;
 }
 
 /** Fiyat dağılımı ve trend verisini sonuçtan çıkarır. */
@@ -1741,18 +2461,21 @@ function bentoSparklineCiz(timeline) {
     <circle cx="${x(n - 1).toFixed(1)}" cy="${y(degerler[n - 1]).toFixed(1)}" r="2.6" fill="var(--yesil)"></circle>`;
 }
 
-/** İskelet kart HTML'i (shimmer). */
+/** İskelet kart HTML'i (shimmer).
+ *  2026-11-12: gerçek `.urun-karti` ile aynı kutu modeli (resim + 3 metin
+ *  çizgisi + fiyat çizgisi) → içerik gelince sayfa zıplamaz (CLS = 0). */
 function iskeletKartHtml() {
   return `<div class="skeleton-kart skeleton-canli" aria-hidden="true">
-    <div class="skeleton-ust"><span class="skeleton-kutu skeleton-resim"></span>
+    <div class="skeleton-ust">
+      <span class="skeleton-kutu skeleton-resim"></span>
       <div class="skeleton-metin">
-        <span class="skeleton-cizgi w-70"></span>
-        <span class="skeleton-cizgi w-90"></span>
         <span class="skeleton-cizgi w-40"></span>
+        <span class="skeleton-cizgi w-90"></span>
+        <span class="skeleton-cizgi w-60"></span>
       </div>
     </div>
+    <span class="skeleton-cizgi fiyat-cizgisi"></span>
     <span class="skeleton-cizgi w-50"></span>
-    <span class="skeleton-cizgi w-100"></span>
   </div>`;
 }
 
@@ -1778,8 +2501,129 @@ function canliIskeletleriGuncelle(kalan) {
     iskeletKartHtml().repeat(n));
 }
 
+/* ================= 📦 Tükendi → akıllı alternatifler (2026-11-12) =================
+ *
+ * Bir ürün tüm mağazalarda tükenmişse veya hiçbir teklif bulunamadıysa ekran
+ * ölü kalmasın: canlı borsa vitrininden (vitrinUrunleri) stokta olan en iyi 3
+ * ürün kart olarak gösterilir. Veri gerçek vitrinden gelir; uydurma ürün yok.
+ *
+ * Vitrin henüz yüklenmemişse sessizce atlanır (vitrinYukle zaten çalışıyor).
+ */
+function tukendiAlternatifleriniEkle({ tamamiTukendi, hicBulunamadi }) {
+  const alan = $('#kartlar');
+  if (!alan || (!tamamiTukendi && !hicBulunamadi)) return;
+  // Aynı sonuç iki kez çizilirse blok tekrar eklenmesin.
+  alan.querySelectorAll('.tukendi-alternatif-blok').forEach(el => el.remove());
+
+  const kaynak = (Array.isArray(vitrinUrunleri) ? vitrinUrunleri : [])
+    .filter(u => u && u.stokta && Number(u.fiyat) > 0);
+  if (!kaynak.length) return;
+
+  const secilen = kaynak.slice(0, 3);
+  const baslikMetni = tamamiTukendi
+    ? '⚠️ Bu ürün şu anda tüm mağazalarda tükenmiş görünüyor.'
+    : '🔍 Bu ürün için mağazalarda eşleşen fiyat bulunamadı.';
+
+  const blok = document.createElement('div');
+  blok.className = 'tukendi-alternatif-blok';
+  blok.innerHTML = `
+    <div class="tukendi-alternatif-baslik">
+      <span aria-hidden="true">📦</span>
+      <span>${esc(baslikMetni)} Benzer popüler alternatifler stokta:</span>
+    </div>
+    <div class="vitrin-grid">${secilen.map(vitrinKartHtml).join('')}</div>`;
+  alan.insertAdjacentElement('afterbegin', blok);
+}
+
+/* ================= 🎯 Net tasarruf bandı & güvenilirlik mührü (2026-11-12) =================
+ *
+ * Kullanıcının ilk 0.2 sn'de görmesi gereken üç şey:
+ *   1) Kaç TL net tasarruf ettiği (en pahalı vs en ucuz KARŞILAŞTIRILABİLİR teklif),
+ *   2) Hangi mağaza en ucuz,
+ *   3) Verinin ne kadar önce doğrulandığı (bayat veri şüphesini kapatır).
+ *
+ * Dürüstlük kuralları:
+ *  - Yalnızca stokta + aynı renk + geçerli fiyatlı teklifler karşılaştırılır
+ *    (`inStock !== false`, `renkAyni !== false`). Farklı renk "tasarruf" sayılmaz.
+ *  - Karşılaştırılabilir en az 2 teklif yoksa bant GİZLİ kalır (uydurma tasarruf yok).
+ *  - "Mağazalar arası fark" dili kullanılır: bu bir etiket indirimi değildir.
+ *
+ * @param {object} sonuc karşılaştırma sonucu
+ * @param {{yasMetni?:string|null}} [opts]
+ */
+/**
+ * Mührün göstereceği "veri yaşı" (2026-11-12).
+ *
+ * SWR/önbellek akışında sunucu `yasMetni` ("1 sa 6 dk önce") gönderir; canlı
+ * taramada değer yoktur → mühür "az önce" der. Bu değer modül düzeyinde
+ * tutulur çünkü aynı sonuç birden çok kez çizilebiliyor (SWR → tazeleme →
+ * final). Her çizimde `null`'a düşüp yanlışlıkla "az önce" demesin.
+ */
+let muhurYasi = null;
+
+function tasarrufBandiCiz(sonuc, opts = {}) {
+  const bant = document.getElementById('tasarrufVurguBanti');
+  if (!bant) return;
+  const tutarEl = document.getElementById('tasarrufVurguTutar');
+  const detayEl = document.getElementById('tasarrufVurguDetay');
+  const dogrulamaMetin = document.getElementById('dogrulamaMetin');
+
+  const stokluTeklifler = (sonuc?.sonuclar || [])
+    .filter(r => r && r.status === 'found' && r.product
+      && r.product.inStock !== false && r.renkAyni !== false)
+    .map(r => ({
+      fiyat: Number(r.product.pricing?.toplam ?? r.product.sellingPrice),
+      site: r.siteName || r.site || 'Mağaza',
+    }))
+    .filter(x => Number.isFinite(x.fiyat) && x.fiyat > 0)
+    .sort((a, b) => a.fiyat - b.fiyat);
+
+  if (stokluTeklifler.length < 2) {
+    // Tek teklif varsa "tasarruf" iddiası kurulamaz → bant gizli.
+    bant.hidden = true;
+    return;
+  }
+
+  const enUcuz = stokluTeklifler[0];
+  const enPahali = stokluTeklifler[stokluTeklifler.length - 1];
+  const netFark = enPahali.fiyat - enUcuz.fiyat;
+
+  if (netFark > 0.009) {
+    const yuzdeKazanc = Math.round((netFark / enPahali.fiyat) * 100);
+    if (tutarEl) {
+      tutarEl.innerHTML = `Bu alışverişte <b>${tl(netFark)} net tasarruf</b> ediyorsunuz!`;
+    }
+    if (detayEl) {
+      detayEl.textContent = `En ucuz: ${tl(enUcuz.fiyat)} (${enUcuz.site}) · `
+        + `En pahalı mağaza (${tl(enPahali.fiyat)}) yerine %${yuzdeKazanc} daha karlı.`;
+    }
+  } else {
+    if (tutarEl) tutarEl.textContent = `Tüm mağazalarda en dip fiyat: ${tl(enUcuz.fiyat)}`;
+    if (detayEl) {
+      detayEl.textContent = `${stokluTeklifler.length} mağaza arasında fiyat farkı bulunmuyor, `
+        + 'en ucuz seviyedesiniz.';
+    }
+  }
+  bant.hidden = false;
+
+  // 🕒 Güvenilirlik mührü: önbellekten gelen aramada "X dk önce", canlıda "az önce".
+  if (dogrulamaMetin) {
+    if (opts.yasMetni) muhurYasi = opts.yasMetni;
+    else if (opts.taze === true) muhurYasi = null;
+    const siteSayisi = (Array.isArray(SITE_SIRASI) && SITE_SIRASI.length) ? SITE_SIRASI.length : 62;
+    const yas = muhurYasi
+      || (Number.isFinite(Number(sonuc?.ts)) ? vitrinYas(new Date(Number(sonuc.ts)).toISOString()) : null);
+    dogrulamaMetin.textContent = yas
+      ? `🕒 ${yas} ${siteSayisi} mağazadan doğrulandı`
+      : `🕒 Az önce ${siteSayisi} mağazadan canlı doğrulandı`;
+  }
+}
+
 function sonucGoster(sonuc, opts = {}) {
   if (!sonuc) return;
+  // ⚡ Erken sonuç butonu yalnızca KESİN sonuçta kaldırılır. Canlı/kısmi
+  // akış sürerken kullanıcı butonu hâlâ kullanabilmeli.
+  if (opts.canli !== true && opts.keepDurum !== true) erkenSonucButonunuKaldir();
   // İlk sonuç çizildiğinde iskelet kartlar gizlenir (canlı güncellemede de).
   const iskelet = document.querySelector('.skeleton-izgara');
   if (iskelet) iskelet.hidden = true;
@@ -1814,6 +2658,10 @@ function sonucGoster(sonuc, opts = {}) {
     $('#ozetKutu').innerHTML = `<div class="etiket">Sonuç</div><div class="fiyat">—</div><div class="yer">Stokta ürün bulunamadı</div>`;
   }
 
+  // 🎯 Net tasarruf bandı + güvenilirlik mührü (2026-11-12).
+  // Özet kutusunun hemen altında, ilk bakışta görünür konumda.
+  tasarrufBandiCiz(sonuc, { yasMetni: opts.yasMetni || null });
+
   // 🧠 Alışveriş Zekası Karar Paneli (2026-10-30)
   fiyatZekasiPaneli(sonuc);
 
@@ -1842,7 +2690,11 @@ function sonucGoster(sonuc, opts = {}) {
     baskiFiltreleriniDoldur(sonuc);
   }
 
-  $('#kartlar').innerHTML = sirali.map(kartHtml).join('');
+  $('#kartlar').innerHTML = fomoIleBasla(sonuc, sirali.map(kartHtml).join(''));
+
+  // 📦 Tüm mağazalarda tükendi / hiç teklif yok → ölü ekran yerine stoklu
+  // alternatifler (2026-11-12). Kartlar canlı vitrinden gelir; uydurma ürün yok.
+  tukendiAlternatifleriniEkle({ tamamiTukendi, hicBulunamadi: bulunanlar.length === 0 });
   // 🧱 Bento özet (2026-11-01)
   bentoOzetCiz(sonuc);
   // Kartlar sıralı giriş animasyonuyla belirsin (staggered fade/scale-in).
@@ -1868,7 +2720,19 @@ function sonucGoster(sonuc, opts = {}) {
     muadilPaneliHazirla(sonuc, opts);
   }
 
-  if (opts.kaydir === true) $('#sonucAlani').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // 📍 Sonuç alanına yumuşak kaydırma (2026-11-11).
+  //
+  // ANTI-JITTER: canlı/akış güncellemelerinde (`canli`, `keepDurum`) sayfa
+  // defalarca kez zıplamasın. Bu bayraklar zaten kısmi SSE tazelemelerinde
+  // gönderiliyor; kaydırma yalnızca İLK/kesin sonuçta çalışır.
+  if (opts.kaydir === true && opts.canli !== true && opts.keepDurum !== true) {
+    setTimeout(() => {
+      const hedef = document.getElementById('sonucAlani');
+      if (hedef && !hedef.hidden) {
+        hedef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  }
 }
 
 function esc(s) {
@@ -2054,6 +2918,12 @@ function fiyatZekasiPaneli(sonuc) {
   const alan = $('#fiyatZekaAlani');
   if (!alan) return;
   const z = sonuc?.ozet?.fiyatZekasi;
+  // 2026-11-11 DÜZELTME: `zt` (zamanlama tavsiyesi) hiçbir yerde tanımlı
+  // değildi → `ReferenceError: zt is not defined` fırlıyor, `sonucGoster`
+  // yarıda kesiliyordu: fiyat kartları HİÇ çizilmiyor, otomatik kaydırma da
+  // çalışmıyordu. Sunucu bu nesneyi `sonuc.zamanlama` ve
+  // `sonuc.ozet.zamanlamaTavsiyesi` altında gönderiyor.
+  const zt = sonuc?.zamanlama || sonuc?.ozet?.zamanlamaTavsiyesi || null;
   const rozet = $('#fiyatZekaRozet');
   const alt = $('#fiyatZekaAlt');
   const farkEl = $('#fiyatZekaFark');
@@ -2494,14 +3364,23 @@ function embedKodu(q, tema) {
     + 'style="border:0;border-radius:12px;overflow:hidden"></iframe>';
 }
 
+/** Önizleme iframe adresi (tema + önbellek kırıcı). */
+function embedOnizlemeUrl(q, tema) {
+  return location.origin + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema
+    + '&_t=' + Date.now();
+}
+
 /** Modal içeriğini (önizleme + tema + kod) üretir. */
 function embedModalHtml(q, tema) {
-  const src = location.origin + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema;
   return ''
     + '<div class="embed-modal">'
     + '  <div class="embed-onizleme">'
-    + '    <iframe src="' + esc(src) + '" width="320" height="180" frameborder="0" '
-    + 'loading="lazy" title="Widget önizleme"></iframe>'
+    // 🐞 2026-11-15: `src` BURADA verilmez. Modal henüz `display:none` iken
+    // kaynak atanan `loading="lazy"` iframe Chromium'da hiç yüklenmiyordu
+    // (önizleme sonsuza kadar boş kalıyordu). Adres, modal görünür olduktan
+    // SONRA embedModalAc içinde atanır.
+    + '    <iframe id="embedOnizleme" width="320" height="180" frameborder="0" '
+    + 'title="Widget önizleme"></iframe>'
     + '  </div>'
     + '  <div class="embed-ayar">'
     + '    <span class="embed-etiket">Tema</span>'
@@ -2524,14 +3403,22 @@ function embedModalHtml(q, tema) {
 /** Modalı açar ve etkileşimleri bağlar. */
 function embedModalAc(q) {
   let tema = 'dark';
-  altModalAc('🔌 Sitene Ekle', embedModalHtml(q, tema));
+  const acildi = altModalAc('🔌 Sitene Ekle', embedModalHtml(q, tema));
+  if (!acildi) {
+    // Modal hiç görünemiyorsa kullanıcıya sessiz kalmak yerine durumu söyle.
+    toastGoster('Gömme kodu penceresi açılamadı. Sayfayı yenileyip tekrar deneyin.', 'hata');
+    return;
+  }
 
   const kodAlani = document.getElementById('embedKod');
   const durumEl = document.getElementById('embedDurum');
+  const onizleme = document.getElementById('embedOnizleme');
   const yaz = () => {
     if (kodAlani) kodAlani.value = embedKodu(q, tema);
   };
   yaz();
+  // Önizleme yalnızca modal GÖRÜNÜR olduktan sonra yüklenir (yukarıdaki not).
+  if (onizleme) onizleme.src = embedOnizlemeUrl(q, tema);
 
   document.querySelectorAll('[data-embed-tema]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -2540,11 +3427,8 @@ function embedModalAc(q) {
         x.classList.toggle('aktif', x === b);
       });
       yaz();
-      const cerceve = document.querySelector('.embed-onizleme iframe');
-      if (cerceve) {
-        cerceve.src = location.origin + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema
-          + '&_t=' + Date.now();
-      }
+      const cerceve = document.getElementById('embedOnizleme');
+      if (cerceve) cerceve.src = embedOnizlemeUrl(q, tema);
     });
   });
 
@@ -2552,18 +3436,12 @@ function embedModalAc(q) {
   if (kopyala) {
     kopyala.addEventListener('click', async () => {
       const metin = kodAlani ? kodAlani.value : embedKodu(q, tema);
-      let ok = false;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(metin);
-          ok = true;
-        }
-      } catch { ok = false; }
+      // 2026-11-12: gömme kodu da mikro toast + buton onayıyla kopyalanır.
+      const ok = await panoyaKopyalaVeGeriBildirim(metin, kopyala, 'Gömme kodu kopyalandı!');
       if (!ok && kodAlani) {
         kodAlani.removeAttribute('readonly');
         kodAlani.select();
         kodAlani.setSelectionRange(0, metin.length);
-        try { ok = document.execCommand('copy'); } catch { ok = false; }
         kodAlani.setAttribute('readonly', 'readonly');
       }
       if (durumEl) {
@@ -2664,9 +3542,19 @@ function kartHtml(r) {
   const dahilHtml = (pr.kampanyaDahil || []).length
     ? `<h4>Fiyata dahil</h4>${(pr.kampanyaDahil || []).map(k => `<div class="dahil-notu">✓ ${esc(k.metin)}</div>`).join('')}` : '';
 
-  // Ürün görseli (yoksa ya da yüklenemezse gizlenir)
+  // Ürün görseli (yoksa ya da yüklenemezse gizlenir).
+  // 2026-11-12: sabit 76×76 kutu (CLS yok), lazy + async decode, düşük öncelik.
+  // `this.onerror = null` → kırık resim tekrar tekrar denenmez (bellek sızıntısı
+  // ve sonsuz hata döngüsü önlenir).
   const resimHtml = p.image
-    ? `<div class="kart-resim"><img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='🏷️'" /></div>`
+    ? `<div class="kart-resim"><img src="${esc(p.image)}"
+            alt="${esc(p.title || 'Ürün')}"
+            width="76"
+            height="76"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+            onerror="this.onerror=null; this.parentElement.innerHTML='🏷️'" /></div>`
     : `<div class="kart-resim">🏷️</div>`;
 
   // Net Etkin Fiyat dökümü: satış fiyatından net tutara adım adım formül
@@ -2685,7 +3573,29 @@ function kartHtml(r) {
     ? `<div class="fiyat-kampanya" title="${esc(pr.kampanyaOnizleme.metin)}">🏷️ Kampanyayla <b>~${tl(pr.kampanyaOnizleme.fiyat)}</b>${pr.kampanyaOnizleme.kosul ? `<span class="kampanya-kosul"> · ${esc(pr.kampanyaOnizleme.kosul)}</span>` : ''}</div>`
     : '';
 
+  // 💡 Akıllı kargo eşiği ipucu (2026-11-12): ürün, mağazanın ücretsiz kargo
+  // eşiğinin hemen altındaysa "sepete X ekle, kargo bedava" tavsiyesi.
+  // Dürüstlük: eşik bilinmeli, kargo gerçekten ücretli olmalı, fark ≤ 80 TL
+  // olmalı, ürün tükenmiş olmamalı. Aksi hâlde ipucu gösterilmez.
   const stoktaYok = p.inStock === false;
+  const urunFiyati = Number(pr.toplam ?? pr.araToplam ?? p.sellingPrice ?? 0);
+  const kargoUcreti = Number(pr.kargo?.ucret ?? 0);
+  const ucretsizKargoEsigi = Number(
+    pr.kargo?.freeOver
+    ?? p.shippingInfo?.freeOver
+    ?? p.shipping?.freeOver
+    ?? 0,
+  );
+  const kargoEksik = ucretsizKargoEsigi - urunFiyati;
+  const kargoEsikIpucuHtml = (!stoktaYok
+    && Number.isFinite(ucretsizKargoEsigi) && ucretsizKargoEsigi > 0
+    && kargoEksik > 0 && kargoEksik <= 80
+    && kargoUcreti > 0)
+    ? `<div class="kargo-esik-ipucu" title="Sepetinizi tamamlayarak kargo ücretinden kurtulabilirsiniz.">`
+      + `💡 Sepete <b>${tl(kargoEksik)}</b> değerinde ürün eklerseniz `
+      + `<b>${tl(kargoUcreti)}</b> kargo BEDAVA olur!</div>`
+    : '';
+
   return `<div class="urun-karti ${r.enUcuz ? 'en-ucuz' : ''} ${r.renkAyni === false ? 'farkli-renk' : ''} ${stoktaYok ? 'stok-yok' : ''}" data-site="${esc(r.site || '')}">
     ${r.enUcuz ? '<span class="ucuz-serit">🏷️ EN UCUZ</span>' : ''}
     ${stoktaYok ? '<span class="stok-yok-serit">🔴 TÜKENDİ</span>' : ''}
@@ -2732,6 +3642,7 @@ function kartHtml(r) {
         <span>🚚 Kargo</span>
         <span class="ucret">${pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? 'Bedava' : (pr.kargo?.freeOver ? 'Sepette belli' : 'Bilinmiyor'))}</span>
       </div>
+      ${kargoEsikIpucuHtml}
       ${tamamlayiciButonu(pr, r)}
       <div class="tamamlayici-alan" hidden></div>
     </div>
@@ -2740,8 +3651,9 @@ function kartHtml(r) {
       ${dahilHtml}${taksitHtml}
     </div>` : ''}
     <div class="kart-alt">
+      ${Number(pr.toplam ?? pr.araToplam ?? p.sellingPrice) > 0 ? `<button type="button" class="alarm-btn" data-alarm-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice))}" data-alarm-site="${esc(r.site || '')}" title="Hedef fiyatın altına düşünce bu cihaza bildirim al — e-posta/şifre gerekmez">🔔 Fiyat Alarmı</button>` : ''}
       <button type="button" class="embed-btn" data-embed-q="${esc(p.title || '')}" title="Bu ürünün canlı fiyatını kendi sitene ekle">🔌 Sitene Ekle</button>
-      <span class="istek-notu">${kac(r.requestsSpent)} istek${(r.queriesTried || []).length ? ' · sorgu: ' + esc((r.queriesTried || []).join(' / ')) : ''}</span>
+      <span class="istek-notu">${kac(r.requestsSpent)} istek${(r.queriesTried || []).length ? ' · sorgu: ' + esc((r.queriesTried || []).join(' / ')) : ''}${r.katalog ? ` · 🗂️ katalog (${Math.max(0, Math.round((Number(r.katalog.yasMs) || 0) / 60000))} dk önce)` : ''}</span>
       <a class="urun-link ${stoktaYok ? 'tukendi' : ''}" href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${stoktaYok ? 'Mağazada Gör (Tükendi)' : 'Mağazada Gör'}</a>
     </div>
   </div>`;
@@ -2766,7 +3678,7 @@ function tabloDoldur(sonuc) {
     const kosullu = (pr.kampanyaKosullu || []).map(k => esc(k.metin)).join('<br>') || '—';
     const kargo = pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? 'Bedava' : (pr.kargo?.freeOver ? 'Sepette belli' : (pr.kargo?.aciklama || 'Bilinmiyor')));
     return `<tr class="${stoktaYok ? 'stok-yok' : ''}">
-      <td><b>${SITE_ADLARI[r.site] || r.site}</b>${r.enUcuz ? ' 🏷️' : ''}</td>
+      <td><b>${SITE_ADLARI[r.site] || r.site}</b>${r.enUcuz ? ' 🏷️' : ''}${dogrulanmisRozetHtml(r.site)}</td>
       <td><a href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}" style="color:#3450D1">${esc(p.title.slice(0, 90))}</a></td>
       <td>${esc(p.color || '—')}${r.renkAyni === false ? ' (farklı)' : ''}</td>
       <td style="text-align:center">${stokBadge}</td>
@@ -2924,7 +3836,12 @@ gecmisiYukle();
     const job = await guvenliJson(res);
     if (job.status === 'done' && job.result) {
       cipleriGuncelle(isProgressFromResult(job.result));
-      sonucGoster(job.result, { kaydir: false });
+      // Geçmiş aramadan geri yükleme: mühür "X dk önce" demeli (bayat veri
+      // olduğu açıkça belirtiliyor ki kullanıcı yanılmasın — 2026-11-12).
+      const gecmisYas = Number.isFinite(Number(kayit.ts))
+        ? vitrinYas(new Date(Number(kayit.ts)).toISOString())
+        : null;
+      sonucGoster(job.result, { kaydir: true, yasMetni: gecmisYas });
       sonSonuc = job.result;
       const saat = new Date(kayit.ts || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       const not = $('#sonAramaNotu');
@@ -2963,6 +3880,14 @@ $('#oneriForm').addEventListener('submit', async (e) => {
   $('#oneriDurum').hidden = false;
   $('#oneriCipleri').innerHTML = '';
   $('#oneriFazNotu').textContent = 'İhtiyaç analiz ediliyor…';
+  // ⏱️ Sayaç + iptal butonu sıfırdan başlar.
+  oneriKismiSonuclar = [];
+  const kismiKap = $('#oneriKismiKartlar');
+  if (kismiKap) { kismiKap.hidden = true; kismiKap.innerHTML = ''; }
+  oneriAsamaGuncelle('sorgu');
+  oneriSayaciBaslat();
+  const durdurBtn = $('#oneriDurdurBtn');
+  if (durdurBtn) { durdurBtn.hidden = false; durdurBtn.disabled = false; durdurBtn.textContent = '⏹️ Durdur & Bulunanları Göster'; }
 
   try {
     const res = await fetch('/api/oneri', {
@@ -2977,7 +3902,17 @@ $('#oneriForm').addEventListener('submit', async (e) => {
   }
 });
 
+// ⏹️ "Durdur & Bulunanları Göster" — akışı iptal eder, o ana kadarki kartları basar.
+const oneriDurdurBtnEl = $('#oneriDurdurBtn');
+if (oneriDurdurBtnEl) {
+  oneriDurdurBtnEl.addEventListener('click', () => { oneriDurdur(); });
+}
+
 function oneriHataGoster(mesaj) {
+  oneriSayaciDurdur();
+  oneriAktifId = null;
+  const durdurBtn = $('#oneriDurdurBtn');
+  if (durdurBtn) durdurBtn.hidden = true;
   $('#oneriBtn').disabled = false;
   $('#oneriBtn').textContent = 'Öneri al';
   $('#oneriDurum').hidden = true;
@@ -2987,6 +3922,10 @@ function oneriHataGoster(mesaj) {
 
 /** Öneri butonunu başlangıç durumuna alır. */
 function oneriBtnSifirla() {
+  oneriSayaciDurdur();
+  oneriAktifId = null;
+  const durdurBtn = $('#oneriDurdurBtn');
+  if (durdurBtn) durdurBtn.hidden = true;
   $('#oneriBtn').disabled = false;
   $('#oneriBtn').textContent = 'Öneri al';
 }
@@ -3026,6 +3965,17 @@ function oneriIsle(job) {
     return 'bitti';
   }
 
+  // 🛑 Kullanıcı akışı durdurduysa sunucudan gelen boş "iptal" sonucu, ekrandaki
+  // kısmi kartların ÜZERİNE yazmamalı.
+  if (job.result.iptalEdildi && !Array.isArray(job.result.oneriler)) {
+    oneriBtnSifirla();
+    return 'bitti';
+  }
+  if (job.result.iptalEdildi && job.result.oneriler.length === 0 && oneriKismiSonuclar.length) {
+    oneriBtnSifirla();
+    return 'bitti';
+  }
+
   oneriBtnSifirla();
   oneriProgressGoster(job.progress);
   oneriSonucGoster(job.result);
@@ -3038,6 +3988,9 @@ function oneriIzle(id) {
     oneriHataGoster('İş kimliği alınamadı.');
     return;
   }
+  oneriAktifId = id;
+  const durdurBtn = $('#oneriDurdurBtn');
+  if (durdurBtn) durdurBtn.hidden = false;
   canliIzle(id, { etiket: 'oneri', isle: oneriIsle, yedekPoll: oneriPoll });
 }
 
@@ -3067,12 +4020,135 @@ function oneriPoll(id) {
 }
 
 
+/* ================= ⏱️ Öneri akışı: sayaç, aşama, iptal (2026-11-14) =================
+ *
+ * SORUN: Danışman akışında geçen süre, hangi aşamada olduğumuz ve "durdur"
+ * imkânı yoktu; kullanıcı dakikalarca statik çiplere bakıyordu.
+ *
+ * ÇÖZÜM: Sayaç + aşama şeridi + "Durdur & Bulunanları Göster" butonu. Ayrıca
+ * sunucudan gelen `modelTamamlandi` olayı kart ANINDA ekrana basılır (kısmi
+ * akış) — tüm modellerin bitmesini beklemeyiz.
+ */
+let oneriSayacTimer = null;
+let oneriBasladiTs = 0;
+let oneriAktifId = null;
+let oneriKismiSonuclar = [];
+
+const ONERI_ASAMALAR = [
+  { anahtar: 'sorgu', etiket: 'İhtiyaç' },
+  { anahtar: 'arama', etiket: 'Mağaza Taraması' },
+  { anahtar: 'secim', etiket: 'Model Seçimi' },
+  { anahtar: 'karsilastirma', etiket: 'Fiyat Karşılaştırması' },
+];
+
+function oneriSayaciBaslat() {
+  oneriSayaciDurdur();
+  oneriBasladiTs = Date.now();
+  const guncelle = () => {
+    const el = $('#oneriSayac');
+    if (!el) return;
+    const sn = Math.max(0, Math.floor((Date.now() - oneriBasladiTs) / 1000));
+    el.textContent = `⏱️ ${sn} sn`;
+  };
+  guncelle();
+  oneriSayacTimer = setInterval(guncelle, 1000);
+}
+
+function oneriSayaciDurdur() {
+  if (oneriSayacTimer) { clearInterval(oneriSayacTimer); oneriSayacTimer = null; }
+}
+
+/** Aşama şeridi: geçmiş ✓, aktif ●, gelecek ○ */
+function oneriAsamaGuncelle(faz) {
+  const el = $('#oneriAsama');
+  if (!el) return;
+  const aktifIdx = Math.max(0, ONERI_ASAMALAR.findIndex(a => a.anahtar === faz));
+  el.innerHTML = ONERI_ASAMALAR.map((a, i) => {
+    const durum = faz === 'bitti' ? 'tamam'
+      : i < aktifIdx ? 'tamam' : i === aktifIdx ? 'aktif' : 'bekliyor';
+    const isaret = durum === 'tamam' ? '✓' : durum === 'aktif' ? '●' : '○';
+    return `<span class="asama ${durum}">${isaret} ${esc(a.etiket)}</span>`;
+  }).join('<span class="asama-ok" aria-hidden="true">→</span>');
+}
+
+function oneriKismiKartEkle(oneriler) {
+  const kap = $('#oneriKismiKartlar');
+  if (!kap) return;
+  oneriKismiSonuclar = oneriler;
+  kap.hidden = false;
+  kap.innerHTML = oneriler.map((o) => {
+    // İki şekil desteklenir: ham öneri nesnesi (karsilastirma.ozet) veya
+    // SSE'den gelen hafif özet (fiyat/site düz alanlar).
+    const oz = o?.karsilastirma?.ozet;
+    let fiyatDegeri = oz?.enUcuzFiyat ?? o?.fiyat ?? null;
+    let tukendi = false;
+    let site = oz?.enUcuzSite || o?.site || '';
+    // 🧭 Dürüstlük: en ucuz fiyat yalnızca STOKTAKİ tekliflerden hesaplanır.
+    // Tamamı tükenmişse enUcuzFiyat null gelir; o zaman bulunan en düşük fiyatı
+    // "tükendi" etiketiyle gösteririz (fiyatı gizlemek bilgi saklamak olurdu).
+    if (fiyatDegeri == null && Array.isArray(o?.karsilastirma?.sonuclar)) {
+      const bulunanlar = o.karsilastirma.sonuclar
+        .filter(s => s.status === 'found' && s.product)
+        .map(s => ({
+          site: s.siteName || s.site,
+          fiyat: s.product.pricing?.toplam ?? s.product.sellingPrice ?? null,
+          stoktaYok: s.product.inStock === false,
+        }))
+        .filter(s => s.fiyat != null)
+        .sort((a, b) => a.fiyat - b.fiyat);
+      if (bulunanlar.length) {
+        fiyatDegeri = bulunanlar[0].fiyat;
+        site = bulunanlar[0].site;
+        tukendi = bulunanlar.every(b => b.stoktaYok);
+      }
+    }
+    const fiyat = fiyatDegeri != null ? tl(fiyatDegeri) : '—';
+    return `<article class="oneri-kismi-kart${tukendi ? ' tukendi' : ''}">
+      <div class="oneri-kismi-baslik">${esc(String(o?.model || '').slice(0, 70))}</div>
+      <div class="oneri-kismi-fiyat">${fiyat}${site ? ` <small>· ${esc(site)}</small>` : ''}</div>
+      <div class="oneri-kismi-not">${tukendi ? '🔴 Tüm mağazalarda tükendi' : '✅ Karşılaştırma tamamlandı'}</div>
+    </article>`;
+  }).join('');
+}
+
+/** Durdur: iş iptali + o ana kadar bulunanları göster. */
+async function oneriDurdur() {
+  const btn = $('#oneriDurdurBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Durduruluyor…'; }
+  try {
+    if (oneriAktifId) {
+      await fetch('/api/oneri/' + encodeURIComponent(oneriAktifId) + '/iptal', { method: 'POST' })
+        .catch(() => null);
+    }
+  } finally {
+    tumAkislariKapat();
+    oneriSayaciDurdur();
+    if (btn) { btn.disabled = false; btn.textContent = '⏹️ Durdur & Bulunanları Göster'; btn.hidden = true; }
+    if (oneriKismiSonuclar.length) {
+      oneriSonucGoster({ oneriler: oneriKismiSonuclar, kismi: true, butce: null, istenenRenk: null });
+    } else {
+      oneriHataGoster('Tarama durduruldu. Henüz tamamlanmış model yok — tekrar deneyebilirsin.');
+    }
+  }
+}
+
 function oneriProgressGoster(p) {
   if (!p) return;
+  // Aşama şeridi: her ilerleme olayında güncel fazı işaretle.
+  oneriAsamaGuncelle(p.faz);
+  if (p.watchdog) {
+    const uy = $('#oneriFazNotu');
+    if (uy) uy.textContent = 'Süre sınırı doldu — tamamlanan sonuçlar gösteriliyor…';
+  }
+  // ⚡ Kısmi akış: bir model biter bitmez kartı bas (tümünü beklemeyiz).
+  if (p.modelTamamlandi && p.modelSonuc) {
+    const varOlan = oneriKismiSonuclar.filter(o => o.model !== p.modelSonuc.model);
+    oneriKismiKartEkle([...varOlan, p.modelSonuc]);
+  }
   const fazNotlari = {
     sorgu: 'İhtiyaç analiz ediliyor…',
     arama: 'Sitelerde arama yapılıyor…',
-    secim: 'Adaylar arasından sana uygun 5 model seçiliyor…',
+    secim: 'Adaylar arasından sana uygun 3 model seçiliyor…',
     karsilastirma: 'Seçilen modellerin fiyatları karşılaştırılıyor…',
   };
   let not = fazNotlari[p.faz] || 'Çalışılıyor…';
@@ -3111,7 +4187,15 @@ function oneriSonucGoster(sonuc) {
   const b = sonuc?.butce ? ` (bütçe: ${tl(sonuc.butce)})` : '';
   const r = sonuc?.istenenRenk ? ` · renk: ${sonuc.istenenRenk.metin}` : '';
   const oneriler = Array.isArray(sonuc?.oneriler) ? sonuc.oneriler : [];
-  $('#oneriBaslik').textContent = `Sana uygun ${oneriler.length} model${b}${r}`;
+  // 🛑 İptal edildi ve hiçbir model tamamlanmadıysa "0 model" demek yanıltıcı.
+  if (sonuc?.iptalEdildi && !oneriler.length) {
+    $('#oneriDurum').hidden = true;
+    $('#oneriSonuc').hidden = true;
+    oneriHataGoster('Tarama durduruldu. Henüz tamamlanmış model yok — tekrar deneyebilirsin.');
+    return;
+  }
+  $('#oneriBaslik').textContent = `Sana uygun ${oneriler.length} model${b}${r}`
+    + (sonuc?.kismi ? ' · kısmi sonuç' : '');
 
   // Kart sırası: en düşük fiyatlı model önce (bulunamayanlar sona).
   // Orijinal dizin korunur ki takip butonu doğru ürünü kaydetsin.
@@ -3122,8 +4206,7 @@ function oneriSonucGoster(sonuc) {
   $('#oneriKartlar').innerHTML = sirali.map(({ o, i }, sira) => oneriKartHtml(o, i, sonuc, sira)).join('');
 
   // Takip butonlari
-  document.querySelectorAll('.oneri-takip-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+  document.querySelectorAll('.oneri-takip-btn').forEach(btn => {    btn.addEventListener('click', async () => {
       const idx = Number(btn.dataset.idx);
       const o = sonuc.oneriler[idx];
       if (!o?.karsilastirma) return;
@@ -3155,6 +4238,20 @@ function oneriSonucGoster(sonuc) {
       const kart = btn.closest('.onerilen-kart');
       kart.querySelectorAll('tr.gizli-satir').forEach(tr => tr.classList.remove('gizli-satir'));
       btn.remove();
+    });
+  });
+
+  // 🔎 "N mağazada tam tara": aynı ürünün linkini ana forma koyup tam taramayı başlatır.
+  document.querySelectorAll('.tam-tara-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const hedef = btn.dataset.url;
+      const girdi = $('#urunUrl');
+      if (!hedef || !girdi) return;
+      btn.disabled = true;
+      btn.textContent = 'Tam tarama başlatılıyor…';
+      girdi.value = hedef;
+      const form = $('#karsilastirForm');
+      if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     });
   });
 
@@ -3202,6 +4299,15 @@ function oneriKartHtml(o, i, sonuc, sira) {
     }
   }
   const varsayilanHedef = (sonuc && sonuc.butce) || (k?.ozet?.enUcuzFiyat ? Math.floor(k.ozet.enUcuzFiyat * 0.9) : '');
+  // 🔎 Kapsam dürüstlüğü: hızlı turda kaç mağaza tarandığı yazar; tam tarama sunulur.
+  const kapsam = sonuc?.kapsam;
+  const kapsamSatiri = kapsam && !o.hata
+    ? `<div class="kapsam-satiri">🔎 ${kapsam.tarananSite} mağaza tarandı${
+      kapsam.toplamSite > kapsam.tarananSite
+        ? ` · <button type="button" class="tam-tara-btn" data-url="${esc(o.url || '')}">${kapsam.toplamSite} mağazada tam tara</button>`
+        : ''
+    }</div>`
+    : '';
   return `<div class="onerilen-kart">
     <div class="ust">
       <span class="sira">${(sira ?? i) + 1}</span>
@@ -3214,6 +4320,7 @@ function oneriKartHtml(o, i, sonuc, sira) {
     </div>
     <div class="neden"><b>Neden bu model?</b> ${esc(o.neden)}</div>
     ${tabloHtml}
+    ${kapsamSatiri}
     <div class="takip-satir">
       <input type="number" min="1" step="0.01" placeholder="Hedef fiyat" value="${varsayilanHedef}" />
       <button class="oneri-takip-btn" data-idx="${i}">Takibe al</button>
@@ -3492,6 +4599,21 @@ function cizFiyatGrafigi(timeline) {
 let sepetAktifIs = null;
 let sepetTimer = null;
 
+/* 2026-11-12: sepet kıyas barı + kargo paket kutuları için ortak hesap modülü.
+ * app.js klasik script olduğu için dinamik import edilir ve `window` üzerinde
+ * bir kez tutulur. Modül gelmeden çizim yapılırsa kutular sade görünür
+ * (boş ekran yok); modül gelince sonuç yeniden çizilir. */
+async function sepetHesapModulunuYukle() {
+  if (window.sepetHesapModul) return window.sepetHesapModul;
+  try {
+    window.sepetHesapModul = await import('/sepetHesap.js');
+    // Modül geç geldiyse son sonucu yeni görselle yeniden çiz.
+    if (sonSepetSonuc) sepetSonucGoster(sonSepetSonuc);
+  } catch { /* modül yoksa kutular hesapsız çizilir */ }
+  return window.sepetHesapModul || null;
+}
+sepetHesapModulunuYukle();
+
 /** Textarea'dan geçerli URL listesi çıkarır (tekilleştirir, 10 ile sınırlar). */
 function sepetUrlListesi() {
   const metin = ($('#sepetUrls')?.value || '');
@@ -3749,6 +4871,128 @@ async function sepetDevamEt() {
   } catch { /* sessizce geç: sunucu kapalı olabilir */ }
 }
 
+/* ================= 🛒 Sepet: görsel kıyas barı + kargo paketleri (2026-11-12) =================
+ *
+ * Matematik `public/sepetHesap.js` içinde (tek kaynak, testli):
+ *   kiyasVerisi()       → tek mağaza vs bölünmüş sepet, bar oranı
+ *   paketKargoDurumu()  → kargo bedava mı + eşik ipucu
+ *
+ * Buradaki fonksiyonlar yalnızca HTML üretir; afiliye linkleri ve esc()
+ * korunur (XSS + sponsor rel dokunulmadı).
+ */
+
+/** 📊 Tek mağaza ↔ bölünmüş sepet kıyas barı. */
+function sepetKiyasKarti(sonuc) {
+  const hesap = window.sepetHesapModul;
+  if (!hesap) return '';
+  const k = hesap.kiyasVerisi(sonuc);
+  if (!k.var) return '';
+
+  // Tek mağaza zaten en ucuz → kıyas barı yerine tebrik kartı.
+  if (k.tekMagazaEnIyi) {
+    return `<div class="sepet-tebrik-kart">
+      <span class="sepet-tebrik-ikon" aria-hidden="true">🎯</span>
+      <div class="sepet-tebrik-metin">
+        <b>Tek mağaza seçimi zaten en avantajlı seçenek!</b><br>
+        Ekstra kargo ödemeden <b>${tl(k.tekMagaza)}</b> tutarla alabilirsiniz.
+      </div>
+    </div>`;
+  }
+
+  const yuzdeMetni = k.tasarrufYuzde != null
+    ? ` <span aria-hidden="true">·</span> %${String(k.tasarrufYuzde).replace('.', ',')} tasarruf`
+    : '';
+  return `<div class="sepet-kiyas-kapsayici">
+    <div class="sepet-kiyas-baslik-satiri">
+      <span class="sepet-kiyas-baslik">📊 Sepet kıyaslaması</span>
+      <span class="sepet-kiyas-rozet">🎉 ${tl(k.tasarruf)} net kazanç${yuzdeMetni}</span>
+    </div>
+    <div class="sepet-kiyas-satir">
+      <span class="sepet-kiyas-etiket">
+        <span>🏪 Tek mağazadan alsaydınız</span>
+        <span class="sepet-kiyas-tutar">${tl(k.tekMagaza)}</span>
+      </span>
+      <span class="sepet-kiyas-bar" role="img"
+            aria-label="Tek mağaza toplamı ${tl(k.tekMagaza)}, referans %100">
+        <span class="sepet-kiyas-dolgu tek" style="width:100%"></span>
+      </span>
+    </div>
+    <div class="sepet-kiyas-satir kazanan">
+      <span class="sepet-kiyas-etiket">
+        <span>🧺 Bölünmüş akıllı sepet</span>
+        <span class="sepet-kiyas-tutar">${tl(k.enIyi)}</span>
+      </span>
+      <span class="sepet-kiyas-bar" role="img"
+            aria-label="Bölünmüş sepet toplamı ${tl(k.enIyi)}, tek mağazanın %${String(k.oran).replace('.', ',')}'i">
+        <span class="sepet-kiyas-dolgu bolunmus" data-oran="${k.oran}" style="width:0%"></span>
+      </span>
+    </div>
+  </div>`;
+}
+
+/** Barı 0 → hedef genişliğe animasyonla açar (CSS transition 0.7s). */
+function sepetKiyasAnimasyonu() {
+  const uygula = () => {
+    document.querySelectorAll('.sepet-kiyas-dolgu.bolunmus[data-oran]').forEach((el) => {
+      const hedef = `${Number(el.dataset.oran) || 0}%`;
+      // Aynı değer tekrar yazılmasın (gereksiz reflow).
+      if (el.style.width !== hedef) el.style.width = hedef;
+    });
+  };
+  // rAF ideal; ama arka plan sekmesinde rAF hiç çalışmayabilir → setTimeout
+  // yedeği şart, aksi hâlde bar %0'da donup kalır (ölçüldü).
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(uygula);
+  setTimeout(uygula, 40);
+}
+
+/** 📦 Tek mağaza grubunu "kargo paket kutusu" olarak çizer. */
+function sepetKargoPaketi(g, sira, toplamPaket) {
+  const hesap = window.sepetHesapModul;
+  const durum = hesap ? hesap.paketKargoDurumu(g) : { bedava: Number(g.kargo) <= 0, kargo: Number(g.kargo) || 0 };
+  const urunSayisi = (g.urunler || []).length;
+  const cip = toplamPaket > 1
+    ? `<span class="kargo-paket-cip">📦 Paket ${sira} / ${toplamPaket}</span>` : '';
+
+  const kargoEtiket = durum.bedava
+    ? '<span class="kargo-paket-etiket bedava">✅ Kargo Bedava</span>'
+    : `<span class="kargo-paket-etiket ucretli">🚚 +${tl(durum.kargo)} Kargo</span>`;
+
+  // 💡 Eşik ipucu (yalnızca eklenen tutar kargodan küçükse) veya nötr eşik notu.
+  let ipucu = '';
+  if (durum.esikIpucu != null) {
+    ipucu = `<div class="kargo-paket-ipucu">💡 Bu pakete <b>${tl(durum.esikIpucu)}</b> tutarında `
+      + 'ürün daha eklerseniz kargo BEDAVA olur!</div>';
+  } else if (durum.esikFarki != null) {
+    ipucu = `<div class="kargo-paket-ipucu">🎯 Ücretsiz kargo eşiği <b>${tl(durum.esik)}</b> `
+      + `(<b>${tl(durum.esikFarki)}</b> uzakta)</div>`;
+  }
+
+  const urunler = (g.urunler || []).map(u => {
+    const ad = String(u.ad || '').slice(0, 62);
+    const link = u.url
+      ? `<a href="${esc(u.afiliyeUrl || u.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(u.site || g.site || '')}" title="${esc(ad)}">${esc(ad)}</a>`
+      : `<span title="${esc(ad)}">${esc(ad)}</span>`;
+    return `<li>${link}<span class="kargo-paket-urun-fiyat">${tl(u.fiyat)}</span></li>`;
+  }).join('');
+
+  return `<div class="kargo-paket-kutusu">
+    <div class="kargo-paket-ust">
+      <div class="kargo-paket-sol">
+        ${cip}
+        <span class="kargo-paket-magaza">🏪 ${esc(g.siteName || g.site || 'Mağaza')}</span>
+      </div>
+      <span class="kargo-paket-tutar">${tl(g.toplam)}</span>
+    </div>
+    <div class="kargo-paket-sayi">🏷️ ${urunSayisi} ürün</div>
+    <ul class="kargo-paket-urunler">${urunler}</ul>
+    <div class="kargo-paket-alt-satir">
+      <span class="kargo-paket-ara">Ürünler ${tl(g.araToplam)}</span>
+      ${kargoEtiket}
+    </div>
+    ${ipucu}
+  </div>`;
+}
+
 /** Senaryo kartını HTML'e çevirir. */
 function sepetSenaryoKart(senaryo, enIyiMi) {
   if (!senaryo) {
@@ -3756,22 +5000,10 @@ function sepetSenaryoKart(senaryo, enIyiMi) {
       <div class="sepet-senaryo-baslik">Bu senaryo oluşturulamadı</div>
       <p class="ipucu">Ürünlerin tamamını birlikte satan mağaza bulunamadı.</p></div>`;
   }
-  const gruplar = senaryo.gruplar.map(g => `
-    <div class="sepet-grup">
-      <div class="sepet-grup-ust">
-        <b>${esc(g.siteName)}</b>
-        <span class="sepet-grup-toplam">${tl(g.toplam)}</span>
-      </div>
-      <ul class="sepet-grup-urunler">
-        ${g.urunler.map(u => `<li>
-          ${u.url ? `<a href="${esc(u.afiliyeUrl || u.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(u.site || g.site || '')}">${esc(String(u.ad).slice(0, 62))}</a>` : esc(String(u.ad).slice(0, 62))}
-          <span>${tl(u.fiyat)}</span></li>`).join('')}
-      </ul>
-      <div class="sepet-grup-kargo">
-        Ürünler ${tl(g.araToplam)} · Kargo ${g.kargo > 0 ? tl(g.kargo) : 'bedava'}
-        ${g.kargo === 0 && g.kargoKurali?.freeOver ? ` <span class="rozet-kucuk">eşik aşıldı</span>` : ''}
-      </div>
-    </div>`).join('');
+  const grupListesi = senaryo.gruplar || [];
+  const gruplar = grupListesi
+    .map((g, i) => sepetKargoPaketi(g, i + 1, grupListesi.length))
+    .join('');
 
   return `<div class="sepet-senaryo ${enIyiMi ? 'sepet-senaryo-eniyi' : ''}">
     <div class="sepet-senaryo-ust">
@@ -3795,13 +5027,10 @@ function sepetSonucGoster(sonuc) {
   const s = sonuc.senaryolar || {};
   const kazanc = $('#sepetKazanc');
 
-  if (sonuc.kazanc != null && sonuc.kazanc > 0) {
-    kazanc.innerHTML = `💡 <b>${tl(sonuc.kazanc)} net kazanç</b> (${sonuc.kazancYuzde}%) — `
-      + `tek mağaza ${tl(sonuc.tekMagazaToplam)} yerine <b>${tl(sonuc.enIyiToplam)}</b>`;
-  } else if (sonuc.kazanc != null) {
-    kazanc.innerHTML = `Tek mağaza alımı zaten en iyi seçenek: <b>${tl(sonuc.tekMagazaToplam)}</b>`;
-  } else {
-    kazanc.innerHTML = '';
+  // 2026-11-12: salt metin yerine görsel kıyas barı / tebrik kartı.
+  if (kazanc) {
+    const kiyasHtml = sepetKiyasKarti(sonuc);
+    kazanc.innerHTML = kiyasHtml || '';
   }
 
   const enIyi = sonuc.enIyiAnahtar;
@@ -3810,6 +5039,7 @@ function sepetSonucGoster(sonuc) {
     sepetSenaryoKart(s.akilliBolunmus, enIyi === 'akilliBolunmus'),
     sepetSenaryoKart(s.maksimumTasarruf, enIyi === 'maksimumTasarruf'),
   ].join('');
+  sepetKiyasAnimasyonu();
 
   if (Array.isArray(sonuc.uyarilar) && sonuc.uyarilar.length) {
     kazanc.innerHTML += sonuc.uyarilar.map(u =>
@@ -3929,10 +5159,13 @@ $('#sepetWhatsappBtn')?.addEventListener('click', async () => {
     const metin = sepetWhatsappMetni(sonSepetSonuc, link);
     const url = 'https://wa.me/?text=' + encodeURIComponent(metin);
     window.open(url, '_blank', 'noopener');
+    // 2026-11-12: paylaşım da sessiz kalmıyor — anlık mikro onay.
+    toastGoster('Paylaşım hazır — WhatsApp açıldı', 'basarili');
     if (el) {
       el.innerHTML = `✅ WhatsApp açıldı. Link: <a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a>`;
     }
   } catch (e) {
+    toastGoster('Paylaşım hazırlanamadı', 'hata');
     if (el) el.textContent = '❌ ' + e.message;
   }
 });
@@ -3953,14 +5186,20 @@ $('#sepetLinkBtn')?.addEventListener('click', async () => {
   }
 });
 
-$('#sepetKopyaBtn')?.addEventListener('click', async () => {
+$('#sepetKopyaBtn')?.addEventListener('click', async (e) => {
   if (!sepetPaylasLinki) return;
   const el = $('#sepetPaylasSonuc');
-  try {
-    await navigator.clipboard.writeText(sepetPaylasLinki);
-    if (el) el.textContent = '✅ Link panoya kopyalandı.';
-  } catch {
-    if (el) el.textContent = 'Kopyalanamadı — linki elle seçip kopyalayın: ' + sepetPaylasLinki;
+  const btn = e.currentTarget instanceof HTMLElement ? e.currentTarget : null;
+  // 2026-11-12: buton anlık yeşil onaya döner + 1.5 sn mikro toast.
+  const ok = await panoyaKopyalaVeGeriBildirim(
+    sepetPaylasLinki,
+    btn,
+    'Sepet bağlantısı panoya kopyalandı!',
+  );
+  if (el) {
+    el.textContent = ok
+      ? '✅ Link panoya kopyalandı.'
+      : 'Kopyalanamadı — linki elle seçip kopyalayın: ' + sepetPaylasLinki;
   }
 });
 
@@ -4066,6 +5305,202 @@ $('#pushBtn')?.addEventListener('click', async () => {
   }
 });
 
+/* ================= 🔔 Sıfır sürtünmeli fiyat alarmı (2026-11-06) =================
+ *
+ * Kullanıcıdan e-posta/telefon/şifre İSTENMEZ. Karttaki "🔔 Fiyat Alarmı"
+ * düğmesi bir popover açar; akıllı hedef fiyat önerilir ve tek tıkla
+ * pushManager.subscribe → POST /api/takip akışı çalışır.
+ */
+
+let alarmAktif = null;
+
+function alarmHtmlHazirla() {
+  if ($('#alarmPopover')) return;
+  const el = document.createElement('div');
+  el.id = 'alarmPopover';
+  el.className = 'alarm-popover';
+  el.hidden = true;
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'false');
+  el.setAttribute('aria-labelledby', 'alarmBaslik');
+  el.innerHTML = `
+    <div class="alarm-popover-ust">
+      <strong id="alarmBaslik">🔔 Fiyat Alarmı</strong>
+      <button type="button" class="alarm-kapat" data-alarm-kapat aria-label="Kapat">✕</button>
+    </div>
+    <div class="alarm-urun" id="alarmUrun"></div>
+    <div class="alarm-mevcut-satir">Şu anki en ucuz fiyat: <b id="alarmMevcut">—</b></div>
+    <label class="alarm-etiket" for="alarmHedef">Hedef fiyatım (₺)</label>
+    <div class="alarm-input-sar">
+      <span>₺</span>
+      <input id="alarmHedef" type="number" min="1" step="1" inputmode="decimal" autocomplete="off" />
+    </div>
+    <div class="alarm-oneriler">
+      <button type="button" class="alarm-oneri" data-oran="0.95">−%5 öner</button>
+      <button type="button" class="alarm-oneri" data-oran="0.90">−%10 öner</button>
+    </div>
+    <button type="button" class="alarm-kur-btn" id="alarmKurBtn">🔔 Bu Cihaza Bildir</button>
+    <div class="alarm-durum" id="alarmDurum" role="status" aria-live="polite"></div>
+    <div class="alarm-dipnot">E-posta, telefon veya şifre gerekmez. Yalnızca bu cihaz bildirim alır.</div>
+  `;
+  document.body.appendChild(el);
+
+  el.addEventListener('click', (e) => {
+    if (e.target.closest('[data-alarm-kapat]')) { alarmKapat(); return; }
+    const oneri = e.target.closest('.alarm-oneri');
+    if (oneri && alarmAktif) {
+      const input = $('#alarmHedef');
+      const oran = Number(oneri.dataset.oran) || 0.95;
+      input.value = String(alarmOneriFiyat(alarmAktif.fiyat, oran));
+      input.focus();
+    }
+  });
+  $('#alarmKurBtn').addEventListener('click', alarmKur);
+}
+
+/** Akıllı hedef: %5/%10 altı, 9 ile biten psikolojik fiyata yuvarlanır. */
+function alarmOneriFiyat(base, oran) {
+  const fiyat = Number(base);
+  if (!Number.isFinite(fiyat) || fiyat <= 0) return 1;
+  const ham = fiyat * (Number(oran) || 0.95);
+  const yuvarlak = Math.floor(ham / 10) * 10 - 1;
+  return Math.max(1, yuvarlak > 0 ? yuvarlak : Math.round(ham));
+}
+
+function alarmKapat() {
+  const el = $('#alarmPopover');
+  if (el) el.hidden = true;
+}
+
+function alarmPopoverAc(btn) {
+  alarmHtmlHazirla();
+  const fiyat = Number(btn.dataset.alarmFiyat) || 0;
+  if (!sonSonuc || !fiyat) return;
+  alarmAktif = {
+    site: btn.dataset.alarmSite || '',
+    fiyat,
+    urun: sonSonuc?.kaynak?.urun || 'Ürün',
+  };
+  const pop = $('#alarmPopover');
+  $('#alarmUrun').textContent = alarmAktif.urun + (sonSonuc?.kaynak?.renk ? ` (${sonSonuc.kaynak.renk})` : '');
+  $('#alarmMevcut').textContent = tl(fiyat);
+  const input = $('#alarmHedef');
+  input.value = String(alarmOneriFiyat(fiyat, 0.95));
+  const durum = $('#alarmDurum');
+  durum.textContent = '';
+  durum.className = 'alarm-durum';
+
+  // Düğmenin hemen altında aç (masaüstü); mobilde CSS alt çekmeceye çevirir.
+  pop.hidden = false;
+  const r = btn.getBoundingClientRect();
+  const genislik = Math.min(340, window.innerWidth - 24);
+  let sol = Math.min(Math.max(12, r.left), window.innerWidth - genislik - 12);
+  let ust = r.bottom + 8;
+  const yukseklik = pop.offsetHeight || 320;
+  if (ust + yukseklik > window.innerHeight - 12) ust = Math.max(12, r.top - yukseklik - 8);
+  pop.style.width = genislik + 'px';
+  pop.style.left = sol + 'px';
+  pop.style.top = ust + 'px';
+  setTimeout(() => input.focus({ preventScroll: true }), 30);
+}
+
+/** VAPID public anahtarını Uint8Array'e çevirir (pushManager için). */
+function alarmVapidCevir(base64Url) {
+  const padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
+  const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const cikti = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) cikti[i] = raw.charCodeAt(i);
+  return cikti;
+}
+
+function alarmDurumYaz(metin, tur = '') {
+  const el = $('#alarmDurum');
+  if (!el) return;
+  el.textContent = metin;
+  el.className = 'alarm-durum' + (tur ? ' ' + tur : '');
+}
+
+async function alarmKur() {
+  const btn = $('#alarmKurBtn');
+  const hedef = parseFloat($('#alarmHedef')?.value);
+  if (!hedef || hedef <= 0) {
+    alarmDurumYaz('Lütfen geçerli bir hedef fiyat girin.', 'hata');
+    $('#alarmHedef')?.focus();
+    return;
+  }
+  if (!sonSonuc) { alarmDurumYaz('Karşılaştırma bulunamadı; sayfayı yenileyin.', 'hata'); return; }
+
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    alarmDurumYaz('⚠️ Bu tarayıcı web bildirimlerini desteklemiyor. iPhone/iPad’de siteyi önce Ana Ekrana Ekleyin.', 'hata');
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    alarmDurumYaz('⚠️ Bildirim izni reddedilmiş. Tarayıcı ayarlarından izin verin.', 'hata');
+    return;
+  }
+
+  const eski = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Alarm kuruluyor…';
+  try {
+    if (Notification.permission === 'default') {
+      const izin = await Notification.requestPermission();
+      if (izin !== 'granted') {
+        alarmDurumYaz('Bildirim izni verilmedi. Alarm kurulmadı.', 'hata');
+        return;
+      }
+    }
+
+    const kayit = await navigator.serviceWorker.ready;
+    const anahtarRes = await fetch('/api/push/vapid-key');
+    const anahtarVeri = await anahtarRes.json().catch(() => ({}));
+    if (!anahtarRes.ok || !anahtarVeri.publicKey) {
+      throw new Error(anahtarVeri.hata || 'VAPID anahtarı alınamadı');
+    }
+
+    let abonelik = await kayit.pushManager.getSubscription();
+    if (!abonelik) {
+      abonelik = await kayit.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: alarmVapidCevir(anahtarVeri.publicKey),
+      });
+    }
+
+    // /api/tracked (takma ad: /api/takip) — aynı uç nokta.
+    const res = await fetch('/api/takip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sonuc: sonSonuc,
+        hedefFiyat: hedef,
+        pushSubscription: abonelik.toJSON(),
+      }),
+    });
+    const veri = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(veri.hata || 'Alarm kaydedilemedi');
+
+    alarmDurumYaz(`✅ Alarm kuruldu! Ürün ${tl(hedef)} altına düştüğünde telefonunuza/masaüstünüze anında bildirim gelecektir.`, 'ok');
+    btn.textContent = '✅ Alarm Kuruldu';
+  } catch (e) {
+    alarmDurumYaz('❌ ' + (e.message || 'Alarm kurulamadı'), 'hata');
+    btn.textContent = eski;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.alarm-btn');
+  if (btn) { e.preventDefault(); alarmPopoverAc(btn); return; }
+  if (e.target.closest('#alarmPopover')) return;
+  if (!e.target.closest('.alarm-btn')) alarmKapat();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') alarmKapat();
+});
+window.addEventListener('resize', alarmKapat);
+
 /* ================= Sepet kupon otomasyonu ================= */
 //
 // Sunucu, her mağaza grubunun ARA TOPLAMI ile o mağazanın kampanyalarını karşılaştırır.
@@ -4170,16 +5605,12 @@ function sepetKuponCiz(d, senaryo) {
       İndirim tutarları mağazanın kampanya metninden hesaplanır. Kesin tutar ödeme adımında görünür.
     </p>`;
 
-  // Kod kopyalama (tek tık)
+  // Kod kopyalama (tek tık) — 2026-11-12: mikro toast + buton onay durumu.
   icerik.querySelectorAll('.kupon-kod-btn[data-kod]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const kod = btn.dataset.kod;
       if (!kod) return;
-      const ok = await kopyala(kod);
-      const eski = btn.innerHTML;
-      btn.innerHTML = ok ? '✓ kopyalandı' : esc(kod);
-      btn.classList.add('kopyalandi');
-      setTimeout(() => { btn.innerHTML = eski; btn.classList.remove('kopyalandi'); }, 1600);
+      await panoyaKopyalaVeGeriBildirim(kod, btn, `${kod} kopyalandı!`);
     });
   });
   // Tüm kodları kopyala
@@ -4187,10 +5618,7 @@ function sepetKuponCiz(d, senaryo) {
   if (hepsi) {
     hepsi.addEventListener('click', async () => {
       const metin = kodlar.map(k => `${k.siteName}: ${k.kod}`).join('\n');
-      const ok = await kopyala(metin);
-      const eski = hepsi.textContent;
-      hepsi.textContent = ok ? '✓ kopyalandı' : 'Kopyalanamadı';
-      setTimeout(() => { hepsi.textContent = eski; }, 1600);
+      await panoyaKopyalaVeGeriBildirim(metin, hepsi, `${kodlar.length} kupon kodu kopyalandı!`);
     });
   }
 }

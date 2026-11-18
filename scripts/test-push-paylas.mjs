@@ -73,10 +73,11 @@ const server = oku('server.js');
 kontrol('sw: push olayı', /addEventListener\('push'/.test(sw));
 kontrol('sw: notificationclick olayı', /addEventListener\('notificationclick'/.test(sw));
 kontrol('sw: bildirim tıklaması data.url kullanıyor', /notification\?\.data\?\.url/.test(sw));
-kontrol('sw: yalnızca kendi origin', /hedefUrl\.origin !== self\.location\.origin/.test(sw));
+kontrol('sw: yalnızca http(s) hedefi', /\^https\?:\$/.test(sw));
+kontrol('sw: aynı origin sekmesine odaklanır', /ayniOrigin/.test(sw));
 kontrol('sw: açık sekme varsa odaklan', /clients\.matchAll/.test(sw) && /istemci\.focus\(\)/.test(sw));
 kontrol('sw: pushsubscriptionchange', /pushsubscriptionchange/.test(sw));
-kontrol('sw sürümü v5', /const SURUM = 'eun-v5'/.test(sw));
+kontrol('sw sürümü v5+', /const SURUM = 'eun-v([5-9]|\d{2,})'/.test(sw));
 
 kontrol('HTML: push düğmesi', /id="pushBtn"[^>]*>🔔 Bu Cihaza Bildirim Gönder</.test(html));
 kontrol('HTML: takip alanı kimliği', /id="takipAlani"/.test(html));

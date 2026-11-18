@@ -1,0 +1,29 @@
+# En Ucuz Nerede? — robots.txt
+# Herkese açık sayfalar taranabilir; yönetici paneli ve API uçları kapalıdır.
+
+User-agent: *
+Allow: /
+Allow: /maliyet.html
+Allow: /sepet.html
+Allow: /slicer.html
+Allow: /ayarlar.html
+
+# Yönetici paneli (kimlik doğrulamalı, dizine girmemeli)
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /admin/
+
+# API uçları (JSON; HTML olarak indekslenmesi zararlı)
+Disallow: /api/
+
+# Kısa ömürlü iş akışları ve paylaşım linkleri
+Disallow: /api/compare/
+Disallow: /api/oneri/
+Disallow: /api/sepet/
+Disallow: /api/gorsel/
+Disallow: /api/barkod/
+Disallow: /sepet-paylas
+Disallow: /widget
+Disallow: /widget-demo.html
+
+Sitemap: /sitemap.xml

@@ -269,7 +269,7 @@ kontrol('hedef parametresi alanı var', /afiliyeHedefParametre/.test(ayarJs));
 // Not: Türkçe "İ" (U+0130) JS'in /i bayrağıyla eşleşmez (projedeki toLowerTr sorunu);
 // bu yüzden "İ" içermeyen bir parça aranır.
 kontrol('teklif linki kullanıcıya açıklanıyor', /sayfasına gider/.test(ayarJs));
-const ayarHtml = fsMod.readFileSync('public/ayarlar.html', 'utf8');
+const ayarHtml = fsMod.readFileSync('public/admin.html', 'utf8');
 kontrol('HTML’de hedef parametresi alanı var', /id="afiliyeHedefParametre"/.test(ayarHtml));
 kontrol('HTML’de offer_id örneği var', /offer_id/.test(ayarHtml));
 

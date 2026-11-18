@@ -25,9 +25,9 @@ const api = async (yol, opts = {}) => {
 };
 
 /* 1) Kaynak kodu: pass, smtp içinde ve whatsapp içinde DEĞİL */
-const kaynak = fs.readFileSync('public/ayarlar.js', 'utf8');
+const kaynak = fs.readFileSync('public/admin.js', 'utf8');
 const smtpBlok = kaynak.slice(kaynak.indexOf('smtp: {'), kaynak.indexOf('telegram: {'));
-const whatsappBlok = kaynak.slice(kaynak.indexOf('whatsapp: {'), kaynak.indexOf('if (!body.smtp.pass)'));
+const whatsappBlok = kaynak.slice(kaynak.indexOf('whatsapp: {'), kaynak.indexOf('firsat: {'));
 kontrol('pass satırı smtp bloğunda', /pass:\s*\$\('#smtpPass'\)/.test(smtpBlok));
 kontrol('pass satırı whatsapp bloğunda DEĞİL', !/pass:/.test(whatsappBlok), whatsappBlok.trim().slice(0, 60));
 

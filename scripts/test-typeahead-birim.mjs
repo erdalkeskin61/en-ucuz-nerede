@@ -51,19 +51,22 @@ kontrol('sureMs raporlanıyor', /sureMs: Math\.round/.test(server));
 kontrol('1 karakter → boş liste', /sorgu\.length === 1\s*\n?\s*\? \[\]/.test(server));
 kontrol('limit 1–20 arası sınırlı', /Math\.min\(Number\(req\.query\.limit\) \|\| 8, 20\)/.test(server));
 
+// 2026-11-03: katalog adları ÜRÜN TÜRÜYLE yazılıyor ("… 3D Yazıcı", "… 1kg")
+// — typeahead satırı tek başına anlaşılsın ve kategori ikonu doğru çıksın.
+// Bu yüzden birebir eşitlik değil, BAŞLANGIÇ eşleşmesi aranır.
 for (const ad of [
   'Bambu Lab P1S', 'Bambu Lab A1 Mini', 'Bambu Lab X1-Carbon',
   'Creality K1 Max', 'Creality Ender 3 V3', 'eSun PLA+ Siyah', 'eSun PETG',
   'Porima PLA', 'Microzey PLA', 'Anycubic Kobra 2', 'Elegoo Saturn 4',
   'Sunlu Filament Kurutucu', 'PLA Filament', 'PETG Filament', 'TPU Filament', 'Reçine',
 ]) {
-  kontrol(`katalogda: ${ad}`, POPULER_URUNLER.some(x => x === ad), ad);
+  kontrol(`katalogda: ${ad}`, POPULER_URUNLER.some(x => x.startsWith(ad)), ad);
 }
 kontrol('katalog 35+ ürün', POPULER_URUNLER.length >= 35, String(POPULER_URUNLER.length));
 
 const bamb = onerileriGetir('bamb', { limit: 8 });
 kontrol('"bamb" 6–8 öneri', bamb.length >= 4 && bamb.length <= 8, String(bamb.length));
-kontrol('"bamb" ilk sırada Bambu Lab P1S', bamb[0]?.metin === 'Bambu Lab P1S', bamb[0]?.metin);
+kontrol('"bamb" ilk sırada Bambu Lab P1S', /^Bambu Lab P1S/.test(bamb[0]?.metin || ''), bamb[0]?.metin);
 kontrol('"bamb" A1 Mini de listede', bamb.some(x => /A1 Mini/.test(x.metin)));
 kontrol('"crea" K1 Max', onerileriGetir('crea', { limit: 8 }).some(x => /K1 Max/.test(x.metin)));
 kontrol('"pori" Porima', onerileriGetir('pori').some(x => /Porima/.test(x.metin)));

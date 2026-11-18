@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Yönetici Paneli — En Ucuz Nerede?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    try {
+      const t = localStorage.getItem('tema');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch { /* localStorage kapalı */ }
+  </script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/admin.css" />
+  <link rel="icon" href="/ikon-192.png" />
+</head>
+<body>
+  <header class="ustbar">
+    <div class="kap">
+      <a class="logo" href="/">
+        <span class="logo-isaret">🏷️</span>
+        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      </a>
+      <span class="admin-ustbar-rozet">🛡️ Yönetici Paneli</span>
+      <nav class="menu">
+        <a href="/">← Siteye Dön</a>
+        <a href="/ayarlar.html">🔔 Alarmlar</a>
+      </nav>
+      <button type="button" class="admin-cikis-btn" id="adminCikisBtn" hidden>🔒 Çıkış</button>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+    </div>
+  </header>
+
+  <main class="kap">
+    <!-- 🔐 Yönetici Giriş Kapısı -->
+    <section id="adminGirisAlani" class="admin-giris-sar" hidden>
+      <div class="admin-giris-kart">
+        <h1>🔐 Yönetici Girişi</h1>
+        <p>
+          Bu panel yalnızca site yöneticisi içindir. Satış ortaklığı (affiliate), sponsorlu vitrin,
+          bot tokenları, SMTP ve veritabanı bakımı buradan yönetilir.
+        </p>
+        <form id="adminGirisForm" class="admin-giris-form">
+          <div>
+            <label for="adminAnahtarInput">Yönetici Anahtarı (<code>ADMIN_ANAHTARI</code>)</label>
+            <input type="password" id="adminAnahtarInput" autocomplete="current-password"
+                   placeholder=".env içindeki yönetici anahtarını girin" required />
+          </div>
+          <button type="submit" class="kaydet-btn" id="adminGirisBtn">Giriş Yap</button>
+          <div id="adminGirisHata" class="durum-mesaji hata" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 🛡️ Yönetici Kontrol Merkezi -->
+    <div id="adminIcerik" hidden>
+      <div id="adminYerelUyari" class="admin-uyari-bant" hidden>
+        <span>⚠️ <b>Güvenlik Notu:</b> <code>.env</code> içinde <code>ADMIN_ANAHTARI</code> henüz tanımlı değil — panel şu an yalnızca yerel ağdan (localhost) açılabilir. Canlıya almadan önce mutlaka şifre belirleyin.</span>
+      </div>
+
+      <!-- 📊 Üst KPI Şeridi -->
+      <section class="admin-kpi-izgara" aria-label="Sistem özeti">
+        <div class="admin-kpi-kart">
+          <div class="admin-kpi-etiket">Mağaza Sağlığı</div>
+          <div class="admin-kpi-deger" id="kpiSaglik">—</div>
+          <div class="admin-kpi-alt" id="kpiSaglikAlt">Yükleniyor…</div>
+        </div>
+        <div class="admin-kpi-kart">
+          <div class="admin-kpi-etiket">Satış Ortaklığı</div>
+          <div class="admin-kpi-deger" id="kpiAfiliye">—</div>
+          <div class="admin-kpi-alt" id="kpiAfiliyeAlt">Son 30 gün tıklama</div>
+        </div>
+        <div class="admin-kpi-kart">
+          <div class="admin-kpi-etiket">Sponsorlu Vitrin</div>
+          <div class="admin-kpi-deger" id="kpiSponsor">—</div>
+          <div class="admin-kpi-alt" id="kpiSponsorAlt">Gösterim / Tıklama</div>
+        </div>
+        <div class="admin-kpi-kart">
+          <div class="admin-kpi-etiket">Radar &amp; Fırsatlar</div>
+          <div class="admin-kpi-deger" id="kpiOtonom">—</div>
+          <div class="admin-kpi-alt" id="kpiOtonomAlt">Otomasyon durumu</div>
+        </div>
+        <div class="admin-kpi-kart">
+          <div class="admin-kpi-etiket">Veritabanı</div>
+          <div class="admin-kpi-deger" id="kpiDb">—</div>
+          <div class="admin-kpi-alt" id="kpiDbAlt">Aktif takipler</div>
+        </div>
+      </section>
+
+      <!-- 🗂️ Sekmeler -->
+      <nav class="admin-sekme-bar" role="tablist" aria-label="Yönetim kategorileri">
+        <button type="button" class="admin-sekme-btn aktif" data-admin-sekme="gelir" role="tab" aria-selected="true">💰 Gelir &amp; İş Ortaklığı</button>
+        <button type="button" class="admin-sekme-btn" data-admin-sekme="radar" role="tab" aria-selected="false">🎯 Radar &amp; Kanallar</button>
+        <button type="button" class="admin-sekme-btn" data-admin-sekme="botlar" role="tab" aria-selected="false">🤖 Botlar &amp; SMTP</button>
+        <button type="button" class="admin-sekme-btn" data-admin-sekme="sistem" role="tab" aria-selected="false">🛠️ Sistem &amp; Sağlık</button>
+      </nav>
+
+      <!-- ================================================================ -->
+      <!-- SEKME 1: 💰 GELİR & İŞ ORTAKLIĞI                                 -->
+      <!-- ================================================================ -->
+      <section class="admin-sekme-panel" data-admin-panel="gelir">
+        <div class="ayar-kart">
+          <h2>🔗 Satış ortaklığı (affiliate)</h2>
+          <p class="alt-not">
+            Fiyat karşılaştırması <b>her zaman tarafsızdır</b>: bu ayarlar fiyatı, sıralamayı ve
+            "en ucuz" seçimini <b>değiştirmez</b>. Yalnızca "Ürüne git" bağlantısına referans ekler.
+            Kapalıyken sitedeki affiliate şeffaflık notu da son kullanıcıya gizlenir.
+          </p>
+
+          <label style="font-weight:400; display:block; margin-bottom:12px">
+            <input type="checkbox" id="afiliyeEtkin" style="width:auto;margin-right:8px" />
+            Satış ortaklığı referanslarını etkinleştir
+          </label>
+
+          <p class="alt-not" style="margin-bottom:14px">
+            <b>Neden boş?</b> Her ağın parametre adı ve değeri kendi panelinizde üretilir. Proje kuralı gereği
+            <b>uydurma parametre yazılmaz</b> — alanları doldurmadığınız sürece bağlantılar referanssız kalır.
+            Amazon'da standart parametre adı <code>tag</code>'dir (ör. <code>siteadi-21</code>).
+          </p>
+
+          <div id="afiliyePaneli"><p class="alt-not">Yükleniyor…</p></div>
+
+          <div style="margin-top:16px">
+            <h3 style="font-size:15px; margin-bottom:8px">🏬 Niş mağaza bağlantısı (GelirOrtaklari / ReklamAction)</h3>
+            <p class="alt-not">
+              Ağın size verdiği yönlendirme adresini girin. Üç kullanım biçimi var:
+              <br>• <b>Ürün bazlı:</b> adreste <code>{url}</code> varsa hedef ürünle değiştirilir —
+                <code>https://ag.example.com/git?u={url}&amp;ref={token}</code>
+              <br>• <b>Parametreli:</b> <code>{url}</code> yoksa ama aşağıya <b>hedef parametresi</b> yazarsanız
+                ürün adresi o parametreye eklenir — ör. <code>url</code> →
+                <code>...&amp;url=https%3A%2F%2F...</code>
+              <br>• <b>Teklif (offer):</b> ikisi de yoksa adres <b>olduğu gibi</b> kullanılır (<code>offer_id</code> linkleri).
+            </p>
+            <div class="form-satir">
+              <div class="ikili">
+                <div>
+                  <label for="afiliyeSite">Site kimliği</label>
+                  <input type="text" id="afiliyeSite" placeholder="ör. flo, 3dmarketim" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="afiliyeHedefParametre">Hedef parametresi (isteğe bağlı)</label>
+                  <input type="text" id="afiliyeHedefParametre" placeholder="ör. url — boş bırakılabilir" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:8px">
+              <label for="afiliyeSablon">Yönlendirme şablonu / teklif adresi</label>
+              <input type="text" id="afiliyeSablon"
+                placeholder="https://ad.reklm.com/aff_c?offer_id=...&aff_id=..." autocomplete="off" />
+            </div>
+            <button type="button" class="ikincil-btn" id="afiliyeSablonEkleBtn" style="margin-top:8px">＋ Şablonu ekle</button>
+            <span id="afiliyeSablonMesaj" class="durum-mesaji"></span>
+            <div id="afiliyeSablonListesi" style="margin-top:10px"></div>
+          </div>
+
+          <div style="margin-top:16px">
+            <button class="kaydet-btn" id="afiliyeKaydetBtn">Satış ortaklığı ayarlarını kaydet</button>
+            <span id="afiliyeMesaj" class="durum-mesaji"></span>
+          </div>
+
+          <div id="afiliyeTiklamalar" class="alt-not" style="margin-top:14px"></div>
+        </div>
+
+        <!-- ⭐ Sponsorlu Vitrin Yönetimi -->
+        <div class="ayar-kart">
+          <h2>⭐ Sponsorlu Vitrin Kampanyaları</h2>
+          <p class="alt-not">
+            Ana sayfada en üstte görünen sponsorlu fırsat banner'ını yönetin. Gösterim, tıklama ve CTR (%) oranları canlı olarak takip edilir.
+          </p>
+
+          <div id="sponsorTabloAlani" class="admin-tablo-sar">
+            <p class="alt-not" style="padding:12px">Yükleniyor…</p>
+          </div>
+
+          <h3 style="font-size:15px; margin:16px 0 8px">➕ Yeni Kampanya Ekle / Güncelle</h3>
+          <div class="form-satir">
+            <div class="ikili">
+              <div>
+                <label for="spMarka">Marka / Mağaza Adı *</label>
+                <input type="text" id="spMarka" placeholder="ör. Porima3D" autocomplete="off" />
+              </div>
+              <div>
+                <label for="spBaslik">Kampanya Başlığı *</label>
+                <input type="text" id="spBaslik" placeholder="ör. Porima PLA 1kg Özel Seri" autocomplete="off" />
+              </div>
+            </div>
+            <div class="ikili">
+              <div>
+                <label for="spKampanyaFiyat">Kampanya Fiyatı (TL) *</label>
+                <input type="number" id="spKampanyaFiyat" min="1" step="0.01" placeholder="489" />
+              </div>
+              <div>
+                <label for="spEskiFiyat">Eski Fiyat (TL, opsiyonel)</label>
+                <input type="number" id="spEskiFiyat" min="1" step="0.01" placeholder="612" />
+              </div>
+            </div>
+            <div class="ikili">
+              <div>
+                <label for="spYonlendirmeUrl">Hedef URL (https://...) *</label>
+                <input type="url" id="spYonlendirmeUrl" placeholder="https://magaza.com/kampanya" autocomplete="off" />
+              </div>
+              <div>
+                <label for="spGorselUrl">Görsel URL (opsiyonel)</label>
+                <input type="text" id="spGorselUrl" placeholder="/sponsor-ornek.svg veya https://..." autocomplete="off" />
+              </div>
+            </div>
+            <div class="ikili">
+              <div>
+                <label for="spRozetMetni">Rozet Metni</label>
+                <input type="text" id="spRozetMetni" placeholder="HAFTANIN SPONSORLU FIRSATI" autocomplete="off" />
+              </div>
+              <div>
+                <label for="spBitisGun">Süre (Bugünden itibaren kaç gün?)</label>
+                <input type="number" id="spBitisGun" min="1" max="365" value="14" />
+              </div>
+            </div>
+            <div>
+              <label for="spAciklama">Kısa Açıklama (opsiyonel)</label>
+              <input type="text" id="spAciklama" placeholder="Kargo bedava + aynı gün teslimat" autocomplete="off" />
+            </div>
+          </div>
+          <div style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="kaydet-btn" id="spKaydetBtn">⭐ Kampanyayı Yayınla</button>
+            <span id="spMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <!-- ☑️ Doğrulanmış Mağazalar (Mavi Tik) -->
+        <div class="ayar-kart">
+          <h2>☑️ Doğrulanmış Mağazalar (Mavi Tik Rozeti)</h2>
+          <p class="alt-not">
+            Resmî yetkili satıcı rozeti verilen mağazalar. Ürün kartlarında marka yanında güvenilir rozeti olarak gösterilir.
+          </p>
+          <div id="dogrulanmisListe" class="admin-tablo-sar">
+            <p class="alt-not" style="padding:12px">Yükleniyor…</p>
+          </div>
+          <div class="form-satir" style="margin-top:12px">
+            <div class="ikili">
+              <div>
+                <label for="dmSiteId">Mağaza Kimliği (Site ID)</label>
+                <input type="text" id="dmSiteId" list="adminSitelerDatalist" placeholder="ör. porima3d, robotistan" autocomplete="off" />
+                <datalist id="adminSitelerDatalist"></datalist>
+              </div>
+              <div>
+                <label for="dmRozetMetni">Rozet Açıklaması</label>
+                <input type="text" id="dmRozetMetni" value="Resmi Yetkili Satıcı" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="ikincil-btn" id="dmEkleBtn">☑️ Mavi Tik Ekle / Güncelle</button>
+            <span id="dmMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SEKME 2: 🎯 RADAR & OTONOM KANALLAR                              -->
+      <!-- ================================================================ -->
+      <section class="admin-sekme-panel" data-admin-panel="radar" hidden>
+        <div class="ayar-kart">
+          <h2>🎯 Otonom Fiyat Radarı (3D Baskı)</h2>
+          <p class="alt-not">
+            Popüler filament ve 3D yazıcı modellerini <b>68 mağazada</b> otomatik tarar.
+            <b>Yalnızca stokta ve satın alınabilir</b> teklifler değerlendirilir.
+            Değişiklikler otomatik kaydedilir.
+          </p>
+
+          <label style="font-weight:400; display:block; margin-bottom:10px">
+            <input type="checkbox" id="radarEnabled" style="width:auto;margin-right:8px" />
+            Otonom 3D Baskı Fiyat Avcısını Etkinleştir
+          </label>
+
+          <div class="form-satir">
+            <div class="ikili">
+              <div>
+                <label for="radarSaatAraligi">Kontrol Aralığı (saat)</label>
+                <input type="number" id="radarSaatAraligi" min="1" max="24" step="1" value="4" />
+              </div>
+              <div>
+                <label for="radarChatId">Bildirim Sohbeti (boşsa Telegram Chat ID)</label>
+                <input type="text" id="radarChatId" placeholder="@kanal veya 123456789" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="kaydet-btn" id="radarKaydetBtn">💾 Radar ayarlarını kaydet</button>
+            <button type="button" class="ikincil-btn" id="radarCalistirBtn">🧪 Şimdi Otomatik Taramayı Çalıştır</button>
+            <span id="radarKaydetMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+          <div id="radarCalistirMesaj" class="durum-mesaji" style="margin-top:8px" aria-live="polite"></div>
+          <p id="radarDurum" class="alt-not" style="margin-top:8px">—</p>
+
+          <div style="margin-top:16px">
+            <h3 style="font-size:15px; margin-bottom:8px">
+              🗂️ Takip Kataloğu <span id="radarKatalogSayisi" class="alt-not"></span>
+            </h3>
+            <ul id="radarKatalogListe" class="radar-katalog-liste"></ul>
+
+            <div class="form-satir">
+              <div class="ikili">
+                <div>
+                  <label for="radarYeniAd">Yeni Ürün Adı</label>
+                  <input type="text" id="radarYeniAd" placeholder="ör. Polymaker PolyTerra PLA 1kg" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="radarYeniSorgu">Arama Sorgusu (opsiyonel)</label>
+                  <input type="text" id="radarYeniSorgu" placeholder="boşsa ürün adı kullanılır" autocomplete="off" />
+                </div>
+              </div>
+              <div>
+                <label for="radarYeniKategori">Kategori</label>
+                <select id="radarYeniKategori">
+                  <option value="filament">🧵 Filament</option>
+                  <option value="yazici">🖨️ 3D Yazıcı</option>
+                  <option value="genel">📦 Diğer</option>
+                </select>
+              </div>
+              <div>
+                <label for="radarYeniUrl">Kanonik Ürün URL'si (zorunlu)</label>
+                <input type="url" id="radarYeniUrl" placeholder="https://magaza.com/urun/..." autocomplete="off" />
+                <small class="alan-ipucu">URL girilmezse ürün <b>pasif</b> eklenir; radar arama motoruna düşüp boş kart üretmez.</small>
+              </div>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap">
+              <button type="button" class="ikincil-btn" id="radarEkleBtn">➕ Kataloğa ekle</button>
+              <button type="button" class="ikincil-btn" id="radarSifirlaBtn">↺ Varsayılan kataloğa dön</button>
+            </div>
+            <p id="radarKatalogMesaj" class="durum-mesaji" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>🗂️ Mağaza Katalog İndeksi (Kotasız Senkron)</h2>
+          <p class="alt-not">
+            Mağazaların <b>kendi yayınladığı</b> ücretsiz beslemelerden ürün indeksi toplar:
+            Shopify <code>/products.json</code>, WooCommerce Store API ve ürün sitemap'leri.
+            Ürün adı aramalarında dış mağazaya HTTP/Chromium isteği atmadan milisaniyeler
+            içinde aday bulunur. <b>Fiyat yalnızca beslemede gerçekten varsa</b> yazılır;
+            sitemap kayıtlarında fiyat boş kalır (uydurma yok) ve ürün sayfasından okunur.
+          </p>
+
+          <div class="radar-kpi" style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:12px">
+            <span>📦 Toplam: <b id="katalogToplam">—</b></span>
+            <span>💰 Fiyatlı: <b id="katalogFiyatli">—</b></span>
+            <span>🟢 Stokta: <b id="katalogStokta">—</b></span>
+            <span>🎯 Hedef: <b id="katalogHedef">—</b></span>
+            <span>🕒 Son senkron: <b id="katalogSonBitis">—</b></span>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="kaydet-btn" id="katalogSyncBtn">🔄 Şimdi Senkronize Et</button>
+            <span id="katalogSyncMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+          <p id="katalogSyncDurum" class="alt-not" style="margin-top:8px">—</p>
+          <div id="katalogSiteListe" class="radar-katalog-liste" style="margin-top:10px"></div>
+
+          <div class="form-satir" style="margin-top:16px">
+            <div class="ikili">
+              <div>
+                <label for="katalogAramaQ">İndekste arama testi</label>
+                <input type="text" id="katalogAramaQ" placeholder="ör. eSun PLA+ 1kg" autocomplete="off" />
+              </div>
+              <div>
+                <label for="katalogAramaTtl">Tazelik (dakika)</label>
+                <input type="number" id="katalogAramaTtl" min="0" max="4320" step="1" value="30" />
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="ikincil-btn" id="katalogAramaBtn">🔍 İndekste ara</button>
+            <span id="katalogAramaSonuc" class="alt-not"></span>
+          </div>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>📢 Otonom Fırsat Kanalı (Telegram)</h2>
+          <p class="alt-not">
+            Gerçek taramalarda ortaya çıkan fırsatları Telegram kanalınıza otomatik paylaşır.
+            Değişiklikler otomatik kaydedilir.
+          </p>
+
+          <label style="font-weight:400; display:block; margin-bottom:10px">
+            <input type="checkbox" id="firsatEnabled" style="width:auto;margin-right:8px" />
+            Fırsat kanalı paylaşımını etkinleştir
+          </label>
+
+          <div class="form-satir">
+            <div class="ikili">
+              <div>
+                <label for="firsatKanal">Kanal Kimliği / Kullanıcı Adı</label>
+                <input type="text" id="firsatKanal" placeholder="@enucuzneredefirsatlari veya -1001234567890" autocomplete="off" />
+              </div>
+              <div>
+                <label for="firsatMinIndirim">Minimum İndirim Oranı (%)</label>
+                <input type="number" id="firsatMinIndirim" min="1" max="95" step="1" value="15" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-satir" style="margin-top:12px">
+            <div class="ikili">
+              <div>
+                <label for="firsatGunlukMax">Günlük Maksimum Paylaşım Sayısı</label>
+                <input type="number" id="firsatGunlukMax" min="1" max="100" step="1" value="12" />
+              </div>
+              <div>
+                <label for="firsatSaatAraligi">Kontrol Aralığı (saat)</label>
+                <input type="number" id="firsatSaatAraligi" min="1" max="24" step="1" value="2" />
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="kaydet-btn" id="firsatKaydetBtn">💾 Fırsat ayarlarını kaydet</button>
+            <button type="button" class="ikincil-btn" id="firsatTestBtn">🧪 Kanala Test Paylaşımı Gönder</button>
+            <button type="button" class="ikincil-btn" id="firsatCalistirBtn">⚡ Fırsatları Şimdi Tara</button>
+            <span id="firsatKaydetMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+          <div id="firsatTestMesaj" class="durum-mesaji" style="margin-top:8px"></div>
+          <p class="alt-not" style="margin-top:8px">
+            ℹ️ Değişiklikler <b>otomatik kaydedilir</b>; dilerseniz kaydet butonuyla da anında uygulayabilirsiniz.
+          </p>
+          <p id="firsatDurum" class="alt-not" style="margin-top:8px">—</p>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>📢 WhatsApp Fırsat Kanalı</h2>
+          <p class="alt-not">
+            Telegram kanalınıza giden otonom dip fiyat ve radar bildirimlerini WhatsApp Kanalı veya grubunuza iletir.
+          </p>
+
+          <label style="font-weight:400; display:block; margin-bottom:10px">
+            <input type="checkbox" id="waKanalEnabled" style="width:auto;margin-right:8px" />
+            WhatsApp Fırsat Kanalını Etkinleştir
+          </label>
+
+          <div class="form-satir">
+            <div class="ikili">
+              <div>
+                <label for="waKanalProvider">Sağlayıcı Türü</label>
+                <select id="waKanalProvider">
+                  <option value="webhook">Webhook Gateway (Green-API / Evolution / Baileys)</option>
+                  <option value="green-api">Green-API (waInstance)</option>
+                  <option value="ultramsg">UltraMsg</option>
+                  <option value="meta">Meta Cloud API (Graph)</option>
+                </select>
+              </div>
+              <div>
+                <label for="waKanalChannelId">Kanal / Sohbet ID</label>
+                <input type="text" id="waKanalChannelId"
+                  placeholder="1203630…@newsletter veya …@g.us" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-satir" style="margin-top:12px">
+            <div class="ikili">
+              <div>
+                <label for="waKanalApiUrl" id="waKanalApiUrlEtiket">API / Instance URL</label>
+                <input type="text" id="waKanalApiUrl"
+                  placeholder="https://7103.api.green-api.com" autocomplete="off" />
+              </div>
+              <div>
+                <label for="waKanalToken">API Token / Access Token</label>
+                <input type="password" id="waKanalToken" placeholder="••••••••" autocomplete="new-password" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-satir" id="waKanalMetaAlan" style="margin-top:12px" hidden>
+            <div class="ikili">
+              <div>
+                <label for="waKanalPhoneId">Phone Number ID (Meta)</label>
+                <input type="text" id="waKanalPhoneId" placeholder="123456789012345" autocomplete="off" />
+              </div>
+              <div>
+                <label for="waKanalApiVersion">Graph API Sürümü</label>
+                <input type="text" id="waKanalApiVersion" value="v21.0" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+
+          <label style="font-weight:400; display:block; margin-top:12px">
+            <input type="checkbox" id="waKanalResimli" style="width:auto;margin-right:8px" checked />
+            Görsel varsa resim açıklaması (caption) olarak gönder
+          </label>
+
+          <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="kaydet-btn" id="waKanalKaydetBtn">💾 WhatsApp ayarlarını kaydet</button>
+            <button type="button" class="ikincil-btn" id="waKanalTestBtn">🧪 WhatsApp Kanalına Test Fırsatı Gönder</button>
+            <button type="button" class="ikincil-btn" id="waKanalOnizleBtn">👁️ Mesajı Önizle (göndermeden)</button>
+            <span id="waKanalMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+          <pre id="waKanalOnizleme" class="wa-onizleme" hidden></pre>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SEKME 3: 🤖 BOTLAR, SMTP & İNDİRİM BOTU                          -->
+      <!-- ================================================================ -->
+      <section class="admin-sekme-panel" data-admin-panel="botlar" hidden>
+        <div class="ayar-kart">
+          <h2>📱 Çoklu Bildirim Kanalları (Telegram &amp; WhatsApp)</h2>
+          <p class="alt-not">Sistem alarm botu ve otonom fırsat kanalları için sunucu API tokenları burada saklanır.</p>
+
+          <div style="border-bottom:1px solid var(--cizgi); padding-bottom:16px; margin-bottom:16px;">
+            <h3 style="font-size:15px; margin-bottom:8px">✈️ Telegram Bot Bildirimi</h3>
+            <label style="font-weight:400; display:block; margin-bottom:8px">
+              <input type="checkbox" id="telegramEnabled" style="width:auto;margin-right:8px" />
+              Telegram bildirimlerini etkinleştir
+            </label>
+            <div class="form-satir">
+              <div class="ikili">
+                <div>
+                  <label for="telegramBotToken">Bot Token (BotFather'dan alınan)</label>
+                  <input type="password" id="telegramBotToken" placeholder="123456789:ABCdefGhIJKlmNoPQRstuvwxYZ" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="telegramChatId">Chat ID / Kullanıcı ID</label>
+                  <input type="text" id="telegramChatId" placeholder="Örn: 987654321" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+            <button type="button" class="ikincil-btn" id="telegramTestBtn" style="margin-top:8px">🧪 Telegram Test Bildirimi Gönder</button>
+            <span id="telegramTestMesaj" class="durum-mesaji"></span>
+          </div>
+
+          <div>
+            <h3 style="font-size:15px; margin-bottom:8px">💬 WhatsApp Bildirimi</h3>
+            <label style="font-weight:400; display:block; margin-bottom:8px">
+              <input type="checkbox" id="whatsappEnabled" style="width:auto;margin-right:8px" />
+              WhatsApp bildirimlerini etkinleştir
+            </label>
+            <div class="form-satir">
+              <div class="ikili">
+                <div>
+                  <label for="whatsappWebhookUrl">Webhook / API URL</label>
+                  <input type="text" id="whatsappWebhookUrl" placeholder="https://api.green-api.com/... veya Webhook URL" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="whatsappPhone">Telefon Numarası (Ülke kodu ile)</label>
+                  <input type="text" id="whatsappPhone" placeholder="905551234567" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+            <button type="button" class="ikincil-btn" id="whatsappTestBtn" style="margin-top:8px">🧪 WhatsApp Test Bildirimi Gönder</button>
+            <span id="whatsappTestMesaj" class="durum-mesaji"></span>
+          </div>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>✉️ Sistem Alarm E-postası &amp; 🔐 SMTP Ayarları</h2>
+          <p class="alt-not">Fiyat düşüş e-postaları bu SMTP sunucusu üzerinden gönderilir. Şifre yalnızca sunucuda tutulur.</p>
+          <div class="form-satir">
+            <div>
+              <label for="alarmEmail">Sistem Alarm E-posta Adresi</label>
+              <input type="email" id="alarmEmail" placeholder="ornek@eposta.com" autocomplete="off" />
+            </div>
+            <div class="ikili">
+              <div>
+                <label for="smtpHost">Sunucu (host)</label>
+                <input type="text" id="smtpHost" placeholder="smtp.gmail.com" autocomplete="off" />
+              </div>
+              <div>
+                <label for="smtpPort">Port</label>
+                <input type="number" id="smtpPort" placeholder="587" />
+              </div>
+            </div>
+            <div class="ikili">
+              <div>
+                <label for="smtpUser">Kullanıcı adı</label>
+                <input type="text" id="smtpUser" autocomplete="off" />
+              </div>
+              <div>
+                <label for="smtpPass">Şifre / uygulama şifresi</label>
+                <input type="password" id="smtpPass" placeholder="Değiştirmek istemiyorsanız boş bırakın" autocomplete="new-password" />
+              </div>
+            </div>
+            <div>
+              <label for="smtpFrom">Gönderen (boşsa kullanıcı adı kullanılır)</label>
+              <input type="text" id="smtpFrom" autocomplete="off" />
+            </div>
+            <div>
+              <label style="font-weight:400">
+                <input type="checkbox" id="smtpSecure" style="width:auto;margin-right:8px" />
+                TLS ile bağlan (port 465 için işaretleyin)
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:20px">
+            <button class="kaydet-btn" id="kaydetBtn">Bot &amp; SMTP ayarlarını kaydet</button>
+            <span id="kaydetMesaj" class="durum-mesaji"></span>
+          </div>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>🤖 İndirim Botu Kontrolü</h2>
+          <p class="alt-not">
+            Takip edilen ürünlerin fiyatları günde 5 kez (09:00, 12:00, 15:00, 18:00, 21:00) otomatik kontrol edilir.
+            Buradan elle kontrol tetikleyebilir veya test e-postası gönderebilirsiniz.
+          </p>
+          <div id="gorevDurumu" class="gorev-durumu"></div>
+          <div class="bot-butonlar">
+            <button class="kaydet-btn" id="calistirBtn">Kontrolleri şimdi çalıştır</button>
+            <button class="kaydet-btn ikincil" id="testEmailBtn">Test e-postası gönder</button>
+          </div>
+          <div id="calismaSonuc" class="durum-mesaji"></div>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- SEKME 4: 🛠️ SİSTEM, SAĞLIK, KREDİLER & BAKIM                    -->
+      <!-- ================================================================ -->
+      <section class="admin-sekme-panel" data-admin-panel="sistem" hidden>
+        <div class="ayar-kart">
+          <h2>🏥 Mağaza Adaptör Sağlığı</h2>
+          <p class="alt-not">
+            Tüm mağaza adaptörlerinin son tarama sağlığı. Bozuk veya engel yiyen mağazaları görüp tek tıkla sağlık kontrolü başlatabilirsiniz.
+          </p>
+          <div id="saglikOzetSatiri" class="gorev-durumu">—</div>
+          <div class="bot-butonlar" style="margin-bottom:12px">
+            <button type="button" class="kaydet-btn" id="saglikKontrolBtn">🩺 Sağlık kontrolünü çalıştır</button>
+            <button type="button" class="ikincil-btn" id="saglikHataFiltreBtn">⚠️ Sadece hatalıları göster</button>
+            <span id="saglikMesaj" class="durum-mesaji"></span>
+          </div>
+          <div id="saglikIzgara" class="admin-saglik-izgara">
+            <p class="alt-not">Yükleniyor…</p>
+          </div>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>💳 Kazıma sağlayıcı kredileri</h2>
+          <p class="alt-not">
+            Ücretsiz hesap uçlarından okunur (kredi harcamaz), 10 dakika önbelleklenir.
+          </p>
+          <div id="krediPanosu"><p class="alt-not">Yükleniyor…</p></div>
+          <div class="bot-butonlar" style="margin-top:14px">
+            <button class="kaydet-btn ikincil" id="krediYenileBtn">Kredileri yenile</button>
+            <span id="krediSonGuncelleme" class="durum-mesaji"></span>
+          </div>
+        </div>
+
+        <div class="ayar-kart">
+          <h2>🎟️ Kupon ve kampanya toplayıcı</h2>
+          <p class="alt-not">
+            Günde iki kez site kampanyalarını okur. Buradan elle tarama başlatabilirsiniz.
+          </p>
+          <div id="kuponPanosu"><p class="alt-not">Yükleniyor…</p></div>
+          <div class="bot-butonlar" style="margin-top:14px">
+            <button class="kaydet-btn ikincil" id="kuponToplaBtn">Kuponları şimdi topla</button>
+            <span id="kuponSonGuncelleme" class="durum-mesaji"></span>
+          </div>
+        </div>
+
+        <div class="ayar-kart db-bakim-kart">
+          <h2>🧹 Veritabanı ve Önbellek Bakımı</h2>
+          <p class="alt-not">
+            Her gece <b>04:00</b>'te otomatik çalışır: WAL checkpoint (TRUNCATE), query optimizer,
+            <b>7 günden eski</b> snapshot'lar ve <b>30 günden eski</b> önbellek dosyaları temizlenir.
+          </p>
+          <div id="dbBakimDurum" class="gorev-durumu">—</div>
+          <div class="bot-butonlar">
+            <button class="kaydet-btn" id="dbBakimBtn">🧹 Bakımı şimdi çalıştır</button>
+            <button class="kaydet-btn ikincil" id="dbBakimKuruBtn">🔍 Yalnızca tara (silme)</button>
+            <button class="ikincil-btn" id="logRotateBtn">🔄 Log Döndür</button>
+            <button class="ikincil-btn" id="logCleanupBtn">🗑️ Eski Logları Sil</button>
+          </div>
+          <div id="dbBakimSonuc" class="durum-mesaji" aria-live="polite"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="altbar">
+    <div class="kap">
+      En Ucuz Nerede? · Yönetici Kontrol Merkezi · Arama motorlarına kapalıdır (<code>noindex</code>).
+    </div>
+  </footer>
+
+  <script src="/tema.js"></script>
+  <script src="/admin.js"></script>
+  <script src="/afiliye-ayar.js"></script>
+</body>
+</html>

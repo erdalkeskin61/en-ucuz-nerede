@@ -11,6 +11,10 @@
 import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
 import { findJsonLdProduct, dominantColor, decodeEntities, parseNum, absUrl } from '../util.js';
+import {
+  extractSelfHealingPrice, extractSelfHealingTitle,
+  extractSelfHealingImage, extractSelfHealingBrand,
+} from '../selfHealingParser.js';
 
 /** Bir HTML penceresinde ilk eşleşen regex'in 1. grubunu metin olarak döndürür. */
 function ilkEslesme(metin, desenler) {
@@ -90,20 +94,21 @@ export function genelSite(cfg) {
       const ld = findJsonLdProduct(html);
       const ldFiyat = ld?.offers ? parseNum(Array.isArray(ld.offers) ? ld.offers[0]?.price : ld.offers.price) : null;
 
-      // 2) Yapılandırılmış regex'ler
-      const fiyatHam = ilkEslesme(html, urun?.fiyat);
-      const regexFiyat = fiyatHam != null ? parseNum(fiyatHam) : null;
+      // 2) 5 kademeli self-healing kaskad (2026-11-13):
+      //    JSON-LD → Meta → DOM → adaptör regex → heuristic.
+      //    Sabit regex tutmazsa fiyat kaybolmuyor; kurtarıldığı kademe loglanır.
+      const sh = extractSelfHealingPrice(html, urun?.fiyat, name);
 
-      const price = ldFiyat != null && ldFiyat > 0 ? ldFiyat : regexFiyat;
+      const price = ldFiyat != null && ldFiyat > 0 ? ldFiyat : sh.fiyat;
       if (price == null || price <= 0) {
         throw new Error(`${name}: ürün fiyatı sayfada bulunamadı (fiyat JS ile yükleniyor olabilir).`);
       }
 
-      const title = ld?.name
-        || temizle(ilkEslesme(html, urun?.baslik) || '')
-        || temizle((html.match(/<h1[^>]*>([\s\S]{5,250}?)<\/h1>/i) || [])[1] || '')
-        || temizle((html.match(/<meta property="og:title" content="([^"]{5,250})"/i) || [])[1] || '');
+      const title = ld?.name || extractSelfHealingTitle(html, urun?.baslik);
       if (!title) throw new Error(`${name}: ürün başlığı bulunamadı.`);
+      const image = extractSelfHealingImage(html) || null;
+      const marka = (ld?.brand && typeof ld.brand === 'object' ? ld.brand.name : ld?.brand)
+        || extractSelfHealingBrand(html, urun?.marka);
 
       const eskiHam = ilkEslesme(html, urun?.eskiFiyat);
       const eski = eskiHam != null ? parseNum(eskiHam) : null;
@@ -121,14 +126,17 @@ export function genelSite(cfg) {
         }
       }
 
-      const stokYok = /tükendi|stokta yok|out-of-stock|sold-out|stoklarımızda yok/i.test(html);
+      const ldOffer = Array.isArray(ld?.offers) ? ld.offers[0] : ld?.offers;
+      const stokYok = ldOffer?.availability
+        ? !/InStock/i.test(ldOffer.availability)
+        : /tükendi|stokta yok|out-of-stock|sold-out|stoklarımızda yok/i.test(html);
 
       return {
         site: this.id,
         siteName: this.name,
         url,
         title,
-        brand: ld?.brand?.name || temizle(ilkEslesme(html, urun?.marka) || '') || null,
+        brand: marka || null,
         modelCode: ld?.sku || ld?.mpn || temizle(ilkEslesme(html, urun?.modelKodu) || '') || null,
         barcode: ld?.gtin13 || ld?.gtin || null,
         color: dominantColor(title),
@@ -137,7 +145,7 @@ export function genelSite(cfg) {
         currency: 'TRY',
         inStock: !stokYok,
         seller: ld?.seller?.name || null,
-        image: Array.isArray(ld?.image) ? (typeof ld.image[0] === 'string' ? ld.image[0] : ld.image[0]?.url || null) : (ld?.image || null),
+        image,
         campaigns: kampanyalar,
         shipping: kargoCikar(html, this.id),
       };

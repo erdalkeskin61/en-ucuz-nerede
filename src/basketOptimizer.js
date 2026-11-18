@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Çok Mağazalı Akıllı Sepet Bölücü (Split-Basket Optimizer).
  *
  * Problem: kullanıcı 2-10 ürün alıyor; her ürün farklı sitede daha ucuz olabilir
@@ -38,7 +38,7 @@ export const HIZLI_SITELER = [
   'robotistan', 'robolinkmarket', 'filamentsan', 'filamentmarketim', 'samm',
   'ventatek', '3dcim', 'pusula3d', 'robitshop', 'filamentvakti', 'print3d',
   'makerfabrika', '3dultra', 'robomer', 'tou3d', '3dmarketim', '3dprinterankara',
-  'teknikfilament3d',
+  'teknikfilament3d', 'porima3d',
 ];
 
 /**
@@ -63,6 +63,9 @@ export const SEPET_SITELERI = [
   'deneystore',
   // 2026-10-29: bisiparisver (IdeaSoft klasik; arama 30 kart, ürün ~1,1 sn).
   'bisiparisver',
+  // 2026-11-03: porima3d.com (üreticinin kendi Shopify mağazası; 36 varyantlı
+  // filamentler). Ücretsiz kargo eşiği 1.500 TL (siteden doğrulandı).
+  'porima3d',
 ];
 
 /** Sepette tek siteye ayrılan en fazla süre — yavaş site tüm sepeti kilitlemesin. */

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#3450D1" />
+  <title>Slicer Eklentisi — En Ucuz Nerede</title>
+  <meta name="description" content="Cura, Bambu Studio, OrcaSlicer ve PrusaSlicer için ücretsiz eklenti. Dilimleme bittiğinde harcanacak filamenti ve en ucuz stoklu makarayı gösterir." />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/ikon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/slicer.css" />
+  <script>
+    try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tema') === 'dark' ? 'dark' : 'light'); } catch {}
+  </script>
+</head>
+<body class="sayfa-slicer">
+  <header class="ustbar">
+    <div class="kap">
+      <a class="logo" href="/">
+        <span class="logo-isaret">🏷️</span>
+        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      </a>
+      <nav class="menu">
+        <a href="/">Karşılaştır</a>
+        <a href="/maliyet.html">🧮 Maliyet</a>
+        <a href="/sepet.html">🧺 Akıllı Sepet</a>
+        <a href="/slicer.html" class="etkin">🧩 Eklenti</a>
+      </nav>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Tema değiştir" title="Tema değiştir">🌓</button>
+    </div>
+  </header>
+
+  <main class="kap">
+    <section class="hero sl-hero">
+      <div class="hero-ic">
+        <span class="hero-rozet">🧩 Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>
+        <h1>Dilimleme bittiği anda<br><b>en ucuz filamenti</b> göster</h1>
+        <p>Web sitesine gitmeye gerek yok. Slice tuşuna bastığında harcanacak gramajı
+          okur, 61 mağazadaki stoklu en ucuz makarayı bulur ve tek tıkla satın alma
+          bağlantısı verir.</p>
+        <div class="hero-istatistik">
+          <span>⚡ &lt; 50 ms API</span>
+          <span>🔒 Yalnızca gramaj + malzeme gönderilir</span>
+          <span>🆓 Ücretsiz, hesap gerekmez</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Canlı API örneği (gerçek veri) -->
+    <section class="sl-canli" aria-labelledby="slCanliBaslik">
+      <div class="sl-canli-ust">
+        <h2 id="slCanliBaslik">🔎 Canlı örnek — şu an ne diyor?</h2>
+        <span class="sl-canli-etiket">gerçek veri</span>
+      </div>
+      <div class="sl-canli-form">
+        <label>
+          Malzeme
+          <select id="slMalzeme">
+            <option value="PLA" selected>PLA</option>
+            <option value="PETG">PETG</option>
+            <option value="ABS">ABS</option>
+            <option value="TPU">TPU</option>
+            <option value="ASA">ASA</option>
+          </select>
+        </label>
+        <label>
+          Gramaj (g)
+          <input type="number" id="slGramaj" value="340" min="1" max="10000" step="1" />
+        </label>
+        <label>
+          Renk (isteğe bağlı)
+          <input type="text" id="slRenk" value="Siyah" maxlength="30" placeholder="Siyah" />
+        </label>
+      </div>
+      <div class="sl-canli-sonuc" id="slSonuc" aria-live="polite">
+        <span class="sl-bekle">⏳ Sorgulanıyor…</span>
+      </div>
+      <pre class="sl-json" id="slJson" hidden></pre>
+    </section>
+
+    <!-- İndirme kartları -->
+    <section class="sl-indirme" aria-labelledby="slIndirmeBaslik">
+      <h2 id="slIndirmeBaslik" class="sl-bolum-baslik">📥 İndir ve kur</h2>
+
+      <div class="sl-kartlar">
+        <!-- CURA -->
+        <article class="sl-kart">
+          <header class="sl-kart-ust">
+            <span class="sl-kart-ikon" aria-hidden="true">🖨️</span>
+            <div>
+              <h3>UltiMaker Cura</h3>
+              <p class="sl-kart-alt">Cura 4.13 ve üzeri</p>
+            </div>
+          </header>
+          <a class="sl-indir-btn" href="/indir/EnUcuzNerede.curapackage" download>
+            ⬇️ EnUcuzNerede.curapackage
+          </a>
+          <ol class="sl-adimlar">
+            <li><code>.curapackage</code> dosyasını Cura penceresine <b>sürükleyip bırakın</b>.</li>
+            <li>Cura'yı <b>yeniden başlatın</b>.</li>
+            <li>Bir model dilimleyin — bildirim otomatik gelir.</li>
+          </ol>
+        </article>
+
+        <!-- BAMBU / ORCA / PRUSA -->
+        <article class="sl-kart">
+          <header class="sl-kart-ust">
+            <span class="sl-kart-ikon" aria-hidden="true">🧩</span>
+            <div>
+              <h3>Bambu Studio · OrcaSlicer · PrusaSlicer</h3>
+              <p class="sl-kart-alt">Post-processing script</p>
+            </div>
+          </header>
+          <a class="sl-indir-btn" href="/indir/en_ucuz_slicer.py" download>
+            ⬇️ en_ucuz_slicer.py
+          </a>
+          <ol class="sl-adimlar">
+            <li>Dosyayı bilgisayarınıza kaydedin (ör. <code>C:\EnUcuz\en_ucuz_slicer.py</code>).</li>
+            <li>Slicer'da <b>Print Settings ➔ Output options ➔ Post-processing scripts</b> kutusuna
+              dosyanın <b>tam yolunu</b> yapıştırın.</li>
+            <li>Dilimleyip kaydedin — bildirim otomatik gelir.</li>
+          </ol>
+
+          <details class="sl-yardim">
+            <summary>🐍 Python yok mu? (Windows)</summary>
+            <p>Betik Python 3 ile çalışır. Kurulu değilse
+              <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a>'dan
+              kurun ve <b>"Add python.exe to PATH"</b> seçeneğini işaretleyin.
+              Ardından kutuya şunu yazın:</p>
+            <pre class="sl-kod">python "C:\EnUcuz\en_ucuz_slicer.py"</pre>
+            <p class="sl-not">Kendi <code>.exe</code> dosyanızı üretmek isterseniz:</p>
+            <pre class="sl-kod">pip install pyinstaller
+pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
+            <p class="sl-not">⚠️ <code>--noconsole</code> ile derlerseniz <code>--test</code> çıktısını
+              görmezsiniz; bildirimler yine çalışır.</p>
+          </details>
+
+          <details class="sl-yardim">
+            <summary>✅ Kurulumu doğrula</summary>
+            <p>Terminalde şunu çalıştırın:</p>
+            <pre class="sl-kod">python en_ucuz_slicer.py --test</pre>
+            <p class="sl-not">API'ye ulaşırsa bir test bildirimi gösterir. Bağlantı yoksa
+              <code>SONUÇ: API'ye ulaşılamadı</code> yazar — dilimleme yine etkilenmez.</p>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <!-- Nasıl çalışır -->
+    <section class="sl-nasil" aria-labelledby="slNasilBaslik">
+      <h2 id="slNasilBaslik" class="sl-bolum-baslik">⚙️ Nasıl çalışır?</h2>
+      <div class="sl-akis">
+        <div class="sl-akis-adim">
+          <span class="sl-akis-no">1</span>
+          <b>Dilimleme biter</b>
+          <span>Slicer gramajı ve malzeme türünü G-Code'a yazar.</span>
+        </div>
+        <div class="sl-akis-adim">
+          <span class="sl-akis-no">2</span>
+          <b>Eklenti okur</b>
+          <span>Yalnızca <code>filament used [g]</code>, <code>filament_type</code> ve renk.</span>
+        </div>
+        <div class="sl-akis-adim">
+          <span class="sl-akis-no">3</span>
+          <b>API sorgular</b>
+          <span>61 mağazadaki stoklu en ucuz makara, 1,5 sn zaman aşımıyla.</span>
+        </div>
+        <div class="sl-akis-adim">
+          <span class="sl-akis-no">4</span>
+          <b>Bildirim gelir</b>
+          <span>“Bu baskı 340 g PLA gerektiriyor. En ucuz ₺463,68 ile Porima 3D'de.”</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gizlilik ve dürüstlük -->
+    <section class="sl-guven" aria-labelledby="slGuvenBaslik">
+      <h2 id="slGuvenBaslik" class="sl-bolum-baslik">🔒 Gizlilik ve dürüstlük</h2>
+      <ul class="sl-liste">
+        <li><b>Ne gönderilir:</b> yalnızca malzeme türü (PLA/PETG…), gramaj ve kaynak etiketi
+          (<code>cura</code>, <code>bambu</code>…). Renk isteğe bağlı.</li>
+        <li><b>Ne gönderilmez:</b> dosya adı, model içeriği, G-Code, IP dışında hiçbir kişisel veri.</li>
+        <li><b>G-Code değiştirilmez:</b> post-processor dosyayı yalnızca <b>okur</b>; içeriğine
+          dokunmaz.</li>
+        <li><b>Dilimleme asla yavaşlamaz:</b> ağ isteği ve bildirim ayrı süreçte çalışır;
+          post-processor milisaniyeler içinde döner.</li>
+        <li><b>Bağlantı yoksa sessizdir:</b> API'ye ulaşılamazsa hiçbir şey gösterilmez,
+          dilimleme kesintiye uğramaz.</li>
+        <li><b>Uydurma fiyat yok:</b> stokta uygun filament yoksa “bulunamadı” denir,
+          sahte fiyat gösterilmez.</li>
+      </ul>
+    </section>
+
+    <!-- API belgesi -->
+    <section class="sl-api" aria-labelledby="slApiBaslik">
+      <h2 id="slApiBaslik" class="sl-bolum-baslik">🔌 API (kendi entegrasyonunuz için)</h2>
+      <p class="sl-api-not">Herkese açık, CORS destekli, 60 sn önbellekli.</p>
+      <pre class="sl-kod sl-kod-blok">GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;renk=Siyah&amp;kaynak=cura
+
+{
+  "status": "success",
+  "talep": { "malzeme": "PLA", "gramaj": 340, "renk": "Siyah" },
+  "enUcuz": {
+    "urunAdi": "Porima xPLA Filament Siyah 1kg",
+    "magaza": "Porima 3D",
+    "fiyat": 463.68,
+    "parcaBasiMaliyet": 157.65,
+    "makaradanCikanAdet": 2,
+    "stok": true,
+    "yonlendirmeLinki": "https://enucuznerede.com/yonlendir?urunId=4&amp;kaynak=cura"
+  },
+  "bildirimMetni": "Bu baskı 340 g Siyah PLA gerektiriyor. …"
+}</pre>
+      <p class="sl-api-not">Parametreler: <code>malzeme</code> · <code>gramaj</code> (zorunlu) ·
+        <code>renk</code> · <code>kaynak</code>. Gramaj yoksa <code>400</code>,
+        stokta ürün yoksa <code>status:"bulunamadi"</code> döner.</p>
+    </section>
+  </main>
+
+  <footer class="sl-altbilgi">
+    <div class="kap">
+      <p>Slicer eklentisi ücretsizdir ve hesap gerektirmez. Satın alma bağlantıları
+        komisyonlu olabilir; fiyatınızı değiştirmez.</p>
+    </div>
+  </footer>
+
+  <script src="/erisim.js"></script>
+  <script src="/tema.js"></script>
+  <script src="/slicer.js"></script>
+</body>
+</html>

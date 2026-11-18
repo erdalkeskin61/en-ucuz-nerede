@@ -1,0 +1,61 @@
+# =============================================================================
+# .dockerignore — imaj bağlamını küçük ve GÜVENLİ tutar
+# =============================================================================
+# Sırlar ASLA imaja girmez (.env, veritabanı, önbellek).
+# Geliştirme/test artıkları da dışarıda kalır → imaj küçük, build hızlı.
+
+# --- Sırlar ve yerel yapılandırma ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# --- Çalışma zamanı verisi (volume'dan gelir) ---
+data/
+data/**
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+logs/
+*.log
+
+# --- Bağımlılıklar (imaj içinde kurulur) ---
+node_modules/
+**/node_modules/
+
+# --- Sürüm kontrolü / editör ---
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+*.swp
+
+# --- Test ve teşhis çıktıları ---
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+**/*.test.js
+scripts/test-*.mjs
+scripts/_*.mjs
+
+# --- Belgeler ve geçici dosyalar ---
+README.md
+*.md
+!public/**/*.md
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+Thumbs.db
+.DS_Store
+
+# --- Yerel tarayıcı profilleri ---
+chrome-profile/
+user-data/

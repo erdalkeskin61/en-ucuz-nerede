@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Widget Galerisi — yerel önizleme</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* Yerel önizleme sayfası: dağıtım dosyalarına dahil değildir. */
+    .wg-kap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 60px; }
+    .wg-ust { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+    .wg-ust h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -0.02em; }
+    .wg-ust p { margin: 0; font-size: 13.5px; color: var(--gri-metin); line-height: 1.55; }
+    .wg-adres {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 10px; padding: 8px 12px; border-radius: 10px;
+      background: var(--ana-acik); border: 1px solid var(--cizgi);
+      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--ana);
+    }
+    .wg-adres b { font-weight: 700; }
+    .wg-secim { display: flex; gap: 6px; background: var(--zemin-2); border-radius: 999px; padding: 4px; }
+    .wg-secim button {
+      font: inherit; font-size: 12.5px; font-weight: 600; border: 0; background: transparent;
+      color: var(--gri-metin); padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    }
+    .wg-secim button.aktif { background: var(--kart); color: var(--ana); box-shadow: var(--golge-yumusak); }
+
+    .wg-izgara {
+      display: grid; gap: 16px; margin-top: 22px;
+      grid-template-columns: repeat(auto-fill, minmax(336px, 1fr));
+    }
+    .wg-kart {
+      background: var(--kart); border: 1px solid var(--cizgi); border-radius: 16px;
+      padding: 14px; box-shadow: var(--kart-golge);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .wg-kart h3 {
+      margin: 0; font-size: 12.5px; font-weight: 700; color: var(--metin-hafif);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wg-kart iframe { border: 0; border-radius: 12px; overflow: hidden; width: 320px; max-width: 100%; height: 180px; }
+    .wg-kart-alt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .wg-kart-alt button {
+      font: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 11px;
+      border-radius: 8px; border: 1px solid var(--cizgi-koyu); background: var(--kart);
+      color: var(--ana); cursor: pointer;
+    }
+    .wg-kart-alt button:hover { background: var(--ana-acik); }
+    .wg-url {
+      flex: 1 1 140px; min-width: 0; font-size: 11px; color: var(--gri-metin-hafif);
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wg-bos { padding: 40px; text-align: center; color: var(--gri-metin); }
+    .wg-durum { font-size: 12px; font-weight: 600; color: var(--yesil); min-height: 16px; }
+    .wg-esik { margin-top: 30px; padding: 16px 18px; border-radius: 14px; background: var(--zemin-2); border: 1px solid var(--cizgi); }
+    .wg-esik h2 { margin: 0 0 8px; font-size: 14px; }
+    .wg-esik code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--metin-hafif); }
+    .wg-esik ol { margin: 8px 0 0; padding-left: 20px; font-size: 12.5px; color: var(--gri-metin); line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <main class="wg-kap">
+    <div class="wg-ust">
+      <div>
+        <h1>🔌 Widget Galerisi</h1>
+        <p>Radar kataloğundaki her ürün için canlı fiyat widget'ı. Blogunuza gömeceğiniz
+          iframe kodları hazır — <b>tümü bu sunucuya (localhost) bağlıdır</b>.</p>
+        <div class="wg-adres">adres: <b id="wgAdres">—</b></div>
+      </div>
+      <div class="wg-secim" role="group" aria-label="Widget teması">
+        <button type="button" data-tema="dark" class="aktif">🌙 Koyu</button>
+        <button type="button" data-tema="light">☀️ Açık</button>
+      </div>
+    </div>
+
+    <div class="wg-izgara" id="wgIzgara" aria-live="polite">
+      <div class="wg-bos">⏳ Widget'lar hazırlanıyor…</div>
+    </div>
+
+    <section class="wg-esik">
+      <h2>Nasıl çalışıyor?</h2>
+      <ol>
+        <li>Her kart, gerçek <code>/widget</code> sayfasını iframe içinde gösterir.</li>
+        <li><b>📋 Kopyala</b> → üretimde alan adınızı yazıp aynı kodu blogunuza yapıştırın.</li>
+        <li>Widget fiyatı <code>/api/widget</code> üzerinden okur (5 dk önbellek).</li>
+        <li>Ürün katalogda yoksa sahte fiyat basmaz — "bulunamadı" der.</li>
+      </ol>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+      // Tema, sayfanın kendi görünümü için (widget ayrıca ?tema alır).
+      var tema = 'dark';
+      var urunler = [];
+      var kok = document.documentElement;
+      kok.setAttribute('data-theme', 'dark');
+      document.getElementById('wgAdres').textContent = location.origin;
+
+      function kac(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function iframeKodu(slug, t) {
+        return '<iframe src="' + location.origin + '/widget?urun=' + encodeURIComponent(slug)
+          + '&tema=' + t + '" width="320" height="180" frameborder="0" loading="lazy"'
+          + ' style="border:0;border-radius:12px;overflow:hidden"></iframe>';
+      }
+
+      function ciz() {
+        var izgara = document.getElementById('wgIzgara');
+        if (!urunler.length) {
+          izgara.innerHTML = '<div class="wg-bos">Katalogda fiyatlı ürün bulunamadı. '
+            + 'Önce otonom radarı çalıştırın.</div>';
+          return;
+        }
+        izgara.innerHTML = urunler.map(function (u) {
+          var src = location.origin + '/widget?urun=' + encodeURIComponent(u.slug)
+            + '&tema=' + tema + '&_t=' + Date.now();
+          return '<article class="wg-kart">'
+            + '<h3 title="' + kac(u.ad) + '">' + kac(u.ad) + '</h3>'
+            + '<iframe src="' + kac(src) + '" width="320" height="180" frameborder="0"'
+            + ' loading="lazy" title="Widget: ' + kac(u.ad) + '"></iframe>'
+            + '<div class="wg-kart-alt">'
+            + '  <span class="wg-url" title="' + kac(u.slug) + '">/widget?urun=' + kac(u.slug) + '</span>'
+            + '  <button type="button" data-kopyala="' + kac(u.slug) + '">📋 Kopyala</button>'
+            + '</div>'
+            + '</article>';
+        }).join('');
+      }
+
+      document.querySelectorAll('[data-tema]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          tema = b.dataset.tema === 'light' ? 'light' : 'dark';
+          document.querySelectorAll('[data-tema]').forEach(function (x) {
+            x.classList.toggle('aktif', x === b);
+          });
+          ciz();
+        });
+      });
+
+      document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-kopyala]');
+        if (!b) return;
+        var slug = b.getAttribute('data-kopyala');
+        var metin = iframeKodu(slug, tema);
+        var yaz = function (ok) {
+          b.textContent = ok ? '✅ Kopyalandı' : '⚠️ Elle kopyala';
+          setTimeout(function () { b.textContent = '📋 Kopyala'; }, 2200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(metin).then(function () { yaz(true); }, function () { yaz(false); });
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = metin;
+          document.body.appendChild(ta);
+          ta.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+          document.body.removeChild(ta);
+          yaz(ok);
+        }
+      });
+
+      fetch('/api/widget/ornekler?limit=12')
+        .then(function (r) { return r.json(); })
+        .then(function (v) {
+          urunler = (v && v.urunler) || [];
+          ciz();
+        })
+        .catch(function () {
+          document.getElementById('wgIzgara').innerHTML =
+            '<div class="wg-bos">⚠️ Ürünler yüklenemedi. Sunucunun çalıştığını kontrol edin.</div>';
+        });
+    })();
+  </script>
+</body>
+</html>

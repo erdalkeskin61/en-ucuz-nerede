@@ -17,6 +17,7 @@ import { ticimaxSite } from './plt-ticimax.js';
 import { filamentVaktiSite } from './plt-filamentvakti.js';
 import { ideasoftKlasikSite } from './plt-ideasoft-klasik.js';
 import { shopifySite } from './plt-shopify.js';
+import { prestashopSite } from './plt-prestashop.js';
 
 export const yeniSiteler2 = [
   // ---- Yeni Eklenen Siteler (2026-10-26) ----
@@ -70,6 +71,14 @@ export const yeniSiteler2 = [
     id: 'robocombo', name: 'Robocombo',
     hosts: ['robocombo.com', 'www.robocombo.com'], base: 'https://www.robocombo.com',
     render: true,
+  }),
+
+  // ---- Porima 3D (Shopify, 2026-11-03) ----
+  // Üreticinin kendi mağazası: 36 varyantlı filament ürünleri (18 renk × 1kg/3kg).
+  // Shopify adaptörü varyant-farkındadır (kaynak renk+ağırlığa göre seçer).
+  shopifySite({
+    id: 'porima3d', name: 'Porima 3D',
+    hosts: ['porima3d.com', 'www.porima3d.com'], base: 'https://porima3d.com',
   }),
 
   // ---- Özel platformlar (genel adaptör) ----
@@ -259,6 +268,49 @@ export const yeniSiteler2 = [
       fiyat: [/class="sale-price sale-variant-price[^"]*"[^>]*>\s*([\d.,]+)/i, /class="sale-price[^"]*"[^>]*>\s*([\d.,]+)/i],
       baslik: [/<h1[^>]*>([\s\S]{3,200}?)<\/h1>/i],
       eskiFiyat: [/class="list-price[^"]*"[^>]*>\s*([\d.,]+)/i],
+    },
+  }),
+
+  // ---- Yeni Eklenen 3D / Filament Mağazaları (2026-11-13) ----
+  ticimaxSite({
+    id: 'kirpilab', name: 'Kirpilab',
+    hosts: ['kirpilab.com', 'www.kirpilab.com'], base: 'https://kirpilab.com',
+    aramaYolu: '/Arama?kelime=',
+  }),
+  ticimaxSite({
+    id: 'efilament', name: 'eFilament',
+    hosts: ['efilament.com', 'www.efilament.com'], base: 'https://efilament.com',
+    aramaYolu: '/Arama?kelime=',
+  }),
+  prestashopSite({
+    id: '3dteknobiz', name: '3D Teknobiz',
+    hosts: ['3dteknobiz.com', 'www.3dteknobiz.com'], base: 'https://3dteknobiz.com',
+  }),
+  ikasSite({
+    id: 'makerpazar', name: 'Makerpazar',
+    hosts: ['makerpazar.com', 'www.makerpazar.com'], base: 'https://makerpazar.com',
+    render: true,
+  }),
+  ikasSite({
+    id: 'zzrobot3d', name: 'ZZRobot3D',
+    hosts: ['zzrobot3d.com', 'www.zzrobot3d.com'], base: 'https://zzrobot3d.com',
+    render: true,
+  }),
+  genelSite({
+    id: 'sermenkreatif', name: 'Sermen Kreatif',
+    hosts: ['sermenkreatif.com', 'www.sermenkreatif.com'], base: 'https://sermenkreatif.com',
+    aramaYolu: '/urunler?q=',
+    urunYolu: /^\/urun\//,
+    urunHaric: /\/(sepet|hesabim|iletisim|kategori|urunler|hakkimizda|kargo|iade|gizlilik|kvkk)/i,
+    kart: {
+      baglanti: /<h3[^>]*>\s*<a[^>]+href="(\/urun\/[^"?]+)"/i,
+      baslik: /<a[^>]+href="\/urun\/[^"]+"[^>]*>([\s\S]{3,200}?)<\/a>/i,
+      fiyat: [/^(?:(?!<\/article>)[\s\S]){0,2800}?class="num[^>]*>\s*₺?\s*([\d.,]+)/i],
+      pencere: 2800,
+    },
+    urun: {
+      fiyat: [/₺\s*([\d.,]+)\s*KDV dahil/i, /class="num[^>]*>\s*₺?\s*([\d.,]+)/i],
+      baslik: [/<h1[^>]*>([\s\S]{3,200}?)<\/h1>/i],
     },
   }),
 ];

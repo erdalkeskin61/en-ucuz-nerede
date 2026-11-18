@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Kargo bilgisi çıkarıcı — "Bilinmiyor" yerine net fiyat/eşik bulma sistemi.
  *
  * İlke: ek istek ATMAZ. Ürün sayfası zaten getProduct sırasında çekilir; site
@@ -18,8 +18,8 @@ import { parseNum, formatTL, decodeEntities } from './util.js';
 // "1.500 TL ve Üzeri Alışverişlerinizde Kargo Bedava" / "2.000₺ üzeri ücretsiz kargo"
 // / "1000 TL ve üzeri ... kargo ücreti bizden" biçimleri (etiketleri atılmış metinde).
 const ESIK_RE = [
-  /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü)[^{}]{0,100}?(?:kargo|gönderim)[^{}]{0,40}?(?:bedava|ücretsiz|bizden)/,
-  /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü)[^{}]{0,100}?(?:bedava|ücretsiz)[^{}]{0,40}?(?:kargo|gönderim)/,
+  /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü|alışveriş(?:leriniz)?de)[^{}]{0,100}?(?:kargo|gönderim)[^{}]{0,40}?(?:bedava|ücretsiz|bizden)/,
+  /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü|alışveriş(?:leriniz)?de)[^{}]{0,100}?(?:bedava|ücretsiz)[^{}]{0,40}?(?:kargo|gönderim)/,
 ];
 
 // "Kargo 149 TL" / "kargo ücreti: 79,90 TL" / "Yurtiçi Kargo 139TL".
@@ -95,6 +95,24 @@ function temizle(html) {
  * verebiliyor — bkz. temizle()).
  */
 export const SITE_KARGO_VARSAYILANLARI = {
+  // 2026-11-03: porima3d.com (Shopify). Ücretsiz kargo eşiği sitenin kendi
+  // temasından okundu (free-shipping-bar data-threshold="150000" → 1.500 TL).
+  // Eşik ALTINDA kargo ücreti sitede YAYIMLANMIYOR → uydurulmaz (fee:null):
+  // sepet/ödeme adımında hesaplanıyor. Bu yüzden toplama kargo eklenmez.
+  'porima3d': {
+    fee: null,
+    freeOver: 1500,
+    applies: true,
+    note: '1.500 TL üzeri ücretsiz kargo · altında kargo ücreti ödeme adımında hesaplanır',
+  },
+  // 2026-11-03: mintengo.com (IdeaSoft). 2.000 TL ve üzeri ücretsiz kargo.
+  // Altında ücret sepette hesaplanır (sitede sabit tutar yayımlanmıyor).
+  'mintengo': {
+    fee: null,
+    freeOver: 2000,
+    applies: true,
+    note: '2.000 TL ve üzeri ücretsiz kargo · altında kargo ücreti sepette hesaplanır',
+  },
   '3dmarketim': {
     fee: 145,
     freeOver: 3000,

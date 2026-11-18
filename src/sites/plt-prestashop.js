@@ -33,11 +33,36 @@ export function prestashopSite(cfg) {
       const html = r.body;
       const gorulen = new Map();
 
-      const re = /<div class="js-product-miniature"[^>]*data-id-product="\d+"[\s\S]{0,800}?<a[^>]+href="([^"]+)"[^>]+title="([^"]{5,200})"/gi;
-      let m;
-      while ((m = re.exec(html))) {
-        const url = absUrl(base, m[1]);
-        gorulen.set(url, { title: decodeEntities(m[2]).trim(), url });
+      const kartRe = /<div[^>]+class="[^"]*\bjs-product-miniature\b[^"]*"[^>]*data-id-product="\d+"/gi;
+      const pozisyonlar = [];
+      let km;
+      while ((km = kartRe.exec(html))) pozisyonlar.push(km.index);
+
+      for (let i = 0; i < pozisyonlar.length; i++) {
+        const bas = pozisyonlar[i];
+        const bit = Math.min(pozisyonlar[i + 1] ?? html.length, bas + 3500);
+        const blok = html.slice(bas, bit);
+
+        // Hızlı görünüm (quickview) linklerini atla
+        let linkM = null;
+        for (const am of blok.matchAll(/<a[^>]+href="([^"]+)"[^>]+title="([^"]{5,200})"/gi)) {
+          if (/quickview|hızlı görünüm/i.test(am[0])) continue;
+          linkM = am;
+          break;
+        }
+        if (!linkM) {
+          const hm = blok.match(/<h[1-6][^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]{5,200}?)<\/a>/i);
+          if (hm) linkM = [hm[0], hm[1], hm[2].replace(/<[^>]*>/g, ' ')];
+        }
+        if (!linkM) continue;
+
+        const url = absUrl(base, linkM[1]);
+        const title = decodeEntities(linkM[2]).replace(/\s+/g, ' ').trim();
+        if (!title || gorulen.has(url)) continue;
+
+        const fm = blok.match(/class="[^"]*(?:product-price|price)[^"]*"[^>]*>\s*₺?\s*([\d.,]+)/i);
+        const price = fm ? parseNum(fm[1]) : undefined;
+        gorulen.set(url, price != null ? { title, url, price } : { title, url });
       }
       return [...gorulen.values()].slice(0, 30);
     },

@@ -9,6 +9,10 @@
  *  - Taksit indirimi sayılmaz; sitenin fiyata yansıtmış olduğu indirim ikinci kez düşürülmez.
  */
 import { config } from './config.js';
+import {
+  countTokenOverlap, brandAyni, normalizeModelCode, titleSimilarity,
+  modelSerisiCakismasi, kapasiteCakismasi,
+} from './util.js';
 
 const SYSTEM_PROMPT = `Sen bir Türkçe e-ticaret kampanya sınıflandırıcısın. Alışveriş sitesi ürün sayfalarından çıkarılmış kampanya/indirim metinlerini sınıflandırıyorsun.
 
@@ -67,11 +71,133 @@ function releaseAiSlot() {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+/**
+ * ⏱️ Sert zaman aşımı (2026-11-13).
+ *
+ * NEDEN: `chatOnce` 120 sn'lik iç timeout × 3 deneme ve `MAX_AI_CONCURRENT`
+ * semaforu birleşince `selectModels` dakikalarca kilitlenebiliyordu. Bu sarmalayıcı
+ * promise'i SERT bir üst sınırla keser; semafor kuyruğunda bekleyen bir istek de
+ * aynı sınırla düşer (kuyruk kilidi çözülür).
+ *
+ * @param {Promise<any>} promise
+ * @param {number} ms
+ * @param {string} [etiket] hata mesajında görünen ad
+ */
+export function zamanAsimli(promise, ms, etiket = 'işlem') {
+  const sure = Math.max(1, Number(ms) || 1);
+  let timer = null;
+  const zaman = new Promise((_, rej) => {
+    timer = setTimeout(() => rej(new Error(`${etiket} zaman aşımı (${sure} ms)`)), sure);
+  });
+  return Promise.race([promise, zaman]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+/** `selectModels` için toplam LLM bütçesi (sert üst sınır). */
+export const SELECT_MODELS_TIMEOUT_MS = 15000;
+
+/* ------------------------------------------------------------------ */
+/* 🔁 EVREN 503/429 dayanıklılığı (2026-11-05)                        */
+/* ------------------------------------------------------------------ */
+
+/** Yeniden denenecek HTTP durum kodları (geçici sunucu/kapasite hataları). */
+export const YENIDEN_DENENEBILIR = Object.freeze([429, 502, 503, 504]);
+
+/** Toplam deneme sayısı (ilk çağrı dahil). */
+export const MAKS_DENEME = 3;
+
+/** Tek bir beklemenin üst sınırı (resets_at uzak olsa bile). */
+export const MAKS_TEK_BEKLEME_MS = 4000;
+
+/** Tüm denemelerdeki toplam beklemenin üst sınırı (sonsuz döngü koruması). */
+export const MAKS_TOPLAM_BEKLEME_MS = 10000;
+
+/** Durum kodu geçici hata mı? */
+export function geciciHataMi(status) {
+  return YENIDEN_DENENEBILIR.includes(Number(status));
+}
+
+/**
+ * EVREN yanıt gövdesindeki `resets_at` alanını milisaniyeye çevirir.
+ *
+ * Desteklenen konumlar (API biçim değiştirebiliyor):
+ *   { evren: { resets_at } } · { error: { evren: { resets_at } } } · { resets_at }
+ *
+ * @param {string|object|null} govde JSON metni ya da ayrıştırılmış nesne
+ * @param {number} [simdi] test için sabit zaman
+ * @returns {number|null} şimdiye göre kalan ms (negatifse 0), ayrıştırılamazsa null
+ */
+export function resetsAtMs(govde, simdi = Date.now()) {
+  let veri = govde;
+  if (typeof govde === 'string') {
+    try { veri = JSON.parse(govde); } catch { return null; }
+  }
+  if (!veri || typeof veri !== 'object') return null;
+
+  const adaylar = [
+    veri?.evren?.resets_at,
+    veri?.error?.evren?.resets_at,
+    veri?.resets_at,
+    veri?.error?.resets_at,
+  ];
+  for (const ham of adaylar) {
+    if (!ham) continue;
+    const ts = Date.parse(String(ham));
+    if (!Number.isFinite(ts)) continue;
+    return Math.max(0, ts - simdi);
+  }
+  return null;
+}
+
+/**
+ * Deneme için bekleme süresi.
+ *
+ * Kural (spec):
+ *  - resets_at varsa: kalan süre (en fazla 4000 ms)
+ *  - aksi hâlde: jitter — (1500 × (attempt+1)) + rastgele 0–500 ms
+ *  - hiçbir durumda MAKS_TEK_BEKLEME_MS aşılmaz
+ *
+ * @param {number} attempt 0 tabanlı deneme numarası
+ * @param {number|null} resetsKalanMs
+ * @param {() => number} [rastgele] test için enjekte edilebilir
+ * @returns {number}
+ */
+export function beklemeSuresi(attempt, resetsKalanMs = null, rastgele = Math.random) {
+  const taban = Number.isFinite(resetsKalanMs)
+    ? Math.max(250, resetsKalanMs)
+    : (1500 * (attempt + 1)) + Math.floor(rastgele() * 500);
+  return Math.min(MAKS_TEK_BEKLEME_MS, Math.max(0, Math.round(taban)));
+}
+
+/** Gövdeden kısa hata kodu çıkarır (log için): model_capacity_exhausted gibi. */
+export function hataKodu(govde) {
+  let veri = govde;
+  if (typeof govde === 'string') {
+    try { veri = JSON.parse(govde); } catch { return null; }
+  }
+  const kod = veri?.error?.code || veri?.code || veri?.error?.type || null;
+  return kod ? String(kod).slice(0, 60) : null;
+}
+
+/**
+ * EVREN'e tek sohbet isteği atar; geçici hatalarda (429/502/503/504) bekleyip
+ * yeniden dener.
+ *
+ * DAYANIKLILIK:
+ *  - Toplam 3 deneme (MAKS_DENEME).
+ *  - Toplam bekleme ≤ 10 sn (MAKS_TOPLAM_BEKLEME_MS) → sonsuz döngü yok.
+ *  - Her denemede AbortController zamanlayıcısı temizlenir (bellek/soket sızıntısı yok).
+ *  - Geçici hatada log HATA değil BİLGİ olarak basılır, token sızdırmaz.
+ */
 async function chatOnce(messages, opts = {}) {
   const { temperature = 0, maxTokens = 4000 } = opts;
   await acquireAiSlot();
   try {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    let toplamBekleme = 0;
+    let sonHata = null;
+
+    for (let attempt = 0; attempt < MAKS_DENEME; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 120000);
       try {
@@ -81,14 +207,31 @@ async function chatOnce(messages, opts = {}) {
           body: JSON.stringify({ model: config.ai.model, messages, temperature, max_tokens: maxTokens }),
           signal: controller.signal,
         });
-        if (res.status === 429 && attempt < 2) {
-          await sleep(1500 * (attempt + 1));
-          continue;
-        }
+
         if (!res.ok) {
-          const t = await res.text().catch(() => '');
-          throw new Error('YZ API HTTP ' + res.status + ': ' + t.slice(0, 200));
+          const govde = await res.text().catch(() => '');
+          const kod = hataKodu(govde);
+          sonHata = new Error('YZ API HTTP ' + res.status
+            + (kod ? ' (' + kod + ')' : '')
+            + ': ' + govde.slice(0, 200));
+
+          // Geçici hata ve hâlâ deneme hakkı var → bekle ve tekrar dene.
+          if (geciciHataMi(res.status) && attempt < MAKS_DENEME - 1) {
+            const kalan = resetsAtMs(govde);
+            const ms = beklemeSuresi(attempt, kalan);
+            // Toplam bekleme bütçesini aşacaksa denemeyi kes (sonsuz döngü koruması).
+            if (toplamBekleme + ms > MAKS_TOPLAM_BEKLEME_MS) break;
+            toplamBekleme += ms;
+            console.log('[ai:chatOnce] EVREN ' + res.status
+              + (kod ? ' (' + kod + ')' : '')
+              + ' alındı, ' + ms + 'ms sonra yeniden deneniyor (deneme: '
+              + (attempt + 1) + '/' + MAKS_DENEME + ')');
+            await sleep(ms);
+            continue;
+          }
+          throw sonHata;
         }
+
         const data = await res.json();
         const msg = data.choices?.[0]?.message;
         return msg?.content || msg?.reasoning || '';
@@ -96,7 +239,8 @@ async function chatOnce(messages, opts = {}) {
         clearTimeout(timer);
       }
     }
-    throw new Error('YZ API 429 eşzamanlılık sınırı aşıldı');
+
+    throw sonHata || new Error('YZ API yanıt vermedi');
   } finally {
     releaseAiSlot();
   }
@@ -381,8 +525,9 @@ function renkKurali(renkNiyeti) {
  * @param {number|null} butce
  * @param {Array<{site:string, title:string, price:number|null, url:string, renk?:string|null, renkDurumu?:string}>} adaylar
  * @param {object|null} renkNiyeti extractColorIntent çıktısı (renk istenmediyse null)
+ * @param {{timeoutMs?:number}} [opts] LLM bütçesini geçersiz kılma (test/ölçüm)
  */
-export async function selectModels(ihtiyac, butce, adaylar, renkNiyeti = null) {
+export async function selectModels(ihtiyac, butce, adaylar, renkNiyeti = null, opts = {}) {
   const RENK_ETIKET = {
     tam: 'uygun (birebir ton)',
     aile: 'uygun (aynı renk ailesi)',
@@ -401,32 +546,101 @@ export async function selectModels(ihtiyac, butce, adaylar, renkNiyeti = null) {
     'Aday ürünler (sıra, site, başlık, fiyat, renk durumu, url):\n' + listText;
   const sistem = SECIM_SYSTEM + renkKurali(renkNiyeti);
   let lastErr = null;
+  // ⏱️ 2026-11-13: LLM'in tamamına (denemeler dahil) SERT bütçe. Bütçe dolarsa
+  // akış kilitlenmez; aşağıdaki deterministik kural tabanlı seçime düşer.
+  const butceBaslangic = Date.now();
+  const toplamButce = Number.isFinite(opts?.timeoutMs) && opts.timeoutMs > 0
+    ? Number(opts.timeoutMs) : SELECT_MODELS_TIMEOUT_MS;
   for (let i = 0; i < 2; i++) {
+    const kalan = toplamButce - (Date.now() - butceBaslangic);
+    if (kalan < 300) {
+      lastErr = new Error(`YZ model seçim bütçesi doldu (${toplamButce} ms)`);
+      break;
+    }
     try {
-      const raw = await chatOnce(
-        [
-          { role: 'system', content: sistem },
-          { role: 'user', content: userMsg + (i > 0 ? '\n\n(Önemli: yalnızca aday listesindeki url\'leri kullan ve SADECE geçerli JSON döndür.)' : '') },
-        ],
-        { temperature: 0.2 },
+      const raw = await zamanAsimli(
+        chatOnce(
+          [
+            { role: 'system', content: sistem },
+            { role: 'user', content: userMsg + (i > 0 ? '\n\n(Önemli: yalnızca aday listesindeki url\'leri kullan ve SADECE geçerli JSON döndür.)' : '') },
+          ],
+          { temperature: 0.2 },
+        ),
+        kalan,
+        'YZ model seçimi',
       );
       const t = raw.replace(/```(?:json)?/gi, '').trim();
       const start = t.indexOf('[');
       const end = t.lastIndexOf(']');
+      if (start === -1 || end <= start) throw new Error('YZ yanıtında JSON dizisi yok');
       const arr = JSON.parse(t.slice(start, end + 1));
-      if (Array.isArray(arr)) return arr.slice(0, 5);
+      if (Array.isArray(arr) && arr.length) return arr.slice(0, 5);
       lastErr = new Error('YZ yanıtı dizi değil');
     } catch (e) {
       lastErr = e;
     }
   }
-    console.warn('[ai:selectModels] YZ model seçimi zaman aşımı veya hata, kural tabanlı yedeğe geçiliyor:', lastErr?.message);
-  const siraliAdaylar = (adaylar || [])
-    .filter(a => a && a.url && a.title)
+  console.warn('[ai:selectModels] YZ model seçimi zaman aşımı veya hata, kural tabanlı yedeğe geçiliyor:', lastErr?.message);
+
+  // 🎯 2026-11-14: Kural tabanlı yedekte İLGİLİLİK artık fiyattan ÖNCE gelir.
+  //
+  // ÖNCEKİ HATA: yedek yalnızca renk + fiyata bakıyordu; "3d yazıcı filament"
+  // sorgusunda en ucuz aksesuar (nozzle temizleyici, dişli) "en uygun model"
+  // sayılıyordu. Artık başlıkta sorgu kelimelerini karşılayan adaylar öne alınır;
+  // hiçbir kelimeyi karşılamayan adaylar (varsa daha iyi aday varken) elenir.
+  const YEDEK_STOPWORD = new Set([
+    'ama', 'icin', 'için', 'daha', 'cok', 'çok', 'bir', 'gibi', 'butce', 'bütçe',
+    'butcem', 'bütçem', 'oner', 'öner', 'oneri', 'öneri', 'tavsiye', 'almak',
+    'istiyorum', 'la', 'le', 'tl', 'en', 'ne', 've', 'ile', 'olsun', 'acaba',
+  ]);
+  const kucultTr = (s) => String(s || '').toLocaleLowerCase('tr-TR');
+  const sorguKelimeleri = kucultTr(ihtiyac)
+    .split(/[^\p{L}\p{N}+]+/u)
+    .filter(w => w.length >= 3 && !YEDEK_STOPWORD.has(w))
+    .filter(w => !/^\d+$/.test(w)); // sayılar bütçedir, ürün kelimesi değil
+  const ilgililik = (baslik) => {
+    if (!sorguKelimeleri.length) return 0;
+    const b = kucultTr(baslik);
+    return sorguKelimeleri.filter(k => b.includes(k)).length / sorguKelimeleri.length;
+  };
+  // 🧩 Aksesuar/parça cezası: sorgu "filament" isterken "filament İTİCİ" ya da
+  // "nozzle TEMİZLEYİCİ" gibi yedek parçalar en ucuz olduğu için öne çıkıyordu.
+  // Sorguda geçmeyen parça kelimeleri taşıyan başlıklar cezalandırılır.
+  const PARCA_KELIMELERI = [
+    'itici', 'temizleyici', 'nozzle', 'meme', 'disli', 'dişli', 'yedek', 'aksesuar',
+    'adaptor', 'adaptör', 'boru', 'hortum', 'sensor', 'sensör', 'fan', 'vida',
+    'yatak', 'tutucu', 'kilif', 'kılıf', 'canta', 'çanta', 'stand', 'kablo',
+    'rulman', 'kayis', 'kayış', 'extruder dişli', 'hotend', 'termistor', 'ısıtıcı',
+  ].filter(k => !sorguKelimeleri.some(q => k.includes(q) || q.includes(k)));
+  const parcaCezasi = (baslik) => {
+    const b = kucultTr(baslik);
+    return PARCA_KELIMELERI.some(k => b.includes(k)) ? 1 : 0;
+  };
+  const puanla = (baslik) => ilgililik(baslik) - 0.5 * parcaCezasi(baslik);
+
+  let yedekHavuz = (adaylar || []).filter(a => a && a.url && a.title);
+  const skorlu = yedekHavuz.map(a => ({ a, ilgi: puanla(a.title) }));
+  // En iyi skor 0'dan büyükse, hiçbir olumlu sinyal taşımayan adayları ele.
+  const enIyiIlgi = skorlu.reduce((m, x) => Math.max(m, x.ilgi), 0);
+  if (enIyiIlgi > 0) {
+    const ilgili = skorlu.filter(x => x.ilgi > 0);
+    // Sorguda geçmeyen parça kelimesi taşıyan adaylar (itici, temizleyici…) varsa
+    // ve daha uygun adaylar da varsa, aksesuarlar havuzdan çıkarılır.
+    const parcasiz = ilgili.filter(x => !parcaCezasi(x.a.title));
+    yedekHavuz = (parcasiz.length ? parcasiz : ilgili).map(x => x.a);
+  }
+  const ilgiHaritasi = new Map(skorlu.map(x => [x.a.url, x.ilgi]));
+
+  const siraliAdaylar = yedekHavuz
     .sort((a, b) => {
+      // 1) Sorguyla ilgililik (başlıkta kaç kelime geçiyor)
+      const fIlgi = (ilgiHaritasi.get(b.url) || 0) - (ilgiHaritasi.get(a.url) || 0);
+      if (fIlgi !== 0) return fIlgi;
+      // 2) Renk uyumu
       const renkSkor = x => (x.renkDurumu === 'tam' ? 2 : (x.renkDurumu === 'aile' ? 1 : 0));
       const fRenk = renkSkor(b) - renkSkor(a);
       if (fRenk !== 0) return fRenk;
+      // 3) Bütçeye uygunluk, 4) fiyat
       if (butce != null && a.price != null && b.price != null) {
         const uyA = a.price <= butce ? 1 : 0;
         const uyB = b.price <= butce ? 1 : 0;
@@ -460,13 +674,107 @@ function matchCacheKey(a, b) {
 }
 
 /**
+ * 🔁 DETERMİNİSTİK KURTARMA (2026-11-05)
+ *
+ * EVREN 3 denemede de yanıt vermezse (503 / kapasite dolu / timeout) ürünü
+ * körlemesine ELEMEK, en ucuz teklifin kaybolması demekti: ölçümde borsa
+ * taramaları sırasında 503 fırtınası yüzünden doğru eşleşmeler reddediliyordu.
+ *
+ * Bu yüzden YZ erişilemezse KURAL TABANLI bir karar verilir — ama yalnızca
+ * güçlü kanıt varsa:
+ *
+ *   • model kodu birebir aynı  → aynı ürün (kanıt: üretici kimliği)
+ *   • VEYA marka aynı VE başlık benzerliği ≥ 0.75 → aynı ürün
+ *
+ * Kanıt yoksa yine `ayniUrun:false` döner: şüphede kalmak, yanlış ürünü
+ * "en ucuz" göstermekten iyidir.
+ *
+ * @param {object} src kaynak ürün {title, brand, modelCode}
+ * @param {object} cand aday ürün
+ * @returns {{ayniUrun:boolean, guven:number, aciklama:string, deterministik:boolean}}
+ */
+export function deterministikKurtarma(src, cand) {
+  const baslikA = String(src?.title || src?.name || '');
+  const baslikB = String(cand?.title || cand?.name || '');
+  if (!baslikA || !baslikB) {
+    return { ayniUrun: false, guven: 0.3, aciklama: 'Başlık eksik; kural tabanlı karar verilemedi.', deterministik: true };
+  }
+
+  // 1) Model kodu birebir aynı → en güçlü kanıt
+  const kodA = normalizeModelCode(src?.modelCode);
+  const kodB = normalizeModelCode(cand?.modelCode);
+  if (kodA && kodB && kodA === kodB) {
+    return {
+      ayniUrun: true,
+      guven: 0.90,
+      aciklama: 'YZ servisi yoğun (503), kural tabanlı deterministik eşleşmeyle onaylandı (model kodu birebir aynı)',
+      deterministik: true,
+    };
+  }
+
+  // 2) Marka aynı + başlık benzerliği ≥ 0.75
+  const markaA = src?.brand || null;
+  const markaB = cand?.brand || null;
+  const markaAyniMi = !!(markaA && markaB && brandAyni(markaA, markaB));
+  const sim = titleSimilarity(baslikA, baslikB, markaA, markaB, { stripColors: true });
+
+  // 🛡️ KİMLİK KORUMASI: deterministik kurtarma, projenin kanıtlanmış kimlik
+  // kurallarını ATLAMAZ. "K1 Max" ↔ "Ender 5 Max" (aynı marka, ortak
+  // kelimeler) YZ olmadan da farklı üründür; 503 bahanesiyle birleştirilemez.
+  const kimlikCakismasi = modelSerisiCakismasi(baslikA, baslikB)
+    || kapasiteCakismasi(baslikA, baslikB);
+  if (kimlikCakismasi) {
+    return {
+      ayniUrun: false,
+      guven: 0.6,
+      aciklama: 'YZ servisi yanıt vermedi; kural tabanlı kontrol model/kapasite çakışması buldu (farklı ürün)',
+      deterministik: true,
+    };
+  }
+
+  if (markaAyniMi && sim >= 0.75) {
+    return {
+      ayniUrun: true,
+      guven: 0.80,
+      aciklama: 'YZ servisi yoğun (503), kural tabanlı deterministik eşleşmeyle onaylandı',
+      deterministik: true,
+    };
+  }
+
+  // 3) Marka aynı + token örtüşmesi: kısa/özlü başlıklarda Jaccard düşük kalır
+  //    ("P1S Hotend" ↔ "Bambu P1S Hotend 0.4mm"). En az 3 ortak ayırt edici
+  //    token varsa aynı ürün sayılır (güven biraz daha düşük: 0.75).
+  if (markaAyniMi) {
+    const ortak = countTokenOverlap(baslikA, baslikB);
+    if (ortak >= 3 && sim >= 0.5) {
+      return {
+        ayniUrun: true,
+        guven: 0.75,
+        aciklama: 'YZ servisi yoğun (503), kural tabanlı deterministik eşleşmeyle onaylandı (token örtüşmesi)',
+        deterministik: true,
+      };
+    }
+  }
+
+  // 4) Kanıt yoksa eleme (dürüst)
+  return {
+    ayniUrun: false,
+    guven: 0.5,
+    aciklama: 'YZ servisi yanıt vermedi; kural tabanlı kanıt yetersiz (marka/benzerlik eşiği tutmadı)',
+    deterministik: true,
+  };
+}
+
+/**
  * İki ürünün aynı fiziksel ürün olup olmadığını EVREN LLM (DeepSeek-V4.1-Flash)
  * ile semantik olarak doğrular.
  */
 export async function semanticMatch(src, cand, opts = {}) {
   const key = matchCacheKey(src, cand);
   const cached = semanticMatchCache.get(key);
-  if (cached && Date.now() - cached.ts < MATCH_CACHE_TTL) {
+  // Deterministik kurtarma kayıtları kısa TTL taşır (YZ döndüğünde yeniden denenir).
+  const ttl = Number(cached?.ttl) || MATCH_CACHE_TTL;
+  if (cached && Date.now() - cached.ts < ttl) {
     return { ...cached.data, cached: true };
   }
 
@@ -530,8 +838,21 @@ export async function semanticMatch(src, cand, opts = {}) {
     }
     return result;
   } catch (err) {
-    console.warn('[ai:semanticMatch] YZ hatası:', err.message);
-    return { ayniUrun: false, guven: 0.5, aciklama: 'YZ servisi yanıt vermedi: ' + err.message };
+    // YZ erişilemez (503/timeout): ürünü körlemesine eleme, deterministik
+    // kanıtla karar ver. Kanıt yoksa yine reddedilir (dürüstlük).
+    const kurtarma = deterministikKurtarma(src, cand);
+    if (kurtarma.ayniUrun) {
+      console.warn('[ai:semanticMatch] YZ erişilemedi (' + String(err.message).slice(0, 80)
+        + '), deterministik kurtarma: AYNI ÜRÜN (güven ' + kurtarma.guven + ')');
+    } else {
+      console.warn('[ai:semanticMatch] YZ hatası:', String(err.message).slice(0, 140));
+    }
+    // Kurtarma kararı da önbelleğe alınır: aynı çift için tekrar tekrar YZ
+    // denenip 503 fırtınası büyümesin (TTL daha kısa: 10 dk).
+    try {
+      semanticMatchCache.set(key, { ts: Date.now(), data: kurtarma, ttl: 10 * 60 * 1000 });
+    } catch { /* önbellek opsiyonel */ }
+    return kurtarma;
   }
 }
 

@@ -1,0 +1,309 @@
+/* Yönetici Paneli (/admin.html) — En Ucuz Nerede? */
+
+.admin-ustbar-rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ana) 12%, transparent);
+  color: var(--ana);
+  border: 1px solid color-mix(in srgb, var(--ana) 25%, transparent);
+}
+
+.admin-cikis-btn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cizgi-koyu);
+  background: var(--kart);
+  color: var(--gri-metin);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-cikis-btn:hover {
+  background: var(--zemin-2);
+  color: var(--metin);
+}
+
+/* Giriş Kapısı */
+.admin-giris-sar {
+  max-width: 440px;
+  margin: 56px auto 80px;
+}
+
+.admin-giris-kart {
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: 20px;
+  padding: 28px 26px;
+  box-shadow: var(--kart-golge);
+}
+
+.admin-giris-kart h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.admin-giris-kart p {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--gri-metin);
+  line-height: 1.55;
+}
+
+.admin-giris-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-giris-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  font: inherit;
+  font-size: 14.5px;
+  border: 1.5px solid var(--cizgi-koyu);
+  border-radius: 11px;
+  background: var(--zemin);
+  color: var(--metin);
+}
+
+.admin-giris-form input:focus {
+  outline: none;
+  border-color: var(--ana);
+  box-shadow: var(--halka);
+}
+
+/* Güvenlik / Yerel Mod Uyarı Bandı */
+.admin-uyari-bant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.11);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--metin);
+  font-size: 13px;
+}
+
+/* KPI Özet Şeridi */
+.admin-kpi-izgara {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+
+.admin-kpi-kart {
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: var(--kart-golge);
+}
+
+.admin-kpi-etiket {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gri-metin);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-kpi-deger {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 4px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-kpi-alt {
+  font-size: 12px;
+  color: var(--gri-metin-hafif);
+}
+
+/* Sekme Çubuğu */
+.admin-sekme-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 20px;
+  padding: 6px;
+  background: var(--zemin-2);
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+}
+
+.admin-sekme-btn {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gri-metin);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-sekme-btn:hover {
+  color: var(--metin);
+}
+
+.admin-sekme-btn.aktif {
+  background: var(--kart);
+  color: var(--ana);
+  box-shadow: var(--golge-yumusak);
+}
+
+.admin-sekme-panel[hidden] {
+  display: none !important;
+}
+
+/* Veri Tabloları (Sponsor / Doğrulanmış / Sağlık) */
+.admin-tablo-sar {
+  width: 100%;
+  overflow-x: auto;
+  margin: 12px 0 16px;
+  border: 1px solid var(--cizgi);
+  border-radius: 12px;
+}
+
+.admin-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-tablo th,
+.admin-tablo td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--cizgi);
+  vertical-align: middle;
+}
+
+.admin-tablo th {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gri-metin);
+  background: var(--zemin-2);
+}
+
+.admin-tablo tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-durum-hap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.admin-durum-hap.yesil {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.admin-durum-hap.kirmizi {
+  background: rgba(244, 63, 94, 0.14);
+  color: #be123c;
+}
+
+.admin-durum-hap.gri {
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+}
+
+html[data-theme="dark"] .admin-durum-hap.yesil {
+  color: #34d399;
+}
+
+html[data-theme="dark"] .admin-durum-hap.kirmizi {
+  color: #fb7185;
+}
+
+html[data-theme="dark"] .admin-durum-hap.gri {
+  color: #cbd5e1;
+}
+
+.admin-saglik-izgara {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-saglik-oge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--zemin);
+  font-size: 12.5px;
+}
+
+.admin-saglik-oge small {
+  color: var(--gri-metin-hafif);
+  font-size: 11px;
+}
+
+.admin-mini-btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--cizgi-koyu);
+  background: var(--kart);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.admin-mini-btn:hover {
+  background: var(--zemin-2);
+}
+
+.admin-mini-btn.tehlike {
+  color: #be123c;
+  border-color: rgba(190, 18, 60, 0.3);
+}
+
+html[data-theme="dark"] .admin-mini-btn.tehlike {
+  color: #fb7185;
+}
+
+@media (max-width: 640px) {
+  .admin-sekme-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 12.5px;
+    padding: 8px 10px;
+  }
+}

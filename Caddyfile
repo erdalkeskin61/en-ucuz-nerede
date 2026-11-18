@@ -1,0 +1,133 @@
+# =============================================================================
+# En Ucuz Nerede? — Caddy ters vekil yapılandırması
+# =============================================================================
+#   İnternet → Cloudflare (CDN/WAF/SSL termination) → Caddy → app:3000
+#
+# Ortam değişkenleri (docker-compose.yml'den gelir):
+#   SITE_DOMAIN  → ör. enucuznerede.com
+#   ACME_EMAIL   → Let's Encrypt bildirim adresi
+#
+# SSL MODLARI — hangisini seçmelisin?
+# ---------------------------------------------------------------------------
+# A) Cloudflare "Full (strict)" + Cloudflare Origin Certificate  (ÖNERİLEN)
+#    • Cloudflare panelinde SSL/TLS → Origin Server → Create Certificate.
+#    • Sertifikayı ./certs/origin.pem + ./certs/origin.key olarak kaydet.
+#    • Aşağıdaki `tls` satırını AÇ ve dosya yollarını kullan; ayrıca
+#      docker-compose.yml'de ./certs:/certs:ro volume'u ekle.
+#    • Origin sertifikası 15 yıl geçerlidir; Let's Encrypt yenileme derdi yok.
+#      Cloudflare ara katman olduğu için public CA challenge'ı çalışmaz.
+#
+# B) Cloudflare "Full" + Caddy'nin kendi Let's Encrypt sertifikası
+#    • Alan adı Cloudflare'de PROXIED (turuncu bulut) ise HTTP-01 challenge
+#      Cloudflare üzerinden geçer; bu yapılandırma olduğu gibi çalışır.
+#    • İlk açılışta Caddy sertifikayı alır (80/443 açık olmalı).
+# =============================================================================
+
+{
+	# Yönetim API'si yalnızca localhost (container içi) — dışarıya kapalı.
+	admin localhost:2019
+
+	# Let's Encrypt bildirim e-postası (opsiyonel).
+	# NOT: Değişken boşsa Caddy "wrong argument count" hatası verir; bu yüzden
+	# satır bilinçli olarak YORUMDA. ACME kullanacaksanız .env'de ACME_EMAIL
+	# doldurup bu satırı açın; sertifika e-postasız da alınabilir.
+	# email {$ACME_EMAIL}
+
+	# Üretimde debug log kapalı; hata ayıklarken `debug` ekleyin.
+	# debug
+}
+
+# ---------------------------------------------------------------------------
+# Ana alan adı
+# ---------------------------------------------------------------------------
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# --- Güvenlik başlıkları ---------------------------------------------
+	# ⚠️ X-Frame-Options BURADA VERİLMEZ: /widget harici sitelere iframe ile
+	# gömülür. Node bu başlığı rota bazında yönetir (normal sayfalarda
+	# SAMEORIGIN, /widget'ta kaldırılıp yerine CSP frame-ancestors * konur).
+	# Caddy genel bir X-Frame-Options eklerse gömülebilir widget kırılır.
+	header {
+		# Cloudflare zaten HSTS ekliyorsa tekrar göndermek zararsızdır.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Sunucu imzasını gizle.
+		-Server
+	}
+
+	# --- SSE: canlı iş akışı (buffer KAPALI) ------------------------------
+	# /api/stream/:id → sunucu olay akışı. Caddy varsayılan olarak tamponlar;
+	# `flush_interval -1` her olayı anında iletir. `read_timeout` uzun tutulur
+	# (tarama dakikalarca sürebilir).
+	handle /api/stream/* {
+		reverse_proxy app:3000 {
+			flush_interval -1
+			transport http {
+				read_timeout 15m
+				write_timeout 15m
+				dial_timeout 10s
+			}
+			# İstemci IP'sini koru (Node `trust proxy` bunu okur).
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# --- Widget: harici sitelere iframe ile gömülür -----------------------
+	# Node tarafı CSP `frame-ancestors *` gönderir ve X-Frame-Options'ı
+	# kaldırır; Caddy burada HİÇBİR çerçeve başlığı eklememeli.
+	handle /widget* {
+		reverse_proxy app:3000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# --- API (JSON): sıkıştırma + no-store Node'dan gelir -----------------
+	handle /api/* {
+		reverse_proxy app:3000 {
+			header_up X-Real-IP {remote_host}
+			# Uzun süren taramalar için cömert timeout.
+			transport http {
+				read_timeout 5m
+				write_timeout 5m
+			}
+		}
+	}
+
+	# --- Statik dosyalar ve sayfalar -------------------------------------
+	# Sıkıştırma `encode` ile yapılır; Node tarafı önbellek başlıklarını
+	# (no-store/page cache) kendisi yönetir.
+	handle {
+		reverse_proxy app:3000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# --- Hata sayfaları ---------------------------------------------------
+	handle_errors {
+		respond "{err.status_code} {err.status_text}" {err.status_code}
+	}
+
+	# ---------------------------------------------------------------------
+	# SSL (A senaryosu): Cloudflare Origin Certificate kullaniliyorsa
+	# asagidaki satiri ACIN (ve Cloudflare'de SSL/TLS modunu
+	# "Full (strict)" yapin). Sertifika dosyalarini ./certs icine koyup
+	# docker-compose.yml'de ./certs:/certs:ro volume'unu ekleyin.
+	# ---------------------------------------------------------------------
+	# tls /certs/origin.pem /certs/origin.key
+}
+
+# ---------------------------------------------------------------------------
+# www → kök alan adına kalıcı yönlendirme (SEO: tek kanonik adres)
+# ---------------------------------------------------------------------------
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+# ---------------------------------------------------------------------------
+# Docker içi sağlık kontrolü (Caddy kendi kendini yoklar)
+# ---------------------------------------------------------------------------
+:8080 {
+	respond /health "OK" 200
+}

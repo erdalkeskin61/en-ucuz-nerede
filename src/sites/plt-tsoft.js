@@ -19,6 +19,10 @@ import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
 import { findJsonLdProduct, extractJsonLd, dominantColor, decodeEntities, parseNum, absUrl } from '../util.js';
 import { kdvDahilFiyat, kdvOraniBul, VARSAYILAN_KDV_ORANI } from '../kdv.js';
+import {
+  extractSelfHealingPrice, extractSelfHealingTitle,
+  extractSelfHealingImage, extractSelfHealingBrand,
+} from '../selfHealingParser.js';
 
 /** T-Soft'ta ürün olmayan sayfa yolları (kategori, marka, yardımcı sayfalar). */
 const TSOFT_HARIC_YOLLAR = /^\/(arama|sepet|kategori|marka|sayfa|uyelik|uyye|iletisim|kampanya|blog|magaza|hakkimizda|gizlilik|kvkk|odeme|kargo|iade|siparis|favori|indirim|yeni|tumu|firsatlar|destek|sss|sozluk|coin|cookie|live-search)/i;
@@ -203,6 +207,35 @@ export function tsoftSite(cfg) {
           shipping: P.IS_CARGO_FREE
             ? { fee: 0, freeOver: null, applies: false, note: 'Kargo bedava' }
             : kargoCikar(r.body, this.id),
+        };
+      }
+
+      // 3) 2026-11-13: self-healing kaskad — JSON-LD/blog JSON ikisi de yoksa
+      // (tema değişti, Vue blog nesnesi kaldırıldı) fiyatı 5 kademeli ağdan kurtar.
+      const html = r.body || '';
+      const kurtarilan = extractSelfHealingPrice(html, null, this.name);
+      const kurtarilanBaslik = extractSelfHealingTitle(html);
+      if (kurtarilan.fiyat != null && kurtarilanBaslik) {
+        return {
+          site: this.id,
+          siteName: this.name,
+          url,
+          title: kurtarilanBaslik,
+          brand: extractSelfHealingBrand(html),
+          modelCode: null,
+          barcode: null,
+          color: dominantColor(kurtarilanBaslik),
+          listPrice: null,
+          sellingPrice: kurtarilan.fiyat,
+          vatIncluded: true,
+          vatRate: null,
+          priceExVat: null,
+          currency: 'TRY',
+          inStock: !/tükendi|stokta yok|out-of-stock|sold-out/i.test(html),
+          seller: null,
+          image: extractSelfHealingImage(html),
+          campaigns: [],
+          shipping: kargoCikar(html, this.id),
         };
       }
 

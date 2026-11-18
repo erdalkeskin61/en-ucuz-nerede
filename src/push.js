@@ -14,7 +14,9 @@
  * döner. 404/410 (abonelik ölmüş) kayıtları temizlenir.
  */
 import webpush from 'web-push';
-import { getSettings, saveSettings, pushAbonelikler, pushAbonelikSil } from './store.js';
+import {
+  getSettings, saveSettings, pushAbonelikler, pushAbonelikSil, pushAbonelikTemizle,
+} from './store.js';
 
 let hazir = null;
 
@@ -98,6 +100,67 @@ export async function pushGonder(bildirim = {}) {
   }));
 
   return { basarili, hatali, abone: abonelikler.length, detay };
+}
+
+/**
+ * 🔔 Tek bir cihaza VAPID imzalı fiyat alarmı gönderir (2026-11-06).
+ *
+ * Toplu `pushGonder()`'den farkı: yalnızca verilen `subscription` nesnesine
+ * (endpoint + p256dh + auth) yazar. E-posta/telefon/üyelik gerekmez.
+ *
+ * 404/410 Gone → abonelik kalıcı olarak ölmüştür; `pushAbonelikTemizle()` ile
+ * hem genel kayıt hem de takip alarmı sessizce temizlenir.
+ *
+ * @param {{endpoint:string, keys:{p256dh:string, auth:string}}} subscription
+ * @param {{baslik?:string, govde?:string, url?:string, etiket?:string, veri?:object}} bildirim
+ * @returns {Promise<{basarili:boolean, hatali:boolean, kod:number, hata:string|null, temizlendi:boolean}>}
+ */
+export async function pushCihazaGonder(subscription, bildirim = {}) {
+  const endpoint = String(subscription?.endpoint || '').trim();
+  const p256dh = String(subscription?.keys?.p256dh || '').trim();
+  const auth = String(subscription?.keys?.auth || '').trim();
+  if (!endpoint || !p256dh || !auth) {
+    return { basarili: false, hatali: true, kod: 0, hata: 'Geçersiz abonelik (endpoint/keys eksik)', temizlendi: false };
+  }
+
+  try {
+    pushHazirla();
+  } catch (e) {
+    return { basarili: false, hatali: true, kod: 0, hata: String(e.message || e), temizlendi: false };
+  }
+
+  const payload = JSON.stringify({
+    title: String(bildirim.baslik || 'En Ucuz Nerede?').slice(0, 120),
+    body: String(bildirim.govde || '').slice(0, 240),
+    url: bildirim.url || '/',
+    tag: bildirim.etiket || ('eun-alarm-' + endpoint.slice(-12)),
+    data: bildirim.veri || null,
+    icon: '/ikon-192.png',
+    badge: '/ikon-192.png',
+    ts: Date.now(),
+  });
+
+  try {
+    await webpush.sendNotification({ endpoint, keys: { p256dh, auth } }, payload, {
+      TTL: 3600,
+      urgency: 'high',
+    });
+    return { basarili: true, hatali: false, kod: 0, hata: null, temizlendi: false };
+  } catch (e) {
+    const kod = Number(e?.statusCode || 0);
+    // 404/410: bildirim izni kaldırılmış / abonelik süresi dolmuş → temizle.
+    const temizlendi = kod === 404 || kod === 410;
+    if (temizlendi) {
+      try { pushAbonelikTemizle(endpoint); } catch { /* temizlik alarmı engellemesin */ }
+    }
+    return {
+      basarili: false,
+      hatali: true,
+      kod,
+      hata: String(e.message || e).slice(0, 160),
+      temizlendi,
+    };
+  }
 }
 
 /** Hata ayıklama/test için kısa durum. */

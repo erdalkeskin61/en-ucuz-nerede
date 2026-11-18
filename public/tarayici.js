@@ -337,43 +337,114 @@ let gorselBase64 = null;
 
 /** Görseli tarayıcıda küçültür (uzun kenar 1024 px, JPEG %82) → 4 MB sınırı rahat geçilir. */
 async function gorselKucult(dosya) {
+  // Spec: en-boy oranı korunarak en fazla 1280 px, JPEG ~%80.
+  // Böylece 4 MB sınırına takılmadan EVREN'e ~1 sn'de ulaşır.
   const bitmap = await createImageBitmap(dosya);
-  const maxKenar = 1024;
+  const maxKenar = 1280;
   const olcek = Math.min(1, maxKenar / Math.max(bitmap.width, bitmap.height));
   const w = Math.max(1, Math.round(bitmap.width * olcek));
   const h = Math.max(1, Math.round(bitmap.height * olcek));
   const tuval = document.createElement('canvas');
   tuval.width = w;
   tuval.height = h;
-  tuval.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  const ctx = tuval.getContext('2d');
+  // Şeffaf PNG'ler JPEG'de siyah olmasın: beyaz zemin.
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
   if (bitmap.close) bitmap.close();
-  return tuval.toDataURL('image/jpeg', 0.82);
+  return tuval.toDataURL('image/jpeg', 0.80);
 }
 
 const gorselDosya = document.getElementById('gorselDosya');
 const gorselSecBtn = document.getElementById('gorselSecBtn');
+
+/** Seçilen/bırakılan/yapıştırılan görseli küçültüp önizlemeyi hazırlar. */
+async function gorselHazirla(dosya) {
+  const not = document.getElementById('gorselNot');
+  if (!dosya) return;
+  if (!/^image\//i.test(dosya.type || '')) {
+    not.textContent = 'Bu dosya görsel değil. JPEG/PNG/WebP bir fotoğraf seçin.';
+    return;
+  }
+  if (dosya.size > 20 * 1024 * 1024) {
+    not.textContent = 'Dosya çok büyük (en fazla 20 MB).';
+    return;
+  }
+  not.textContent = 'Görsel hazırlanıyor…';
+  try {
+    gorselBase64 = await gorselKucult(dosya);
+    const onizleme = document.getElementById('gorselOnizleme');
+    onizleme.src = gorselBase64;
+    onizleme.hidden = false;
+    document.getElementById('gorselAraBtn').disabled = false;
+    const kb = Math.round((gorselBase64.length * 3) / 4 / 1024);
+    not.textContent = `Görsel hazır (${kb} KB, en fazla 1280 px). "Fotoğraftan ara"ya bas.`;
+  } catch (e) {
+    gorselBase64 = null;
+    document.getElementById('gorselAraBtn').disabled = true;
+    not.textContent = 'Görsel okunamadı: ' + (e.message || e);
+  }
+}
+
 if (gorselSecBtn && gorselDosya) {
   gorselSecBtn.addEventListener('click', () => gorselDosya.click());
   gorselDosya.addEventListener('change', async () => {
-    const dosya = gorselDosya.files?.[0];
-    if (!dosya) return;
-    const not = document.getElementById('gorselNot');
-    not.textContent = 'Görsel hazırlanıyor…';
-    try {
-      gorselBase64 = await gorselKucult(dosya);
-      const onizleme = document.getElementById('gorselOnizleme');
-      onizleme.src = gorselBase64;
-      onizleme.hidden = false;
-      document.getElementById('gorselAraBtn').disabled = false;
-      const kb = Math.round((gorselBase64.length * 3) / 4 / 1024);
-      not.textContent = `Görsel hazır (${kb} KB). "Fotoğraftan ara"ya bas.`;
-    } catch (e) {
-      gorselBase64 = null;
-      document.getElementById('gorselAraBtn').disabled = true;
-      not.textContent = 'Görsel okunamadı: ' + e.message;
-    }
+    await gorselHazirla(gorselDosya.files?.[0]);
   });
 }
+
+/* ---- 📥 Sürükle & bırak ---- */
+(function surukleBirak() {
+  const alan = document.getElementById('gorselBirak');
+  if (!alan) return;
+  const ipucu = document.getElementById('gorselBirakIpucu');
+  let derinlik = 0;
+
+  const goster = (ac) => {
+    alan.classList.toggle('uzerinde', ac);
+    if (ipucu) ipucu.hidden = !ac;
+  };
+
+  alan.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    derinlik++;
+    goster(true);
+  });
+  alan.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  });
+  alan.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    derinlik = Math.max(0, derinlik - 1);
+    if (derinlik === 0) goster(false);
+  });
+  alan.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    derinlik = 0;
+    goster(false);
+    const dosya = e.dataTransfer?.files?.[0];
+    if (dosya) await gorselHazirla(dosya);
+  });
+})();
+
+/* ---- 📋 Pano yapıştırma (Ctrl+V) ---- */
+document.addEventListener('paste', async (e) => {
+  const panel = document.getElementById('gorselPanel');
+  // Yalnızca "Fotoğraftan ara" sekmesi açıkken müdahale et; metin yapıştırmayı bozma.
+  if (!panel || panel.hidden) return;
+  const hedef = e.target;
+  const yazilanAlan = hedef && (hedef.tagName === 'INPUT' || hedef.tagName === 'TEXTAREA'
+    || hedef.isContentEditable);
+  const ogeler = [...(e.clipboardData?.items || [])];
+  const resim = ogeler.find(i => String(i.type || '').startsWith('image/'));
+  if (!resim) return; // metin yapıştırması normal çalışsın
+  if (yazilanAlan) return;
+  e.preventDefault();
+  const dosya = resim.getAsFile();
+  if (dosya) await gorselHazirla(dosya);
+});
 
 const gorselAraBtn = document.getElementById('gorselAraBtn');
 if (gorselAraBtn) {
@@ -458,22 +529,68 @@ function gorselSonucGoster(r) {
   const o = r.ozet || {};
   const adaylar = r.adaylar || [];
 
+  const guvenYuzde = a.guvenYuzde
+    || (a.guven === 'yuksek' ? 95 : a.guven === 'dusuk' ? 45 : 70);
+
+  // ✅ Tanınan parça rozeti (spec: "✅ Bambu Lab P1 / X1C Hotend 0.4mm")
+  const rozetAlani = document.getElementById('gorselRozet');
+  if (rozetAlani) {
+    const parcalar = [
+      a.kategoriEtiketi || null,
+      a.teknikDetaylar || null,
+    ].filter(Boolean).map(esc).join(' · ');
+    rozetAlani.innerHTML = `
+      <div class="gorsel-rozet ${esc(a.guven || 'orta')}">
+        <span class="gorsel-rozet-isaret" aria-hidden="true">✅</span>
+        <span class="gorsel-rozet-govde">
+          <b>${esc(a.urun || a.aramaSorgusu || 'Parça')}</b>
+          ${parcalar ? `<span class="gorsel-rozet-alt">${parcalar}</span>` : ''}
+        </span>
+        <span class="gorsel-rozet-guven">%${guvenYuzde}</span>
+      </div>`;
+  }
+
+  const uyumlu = Array.isArray(a.uyumluYazicilar) ? a.uyumluYazicilar : [];
   document.getElementById('gorselOzet').innerHTML = `
     <div class="gorsel-analiz">
-      ${gorselBase64 ? `<img class="gorsel-analiz-resim" src="${gorselBase64}" alt="Aranan ürün" />` : ''}
+      ${gorselBase64 ? `<img class="gorsel-analiz-resim" src="${gorselBase64}" alt="Aranan parça" />` : ''}
       <div class="gorsel-analiz-bilgi">
-        <div class="gorsel-analiz-urun">${esc(a.urun || a.aramaSorgusu || 'Ürün')}</div>
+        <div class="gorsel-analiz-urun">${esc(a.urun || a.aramaSorgusu || 'Parça')}</div>
         <div class="gorsel-etiketler">
-          ${a.marka ? `<span class="rozet-kucuk">marka: ${esc(a.marka)}</span>` : ''}
-          ${a.model ? `<span class="rozet-kucuk">model: ${esc(a.model)}</span>` : ''}
+          ${a.marka ? `<span class="rozet-kucuk">🏷️ ${esc(a.marka)}</span>` : ''}
+          ${a.malzeme ? `<span class="rozet-kucuk">🧵 ${esc(a.malzeme)}</span>` : ''}
           ${a.renk ? `<span class="rozet-kucuk">renk: ${esc(a.renk)}</span>` : ''}
-          <span class="rozet-kucuk guven-${esc(a.guven || 'orta')}">güven: ${esc(a.guven || 'orta')}</span>
+          <span class="rozet-kucuk guven-${esc(a.guven || 'orta')}">güven: %${guvenYuzde}</span>
         </div>
-        ${(a.ozellikler || []).length ? `<div class="ipucu">${a.ozellikler.map(esc).join(' · ')}</div>` : ''}
-        <div class="ipucu">Sorgular: ${(r.sorgular || []).map(s => '"' + esc(s) + '"').join(' · ')}</div>
-        <div class="ipucu">${adaylar.length} aday · ${o.tarananSite || 0} site tarandı · ${((o.toplamSureMs || 0) / 1000).toFixed(1)} sn</div>
+        ${a.teknikDetaylar ? `<div class="ipucu">🔧 ${esc(a.teknikDetaylar)}</div>` : ''}
+        ${uyumlu.length ? `<div class="ipucu">🖨️ <b>Uyumlu modeller:</b> ${uyumlu.map(esc).join(', ')}</div>` : ''}
+        <div class="ipucu">Sorgular: ${(r.sorgular || []).map(x => '"' + esc(x) + '"').join(' · ')}</div>
+        <div class="ipucu">${adaylar.length} aday · ${o.tarananSite || 0} site tarandı · ${((o.toplamSureMs || 0) / 1000).toFixed(1)} sn${o.kismi ? ' · kısmi tarama' : ''}</div>
       </div>
     </div>`;
+
+  // En ucuz stoklu mağaza için yeşil CTA (kartların üstünde)
+  const enUcuz = r.enUcuz || (o.enUcuzSite ? { siteName: o.enUcuzSite, price: o.enUcuzFiyat, url: o.enUcuzAfiliyeUrl, kargo: o.enUcuzKargo } : null);
+  const ctaAlani = document.getElementById('gorselCta');
+  if (ctaAlani) {
+    if (enUcuz && enUcuz.url && enUcuz.price != null) {
+      ctaAlani.hidden = false;
+      ctaAlani.innerHTML = `
+        <div class="gorsel-cta-kart">
+          <div class="gorsel-cta-sol">
+            <span class="gorsel-cta-rozet">🏆 EN UCUZ STOKTA</span>
+            <span class="gorsel-cta-site">${esc(enUcuz.siteName || 'Mağaza')}</span>
+            <span class="gorsel-cta-fiyat">${tl(enUcuz.price)}</span>
+            ${enUcuz.kargo ? `<span class="gorsel-cta-kargo">🚚 ${esc(enUcuz.kargo)}</span>` : ''}
+          </div>
+          <a class="gorsel-cta-btn" href="${esc(enUcuz.url)}" target="_blank" rel="noopener sponsored"
+             data-afiliye-site="${esc(enUcuz.site || '')}">Mağazaya Git (En Ucuz)</a>
+        </div>`;
+    } else {
+      ctaAlani.hidden = true;
+      ctaAlani.innerHTML = '';
+    }
+  }
 
   if (!adaylar.length) {
     document.getElementById('gorselKartlar').innerHTML = `<div class="barkod-bos">
@@ -493,16 +610,20 @@ function gorselSonucGoster(r) {
         (c.renkCeliski || c.renkUyum === false) ? '<span class="rozet-kucuk">renk farklı</span>' : '',
       ].filter(Boolean).join('');
 
-      return `<div class="gorsel-kart ${c.enUcuz ? 'en-ucuz' : ''}">
+      const stokRozeti = c.stokta === false
+        ? '<span class="rozet-kucuk">🔴 tükendi</span>'
+        : '<span class="rozet-kucuk dogrulandi">🟢 stokta</span>';
+      return `<div class="gorsel-kart ${c.enUcuz ? 'en-ucuz' : ''} ${c.stokta === false ? 'tukendi' : ''}">
         <div class="gorsel-kart-ust">
           <b>${esc(c.siteName)}</b>
-          ${c.enUcuz ? '<span class="rozet-kucuk">en ucuz</span>' : ''}
+          ${c.enUcuz ? '<span class="rozet-kucuk">🏆 en ucuz</span>' : ''}
+          ${stokRozeti}
           ${benzerlikRozeti}
           ${uyumRozetleri}
         </div>
         <a class="gorsel-kart-baslik" href="${esc(c.url)}" target="_blank" rel="noopener">${esc(String(c.title).slice(0, 100))}</a>
         <div class="gorsel-kart-fiyat">${c.price != null ? tl(c.price) : 'fiyat bilinmiyor'}</div>
-        <div class="gorsel-kart-alt">${c.brand ? esc(c.brand) : ''}${c.color ? ' · ' + esc(c.color) : ''}</div>
+        <div class="gorsel-kart-alt">${c.brand ? esc(c.brand) : ''}${c.color ? ' · ' + esc(c.color) : ''}${c.kargo ? ' · ' + esc(c.kargo) : ''}${c.birimMetni ? ' · ' + esc(c.birimMetni) : ''}</div>
       </div>`;
     }).join('');
   }

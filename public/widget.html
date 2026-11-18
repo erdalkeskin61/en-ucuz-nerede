@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Canlı Fiyat — En Ucuz Nerede?</title>
+  <link rel="stylesheet" href="/widget.css" />
+  <script>
+    // Tema ilk boyamada uygulanır (koyu→açık geçişinde beyaz parlama olmasın).
+    (function () {
+      try {
+        var p = new URLSearchParams(location.search);
+        var t = (p.get('tema') || 'dark').toLowerCase();
+        document.documentElement.setAttribute('data-tema', t === 'light' ? 'light' : 'dark');
+      } catch (e) {
+        document.documentElement.setAttribute('data-tema', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <!--
+    Widget iskeleti. Tüm alanlar JS ile doldurulur; ilk boyamada iskelet
+    görünür, böylece gömüldüğü blogda boş kutu oluşmaz.
+    Erişilebilirlik: rol/aria-live ile fiyat değişimi duyurulur.
+  -->
+  <main class="widget" id="widget" aria-live="polite" aria-busy="true">
+    <div class="widget-iskelet" id="iskelet" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+    </div>
+  </main>
+  <script src="/widget.js"></script>
+</body>
+</html>

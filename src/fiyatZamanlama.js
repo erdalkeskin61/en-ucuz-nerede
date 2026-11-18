@@ -90,6 +90,113 @@ const formatTL = (n) => Number(n || 0).toLocaleString('tr-TR', {
   maximumFractionDigits: 2,
 });
 
+const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
+/** FOMO'nun pasif (kart çıkmaz) varsayılanı. `neden` dürüst gerekçedir. */
+function fomoPasif(neden) {
+  return {
+    aktif: false,
+    neden,
+    tukenmeRiskiYuzde: null,
+    dipFiyatTL: null,
+    tasarrufTL: null,
+    ortalamaFiyatTL: null,
+    dipSuresiGun: null,
+    incelemeSayisi: null,
+    sureTahminiMetni: null,
+    sosyalKanitMetni: null,
+    ctaMetni: null,
+  };
+}
+
+/**
+ * 🟢 FOMO aciliyet metrikleri (2026-11-08).
+ *
+ * DÜRÜSTLÜK: kart yalnızca matematiksel olarak gerçekten fırsat olan üründe
+ * açılır — son 90 günün dibinde (`dipSeviyede`) veya 30 gün ortalamasının
+ * %12'den fazla altında. Aksi halde `aktif:false` döner ve arayüz kart basmaz.
+ *
+ * Tükenme riski formülü (deterministik, uydurma değil):
+ *  - Dip derinliği = ortalamaya göre ne kadar ucuz (yüzde).
+ *  - Dip seviyede başlangıç %88; derinlik arttıkça +%6'ya kadar (tavan %94).
+ *  - Yalnızca ortalama-altı fırsatlarda %80 bandından başlar.
+ *  - Geçmiş dip süresi kısaysa (medyan ≤ 2 gün) risk +1/+3 puan artar.
+ *
+ * @param {{guncelFiyat:number, analiz:object, dipSeviyede:boolean, farkOrtalama:number}} girdi
+ */
+export function fomoMetrikleriUret({ guncelFiyat, analiz, dipSeviyede, farkOrtalama }) {
+  const fiyat = Number(guncelFiyat);
+  const ort30 = Number(analiz?.ortFiyat30 ?? analiz?.ortFiyat);
+  const min90 = Number(analiz?.minFiyat90 ?? analiz?.minFiyat);
+
+  if (!Number.isFinite(fiyat) || fiyat <= 0) return fomoPasif('Geçerli fiyat yok');
+  if (!Number.isFinite(ort30) || ort30 <= 0) return fomoPasif('Ortalama fiyat hesaplanamadı');
+  if (!(analiz?.gunSayisi >= 3) || !analiz?.yeterliVeri) {
+    return fomoPasif('Yetersiz fiyat geçmişi (en az 3 gün gerekli)');
+  }
+
+  const tasarrufTL = Math.round(Math.max(0, ort30 - fiyat) * 100) / 100;
+  const derinlik = Math.max(0, -(Number(farkOrtalama) || 0)); // 0.176 = %17,6 ucuz
+
+  // Tetik koşulu: gerçek dip VEYA ortalamadan %12+ ucuz. Başka hiçbir durumda açılmaz.
+  const dipMi = dipSeviyede === true;
+  const ortalamaFirsati = derinlik >= 0.12;
+  if (!dipMi && !ortalamaFirsati) {
+    return fomoPasif(
+      tasarrufTL > 0
+        ? `Fiyat ortalamanın yalnızca %${Math.round(derinlik * 1000) / 10} altında; fırsat eşiği (%12) aşılmadı`
+        : 'Fiyat piyasa ortalamasında veya üzerinde',
+    );
+  }
+  // Tasarruf yoksa "daha ucuz" iddiası kurulmaz.
+  if (tasarrufTL < 1) {
+    return fomoPasif('Ortalamaya göre ölçülebilir tasarruf yok');
+  }
+
+  let risk;
+  if (dipMi) {
+    risk = 88 + Math.round(clamp((derinlik - 0.15) * 60, 0, 6));
+  } else {
+    risk = 80 + Math.round(clamp((derinlik - 0.12) * 60, 0, 8));
+  }
+
+  // Geçmişte dip kısa sürdüyse aciliyet gerçekten daha yüksek.
+  const dipSuresi = Number(analiz?.dipSuresiGun);
+  if (Number.isFinite(dipSuresi) && dipSuresi > 0) {
+    if (dipSuresi <= 1) risk += 3;
+    else if (dipSuresi <= 2) risk += 1;
+  }
+  risk = Math.round(clamp(risk, 80, 95));
+
+  // Sosyal kanıt YALNIZCA gerçek gözlemlerden. Kişi sayısı/tıklama uydurulmaz.
+  const gozlem24 = Number(analiz?.son24SaatGozlem) || 0;
+  const dipSayisi = Number(analiz?.dipSayisi) || 0;
+  const parcalar = [];
+  if (gozlem24 >= 2) parcalar.push(`Son 24 saatte fiyat ${gozlem24} kez doğrulandı`);
+  if (dipSayisi >= 2) parcalar.push(`${Number(analiz?.gunSayisi) || 0} günde ${dipSayisi} kez bu dibe indi`);
+  const sosyalKanitMetni = parcalar.length ? parcalar.join(' · ') : null;
+
+  const sureTahminiMetni = Number.isFinite(dipSuresi) && dipSuresi > 0
+    ? `Geçmişte bu dip seviye ortalama ${String(dipSuresi).replace('.', ',')} gün sürdü — 24 saat içinde fiyat artışı veya tükenme riski %${risk}.`
+    : `24 saat içinde fiyat artışı veya tükenme riski %${risk}.`;
+
+  return {
+    aktif: true,
+    neden: null,
+    tukenmeRiskiYuzde: risk,
+    dipFiyatTL: Number.isFinite(min90) ? Math.round(min90 * 100) / 100 : null,
+    tasarrufTL,
+    ortalamaFiyatTL: Math.round(ort30 * 100) / 100,
+    dipSuresiGun: Number.isFinite(dipSuresi) ? dipSuresi : null,
+    // Gerçek 24 saatlik gözlem sayısı (kişi/tıklama değil!). Kart bunu
+    // "fiyat doğrulandı" olarak yazar; yoksa satır hiç basılmaz.
+    incelemeSayisi: gozlem24 > 0 ? gozlem24 : null,
+    sureTahminiMetni,
+    sosyalKanitMetni,
+    ctaMetni: '⚡ Bu Fiyatla Stoklar Bitmeden Al ➔',
+  };
+}
+
 export function magazaKampanyaKontrol(magazaId, tarih = new Date()) {
   const bos = { yakindaMi: false, kalanGun: null, aciklama: null, etkinlik: null, tipikOran: 0.08 };
   if (!magazaId) return bos;
@@ -183,6 +290,7 @@ export function zamanlamaTahminiYap({ guncelFiyat, analiz, magazaId = null, tari
       gunSayisi: 0,
       veriNoktasi: 0,
     },
+    fomo: fomoPasif('Yetersiz fiyat geçmişi'),
     kampanya: null,
   };
 
@@ -231,6 +339,14 @@ export function zamanlamaTahminiYap({ guncelFiyat, analiz, magazaId = null, tari
   const dipSeviyedeMi = fiyat <= min90 * 1.015;
   const ortalamadanCokUcuzMu = farkOrtalama <= -0.10;
 
+  // 🟢 FOMO (2026-11-08): kart yalnızca gerçek dip / ortalamadan %12+ ucuzda açılır.
+  const fomo = fomoMetrikleriUret({
+    guncelFiyat: fiyat,
+    analiz,
+    dipSeviyede: dipSeviyedeMi,
+    farkOrtalama,
+  });
+
   if (dipSeviyedeMi || ortalamadanCokUcuzMu) {
     let guven = 78;
     if (dipSeviyedeMi) guven += 10;
@@ -259,6 +375,7 @@ export function zamanlamaTahminiYap({ guncelFiyat, analiz, magazaId = null, tari
       beklenenTasarrufTL: null,
       beklemeGun: null,
       metrikler: temel.metrikler,
+      fomo,
       kampanya: temel.kampanya,
     };
   }
@@ -301,6 +418,7 @@ export function zamanlamaTahminiYap({ guncelFiyat, analiz, magazaId = null, tari
       beklenenTasarrufTL: beklenenTasarruf,
       beklemeGun,
       metrikler: temel.metrikler,
+      fomo: fomoPasif('Karar BEKLE: fiyat avantajlı değil'),
       kampanya: temel.kampanya,
     };
   }
@@ -315,6 +433,7 @@ export function zamanlamaTahminiYap({ guncelFiyat, analiz, magazaId = null, tari
     beklenenTasarrufTL: null,
     beklemeGun: null,
     metrikler: temel.metrikler,
+    fomo: fomoPasif('Fiyat piyasa ortalamasında'),
     kampanya: temel.kampanya,
   };
 }

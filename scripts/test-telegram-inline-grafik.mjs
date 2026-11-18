@@ -198,6 +198,7 @@ anlikYaz(SAHTE_URL, sonuclar([
 
 // Radar kataloğu kaynağı (mock): inline sonuçları zenginleştirir.
 const RADAR_AD = 'Testmarka Nova PLA Siyah 1kg';
+const vitrinCagrilari = [];
 const gercekRadar = await import('../src/otonomRadar.js');
 __radarModuluAyarla(async () => ({
   ...gercekRadar,
@@ -224,6 +225,27 @@ __radarModuluAyarla(async () => ({
       afiliyeUrl: 'https://3dtekno.test/testmarka-nova?ref=eun',
       kaynakUrl: 'https://3dtekno.test/testmarka-nova',
     }),
+  // 2026-11-11: boş inline modu vitrinVerisi()'ni tüketir. Deterministik test
+  // için kategori dengeli (5 filament / 3 yazıcı / 2 genel) sabit liste.
+  vitrinVerisi: (opts = {}) => {
+    vitrinCagrilari.push(opts);
+    const urunler = [
+      { id: 1, ad: TEST_AD, kategori: 'filament', ikon: '🧵', site: 'Ventatek', fiyat: 758.65, stokta: true, ts: Date.now() - 1800000, url: 'https://www.ventatek.com/testmarka-quantum' },
+      { id: 2, ad: RADAR_AD, kategori: 'filament', ikon: '🧵', site: '3D Tekno Market', fiyat: 649.9, stokta: true, ts: Date.now() - 5400000, url: 'https://3dtekno.test/testmarka-nova' },
+      { id: 101, ad: 'Porima PETG Filament Siyah 1kg', kategori: 'filament', ikon: '💎', site: 'Porima 3D', fiyat: 673.44, stokta: true, ts: Date.now() - 600000, url: 'https://porima3d.test/petg-siyah' },
+      { id: 102, ad: 'Creality CR-TPU Esnek Filament Siyah 1kg', kategori: 'filament', ikon: '🌀', site: 'n11', fiyat: 1133.16, stokta: true, ts: Date.now() - 900000, url: 'https://n11.test/cr-tpu' },
+      { id: 103, ad: 'Sunlu PLA Filament Siyah 1kg', kategori: 'filament', ikon: '🧵', site: 'Filament Depom', fiyat: 582.8, stokta: true, ts: Date.now() - 1200000, url: 'https://filamentdepom.test/sunlu' },
+      { id: 201, ad: 'Bambu Lab P1S 3D Yazıcı', kategori: 'yazici', ikon: '🖨️', site: '3Dcim', fiyat: 24999, stokta: true, ts: Date.now() - 300000, url: 'https://3dcim.test/p1s' },
+      { id: 202, ad: 'Bambu Lab A1 Mini 3D Yazıcı', kategori: 'yazici', ikon: '🖨️', site: 'Trendyol', fiyat: 22649, stokta: true, ts: Date.now() - 600000, url: 'https://trendyol.test/a1-mini' },
+      { id: 203, ad: 'Creality K1C 3D Yazıcı', kategori: 'yazici', ikon: '🖨️', site: 'İncehesap', fiyat: 24549, stokta: true, dip: true, ts: Date.now() - 420000, url: 'https://incehesap.test/k1c' },
+      { id: 301, ad: 'Anycubic Standart UV Reçine Gri 1kg', kategori: 'genel', ikon: '🧪', site: '3Dcim', fiyat: 711.42, stokta: true, dip: true, ts: Date.now() - 480000, url: 'https://3dcim.test/anycubic-recine' },
+      { id: 302, ad: 'Bambu Lab P1 Serisi 0.4mm Komple Hotend', kategori: 'genel', ikon: '🔧', site: 'Robolink Market', fiyat: 1882.5, stokta: true, indirimYuzde: 12, ts: Date.now() - 540000, url: 'https://robolink.test/hotend' },
+    ];
+    return {
+      ok: true, guncelleme: new Date().toISOString(), toplam: urunler.length,
+      gosterilen: urunler.length, urunler,
+    };
+  },
 }));
 
 const bulgular = await inlineSonuclariOlustur('Testmarka Quantum');
@@ -259,9 +281,62 @@ kontrol('canlı arama kartı bota yönlendirir',
   JSON.stringify(canli.find(b => /canlı ara/i.test(b.title))?.reply_markup || {}).includes('t.me/'));
 
 const bos = await inlineSonuclariOlustur('');
-kontrol('boş sorguda ipucu kartı', bos.length >= 1 && bos.every(b => b.type === 'article'));
+kontrol('boş sorguda ipucu yerine vitrin kartları', bos.length >= 1 && bos.every(b => b.type === 'article'));
 kontrol('ipucu kartı 61 mağaza der',
   bos.some(b => /61 mağaza/.test(b.input_message_content?.message_text || '')));
+
+/* ------------------------------------------------------------------ */
+bolum('3b) 🌟 Boş inline = kategori dengeli dinamik vitrin (2026-11-11)');
+
+kontrol('boş sorgu vitrinVerisi() kullanır (limit 10)',
+  vitrinCagrilari.some(o => Number(o?.limit) === 10), JSON.stringify(vitrinCagrilari));
+kontrol('boş sorgu 8-10 kart döner', bos.length >= 8 && bos.length <= 10, String(bos.length));
+kontrol('boş sorguda yalnızca article', bos.every(b => b.type === 'article'));
+kontrol('boş sorgu id’leri benzersiz', new Set(bos.map(b => b.id)).size === bos.length);
+kontrol('boş sorgu title ≤95', bos.every(b => b.title.length <= 95));
+kontrol('her kartta fiyat başlıkta', bos.every(b => /₺/.test(b.title)));
+kontrol('her kartta karşılaştırma butonu', bos.every(b =>
+  (b.reply_markup?.inline_keyboard || []).flat().some(x => /Karşılaştırmayı Aç/.test(x.text || ''))));
+kontrol('her kartta 61 mağaza imzası', bos.every(b =>
+  /61 mağaza/.test(b.input_message_content?.message_text || '')));
+kontrol('her açıklama kategori etiketi taşır', bos.every(b =>
+  /\[(3D Yazıcı|Filament|Yedek Parça\/Reçine)\]/.test(b.description)));
+// 2026-11-11 sözleşmesi: üç rozet de gerçekten listelenmeli (5+3+2 dağılımı).
+kontrol('[Filament] rozeti var', bos.some(b => /\[Filament\]/.test(b.description)));
+kontrol('[3D Yazıcı] rozeti var', bos.some(b => /\[3D Yazıcı\]/.test(b.description)));
+kontrol('[Yedek Parça/Reçine] rozeti var',
+  bos.some(b => /\[Yedek Parça\/Reçine\]/.test(b.description)),
+  [...new Set(bos.map(b => (b.description.match(/\[([^\]]+)\]/) || [])[1]))].join(' | '));
+kontrol('mesaj gövdesinde mağaza satın alma linki',
+  bos.every(b => /— satın al<\/a>/.test(b.input_message_content?.message_text || '')));
+kontrol('mesaj gövdesi HTML parse', bos.every(b => b.input_message_content?.parse_mode === 'HTML'));
+kontrol('her kart description ≤95', bos.every(b => b.description.length <= 95));
+
+// Kategori çeşitliliği: eski hata "ilk 5 filament" idi.
+const yaziciKart = bos.filter(b => /🖨️/.test(b.title));
+const filamentKart = bos.filter(b => /🧵|💎|🌀/.test(b.title));
+const genelKart = bos.filter(b => /🧪|🔧|♨️|⚙️/.test(b.title));
+kontrol('en az 3 yazıcı kartı (🖨️)', yaziciKart.length >= 3, String(yaziciKart.length));
+kontrol('en az 4 filament kartı (🧵/💎/🌀)', filamentKart.length >= 4, String(filamentKart.length));
+kontrol('en az 1 genel kart (🧪/🔧/⚙️)', genelKart.length >= 1, String(genelKart.length));
+// 10 kartlık vitrin kotası: 5 filament + 3 yazıcı + 2 genel (6:4:2'nin limit 10 ölçeği).
+kontrol('filament kartı tam 5', filamentKart.length === 5, String(filamentKart.length));kontrol('yazıcı kartı tam 3', yaziciKart.length === 3, String(yaziciKart.length));
+kontrol('genel kartı tam 2', genelKart.length === 2, String(genelKart.length));
+kontrol('yazıcı fiyatları başlıkta görünür',
+  yaziciKart.every(b => /₺\d{2}\.\d{3}/.test(b.title)), yaziciKart.map(b => b.title).join(' | '));
+kontrol('TPU kartı 🌀 ikonu taşır', bos.some(b => /🌀/.test(b.title)));
+kontrol('PETG kartı 💎 ikonu taşır', bos.some(b => /💎/.test(b.title)));
+kontrol('reçine kartı 🧪 ikonu taşır', bos.some(b => /🧪/.test(b.title)));
+kontrol('nozzle kartı 🔧 ikonu taşır', bos.some(b => /🔧/.test(b.title)));
+kontrol('yazıcı açıklaması [3D Yazıcı] etiketli',
+  yaziciKart.length > 0 && yaziciKart.every(b => /\[3D Yazıcı\]/.test(b.description)));
+kontrol('dip fiyat kartı 🔥 rozeti taşır',
+  bos.some(b => /En Dip Fiyat/.test(b.input_message_content?.message_text || '')));
+kontrol('indirim rozeti yüzdeyi gösterir',
+  bos.some(b => /📉 %12 İndirim/.test(b.input_message_content?.message_text || '')));
+kontrol('dip olmayan kartta 🔥 yok',
+  !bos.filter(b => /\[Filament\]/.test(b.description))
+    .some(b => /En Dip Fiyat/.test(b.input_message_content?.message_text || '')));
 
 // Türkçe katlama: "QUANTUM" → "quantum".
 const trSonuc = await inlineSonuclariOlustur('QUANTUM');
@@ -274,7 +349,7 @@ kontrol('answerInlineQuery çağrıldı', !!iqIstek);
 const iqGovde = iqIstek ? JSON.parse(iqIstek.opts.body) : {};
 kontrol('inline_query_id taşınır', iqGovde.inline_query_id === 'iq-1');
 kontrol('sonuçlar en fazla 20', Array.isArray(iqGovde.results) && iqGovde.results.length <= 20);
-kontrol('cache_time 120', iqGovde.cache_time === 120);
+kontrol('cache_time 30 (dinamik rotasyon)', iqGovde.cache_time === 30, String(iqGovde.cache_time));
 kontrol('sonuçlar boş değil', iqGovde.results?.length > 0);
 kontrol('is_personal false (viral paylaşım)', iqGovde.is_personal === false);
 
@@ -350,6 +425,13 @@ const grafikSrc = oku('src/grafik.js');
 kontrol('bot: inline_query allowed_updates', botSrc.includes('"inline_query"'));
 kontrol('bot: inline_query yönlendirmesi', botSrc.includes('update.inline_query'));
 kontrol('bot: answerInlineQuery', botSrc.includes("'answerInlineQuery'"));
+kontrol('bot: cache_time 30', /cache_time: 30/.test(botSrc));
+kontrol('bot: boş inline vitrinVerisi() kullanır', /radar\.vitrinVerisi\(\{ limit: 10 \}\)/.test(botSrc));
+kontrol('bot: boş inline kategori fallback grubu', /gruplar\.filament\.slice\(0, 5\)[\s\S]{0,120}gruplar\.yazici\.slice\(0, 3\)[\s\S]{0,120}gruplar\.genel\.slice\(0, 2\)/.test(botSrc));
+kontrol('bot: inline paket kategori ikonu alır', /kategoriIkon = '🏷️'/.test(botSrc));
+kontrol('bot: inline En Dip Fiyat rozeti', /En Dip Fiyat!/.test(botSrc));
+kontrol('bot: inline indirim rozeti', /📉 %\$\{yuzde\} İndirim/.test(botSrc));
+kontrol('bot: radar urunIkonu kullanılır', /radar\.urunIkonu/.test(botSrc));
 kontrol('bot: deep-link start yükü', botSrc.includes("yuk.startsWith('ara_')"));
 kontrol('bot: inline sonuç 3 teklif', botSrc.includes('slice(0, 3)'));
 kontrol('radar: sendPhoto yolu', radarSrc.includes('fotoGonder(token, chatId, png'));

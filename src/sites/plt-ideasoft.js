@@ -13,6 +13,10 @@
 import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
 import { findJsonLdProduct, dominantColor, parseNum } from '../util.js';
+import {
+  extractSelfHealingPrice, extractSelfHealingTitle,
+  extractSelfHealingImage, extractSelfHealingBrand,
+} from '../selfHealingParser.js';
 
 /** Token, istemci başlıklarına (özellikle User-Agent) bağlıdır; iki istek de
  *  aynı sabit UA ile gönderilir (ScraperAPI varsayılanı istekten isteğe değişir). */
@@ -84,29 +88,35 @@ export function ideasoftSite(cfg) {
     async getProduct(url, ctx, opts = {}) {
       const r = await fetchPage(url, { site: this.id, purpose: 'urun', fresh: !!opts.fresh });
       ctx.spend += r.requestsSpent;
-      const p = findJsonLdProduct(r.body);
-      if (!p?.name) throw new Error('IdeaSoft ürün verisi (JSON-LD) sayfada bulunamadı.');
+      const html = r.body || '';
+      const p = findJsonLdProduct(html);
 
-      const price = parseNum(p.offers?.price);
-      const listPrice = parseNum(p.offers?.priceSpecification?.price) || null;
+      // 2026-11-13: JSON-LD yoksa/eksikse katı hata yerine self-healing kaskad.
+      const sh = extractSelfHealingPrice(html, null, this.name);
+      const price = parseNum(p?.offers?.price) ?? sh.fiyat;
+      if (!(price > 0)) throw new Error('IdeaSoft ürün verisi (JSON-LD) sayfada bulunamadı.');
+      const title = p?.name || extractSelfHealingTitle(html);
+      if (!title) throw new Error('IdeaSoft ürün başlığı bulunamadı.');
+
+      const listPrice = parseNum(p?.offers?.priceSpecification?.price) || null;
 
       return {
         site: this.id,
         siteName: this.name,
         url,
-        title: p.name,
-        brand: p.brand?.name || null,
-        modelCode: p.sku || p.mpn || null,
-        barcode: p.gtin13 || p.gtin || null,
-        color: dominantColor(p.name),
+        title,
+        brand: p?.brand?.name || extractSelfHealingBrand(html),
+        modelCode: p?.sku || p?.mpn || null,
+        barcode: p?.gtin13 || p?.gtin || null,
+        color: dominantColor(title),
         listPrice: listPrice && price && listPrice > price ? listPrice : null,
         sellingPrice: price,
-        currency: p.offers?.priceCurrency || 'TRY',
-        inStock: /InStock/i.test(p.offers?.availability || '') || p.offers?.availability == null,
-        seller: p.seller?.name || null,
-        image: Array.isArray(p.image) ? (typeof p.image[0] === 'string' ? p.image[0] : p.image[0]?.url || null) : (p.image || null),
+        currency: p?.offers?.priceCurrency || 'TRY',
+        inStock: /InStock/i.test(p?.offers?.availability || '') || p?.offers?.availability == null,
+        seller: p?.seller?.name || null,
+        image: extractSelfHealingImage(html),
         campaigns: [],
-        shipping: kargoCikar(r.body, this.id),
+        shipping: kargoCikar(html, this.id),
       };
     },
   };

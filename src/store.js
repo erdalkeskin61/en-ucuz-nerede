@@ -46,9 +46,12 @@ export function dbBaglantisi() {
 }
 
 // WAL modu ve synchronous normal ile yüksek yazma/okuma hızı ve veri bütünlüğü
+// 2026-11-11: busy_timeout eklendi — eşzamanlı yazımda (radar turu + panel)
+// SQLITE_BUSY yerine 5 sn beklenir (katalog bütünlük sözleşmesi).
 db.exec(`
   PRAGMA journal_mode = WAL;
   PRAGMA synchronous = NORMAL;
+  PRAGMA busy_timeout = 5000;
   PRAGMA foreign_keys = ON;
 
   CREATE TABLE IF NOT EXISTS settings (
@@ -78,7 +81,12 @@ db.exec(`
     sonStokBildirimi TEXT,
     -- 2026-11-02: Telegram kişisel alarm sahibi (NULL = eski/genel kayıt).
     -- Hatırlatma yalnızca bu sohbete gider; başka kullanıcı /liste'de görmez.
-    chatId TEXT
+    chatId TEXT,
+    -- 2026-11-06: Sıfır sürtünmeli Web Push alarmı. Abonelik yalnızca bu
+    -- takip kaydına aittir (e-posta/şifre yok). pushEndpoint indexlidir ve
+    -- abonelik 404/410 döndüğünde sessizce temizlenir.
+    pushSubscription TEXT,
+    pushEndpoint TEXT
   );
 
   CREATE TABLE IF NOT EXISTS history (
@@ -114,7 +122,11 @@ db.exec(`
     ornek_fiyat REAL,
     arama_url TEXT,
     hata TEXT,
-    kontrol_ts TEXT NOT NULL
+    kontrol_ts TEXT NOT NULL,
+    -- 2026-11-10: hangi arama sorgusuyla yoklandığı (ör. 'pla filament' / 'kablo').
+    -- Önceden yalnızca bellekte dönüyordu; gece raporunda "kablo arandı" teşhisi
+    -- yapılamıyordu. Sağlık nöbetçisi bu alanı artık kalıcı yazar.
+    sorgu TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_adapter_health_site ON adapter_health(site, kontrol_ts DESC);
 
@@ -152,7 +164,146 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_shared_carts_ts ON shared_carts(created_at DESC);
+
+  -- ⭐ Sponsorlu vitrin / Hero banner (2026-11-08): sabit ücretli reklam alanı.
+  -- Süre bitince sorgu kaydı DÖNDÜRMEZ (banner kendiliğinden kaybolur).
+  -- gösterim/tıklama sayaçları reklamverene şeffaf rapor için tutulur.
+  CREATE TABLE IF NOT EXISTS sponsorlu_vitrin (
+    id TEXT PRIMARY KEY,
+    marka TEXT NOT NULL,
+    baslik TEXT NOT NULL,
+    aciklama TEXT,
+    gorselUrl TEXT NOT NULL,
+    eskiFiyat REAL,
+    kampanyaFiyat REAL NOT NULL,
+    yonlendirmeUrl TEXT NOT NULL,
+    rozetMetni TEXT DEFAULT 'HAFTANIN SPONSORLU FIRSATI',
+    baslangicTarihi TEXT NOT NULL,
+    bitisTarihi TEXT NOT NULL,
+    aktif INTEGER DEFAULT 1,
+    gosterimSayisi INTEGER DEFAULT 0,
+    tiklamaSayisi INTEGER DEFAULT 0,
+    olusturma INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_sponsor_vitrin_tarih
+    ON sponsorlu_vitrin(aktif, bitisTarihi);
+
+  -- ✅ Doğrulanmış mağaza (Verified Partner) rozetleri (2026-11-08).
+  -- Abonelik bitince rozet gösterilmez; fiyat/sıralama DEĞİŞMEZ.
+  CREATE TABLE IF NOT EXISTS dogrulanmis_magazalar (
+    siteId TEXT PRIMARY KEY,
+    rozetMetni TEXT NOT NULL,
+    onayTuru TEXT DEFAULT 'resmi_partner',
+    bitisTarihi TEXT NOT NULL,
+    aktif INTEGER DEFAULT 1,
+    olusturma INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_dogrulanmis_magaza_aktif
+    ON dogrulanmis_magazalar(aktif, bitisTarihi);
+
+  -- ------------------------------------------------------------------
+  -- 🗂️ Mağaza ürün kataloğu indeksi (2026-11-17)
+  --
+  -- Neden: kullanıcı "eSun PLA+" yazdığında 68 mağazayı tek tek taramak
+  -- yerine, mağazaların KENDİ yayınladığı beslemeden (Shopify products.json,
+  -- WooCommerce Store API, ürün sitemap'i) toplanan kalıcı bir indeksten
+  -- milisaniyeler içinde aday bulunur. Dış mağazaya HTTP/Chromium isteği
+  -- yalnızca gerektiğinde (taze fiyat doğrulaması) atılır.
+  --
+  -- Dürüstlük: fiyat yalnızca beslemede GERÇEKTEN yazan değerdir; yoksa
+  -- NULL kalır (uydurma/tahmin YOK). guncellemeTs her kaydın gerçek çekim
+  -- zamanıdır (ms). kaynakTur: shopify | woo | sitemap | xml.
+  -- ------------------------------------------------------------------
+  CREATE TABLE IF NOT EXISTS katalog_urunleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    siteId TEXT NOT NULL,
+    urunUrl TEXT NOT NULL,
+    baslik TEXT NOT NULL,
+    temizBaslik TEXT NOT NULL,
+    marka TEXT,
+    fiyat REAL,
+    stokta INTEGER,              -- 1 stokta, 0 tükendi, NULL bilinmiyor
+    gorselUrl TEXT,
+    paraBirimi TEXT,
+    kaynakTur TEXT NOT NULL,     -- shopify | woo | sitemap | xml
+    guncellemeTs INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_katalog_urun_url
+    ON katalog_urunleri(siteId, urunUrl);
+  CREATE INDEX IF NOT EXISTS idx_katalog_urun_temiz
+    ON katalog_urunleri(temizBaslik);
+  CREATE INDEX IF NOT EXISTS idx_katalog_urun_ts
+    ON katalog_urunleri(guncellemeTs DESC);
+  CREATE INDEX IF NOT EXISTS idx_katalog_urun_site
+    ON katalog_urunleri(siteId, guncellemeTs DESC);
 `);
+
+/* ------------------------------------------------------------------ */
+/* ⭐ Sponsorlu vitrin & doğrulanmış mağaza tohum verisi (2026-11-08)   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Açılışta bir kez çalışan tohumlama.
+ *
+ * Neden kod içinde: reklamveren kaydı olmadan banner alanı boş kalıyordu ve
+ * "mavi tik" özelliği test edilemiyordu. Tohum verisi YALNIZCA ilk kurulumda
+ * eklenir; yönetici panelden silerse bir daha geri gelmez (`sponsor_seed_v1`).
+ *
+ * DÜRÜSTLÜK: tohum vitrin kaydı örnek bir kampanyadır (demo) ve yönlendirmesi
+ * gerçek mağaza sayfasına gider; uydurma fiyat iddiası yoktur.
+ */
+function sponsorTohumla() {
+  try {
+    const surum = db.prepare('SELECT value FROM settings WHERE key = ?').get('sponsor_seed_v1');
+    if (surum) return;
+
+    // Doğrulanmış mağazalar: 12 ay geçerli (yıllık abonelik varsayımı).
+    const bitis = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString();
+    const magazaEkle = db.prepare(`
+      INSERT INTO dogrulanmis_magazalar (siteId, rozetMetni, onayTuru, bitisTarihi, aktif, olusturma)
+      VALUES (?, ?, ?, ?, 1, ?)
+      ON CONFLICT(siteId) DO NOTHING
+    `);
+    magazaEkle.run('porima3d', 'Resmi Üretici · Aynı Gün Kargo', 'uretici', bitis, Date.now());
+    magazaEkle.run('robotistan', 'Resmi Distribütör · Aynı Gün Kargo', 'resmi_partner', bitis, Date.now());
+
+    // Örnek sponsorlu vitrin: 7 günlük demo kampanya (gerçek ürün sayfası).
+    const varMi = db.prepare('SELECT COUNT(*) c FROM sponsorlu_vitrin').get()?.c || 0;
+    if (!varMi) {
+      const bugun = new Date();
+      const bas = bugun.toISOString();
+      const bit = new Date(bugun.getTime() + 7 * 24 * 3600 * 1000).toISOString();
+      db.prepare(`
+        INSERT INTO sponsorlu_vitrin (
+          id, marka, baslik, aciklama, gorselUrl, eskiFiyat, kampanyaFiyat,
+          yonlendirmeUrl, rozetMetni, baslangicTarihi, bitisTarihi,
+          aktif, gosterimSayisi, tiklamaSayisi, olusturma
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, ?)
+      `).run(
+        'vitrin_demo_porima',
+        'Porima3D',
+        'Porima PLA Filament — Bu Haftaya Özel Lansman Fiyatı',
+        'Türkiye üretimi, darbe dayanımı yüksek PLA. Üreticinin kendi mağazasında haftaya özel fiyat.',
+        // Yerel illüstrasyon: dış CDN'e bağımlılık yok, banner her zaman dolu görünür.
+        // Gerçek reklamveren kendi ürün fotoğrafını yönetici panelinden ekler.
+        '/sponsor-ornek.svg',
+        612,
+        489,
+        'https://porima3d.com/products/porima-pla-filament?variant=49130120184155',
+        'HAFTANIN SPONSORLU FIRSATI',
+        bas,
+        bit,
+        Date.now(),
+      );
+    }
+
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+      .run('sponsor_seed_v1', JSON.stringify(new Date().toISOString()));
+  } catch (e) {
+    console.warn('[store] sponsor tohumlama atlandı:', String(e?.message || e).slice(0, 120));
+  }
+}
+
 
 /**
  * Eski veritabanlarına eksik kolonları ekler (CREATE TABLE IF NOT EXISTS mevcut
@@ -168,6 +319,9 @@ function eksikKolonlariEkle() {
     ['sonStokBildirimi', 'TEXT'],
     // 2026-11-02: Telegram kişisel alarm sahibi (NULL = eski/genel kayıt)
     ['chatId', 'TEXT'],
+    // 2026-11-06: kişiye/cihaza özel Web Push aboneliği
+    ['pushSubscription', 'TEXT'],
+    ['pushEndpoint', 'TEXT'],
   ];
   let eklenen = 0;
   for (const [ad, tip] of eklenecek) {
@@ -175,7 +329,21 @@ function eksikKolonlariEkle() {
     db.exec(`ALTER TABLE tracked ADD COLUMN ${ad} ${tip}`);
     eklenen++;
   }
+  // Endpoint tekil cihazı temsil eder; temizlik sorgusu hızlı olsun.
+  // Kolonlar yukarıdaki döngüde eklendiği için index güvenle kurulabilir.
+  db.exec('CREATE INDEX IF NOT EXISTS idx_tracked_push_endpoint ON tracked(pushEndpoint)');
   if (eklenen) console.log(`[store] tracked tablosuna ${eklenen} kolon eklendi (fiyat geçmişi artık kalıcı).`);
+
+  // 2026-11-10: adapter_health.sorgu — mevcut kurulumlarda tablo zaten var,
+  // CREATE TABLE yeni kolonu eklemez → ALTER gerekir.
+  try {
+    const ahKolonlar = new Set(db.prepare('PRAGMA table_info(adapter_health)').all().map(k => k.name));
+    if (ahKolonlar.size && !ahKolonlar.has('sorgu')) {
+      db.exec('ALTER TABLE adapter_health ADD COLUMN sorgu TEXT');
+      console.log('[store] adapter_health tablosuna "sorgu" kolonu eklendi (hangi sorguyla yoklandığı kalıcı).');
+    }
+  } catch { /* tablo henüz yoksa yoksay */ }
+
   return eklenen;
 }
 
@@ -261,6 +429,8 @@ function migrateFromJson() {
 }
 
 migrateFromJson();
+// ⭐ Sponsor tohumlaması göçten SONRA: settings.json göçü engellenmesin.
+sponsorTohumla();
 
 // ---- Ayarlar API ----
 
@@ -277,7 +447,19 @@ const DEFAULT_SETTINGS = {
   alarmEmail: '',
   smtp: { host: '', port: 587, secure: false, user: '', pass: '', from: '' },
   telegram: { enabled: false, botToken: '', chatId: '' },
-  whatsapp: { enabled: false, webhookUrl: '', phone: '' },
+  whatsapp: {
+    // Kişisel alarmlar (mevcut)
+    enabled: false, webhookUrl: '', phone: '',
+    // 📢 Otonom fırsat kanalı (2026-11-05)
+    firsatKanalEnabled: false,
+    provider: 'webhook',        // webhook | green-api | ultramsg | meta
+    channelId: '',              // 120363…@newsletter | …@g.us | telefon
+    apiUrl: '',                 // gateway / instance URL
+    token: '',                  // API anahtarı (gizli)
+    phoneNumberId: '',          // yalnızca meta
+    apiVersion: 'v21.0',        // yalnızca meta
+    resimliGonder: true,        // fiyat grafiği varsa caption olarak gönder
+  },
   alarmCheckMinutes: config.alarmCheckMinutes,
   alarmSaatleri: DEFAULT_ALARM_SAATLERI,
   // 📢 Otonom Fırsat Kanalı (2026-10-30): gerçek taramalardan seçilen fırsatları
@@ -313,10 +495,22 @@ export function getSettings() {
   const rows = db.prepare('SELECT key, value FROM settings').all();
   const current = { ...DEFAULT_SETTINGS };
   for (const row of rows) {
+    let deger;
     try {
-      current[row.key] = JSON.parse(row.value);
+      deger = JSON.parse(row.value);
     } catch {
-      current[row.key] = row.value;
+      deger = row.value;
+    }
+    // DERİN BİRLEŞTİRME (2026-11-05): DB'de kayıtlı bir nesne (ör. whatsapp),
+    // varsayılan nesneyi TAMAMEN eziyordu. Yeni ayar alanları eklendiğinde
+    // (WhatsApp fırsat kanalı) eski kurulumlarda hiç görünmüyordu. Artık nesne
+    // değerleri varsayılanla birleştirilir; kayıtlı değer her zaman önceliklidir.
+    const varsayilan = DEFAULT_SETTINGS[row.key];
+    if (deger && typeof deger === 'object' && !Array.isArray(deger)
+      && varsayilan && typeof varsayilan === 'object' && !Array.isArray(varsayilan)) {
+      current[row.key] = { ...varsayilan, ...deger };
+    } else {
+      current[row.key] = deger;
     }
   }
   return current;
@@ -339,7 +533,12 @@ function sinirla(nesne, anahtarlar) {
 }
 
 const SMTP_ANAHTARLARI = ['host', 'port', 'secure', 'user', 'pass', 'from'];
-const WHATSAPP_ANAHTARLARI = ['enabled', 'webhookUrl', 'phone'];
+const WHATSAPP_ANAHTARLARI = [
+  'enabled', 'webhookUrl', 'phone',
+  // 📢 Otonom fırsat kanalı (2026-11-05)
+  'firsatKanalEnabled', 'provider', 'channelId', 'apiUrl', 'token',
+  'phoneNumberId', 'apiVersion', 'resimliGonder',
+];
 const TELEGRAM_ANAHTARLARI = ['enabled', 'botToken', 'chatId'];
 const FIRSAT_ANAHTARLARI = [
   'enabled', 'kanal', 'minIndirim', 'gunlukMax',
@@ -520,6 +719,15 @@ function parseTrackedRow(row) {
     } catch { /* bozuk kayıt → boş geçmiş */ }
   }
 
+  // 🔔 Kişiye/cihaza özel Web Push aboneliği (2026-11-06).
+  let pushSubscription = null;
+  if (row.pushSubscription) {
+    try {
+      const p = JSON.parse(row.pushSubscription);
+      if (p?.endpoint && p?.keys?.p256dh && p?.keys?.auth) pushSubscription = p;
+    } catch { /* bozuk kayıt → alarm yok sayılır */ }
+  }
+
   return {
     id: row.id,
     modelKodu: row.modelKodu,
@@ -537,7 +745,22 @@ function parseTrackedRow(row) {
     sonDegisimBildirimi: row.sonDegisimBildirimi || null,
     sonStokBildirimi: row.sonStokBildirimi || null,
     chatId: row.chatId || null,
+    pushSubscription,
+    pushEndpoint: row.pushEndpoint || pushSubscription?.endpoint || null,
   };
+}
+
+/**
+ * Web Push aboneliğini güvenli biçimde normalleştirir. Geçersizse null döner;
+ * böylece bozuk bir istemci gövdesi veritabanına yazılmaz.
+ */
+export function pushAbonelikNormalize(abonelik) {
+  if (!abonelik || typeof abonelik !== 'object') return null;
+  const endpoint = String(abonelik.endpoint || '').trim();
+  const p256dh = String(abonelik.keys?.p256dh || '').trim();
+  const auth = String(abonelik.keys?.auth || '').trim();
+  if (!endpoint || !p256dh || !auth) return null;
+  return { endpoint, keys: { p256dh, auth } };
 }
 
 export function getTracked() {
@@ -549,10 +772,11 @@ export function addTracked(entry) {
   const id = 'takip_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const now = new Date().toISOString();
   const urunlerJson = JSON.stringify((entry.urunler || []).map(x => ({ site: x.site, url: x.url })));
+  const push = pushAbonelikNormalize(entry.pushSubscription);
 
   const insert = db.prepare(`
-    INSERT INTO tracked (id, modelKodu, urun, renk, image, hedefFiyat, olusturma, urunler, sonKontrol, sonFiyatlar, sonBildirim, chatId)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)
+    INSERT INTO tracked (id, modelKodu, urun, renk, image, hedefFiyat, olusturma, urunler, sonKontrol, sonFiyatlar, sonBildirim, chatId, pushSubscription, pushEndpoint)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?)
   `);
 
   insert.run(
@@ -564,7 +788,9 @@ export function addTracked(entry) {
     Number(entry.hedefFiyat) || null,
     now,
     urunlerJson,
-    entry.chatId != null ? String(entry.chatId).slice(0, 64) : null
+    entry.chatId != null ? String(entry.chatId).slice(0, 64) : null,
+    push ? JSON.stringify(push) : null,
+    push?.endpoint || null
   );
 
   return {
@@ -583,6 +809,8 @@ export function addTracked(entry) {
     sonHedefBildirimi: null,
     sonDegisimBildirimi: null,
     chatId: entry.chatId != null ? String(entry.chatId).slice(0, 64) : null,
+    pushSubscription: push,
+    pushEndpoint: push?.endpoint || null,
   };
 }
 
@@ -614,9 +842,13 @@ export function updateTracked(id, patch) {
       sonHedefBildirimi = ?,
       sonDegisimBildirimi = ?,
       sonStokBildirimi = ?,
-      chatId = ?
+      chatId = ?,
+      pushSubscription = ?,
+      pushEndpoint = ?
     WHERE id = ?
   `);
+
+  const push = pushAbonelikNormalize(updated.pushSubscription);
 
   stmt.run(
     updated.modelKodu || null,
@@ -633,10 +865,12 @@ export function updateTracked(id, patch) {
     updated.sonDegisimBildirimi || null,
     updated.sonStokBildirimi || null,
     updated.chatId != null ? String(updated.chatId).slice(0, 64) : null,
+    push ? JSON.stringify(push) : null,
+    push?.endpoint || null,
     id
   );
 
-  return updated;
+  return { ...updated, pushSubscription: push, pushEndpoint: push?.endpoint || null };
 }
 
 // ---- Arama Geçmişi API ----
@@ -707,9 +941,284 @@ export function pushAbonelikSil(endpoint) {
   return Number(r.changes || 0) > 0;
 }
 
+/**
+ * Geçersiz aboneliği HER İKİ yerden sessizce temizler (2026-11-06):
+ *  - genel `push_subscriptions` kaydı,
+ *  - bu endpoint'e bağlı takip alarmları (`tracked.pushSubscription`).
+ * 404/410 dönen bir cihaz bir daha denenmez.
+ */
+export function pushAbonelikTemizle(endpoint) {
+  const ep = String(endpoint || '').trim();
+  if (!ep) return 0;
+  let toplam = 0;
+  const t = db.prepare('UPDATE tracked SET pushSubscription = NULL, pushEndpoint = NULL WHERE pushEndpoint = ?').run(ep);
+  toplam += Number(t.changes || 0);
+  const k = db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(ep);
+  toplam += Number(k.changes || 0);
+  return toplam;
+}
+
 export function pushIstatistik() {
   const adet = Number(db.prepare('SELECT COUNT(*) adet FROM push_subscriptions').get()?.adet || 0);
   return { abone: adet };
+}
+
+// ---- ⭐ Sponsorlu vitrin & doğrulanmış mağazalar (2026-11-08) ----
+
+/** Bir kaydı API yanıtına çevirir (iç alanlar sadeleştirilir). */
+function sponsorVitrinParse(row) {
+  if (!row) return null;
+  const kampanya = Number(row.kampanyaFiyat);
+  const eski = row.eskiFiyat == null ? null : Number(row.eskiFiyat);
+  const indirimTL = eski != null && eski > kampanya
+    ? Math.round((eski - kampanya) * 100) / 100
+    : null;
+  const indirimYuzde = eski != null && eski > 0 && eski > kampanya
+    ? Math.round(((eski - kampanya) / eski) * 1000) / 10
+    : null;
+  return {
+    id: row.id,
+    marka: row.marka,
+    baslik: row.baslik,
+    aciklama: row.aciklama || null,
+    gorselUrl: row.gorselUrl,
+    eskiFiyat: eski,
+    kampanyaFiyat: Number.isFinite(kampanya) ? kampanya : null,
+    indirimTL,
+    indirimYuzde,
+    yonlendirmeUrl: row.yonlendirmeUrl,
+    rozetMetni: row.rozetMetni || 'HAFTANIN SPONSORLU FIRSATI',
+    baslangicTarihi: row.baslangicTarihi,
+    bitisTarihi: row.bitisTarihi,
+    gosterimSayisi: Number(row.gosterimSayisi) || 0,
+    tiklamaSayisi: Number(row.tiklamaSayisi) || 0,
+  };
+}
+
+/**
+ * Yayında olan (aktif + süresi dolmamış) sponsorlu vitrin kaydı.
+ *
+ * Sıralama: bitiş tarihi en yakın olan önce (acil kampanya öne çıkar).
+ * Süre karşılaştırması ISO metin üzerinden yapılır — `date('now')` yerine
+ * JavaScript zamanı kullanılır ki saat dilimi sürprizi olmasın.
+ *
+ * @param {{id?:string}} [opts]
+ * @returns {object|null}
+ */
+export function sponsorVitrinGetir(opts = {}) {
+  const simdi = new Date().toISOString();
+  try {
+    const satir = opts.id
+      ? db.prepare(`
+          SELECT * FROM sponsorlu_vitrin
+          WHERE id = ? AND aktif = 1 AND baslangicTarihi <= ? AND bitisTarihi >= ?
+          LIMIT 1
+        `).get(String(opts.id), simdi, simdi)
+      : db.prepare(`
+          SELECT * FROM sponsorlu_vitrin
+          WHERE aktif = 1 AND baslangicTarihi <= ? AND bitisTarihi >= ?
+          ORDER BY bitisTarihi ASC
+          LIMIT 1
+        `).get(simdi, simdi);
+    return sponsorVitrinParse(satir);
+  } catch {
+    return null;
+  }
+}
+
+/** Gösterim sayacını artırır (yayında olmayan kayıt sayılmaz). */
+export function sponsorGosterimArtir(id) {
+  try {
+    const r = db.prepare(`
+      UPDATE sponsorlu_vitrin SET gosterimSayisi = gosterimSayisi + 1
+      WHERE id = ? AND aktif = 1
+    `).run(String(id || ''));
+    return Number(r.changes || 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Tıklama sayacını artırır ve yönlendirme bilgisini döndürür.
+ * Kayıt yoksa/aktif değilse `null` döner — rota 404 verir (açık yönlendirme yok).
+ * @returns {{id:string, yonlendirmeUrl:string, marka:string}|null}
+ */
+export function sponsorTiklamaArtir(id) {
+  const kimlik = String(id || '').trim();
+  if (!kimlik) return null;
+  try {
+    const row = db.prepare('SELECT * FROM sponsorlu_vitrin WHERE id = ? AND aktif = 1').get(kimlik);
+    if (!row) return null;
+    db.prepare('UPDATE sponsorlu_vitrin SET tiklamaSayisi = tiklamaSayisi + 1 WHERE id = ?').run(kimlik);
+    return { id: row.id, yonlendirmeUrl: row.yonlendirmeUrl, marka: row.marka };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sayaçları verilen değerlere sabitler (2026-11-09).
+ *
+ * Kullanım: testlerin gerçek reklam sayaçlarını kirletmemesi ve yöneticinin
+ * hatalı sayımı düzeltmesi. Üretim trafiğinde çağrılmaz.
+ */
+export function sponsorSayacAyarla(id, { gosterimSayisi = 0, tiklamaSayisi = 0 } = {}) {
+  const kimlik = String(id || '').trim();
+  if (!kimlik) return false;
+  const g = Math.max(0, Math.round(Number(gosterimSayisi) || 0));
+  const t = Math.max(0, Math.round(Number(tiklamaSayisi) || 0));
+  const r = db.prepare('UPDATE sponsorlu_vitrin SET gosterimSayisi = ?, tiklamaSayisi = ? WHERE id = ?')
+    .run(g, t, kimlik);
+  return Number(r.changes || 0) > 0;
+}
+
+/** Sponsorlu vitrin kaydı ekler/günceller (yönetici). */
+export function sponsorVitrinKaydet(kayit = {}) {
+  const id = String(kayit.id || '').trim()
+    || ('vitrin_' + crypto.randomBytes(6).toString('base64url').replace(/[^A-Za-z0-9_-]/g, ''));
+  const marka = String(kayit.marka || '').trim();
+  const baslik = String(kayit.baslik || '').trim();
+  const gorselUrl = String(kayit.gorselUrl || '').trim();
+  const yonlendirmeUrl = String(kayit.yonlendirmeUrl || '').trim();
+  const kampanyaFiyat = Number(kayit.kampanyaFiyat);
+  const baslangicTarihi = String(kayit.baslangicTarihi || '').trim();
+  const bitisTarihi = String(kayit.bitisTarihi || '').trim();
+
+  if (!marka || !baslik) throw new Error('marka ve baslik gerekli');
+  if (!/^https?:\/\//i.test(gorselUrl)) throw new Error('gorselUrl https/http olmalı');
+  // Güvenlik: yönlendirme yalnızca http(s) — javascript:/data: kabul edilmez.
+  if (!/^https?:\/\//i.test(yonlendirmeUrl)) throw new Error('yonlendirmeUrl https/http olmalı');
+  if (!Number.isFinite(kampanyaFiyat) || kampanyaFiyat <= 0) throw new Error('kampanyaFiyat > 0 olmalı');
+  if (!Number.isFinite(Date.parse(baslangicTarihi))) throw new Error('baslangicTarihi geçersiz');
+  if (!Number.isFinite(Date.parse(bitisTarihi))) throw new Error('bitisTarihi geçersiz');
+  if (Date.parse(bitisTarihi) <= Date.parse(baslangicTarihi)) throw new Error('bitisTarihi baslangicTarihi’nden sonra olmalı');
+
+  const eski = Number(kayit.eskiFiyat);
+  db.prepare(`
+    INSERT INTO sponsorlu_vitrin (
+      id, marka, baslik, aciklama, gorselUrl, eskiFiyat, kampanyaFiyat,
+      yonlendirmeUrl, rozetMetni, baslangicTarihi, bitisTarihi,
+      aktif, gosterimSayisi, tiklamaSayisi, olusturma
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      marka = excluded.marka, baslik = excluded.baslik, aciklama = excluded.aciklama,
+      gorselUrl = excluded.gorselUrl, eskiFiyat = excluded.eskiFiyat,
+      kampanyaFiyat = excluded.kampanyaFiyat, yonlendirmeUrl = excluded.yonlendirmeUrl,
+      rozetMetni = excluded.rozetMetni, baslangicTarihi = excluded.baslangicTarihi,
+      bitisTarihi = excluded.bitisTarihi, aktif = excluded.aktif
+  `).run(
+    id, marka, baslik, kayit.aciklama ? String(kayit.aciklama).slice(0, 400) : null,
+    gorselUrl,
+    Number.isFinite(eski) && eski > 0 ? eski : null,
+    kampanyaFiyat, yonlendirmeUrl,
+    kayit.rozetMetni ? String(kayit.rozetMetni).slice(0, 80) : 'HAFTANIN SPONSORLU FIRSATI',
+    baslangicTarihi, bitisTarihi,
+    kayit.aktif === false ? 0 : 1,
+    Math.max(0, Math.round(Number(kayit.gosterimSayisi) || 0)),
+    Math.max(0, Math.round(Number(kayit.tiklamaSayisi) || 0)),
+    Date.now(),
+  );
+  return sponsorVitrinGetir({ id });
+}
+
+/** Sponsorlu vitrin kaydını siler (yönetici/test temizliği). */
+export function sponsorVitrinSil(id) {
+  const kimlik = String(id || '').trim();
+  if (!kimlik) return false;
+  const r = db.prepare('DELETE FROM sponsorlu_vitrin WHERE id = ?').run(kimlik);
+  return Number(r.changes || 0) > 0;
+}
+
+/**
+ * Doğrulanmış mağaza listesi (aktif + aboneliği sürmekte olanlar).
+ * @returns {Array<{siteId:string, rozetMetni:string, onayTuru:string, bitisTarihi:string}>}
+ */
+export function dogrulanmisMagazalariGetir() {
+  const simdi = new Date().toISOString();
+  try {
+    return db.prepare(`
+      SELECT siteId, rozetMetni, onayTuru, bitisTarihi
+      FROM dogrulanmis_magazalar
+      WHERE aktif = 1 AND bitisTarihi >= ?
+      ORDER BY siteId
+    `).all(simdi).map(r => ({
+      siteId: r.siteId,
+      rozetMetni: r.rozetMetni,
+      onayTuru: r.onayTuru || 'resmi_partner',
+      bitisTarihi: r.bitisTarihi,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Doğrulanmış mağaza ekler/günceller (yönetici). */
+export function dogrulanmisMagazaKaydet(kayit = {}) {
+  const siteId = String(kayit.siteId || '').trim().toLowerCase();
+  const rozetMetni = String(kayit.rozetMetni || '').trim();
+  const bitisTarihi = String(kayit.bitisTarihi || '').trim();
+  if (!siteId) throw new Error('siteId gerekli');
+  if (!rozetMetni) throw new Error('rozetMetni gerekli');
+  if (!Number.isFinite(Date.parse(bitisTarihi))) throw new Error('bitisTarihi geçersiz');
+  const onayTuru = ['resmi_partner', 'hizli_kargo', 'uretici'].includes(kayit.onayTuru)
+    ? kayit.onayTuru : 'resmi_partner';
+
+  db.prepare(`
+    INSERT INTO dogrulanmis_magazalar (siteId, rozetMetni, onayTuru, bitisTarihi, aktif, olusturma)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(siteId) DO UPDATE SET
+      rozetMetni = excluded.rozetMetni, onayTuru = excluded.onayTuru,
+      bitisTarihi = excluded.bitisTarihi, aktif = excluded.aktif
+  `).run(siteId, rozetMetni.slice(0, 120), onayTuru, bitisTarihi,
+    kayit.aktif === false ? 0 : 1, Date.now());
+
+  return dogrulanmisMagazalariGetir().find(m => m.siteId === siteId) || null;
+}
+
+/** Doğrulanmış mağaza kaydını siler. */
+export function dogrulanmisMagazaSil(siteId) {
+  const id = String(siteId || '').trim().toLowerCase();
+  if (!id) return false;
+  const r = db.prepare('DELETE FROM dogrulanmis_magazalar WHERE siteId = ?').run(id);
+  return Number(r.changes || 0) > 0;
+}
+
+/**
+ * Reklamveren performans raporu (impression / click / CTR).
+ *
+ * TÜM kayıtlar döner (süresi dolmuş olsa da) çünkü reklamveren geçmiş kampanyasının
+ * toplamını görmek ister; ayrıca `yayinda` alanı ile şu an aktif olup olmadığı bellidir.
+ * CTR = tıklama / gösterim × 100 (gösterim 0 ise null — bölme hatası/uydurma yok).
+ */
+export function sponsorRapor() {
+  const simdi = new Date().toISOString();
+  let satirlar = [];
+  try {
+    satirlar = db.prepare('SELECT * FROM sponsorlu_vitrin ORDER BY olusturma DESC').all();
+  } catch {
+    satirlar = [];
+  }
+  return satirlar.map(row => {
+    const gosterim = Number(row.gosterimSayisi) || 0;
+    const tiklama = Number(row.tiklamaSayisi) || 0;
+    return {
+      id: row.id,
+      marka: row.marka,
+      baslik: row.baslik,
+      baslangicTarihi: row.baslangicTarihi,
+      bitisTarihi: row.bitisTarihi,
+      yayinda: !!row.aktif && row.baslangicTarihi <= simdi && row.bitisTarihi >= simdi,
+      gosterimSayisi: gosterim,
+      tiklamaSayisi: tiklama,
+      ctr: gosterim > 0 ? Math.round((tiklama / gosterim) * 10000) / 100 : null,
+    };
+  });
+}
+
+/** Bir sponsor kampanyasının okunmuş raporu (tek kayıt). */
+export function sponsorRaporTek(id) {
+  return sponsorRapor().find(r => r.id === String(id || '').trim()) || null;
 }
 
 // ---- 📤 Paylaşılan sepetler (2026-11-01) ----
@@ -751,6 +1260,19 @@ export function sepetPaylasTemizle(gun = 30) {
   const esik = n > 0 ? Date.now() - n * 24 * 3600 * 1000 : Number.MAX_SAFE_INTEGER;
   const r = db.prepare('DELETE FROM shared_carts WHERE created_at < ?').run(esik);
   return Number(r.changes || 0);
+}
+
+/**
+ * Tek bir paylaşımı siler (2026-11-08).
+ * Testlerin kendi ürettiği kaydı geri alması ve gerekirse yönetici temizliği için.
+ * Toplu silme (`sepetPaylasTemizle`) kullanıcı verisini de sildiği için burada
+ * yalnızca verilen kimlik hedeflenir.
+ */
+export function sepetPaylasSil(id) {
+  const temiz = String(id || '').trim();
+  if (!/^[A-Za-z0-9_-]{6,32}$/.test(temiz)) return false;
+  const r = db.prepare('DELETE FROM shared_carts WHERE id = ?').run(temiz);
+  return Number(r.changes || 0) > 0;
 }
 
 // ---- Zaman Serisi Fiyat Geçmişi API ----
@@ -810,9 +1332,19 @@ export function getPriceHistory(productId, limit = 100) {  const rows = db.prepa
  * @param {string} [modelKodu]
  * @param {string} [barkod]
  * @param {string} [url]
+ * V2 (2026-11-05) — sahte indirim dedektörü için PENCERELİ metrikler:
+ *   - `ortFiyat30` : son 30 gün, GÜN AĞIRLIKLI ortalama (gerçek satış fiyatı)
+ *   - `maxFiyat60` : son 60 günde gerçekten görülen en yüksek fiyat
+ *   - `minFiyat90` : son 90 günün tarihi dibi
+ *   - `ortFiyat60`, `ortFiyat90` : uzun pencere ortalamaları (bilgi amaçlı)
+ * Eski alanlar (minFiyat/maxFiyat/ortFiyat) KORUNUR: 90 günün min/max'i ve
+ * 30 gün (yoksa 90 gün) ortalamasıdır — mevcut arayüz bozulmasın.
+ *
  * @returns {{
  *   bulundu:boolean, productId:string|null, kimlikKaynagi:string|null,
  *   minFiyat:number|null, maxFiyat:number|null, ortFiyat:number|null,
+ *   minFiyat90:number|null, maxFiyat60:number|null, ortFiyat30:number|null,
+ *   ortFiyat60:number|null, ortFiyat90:number|null,
  *   veriNoktasi:number, gunSayisi:number, yeterliVeri:boolean,
  *   enSonFiyat:number|null, enSonTs:string|null, neden:string|null
  * }}
@@ -825,9 +1357,20 @@ export function getFiyatAnalizi(modelKodu, barkod, url) {
     minFiyat: null,
     maxFiyat: null,
     ortFiyat: null,
+    // V2 pencereli metrikler (2026-11-05)
+    minFiyat90: null,
+    maxFiyat60: null,
+    ortFiyat30: null,
+    ortFiyat60: null,
+    ortFiyat90: null,
     veriNoktasi: 0,
     gunSayisi: 0,
     yeterliVeri: false,
+    // 🟢 FOMO alanları (2026-11-08) — veri yoksa boş, uydurma yok
+    dipSuresiGun: null,
+    dipSayisi: 0,
+    son24SaatGozlem: 0,
+    son7GunGozlem: 0,
     enSonFiyat: null,
     enSonTs: null,
     ortPencereGun: 30,
@@ -926,8 +1469,76 @@ export function getFiyatAnalizi(modelKodu, barkod, url) {
     }
   }
 
+  // ---- V2: pencereli metrikler (2026-11-05) ----
+  // Gün ağırlıklı ortalama yardımcısı: her GÜN eşit ağırlık taşır, böylece bir
+  // günün çok sayıda gözlemi ortalamayı saptırmaz.
+  const gunAgirlikliOrt = (liste) => {
+    const gunler = new Map();
+    for (const x of liste) {
+      const g = gunler.get(x.gun) || { toplam: 0, adet: 0 };
+      g.toplam += x.p; g.adet += 1;
+      gunler.set(x.gun, g);
+    }
+    const ort = [...gunler.values()].map(g => g.toplam / g.adet);
+    return ort.length ? ort.reduce((a, b) => a + b, 0) / ort.length : null;
+  };
+  const yuvarla = (x) => (x == null ? null : Math.round(x * 100) / 100);
+
+  const sinir60 = simdi - 60 * GUN_MS;
+  const altmis = doksan.filter(x => x.t >= sinir60);
+  const fiyatlar60 = altmis.map(x => x.p);
+  const fiyatlar90 = doksan.map(x => x.p);
+
+  const minFiyat90 = fiyatlar90.length ? Math.min(...fiyatlar90) : null;
+  const maxFiyat60 = fiyatlar60.length ? Math.max(...fiyatlar60) : null;
+  const ortFiyat30 = gunAgirlikliOrt(doksan.filter(x => x.t >= sinir30));
+  const ortFiyat60 = gunAgirlikliOrt(altmis);
+  const ortFiyat90 = gunAgirlikliOrt(doksan);
+
   const gunSayisi = new Set(doksan.map(x => x.gun)).size;
   const son = doksan[doksan.length - 1];
+
+  // ---- 🟢 FOMO / aciliyet metrikleri (2026-11-08) ----
+  // Yalnızca GERÇEK gözlemlerden türetilir; kullanıcı sayısı/tıklama UYDURULMAZ.
+  //  - Dip süresi: gün bazında en düşük fiyatı dip bandına (min + %2) giren
+  //    günlerin ardışık serileri. Medyan = bu seviyenin tipik ömrü.
+  //  - Son 24 saat / 7 gün gözlem sayısı: fiyatın kaç kez doğrulandığı.
+  const gunMin = new Map();
+  for (const x of doksan) {
+    const mevcut = gunMin.get(x.gun);
+    if (mevcut == null || x.p < mevcut) gunMin.set(x.gun, x.p);
+  }
+  const dipEsik = (minFiyat90 ?? minFiyat) * 1.02;
+  const dipGunleri = [...gunMin.entries()]
+    .filter(([, p]) => p <= dipEsik)
+    .map(([g]) => g)
+    .sort();
+
+  const seriler = [];
+  let seriUzunluk = 0;
+  let oncekiGun = null;
+  for (const g of dipGunleri) {
+    const t = Date.parse(g + 'T00:00:00Z');
+    if (!Number.isFinite(t)) continue;
+    if (oncekiGun != null && Math.round((t - oncekiGun) / GUN_MS) === 1) {
+      seriUzunluk += 1;
+    } else {
+      if (seriUzunluk) seriler.push(seriUzunluk);
+      seriUzunluk = 1;
+    }
+    oncekiGun = t;
+  }
+  if (seriUzunluk) seriler.push(seriUzunluk);
+
+  const medyan = (arr) => {
+    if (!arr.length) return null;
+    const s = [...arr].sort((a, b) => a - b);
+    const orta = Math.floor(s.length / 2);
+    return s.length % 2 ? s[orta] : (s[orta - 1] + s[orta]) / 2;
+  };
+
+  const son24SaatGozlem = doksan.filter(x => x.t >= simdi - GUN_MS).length;
+  const son7GunGozlem = doksan.filter(x => x.t >= simdi - 7 * GUN_MS).length;
 
   const yeterliVeri = gunSayisi >= 3 && ortFiyat != null;
   return {
@@ -937,9 +1548,20 @@ export function getFiyatAnalizi(modelKodu, barkod, url) {
     minFiyat: Math.round(minFiyat * 100) / 100,
     maxFiyat: Math.round(maxFiyat * 100) / 100,
     ortFiyat: ortFiyat != null ? Math.round(ortFiyat * 100) / 100 : null,
+    // V2 pencereli metrikler
+    minFiyat90: yuvarla(minFiyat90),
+    maxFiyat60: yuvarla(maxFiyat60),
+    ortFiyat30: yuvarla(ortFiyat30),
+    ortFiyat60: yuvarla(ortFiyat60),
+    ortFiyat90: yuvarla(ortFiyat90),
     veriNoktasi: doksan.length,
     gunSayisi,
     yeterliVeri,
+    // 🟢 FOMO (2026-11-08): gerçek geçmişten türetilen aciliyet metrikleri
+    dipSuresiGun: seriler.length ? Math.round(medyan(seriler) * 10) / 10 : null,
+    dipSayisi: seriler.length,
+    son24SaatGozlem,
+    son7GunGozlem,
     enSonFiyat: Math.round(son.p * 100) / 100,
     enSonTs: rows[rows.length - 1]?.ts || null,
     ortPencereGun,
@@ -1104,8 +1726,8 @@ export function addAdapterHealth(kayit) {
   try {
     const r = db.prepare(`
       INSERT INTO adapter_health
-        (site, site_name, durum, arama_ms, urun_ms, adet, ornek_baslik, ornek_fiyat, arama_url, hata, kontrol_ts)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (site, site_name, durum, arama_ms, urun_ms, adet, ornek_baslik, ornek_fiyat, arama_url, hata, kontrol_ts, sorgu)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       String(kayit.site),
       kayit.siteName ? String(kayit.siteName).slice(0, 120) : null,
@@ -1118,6 +1740,8 @@ export function addAdapterHealth(kayit) {
       kayit.aramaUrl ? String(kayit.aramaUrl).slice(0, 400) : null,
       kayit.hata ? String(kayit.hata).slice(0, 500) : null,
       kayit.kontrolTs || new Date().toISOString(),
+      // 2026-11-10: hangi arama sorgusu kullanıldı (teşhis: 'kablo' mu 'pla filament' mi)
+      kayit.sorgu ? String(kayit.sorgu).slice(0, 120) : null,
     );
     return Number(r.lastInsertRowid);
   } catch {
@@ -1152,6 +1776,8 @@ export function getAdapterHealthLatest() {
       aramaUrl: r.arama_url,
       hata: r.hata,
       kontrolTs: r.kontrol_ts,
+      // 2026-11-10: hangi sorguyla yoklandı (undefined → null).
+      sorgu: r.sorgu ?? null,
     }));
   } catch {
     return [];
@@ -1162,8 +1788,8 @@ export function getAdapterHealthLatest() {
 export function getAdapterHealthHistory(site, limit = 20) {
   try {
     return db.prepare(`
-      SELECT durum, arama_ms, urun_ms, adet, ornek_fiyat, hata, kontrol_ts
-      FROM adapter_health WHERE site = ? ORDER BY datetime(kontrol_ts) DESC LIMIT ?
+      SELECT durum, arama_ms, urun_ms, adet, ornek_fiyat, hata, kontrol_ts, sorgu
+      FROM adapter_health WHERE site = ? ORDER BY datetime(kontrol_ts) DESC, id DESC LIMIT ?
     `).all(String(site), Math.max(1, Math.min(Number(limit) || 20, 200)));
   } catch {
     return [];

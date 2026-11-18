@@ -21,6 +21,7 @@ import { runComparison } from './pipeline.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { formatTL } from './util.js';
 import { anahtarCikar } from './anlikOnbellek.js';
+import { whatsappFirsatKartOlustur, whatsappKanalGonder } from './whatsappKanal.js';
 
 /** Ayarlar panelindeki varsayılanlar (kullanıcı değiştirebilir). */
 export const FIRSAT_VARSAYILAN = Object.freeze({
@@ -30,6 +31,7 @@ export const FIRSAT_VARSAYILAN = Object.freeze({
   gunlukMax: 12,       // adet/gün
   saatAraligi: 2,      // saat
   cooldownSaat: 48,    // aynı ürün için sessizlik
+  hataCooldownSaat: 6, // 2026-11-11: gönderim HATASI sonrası sessizlik
   maxTarama: 3,        // döngü başına tazelenecek takip ürünü
   donguBasina: 2,      // döngü başına en fazla paylaşım
 });
@@ -88,6 +90,9 @@ export function firsatAyar(ayar = null) {
     gunlukMax: Math.round(sayi(kaynak.gunlukMax, FIRSAT_VARSAYILAN.gunlukMax, 1, 100)),
     saatAraligi: sayi(kaynak.saatAraligi, FIRSAT_VARSAYILAN.saatAraligi, 0.5, 24),
     cooldownSaat: sayi(kaynak.cooldownSaat, FIRSAT_VARSAYILAN.cooldownSaat, 0, 24 * 30),
+    // 2026-11-11: HATA sonrası sessizlik. Kanal kimliği eksikken her turda aynı
+    // ürün seçilip tekrar tekrar hata üretiliyordu (sonsuz döngü).
+    hataCooldownSaat: sayi(kaynak.hataCooldownSaat, FIRSAT_VARSAYILAN.hataCooldownSaat, 0, 24 * 7),
     maxTarama: Math.round(sayi(kaynak.maxTarama, FIRSAT_VARSAYILAN.maxTarama, 0, 20)),
     donguBasina: Math.round(sayi(kaynak.donguBasina, FIRSAT_VARSAYILAN.donguBasina, 1, 10)),
   };
@@ -311,6 +316,31 @@ export function spamKontrolu(firsat, opts = {}) {
       }
     }
   }
+
+  // ---- HATA COOLDOWN'I (2026-11-11) ----
+  // Gönderim hata verdiyse (kanal kimliği eksik, Telegram 403, ağ hatası…)
+  // aynı ürünü her turda yeniden denemek döngü üretiyordu. Hata da bir
+  // "denendi" kaydıdır: `hataCooldownSaat` boyunca o ürün atlanır.
+  // (Başarılı gönderim cooldown'ı ayrı ve daha uzun; bu yalnızca hata içindir.)
+  if (ayar.hataCooldownSaat > 0) {
+    const sonHata = store.prepare(`
+      SELECT ts, hata FROM firsat_gonderim
+      WHERE anahtar = ? AND durum = 'hata'
+      ORDER BY ts DESC LIMIT 1
+    `).get(firsat.anahtar);
+    if (sonHata) {
+      const gecenMs = simdi - Number(sonHata.ts);
+      if (gecenMs < ayar.hataCooldownSaat * 3600 * 1000) {
+        return {
+          uygun: false,
+          neden: `hata cooldown (${ayar.hataCooldownSaat} sa içinde gönderim başarısız)`,
+          son: { ts: Number(sonHata.ts), hata: sonHata.hata || null },
+          bugun,
+        };
+      }
+    }
+  }
+
   return { uygun: true, bugun, son: null };
 }
 
@@ -443,6 +473,13 @@ export async function firsatAdaylariniTopla(opts = {}) {
       }
     }
   }
+  // Tanılama/test filtresi: verilirse yalnızca eşleşen adaylar değerlendirilir.
+  // Üretimde KULLANILMAZ; testlerin gerçek ürünlere dokunmasını engeller.
+  if (typeof opts.filtre === 'function') {
+    return adaylar.filter(a => {
+      try { return opts.filtre(a) === true; } catch { return false; }
+    });
+  }
   return adaylar;
 }
 
@@ -488,6 +525,13 @@ export async function firsatlariTara(opts = {}) {
           });
           firsatKaydet(f, 'gonderildi', { mesajId: r.messageId, ts: opts.simdi });
           gonderimler.push({ anahtar: f.anahtar, urun: f.urun, durum: 'gonderildi', yontem: r.yontem, indirim: f.indirim, fiyat: f.fiyat });
+
+          // 📢 WhatsApp fırsat kanalı (2026-11-05) — izole: hata yutulur.
+          const wa = await whatsappFirsatGonder(f, { kuru: opts.kuru || opts.test });
+          if (wa && !wa.atlandi) {
+            gonderimler[gonderimler.length - 1].whatsapp = wa.ok ? 'gonderildi' : 'hata';
+            if (!wa.ok) gonderimler[gonderimler.length - 1].whatsappHata = wa.hata;
+          }
         } catch (e) {
           const hata = String(e.message || e);
           firsatKaydet(f, 'hata', { hata, ts: opts.simdi });
@@ -512,6 +556,41 @@ export async function firsatlariTara(opts = {}) {
     return sonRapor;
   } finally {
     calisiyor = false;
+  }
+}
+
+/**
+ * Fırsat öğesini WhatsApp kanalına gönderir.
+ * ASLA fırlatmaz: kapalıysa `{ok:false, atlandi:true}`, hata varsa `{ok:false, hata}`.
+ * @param {object} f firsatAdayiBul çıktısı
+ * @param {{kuru?:boolean}} [opts]
+ */
+export async function whatsappFirsatGonder(f, opts = {}) {
+  try {
+    const s = getSettings();
+    const wa = s.whatsapp || {};
+    if (wa.firsatKanalEnabled !== true) {
+      return { ok: false, atlandi: true, hata: 'WhatsApp fırsat kanalı kapalı.' };
+    }
+    if (!wa.channelId) {
+      return { ok: false, atlandi: true, hata: 'WhatsApp kanal ID tanımlı değil.' };
+    }
+    const kart = whatsappFirsatKartOlustur(f);
+    if (!kart) return { ok: false, hata: 'WhatsApp fırsat kartı üretilemedi.' };
+
+    const imageUrl = (wa.resimliGonder === true && f.image) ? f.image : null;
+    const sonuc = await whatsappKanalGonder(kart, {
+      ayar: wa, imageUrl, kuru: opts.kuru === true,
+    });
+    if (!sonuc.ok) {
+      console.warn('[firsat] WhatsApp gönderimi başarısız (akış devam ediyor):',
+        String(sonuc.hata || '').slice(0, 160));
+    }
+    return sonuc;
+  } catch (e) {
+    console.warn('[firsat] WhatsApp kancası hata verdi (akış devam ediyor):',
+      String(e?.message || e).slice(0, 160));
+    return { ok: false, hata: String(e?.message || e).slice(0, 200) };
   }
 }
 

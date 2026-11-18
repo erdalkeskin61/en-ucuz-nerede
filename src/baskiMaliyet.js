@@ -301,8 +301,7 @@ export function hesaplaBaskiMaliyeti(urun, gramaj = 100, opts = {}) {
 }
 
 /**
- * Sunucunun karta göndereceği kompakt 3D bilgisi.
- * İstemci gramajı değiştirdiğinde ağ isteği olmadan yeniden hesap yapabilsin diye
+ * Sunucunun karta göndereceği kompakt 3D bilgisi. * İstemci gramajı değiştirdiğinde ağ isteği olmadan yeniden hesap yapabilsin diye
  * birim değerler (tlGram, makaraGram, varsayımlar) taşınır.
  */
 export function baskiKartiBilgisi(product) {
@@ -422,4 +421,182 @@ export function baskiZenginlestir(payload) {
     };
   }
   return payload;
+}
+
+/* ================================================================== */
+/* 🧮 PARÇA ÜRETİM MALİYETİ & KARLILIK MOTORU (2026-11-04)            */
+/* ================================================================== */
+
+/**
+ * Hazır 3D yazıcı güç şablonları.
+ *
+ * Değerler ÜRETİCİ ORTALAMASIDIR, tepe değil: dilimleyici sırasında ısıtıcı
+ * sürekli tam güçte çalışmaz. Kullanıcı "Özel / Manuel" seçip kendi Watt
+ * değerini girebilir; hiçbir değer gizli sabit değildir, sonuçla birlikte
+ * `varsayimlar` olarak döner.
+ */
+export const YAZICI_SABLONLARI = Object.freeze([
+  { id: 'bambu-p1s', ad: 'Bambu Lab P1S / X1C', kisa: 'P1S / X1C', gucW: 150, ikon: '🖨️' },
+  { id: 'bambu-a1mini', ad: 'Bambu Lab A1 Mini', kisa: 'A1 Mini', gucW: 100, ikon: '🖨️' },
+  { id: 'creality-k1', ad: 'Creality K1C / K1 Max', kisa: 'K1C / K1 Max', gucW: 350, ikon: '🖨️' },
+  { id: 'creality-ender3v3ke', ad: 'Creality Ender 3 V3 KE', kisa: 'Ender 3 V3 KE', gucW: 150, ikon: '🖨️' },
+  { id: 'anycubic-kobra2neo', ad: 'Anycubic Kobra 2 Neo', kisa: 'Kobra 2 Neo', gucW: 120, ikon: '🖨️' },
+  { id: 'ozel', ad: 'Özel / Manuel giriş', kisa: 'Özel', gucW: null, ikon: '⚙️' },
+]);
+
+/** Varsayılan yıpranma/amortisman payı (TL/saat). */
+export const YIPRANMA_SAAT_TL = envSayi('BASKI_YIPRANMA_SAAT_TL', 3);
+
+/** Kar çarpanları: maliyet × çarpan = satış fiyatı. */
+export const KAR_SABLONLARI = Object.freeze({
+  maliyet: { carpan: 1, ad: 'Maliyet (Başabaş)', ikon: '🟢' },
+  hobi: { carpan: 2, ad: 'Dost İşi / Hobi (%100 kâr)', ikon: '🟡' },
+  atolye: { carpan: 2.5, ad: 'Standart Atölye (%150 kâr)', ikon: '🔵' },
+  ticari: { carpan: 3, ad: 'Ticari / Özel Tasarım (%200 kâr)', ikon: '🟣' },
+});
+
+const say = (x) => (Number.isFinite(Number(x)) ? Number(x) : null);
+const yuvarla2 = (x) => Math.round(Number(x) * 100) / 100;
+
+/**
+ * Parça üretim maliyeti + kârlılık hesabı.
+ *
+ * Formüller (spec):
+ *   Hammadde  = (gramaj / 1000) × ₺/kg
+ *   Elektrik  = (W × saat / 1000) × ₺/kWh
+ *   Amortisman= saat × ₺/saat
+ *   Net       = Hammadde + Elektrik + Amortisman
+ *   Satış     = Net × kâr çarpanı
+ *
+ * DÜRÜSTLÜK: eksik/geçersiz girdide hesap yapılmaz; `gecerli:false` + `neden`
+ * döner. Süre verilmezse gramajdan TAHMİN edilir ve `sureTahmini:true` işaretlenir.
+ *
+ * @param {{
+ *   gramaj?: number, sureSaat?: number, gucW?: number, kwhTl?: number,
+ *   yipranmaSaatTl?: number, karCarpani?: number,
+ *   filamentTlKg?: number, malzemeAdi?: string, renk?: string,
+ *   filamentKaynak?: {site?:string, url?:string, id?:number|null}
+ * }} [girdi]
+ */
+export function maliyetMotoruHesapla(girdi = {}) {
+  const gramaj = say(girdi.gramaj);
+  const gucW = say(girdi.gucW);
+  const kwhTl = say(girdi.kwhTl);
+  const yipranma = say(girdi.yipranmaSaatTl);
+  const tlKg = say(girdi.filamentTlKg);
+  const karCarpani = say(girdi.karCarpani);
+  const sureVerildi = say(girdi.sureSaat);
+
+  const temel = {
+    gecerli: false,
+    neden: null,
+    gramaj: gramaj != null ? yuvarla2(gramaj) : null,
+    sureSaat: null,
+    sureTahmini: false,
+    hammadde: null,
+    elektrik: null,
+    amortisman: null,
+    netMaliyet: null,
+    satis: null,
+    secilen: null,
+    karTl: null,
+    varsayimlar: {
+      gucW: gucW != null ? gucW : YAZICI_GUC_W,
+      kwhTl: kwhTl != null ? kwhTl : ELEKTRIK_KWH_TL,
+      yipranmaSaatTl: yipranma != null ? yipranma : YIPRANMA_SAAT_TL,
+      gramSaat: GRAM_SAAT,
+    },
+    filament: {
+      tlKg,
+      ad: girdi.malzemeAdi || null,
+      renk: girdi.renk || null,
+      kaynak: girdi.filamentKaynak || null,
+    },
+  };
+
+  if (!gramaj || gramaj <= 0 || gramaj > 100000) {
+    return { ...temel, neden: 'Geçerli bir model gramajı girin (1–100000 g).' };
+  }
+  if (!tlKg || tlKg <= 0) {
+    return { ...temel, neden: 'Filament ₺/kg fiyatı gerekli (canlı fiyat seçin ya da elle girin).' };
+  }
+  if (!gucW || gucW <= 0) return { ...temel, neden: 'Yazıcı gücü (W) geçersiz.' };
+  if (!kwhTl || kwhTl <= 0) return { ...temel, neden: 'Elektrik tarifesi (₺/kWh) geçersiz.' };
+  if (yipranma == null || yipranma < 0) return { ...temel, neden: 'Yıpranma payı (₺/saat) negatif olamaz.' };
+
+  // Süre: verilmediyse gramajdan tahmin (GRAM_SAAT ortalaması), işaretlenir.
+  let sureSaat = sureVerildi;
+  let sureTahmini = false;
+  if (!sureSaat || sureSaat <= 0) {
+    sureSaat = gramaj / GRAM_SAAT;
+    sureTahmini = true;
+  }
+  if (sureSaat > 24 * 30) return { ...temel, neden: 'Baskı süresi gerçekçi değil (30 günden fazla).' };
+
+  const hammadde = (gramaj / 1000) * tlKg;
+  const kwh = (gucW * sureSaat) / 1000;
+  const elektrik = kwh * kwhTl;
+  const amortisman = sureSaat * yipranma;
+  const netMaliyet = hammadde + elektrik + amortisman;
+
+  const carpan = karCarpani && karCarpani >= 1 ? karCarpani : 2;
+  const secilen = netMaliyet * carpan;
+
+  const fiyat = (c) => ({
+    carpan: c,
+    fiyat: yuvarla2(netMaliyet * c),
+    kar: yuvarla2(netMaliyet * c - netMaliyet),
+    karYuzde: Math.round((c - 1) * 100),
+  });
+
+  return {
+    ...temel,
+    gecerli: true,
+    neden: null,
+    gramaj: yuvarla2(gramaj),
+    sureSaat: Math.round(sureSaat * 100) / 100,
+    sureTahmini,
+    karCarpani: carpan,
+    hammadde: yuvarla2(hammadde),
+    elektrik: yuvarla2(elektrik),
+    amortisman: yuvarla2(amortisman),
+    netMaliyet: yuvarla2(netMaliyet),
+    kwh: Math.round(kwh * 1000) / 1000,
+    secilen: yuvarla2(secilen),
+    karTl: yuvarla2(secilen - netMaliyet),
+    satis: {
+      maliyet: fiyat(1),
+      hobi: fiyat(2),
+      atolye: fiyat(2.5),
+      ticari: fiyat(3),
+    },
+    varsayimlar: {
+      ...temel.varsayimlar,
+      gucW,
+      kwhTl,
+      yipranmaSaatTl: yipranma,
+    },
+    filament: { ...temel.filament, tlKg: yuvarla2(tlKg) },
+  };
+}
+
+/**
+ * Müşteriye gönderilebilecek düz metin teklif (panoya kopyalanır).
+ * Dürüst: yalnızca hesaplanmış gerçek değerler yazılır.
+ */
+export function teklifMetni(hesap) {
+  if (!hesap?.gecerli) return '';
+  const tl = (n) => Number(n).toLocaleString('tr-TR', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }) + ' TL';
+  const malzeme = [hesap.filament?.ad, hesap.filament?.renk].filter(Boolean).join(' · ') || 'PLA';
+  return [
+    '🖨️ 3D BASKI FİYAT TEKLİFİ',
+    `• Model Ağırlığı: ${hesap.gramaj} gram`,
+    `• Malzeme: ${malzeme}`,
+    `• Baskı Süresi: ~${hesap.sureSaat} saat`,
+    `• Birim Fiyat: ${tl(hesap.secilen)} (KDV Hariç)`,
+    '',
+    'Hazırlayan: En Ucuz Nerede? Baskı Asistanı',
+  ].join('\n');
 }

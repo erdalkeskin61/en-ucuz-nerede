@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="En Ucuz Nerede? — 60+ mağazada gerçek en ucuz fiyat">
+  <defs>
+    <linearGradient id="zemin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1230"/>
+      <stop offset="0.55" stop-color="#16225C"/>
+      <stop offset="1" stop-color="#0B1B2A"/>
+    </linearGradient>
+    <linearGradient id="vurgu" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3450D1"/>
+      <stop offset="1" stop-color="#5C7CF5"/>
+    </linearGradient>
+    <linearGradient id="yesil" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <radialGradient id="hale" cx="0.78" cy="0.22" r="0.62">
+      <stop offset="0" stop-color="#5C7CF5" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#5C7CF5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#zemin)"/>
+  <rect width="1200" height="630" fill="url(#hale)"/>
+
+  <!-- üst etiket -->
+  <g transform="translate(72 66)">
+    <rect x="0" y="0" width="352" height="46" rx="23" fill="#FFFFFF" fill-opacity="0.10" stroke="#FFFFFF" stroke-opacity="0.18"/>
+    <text x="24" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="700" fill="#A5B4FC">3D baskı · 60+ mağaza · Türkçe</text>
+  </g>
+
+  <!-- başlık -->
+  <text x="72" y="206" font-family="Segoe UI, Arial, sans-serif" font-size="62" font-weight="800" fill="#FFFFFF" letter-spacing="-1.8">Etiket fiyatı değil,</text>
+  <text x="72" y="284" font-family="Segoe UI, Arial, sans-serif" font-size="62" font-weight="800" fill="#34D399" letter-spacing="-1.8">ödenecek tutar.</text>
+
+  <!-- alt açıklama -->
+  <text x="72" y="364" font-family="Segoe UI, Arial, sans-serif" font-size="25" fill="#C7D2FE">Aynı filamentin kargo, kupon ve kampanya sonrası</text>
+  <text x="72" y="400" font-family="Segoe UI, Arial, sans-serif" font-size="25" fill="#C7D2FE">gerçek en ucuz fiyatını 60+ mağazada bulur.</text>
+
+  <!-- özellik çipleri -->
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="600" fill="#E0E7FF">
+    <g transform="translate(72 446)">
+      <rect x="0" y="0" width="196" height="48" rx="12" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.14"/>
+      <text x="20" y="31">🔎 Ürün · barkod</text>
+    </g>
+    <g transform="translate(284 446)">
+      <rect x="0" y="0" width="212" height="48" rx="12" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.14"/>
+      <text x="20" y="31">🧩 STL maliyeti</text>
+    </g>
+    <g transform="translate(512 446)">
+      <rect x="0" y="0" width="210" height="48" rx="12" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.14"/>
+      <text x="20" y="31">🧺 Sepet bölücü</text>
+    </g>
+    <g transform="translate(738 446)">
+      <rect x="0" y="0" width="188" height="48" rx="12" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.14"/>
+      <text x="20" y="31">🔔 Alarm</text>
+    </g>
+  </g>
+
+  <!-- fiyat kartı -->
+  <g transform="translate(806 148)">
+    <rect x="0" y="0" width="322" height="262" rx="26" fill="#0A1330" fill-opacity="0.72" stroke="#34D399" stroke-opacity="0.45"/>
+    <text x="28" y="52" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#6EE7B7" letter-spacing="1.6">PORİMA3D · 1 KG</text>
+    <text x="28" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#64748B" text-decoration="line-through">₺612,00</text>
+    <text x="28" y="160" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" fill="#34D399" letter-spacing="-1.5">₺489</text>
+    <rect x="28" y="184" width="132" height="34" rx="17" fill="#D1FAE5"/>
+    <text x="46" y="207" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="800" fill="#065F46">−₺123 (%20)</text>
+    <text x="28" y="242" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#94A3B8">Kargo dahil · stokta</text>
+  </g>
+
+  <!-- alt bar -->
+  <g transform="translate(0 556)">
+    <rect x="0" y="0" width="1200" height="74" fill="#000000" fill-opacity="0.28"/>
+    <circle cx="78" cy="37" r="9" fill="#34D399"/>
+    <text x="100" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="800" fill="#FFFFFF">En Ucuz Nerede?</text>
+    <text x="330" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#94A3B8">Ücretsiz · üyelik yok · Türkçe</text>
+    <text x="1128" y="45" text-anchor="end" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#C7D2FE">[ALAN ADI]</text>
+  </g>
+</svg>

@@ -16,6 +16,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { tarayiciIleCek } from './tarayici.js';
+// 🧬 Kotasız Chrome TLS parmak izi katmanı (2026-11-17). Yerleşik fetch'e
+// güvenli düşüş yapar; `IMPIT_KAPALI=1` ile kapatılabilir.
+import { httpIste, impitDurumu } from './impitIstemci.js';
 import { rateLimiter } from './rateLimiter.js';
 import { circuitBreaker } from './circuitBreaker.js';
 import { rotasyonGerekliMi } from './logRotasyon.js';
@@ -207,6 +210,19 @@ function releaseSlot() {
   if (next) { inFlight++; next(); }
 }
 
+/**
+ * Küresel kazıma kuyruğunun durumu (2026-11-03).
+ *
+ * 61 site paralel taranırken istekler MAX_CONCURRENT (8) yuvaya sığmıyor ve
+ * kuyrukta bekliyor. Site zaman aşımı duvar saatiyle ölçülürse SIRADA BEKLEYEN
+ * site hiç çalışmadan "yanıt vermedi" diye düşürülüyordu (ölçüm: 61 sitenin
+ * 38'i timeout). Pipeline bu bilgiyi kullanarak kuyrukta bekleme süresini
+ * zaman aşımına SAYMAZ.
+ */
+export function kuyrukDurumu() {
+  return { inFlight, bekleyen: waitQueue.length, max: MAX_CONCURRENT };
+}
+
 // Aynı URL'ye aynı anda giden istekler tek fiziksel isteğe indirilir (çift kredi
 // harcamayı ve aynı sayfayı iki kez çekmeyi önler; örn. iki paralel karşılaştırma
 // aynı sorguyu attığında). Bekleyen taraf sonucu paylaşır ve istek sayacı 0 yazar.
@@ -313,6 +329,7 @@ async function rawFetchScraperApi(targetUrl, { render, timeoutMs, method = 'GET'
     return { networkError: String(e.message || e).slice(0, 120), saglayici: 'scraperapi' };
   } finally {
     clearTimeout(timer);
+    releaseSlot();   // yuva MUTLAKA geri verilir (sızıntı tüm havuzu kilitler)
   }
 }
 
@@ -368,6 +385,7 @@ async function rawFetchCrawlbase(targetUrl, { render, timeoutMs, method = 'GET',
     return { networkError: String(e.message || e).slice(0, 100), saglayici: 'crawlbase' };
   } finally {
     clearTimeout(timer);
+    releaseSlot();   // yuva MUTLAKA geri verilir (sızıntı tüm havuzu kilitler)
   }
 }
 
@@ -404,6 +422,7 @@ async function rawFetchZenRows(targetUrl, { render, premium, timeoutMs, method =
     return { networkError: String(e.message || e).slice(0, 100), saglayici: 'zenrows' };
   } finally {
     clearTimeout(timer);
+    releaseSlot();   // yuva MUTLAKA geri verilir
   }
 }
 
@@ -419,6 +438,89 @@ const DOGRUDAN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win61; x61) AppleWebKit/537.3
 const DOGRUDAN_CEREZLER = {
   vatan: 'cookie_consent_user_accepted=true; checkCookie=true; cookie_consent_level=%7B%22strictly-necessary%22%3Atrue%2C%22functionality%22%3Atrue%2C%22tracking%22%3Atrue%2C%22targeting%22%3Atrue%7D',
 };
+
+/**
+ * 🛡️ Katlamalı bekleme + jitter (2026-11-13).
+ *
+ * Geçici 403/429/bot challenge durumunda isteği hemen öldürmek yerine
+ * kademeli dinlenme uygulanır. Jitter, aynı anda bekleyen çok sayıda isteğin
+ * aynı milisaniyede tekrar patlamasını (thundering herd) engeller.
+ *
+ *   1. deneme → ~800–1200 ms
+ *   2. deneme → ~2000–2800 ms
+ *   3. deneme → ~4500–5500 ms
+ *
+ * @param {number} attempt 1 tabanlı deneme sayısı
+ * @param {{tabanlar?:number[][], sinyal?:AbortSignal, sessiz?:boolean}} [opts]
+ *   `tabanlar` test/ölçüm için geçersiz kılınabilir.
+ * @returns {Promise<number>} gerçekte beklenen süre (ms)
+ */
+export async function sleepWithJitter(attempt, opts = {}) {
+  const tabanlar = Array.isArray(opts.tabanlar) && opts.tabanlar.length
+    ? opts.tabanlar
+    : [[800, 1200], [2000, 2800], [4500, 5500]];
+  const idx = Math.min(Math.max(1, Number(attempt) || 1), tabanlar.length) - 1;
+  const [alt, ust] = tabanlar[idx];
+  const sure = Math.round(alt + Math.random() * Math.max(0, ust - alt));
+  if (!opts.sessiz) {
+    console.warn(`[scraper] geçici engel — ${attempt}. deneme öncesi ${sure} ms bekleniyor (jitter).`);
+  }
+  await new Promise((resolve) => {
+    const t = setTimeout(resolve, sure);
+    if (opts.sinyal && typeof opts.sinyal.addEventListener === 'function') {
+      opts.sinyal.addEventListener('abort', () => { clearTimeout(t); resolve(); }, { once: true });
+    }
+  });
+  return sure;
+}
+
+/** Bir yanıt geçici engel mi? (403/429/bot challenge) */
+function geciciEngelMi(r) {
+  if (!r) return false;
+  if (r.status === 403 || r.status === 429) return true;
+  if (r.status === 503) return true;
+  if (r.body && BOT_CHALLENGE_RE.test(String(r.body).slice(0, 2000))) return true;
+  return false;
+}
+
+/**
+ * 🧬 2026-11-17: "Bu sayfa gerçekten JavaScript/Challenge istiyor mu?" ölçütü.
+ *
+ * Ağır Chromium'u yalnızca GERÇEKTEN gerektiğinde başlatmak için hafif HTTP
+ * yanıtının anlamlı ürün/arama içeriği taşıyıp taşımadığına bakar.
+ * - Boş/kısa gövde (SPA kabuğu) → tarayıcı gerekli
+ * - Bot challenge / WAF hata sayfası → tarayıcı gerekli
+ * - Fiyat/ürün/sepet izi taşıyan dolu gövde → tarayıcı GEREKSİZ
+ */
+export function anlamliIcerikMi(r) {
+  if (!r || r.status !== 200) return false;
+  const body = String(r.body || '');
+  if (body.length < 1500) return false;
+  if (BOT_CHALLENGE_RE.test(body.slice(0, 3000))) return false;
+  if (hataSayfasiMi(body, r.status)) return false;
+  return /(?:₺|\bTL\b|fiyat|price|product|ürün|urun|sepete|addtocart|stok|sku)/i.test(body);
+}
+
+/**
+ * Tarayıcıdan ÖNCE impit ile bir kez hafif HTTP denemesi yapar.
+ *
+ * ÖNEMLİ: `rawFetchDirect` zaten impit kullanır. Bu yardımcı yalnızca doğrudan
+ * katmanın HİÇ denenmediği yerlerde (DOGRUDAN_HARIC: Trendyol, Amazon, n11,
+ * İncehesap, Teknosa, PTT AVM, Çiçeksepeti) veya WAF/403 sonrası ikinci şans
+ * olarak çağrılır. Böylece aynı URL'ye gereksiz çift istek atılmaz.
+ *
+ * @returns {Promise<object|null>} anlamlı içerik varsa yanıt, yoksa null
+ */
+async function impitHafifDene(targetUrl, opts = {}) {
+  if ((opts.method || 'GET') !== 'GET') return null;
+  try {
+    const r = await rawFetchDirect(targetUrl, { ...opts, timeoutMs: Math.min(opts.timeoutMs || 10000, 12000) });
+    if (anlamliIcerikMi(r)) return { ...r, impitHafif: true };
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null }) {
   let domain = 'default';
@@ -443,7 +545,10 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
     if (site && DOGRUDAN_CEREZLER[site] && !(headers && Object.keys(headers).some(k => k.toLowerCase() === 'cookie'))) {
       ekCerez = { Cookie: DOGRUDAN_CEREZLER[site] };
     }
-    const res = await fetch(targetUrl, {
+    // 🧬 2026-11-17: Node fetch yerine Chrome TLS parmak izli impit katmanı.
+    // `impit` yüklenemezse `httpIste` otomatik olarak yerleşik fetch'e düşer;
+    // böylece davranış impit yokken de aynıdır (yalnızca JA3 farkı kalmaz).
+    const { response: res, katman } = await httpIste(targetUrl, {
       method,
       redirect: 'follow',
       headers: {
@@ -462,13 +567,15 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
     // Oturum çerezi gerektiren çok adımlı akışlar (ör. urhanshop postback) doğrudan
     // katmandan da çalışsın: sağlayıcılarla aynı biçimde çiğ Set-Cookie başlıklarını topla.
     const cerezler = typeof res.headers.getSetCookie === 'function' ? res.headers.getSetCookie() : [];
+    // Teşhis: yanıtı hangi katman verdi (impit mi yerleşik fetch mi).
+    const saglayici = katman === 'impit' ? 'dogrudan+impit' : 'dogrudan';
     const textBody = kodlamaCoz(buf);
     if (res.status === 403 || res.status === 429 || BOT_CHALLENGE_RE.test(textBody.slice(0, 2000))) {
       circuitBreaker.recordFailure(domain);
     } else if (res.status === 200 && !isEmptyBody(textBody)) {
       circuitBreaker.recordSuccess(domain);
     }
-    return { status: res.status, body: textBody, cookies: cerezler, saglayici: 'dogrudan' };
+    return { status: res.status, body: textBody, cookies: cerezler, saglayici };
   } catch (e) {
     if (e.name === 'AbortError') return { timedOut: true, saglayici: 'dogrudan' };
     return { networkError: String(e.message || e).slice(0, 100), saglayici: 'dogrudan' };
@@ -546,6 +653,16 @@ async function rawFetch(targetUrl, opts = {}) {
       directResult = await rawFetchDirect(targetUrl, opts);
       if (directResult.status === 200 && !isEmptyBody(directResult.body)) return directResult;
 
+      // 🛡️ 2026-11-13 GEÇİCİ ENGEL KURTARMASI:
+      // 403/429/bot challenge → hemen pes etme. Kademeli bekleme (jitter) sonrası
+      // aynı isteği BİR kez daha dene. Hâlâ engelliyse sağlayıcı eskalasyonuna düş.
+      if (geciciEngelMi(directResult)) {
+        await sleepWithJitter(1);
+        const tekrar = await rawFetchDirect(targetUrl, opts);
+        if (tekrar.status === 200 && !isEmptyBody(tekrar.body)) return tekrar;
+        directResult = tekrar;
+      }
+
       // 404/410 KESİN cevaptır: sayfa yok VEYA site bizi yumuşak engelliyor (T-Soft/
       // IdeaSoft WAF'ı 404 + ~180 KB hata sayfası döndürüyor). Bu durumda sağlayıcı ya
       // da tarayıcı denemek anlamsız: SPA siteler aynı hata sayfasını HTTP 200 ile
@@ -558,6 +675,15 @@ async function rawFetch(targetUrl, opts = {}) {
       }
     }
     if ((TARAYICI_SITELER.has(opts.site) || opts.render) && (opts.method || 'GET') === 'GET') {
+      // 🧬 2026-11-17: Ağır Chromium'dan ÖNCE hafif impit denemesi.
+      // `DOGRUDAN_HARIC` sitelerinde doğrudan katman hiç denenmiyordu; bu yüzden
+      // Trendyol/Amazon/n11/İncehesap/Teknosa/PTT AVM her çağrıda Chromium
+      // başlatıyordu. Artık Chrome TLS parmak iziyle HTTP 200 + anlamlı içerik
+      // gelirse tarayıcı HİÇ açılmaz (RAM/süre tasarrufu).
+      if (!directResult) {
+        const hafif = await impitHafifDene(targetUrl, opts);
+        if (hafif) return hafif;
+      }
       const r = await tarayiciIleCek(targetUrl, { timeoutMs: opts.timeoutMs });
       if (r.status === 200 && !isEmptyBody(r.body) && !hataSayfasiMi(r.body, r.status)) return r;
     }
@@ -581,6 +707,14 @@ async function rawFetch(targetUrl, opts = {}) {
   // 403 / WAF engeli durumunda yerel stealth tarayıcıyı yedek olarak dene
   if ((opts.method || 'GET') === 'GET' && !TARAYICI_SITELER.has(opts.site)) {
     try {
+      // 🧬 2026-11-17: Chromium'dan önce SON bir hafif impit şansı.
+      // Doğrudan istek 403/challenge yediyse Chrome TLS parmak izi bazen geçer
+      // (özellikle DataDome/Akamai'nin Node fetch'i tanıdığı sitelerde).
+      const hafif = await impitHafifDene(targetUrl, opts);
+      if (hafif) {
+        console.log('[scraper] ' + domain + ' → impit hafif katmanı 403 sonrası geçti (tarayıcı açılmadı).');
+        return hafif;
+      }
       const browserFallback = await tarayiciIleCek(targetUrl, { timeoutMs: 15000 });
       if (browserFallback.status === 200 && !isEmptyBody(browserFallback.body)
           && !hataSayfasiMi(browserFallback.body, browserFallback.status)) {
@@ -620,7 +754,8 @@ export function saglayiciDurumu() {
     crawlbase: config.crawlbaseToken ? 'hazır' : 'anahtar yok',
     zenrows: config.zenrowsApiKey ? (zenrowsTukendi.bitti ? 'kredi tükendi' : 'hazır') : 'anahtar yok',
     dogrudan: 'aktif — varsayılan (yerel Türkiye IP; 60 sitenin ~53\'ü sağlayıcısız çekilir)',
-    tarayici: 'aktif (yerel Chromium; Trendyol, Amazon, n11, İncehesap, Teknosa, PTT AVM bu tarayıcıyla çekilir)',
+    impit: impitDurumu(),
+    tarayici: 'aktif (yerel Chromium; yalnızca gerçekten JS render/challenge gereken sayfalar için)',
     nazikMod: {
       aciklama: 'Site başına eşzamanlı istek sınırı; yumuşak engelde 90 sn boyunca tek istek',
       yumusakEngelde: engeller,
@@ -779,4 +914,5 @@ export async function fetchJson(url, opts = {}) {
     throw new FetchError('Yanıt JSON olarak ayrıştırılamadı (ilk 200 karakter: ' + String(r.body).slice(0, 200).replace(/\s+/g, ' ') + ')', { status: r.status });
   }
 }
+
 

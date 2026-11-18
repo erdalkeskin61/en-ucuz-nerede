@@ -1,4 +1,4 @@
-﻿/**
+/**
  * IdeaSoft klasik teması — matersan.com.tr.
  *
  * Arama: /tumu-c-0?k=<sorgu> (sunucu tarafında render edilir).
@@ -65,7 +65,8 @@ export function ideasoftKlasikSite(cfg) {
       const price = parseNum(fiyatM[1]);
 
       const baslikM = html.match(/<h1[^>]*>([\s\S]{5,200}?)<\/h1>/i)
-        || html.match(/<meta property="og:title" content="([^"]{5,200})"/i);
+        || html.match(/<meta[^>]+property=['"]og:title['"][^>]+content=['"]([^'"]{5,200})['"]/i)
+        || html.match(/<meta[^>]+content=['"]([^'"]{5,200})['"][^>]+property=['"]og:title['"]/i);
       const title = baslikM ? decodeEntities(baslikM[1].replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim() : null;
       if (!title) throw new Error('IdeaSoft ürün başlığı bulunamadı.');
 
@@ -113,7 +114,10 @@ export function ideasoftKlasikSite(cfg) {
         currency: 'TRY',
         inStock: !stokYok,
         seller: null,
-        image: (html.match(/<meta property="og:image" content="([^"]+)"/i)?.[1]) || null,
+        image: (html.match(/<meta[^>]+property=['"]og:image['"][^>]+content=['"]([^'"]+)['"]/i)?.[1])
+          || (html.match(/<meta[^>]+content=['"]([^'"]+)['"][^>]+property=['"]og:image['"]/i)?.[1])
+          || (html.match(/<img[^>]+class=['"][^'"]*product-image[^'"]*['"][^>]+src=['"]([^'"]+)['"]/i)?.[1])
+          || null,
         campaigns: kampanyalar,
         shipping: kargoCikar(r.body, this.id),
       };

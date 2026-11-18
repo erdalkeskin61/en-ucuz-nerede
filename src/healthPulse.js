@@ -53,8 +53,11 @@ const SAGLIK_SORGULARI = {
 };
 
 /** Hangi adaptör hangi sorgu grubunu kullanır. */
-function sorguGrubu(siteId) {
-  const t = String(siteId || '').toLowerCase();
+export function sorguGrubu(siteId) {
+  // 2026-11-10: kimlik karşılaştırması önce kırpılır ve küçük harfe çevrilir.
+  // Panelden elle yazılan/URL'den gelen değerlerde baştaki-sondaki boşluk
+  // yüzünden mağaza yanlış gruba düşmesin.
+  const t = String(siteId ?? '').trim().toLowerCase();
   const d3 = [
     'filamentsan', '3dmarketim', 'filamentdepom', 'robo90', 'domirobot', 'robitshop',
     'robotzade', 'kurumsalit', 'mintengo', 'rhino3dprinter', '3dultra', 'robotizmo',
@@ -65,6 +68,15 @@ function sorguGrubu(siteId) {
     'antalya3dmarket', 'teknobilsem', '3dteknomarket', 'matersan', '3dortgen',
     'nmosphere', 'hepsivar', 'deneystore', 'bisiparisver', 'trendruum', 'robotistan',
     'direnc', 'motorobit', 'samm',
+    // 2026-11-09: Porima 3D listede yoktu → gece kontrolünde 'kablo' aranıyordu,
+    // 3D ürünü bulunamayınca mağaza haksız yere "fiyat_yok" görünüyordu.
+    'porima3d',
+    // 2026-11-10: URHANSHOP da saf 3D/filament mağazası (Shopify). Genel grupta
+    // 'kablo' arandığı için ürün bulunamıyor, sağlık kaydı yanlışlıkla kırmızıya
+    // düşüyordu.
+    'urhanshop',
+    // 2026-11-13: Yeni eklenen 6 adet 3D / filament mağazası
+    'kirpilab', '3dteknobiz', 'makerpazar', 'efilament', 'zzrobot3d', 'sermenkreatif',
   ];
   if (d3.includes(t)) return SAGLIK_SORGULARI._3d;
   // Pazaryerleri ve elektronik: genel bir ürün
@@ -355,6 +367,22 @@ export async function saglikKontrolu(opts = {}) {
   try {
     onProgress({ faz: 'baslangic', toplam: liste.length, not: 'Adaptörler yoklanıyor…' });
 
+    // 🛡️ Katalog + SQLite bütünlük nöbeti (2026-11-11). Hızlı ve yerel;
+    // adaptör taramasından önce çalışır ki bozuk katalog gece raporunda görünsün.
+    const katalog = await katalogNobetiCalistir({
+      bildir: opts.bildir === true && opts.katalogBildir !== false,
+      db: opts.db,
+    });
+    if (katalog) {
+      onProgress({
+        faz: 'katalog',
+        toplam: liste.length,
+        not: katalog.ok
+          ? `Katalog tamam (${katalog.aktif} aktif, NULL URL 0)`
+          : `Katalog HATASI: ${(katalog.hatalar || []).length} sorun`,
+      });
+    }
+
     const isci = async () => {
       while (true) {
         const i = imlec++;
@@ -451,7 +479,7 @@ export async function saglikKontrolu(opts = {}) {
     }
 
     sonCalisma = new Date().toISOString();
-    sonSonuc = { ts: sonCalisma, ozet, sonuclar, sureMs: Date.now() - basladi };
+    sonSonuc = { ts: sonCalisma, ozet, sonuclar, katalog, sureMs: Date.now() - basladi };
 
     return {
       ts: sonCalisma,
@@ -461,6 +489,7 @@ export async function saglikKontrolu(opts = {}) {
       ozet,
       bekleyen,
       bildirim,
+      katalog,
     };
   } finally {
     calisiyor = false;
@@ -468,6 +497,63 @@ export async function saglikKontrolu(opts = {}) {
 }
 
 /* --------------------------- zamanlayıcı --------------------------- */
+
+/**
+ * 🛡️ Katalog bütünlük nöbeti (2026-11-11).
+ *
+ * Gece 04:00 sağlık kontrolünün parçasıdır. `katalogDogrula()` ile
+ * SQLite integrity_check, sıfır-NULL URL, gerekçeli pasif ve kategori
+ * kotası denetlenir. Hata varsa konsola yazılır ve (bildirim açıksa)
+ * yöneticiye acil Telegram uyarısı gider. Nöbetçiyi asla durdurmaz.
+ *
+ * @param {{bildir?: boolean, db?: object}} [opts]
+ * @returns {Promise<object|null>} doğrulama raporu (hata olursa null)
+ */
+export async function katalogNobetiCalistir(opts = {}) {
+  let dogrula = null;
+  try {
+    const radar = await import('./otonomRadar.js');
+    dogrula = radar.katalogDogrula;
+  } catch (e) {
+    console.warn('[HealthPulse] katalogDogrula yüklenemedi:', String(e?.message || e).slice(0, 160));
+    return null;
+  }
+  if (typeof dogrula !== 'function') return null;
+
+  let sonuc = null;
+  try {
+    sonuc = dogrula(opts.db ? { db: opts.db } : {});
+  } catch (e) {
+    sonuc = { ok: false, hatalar: [`katalogDogrula çalıştırılamadı: ${String(e?.message || e).slice(0, 160)}`] };
+  }
+
+  if (sonuc?.ok) {
+    console.log(`[HealthPulse] katalog tamam: ${sonuc.aktif} aktif / ${sonuc.pasif} pasif `
+      + `(filament ${sonuc.dagilim?.filament || 0}, yazıcı ${sonuc.dagilim?.yazici || 0}, `
+      + `genel ${sonuc.dagilim?.genel || 0}) · NULL URL yok · integrity ok`);
+    return sonuc;
+  }
+
+  console.error('[HealthPulse] Katalog bütünlük hatası:', sonuc?.hatalar || ['bilinmeyen hata']);
+
+  if (opts.bildir !== false && telegramHazirMi()) {
+    try {
+      const liste = (sonuc?.hatalar || []).slice(0, 8)
+        .map(h => '• ' + String(h).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])))
+        .join('\n');
+      await telegramGonder(
+        '⚠️ Katalog Bütünlük Uyarısı',
+        `⚠️ <b>Katalog Bütünlük Uyarısı:</b>\n${liste}\n\n`
+        + `<i>Aktif: ${sonuc?.aktif ?? '?'} · Pasif: ${sonuc?.pasif ?? '?'} · `
+        + `NULL URL: ${sonuc?.bosUrlSayisi ?? '?'}</i>\n`
+        + '<i>Radar kataloğu kontrol edilmeli (Ayarlar → Radar).</i>',
+      );
+    } catch (e) {
+      console.warn('[HealthPulse] katalog uyarısı gönderilemedi:', String(e?.message || e).slice(0, 120));
+    }
+  }
+  return sonuc;
+}
 
 let zamanlayici = null;
 let sonCalistirilanGun = null;
@@ -530,6 +616,7 @@ export function saglikNobetcisiBaslat(opts = {}) {
           .then(r => {
             console.log(`[health] telafi kontrolü tamamlandı: ${r.aktif}/${r.toplam} aktif, `
               + `${r.bekleyen.length} inceleme bekliyor (${Math.round(r.sureMs / 1000)} sn)`
+              + (r.katalog ? ` · katalog ${r.katalog.ok ? 'tamam' : `HATA (${(r.katalog.hatalar || []).length})`}` : '')
               + (r.bildirim ? ` · Telegram: ${r.bildirim.tekUyari} tek uyarı, özet ${r.bildirim.ozetGitti ? 'gitti' : 'gitmedi'}` : ''));
           })
           .catch(e => {
@@ -550,7 +637,8 @@ export function saglikNobetcisiBaslat(opts = {}) {
           sonCalistirilanGun = gun;
           console.log('[health] gece kontrolü başladı (' + gun + ')');
           const r = await saglikKontrolu({ bildir });
-          console.log(`[health] tamamlandı: ${r.aktif}/${r.toplam} aktif, ${r.bekleyen.length} inceleme bekliyor (${Math.round(r.sureMs / 1000)} sn)`);
+          console.log(`[health] tamamlandı: ${r.aktif}/${r.toplam} aktif, ${r.bekleyen.length} inceleme bekliyor (${Math.round(r.sureMs / 1000)} sn)`
+            + (r.katalog ? ` · katalog ${r.katalog.ok ? 'tamam' : `HATA (${(r.katalog.hatalar || []).length})`}` : ''));
           // 🧹 Sağlık kontrolünden SONRA gece bakımı (WAL/önbellek temizliği).
           await geceBakiminiCalistir();
         }
@@ -586,6 +674,11 @@ export function saglikDurumu() {
       kontrolTs: s.kontrolTs,
       aramaMs: s.aramaMs,
       urunMs: s.urunMs,
+      // 2026-11-10: hangi sorguyla yoklandığı panelde görünsün (ör. 'pla filament'
+      // yerine yanlışlıkla 'kablo' aranıyorsa anında fark edilir).
+      sorgu: s.sorgu ?? null,
+      adet: s.adet ?? null,
+      ornekBaslik: s.ornekBaslik ?? null,
       ornekFiyat: s.ornekFiyat,
       hata: s.hata,
     };

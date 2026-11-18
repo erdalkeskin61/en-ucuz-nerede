@@ -199,10 +199,26 @@ kontrol('app.js: panel sonuç çiziminde çağrılıyor', /fiyatZekasiPaneli\(so
 kontrol('app.js: "Şimdi Al" rozeti', /Şimdi Al/.test(app));
 kontrol('app.js: "Fiyat Normal" rozeti', /Fiyat Normal/.test(app));
 kontrol('app.js: "30G ortalamadan" fark metni', /30G ortalamadan/.test(app));
-kontrol('app.js: şişirilmiş etiket rozeti', /sisirilmis-etiket/.test(app) && /Şişirilmiş Etiket/.test(app));
+// 2026-11-05: V2 dedektörü tek kaynak oldu. Eski "sisirilmis-etiket" rozeti
+// yerine, gerçek/iddia oranlarını ve tooltip'i taşıyan yeni rozet geldi.
+kontrol('app.js: şişirilmiş liste fiyatı rozeti (V2)',
+  app.includes('sahte-indirim-rozet') && app.includes('Şişirilmiş Liste Fiyatı'));
+kontrol('app.js: V2 rozeti iddia/gerçek oranı gösteriyor',
+  app.includes('iddiaEdilenIndirim') && app.includes('gercekTasarruf'));
 kontrol('CSS: .fiyat-zeka-kart', /\.fiyat-zeka-kart\s*\{/.test(css));
 kontrol('CSS: .sisirilmis-etiket', /\.sisirilmis-etiket\s*\{/.test(css));
 kontrol('CSS: kart parlaması animasyonu', /@keyframes kartParlama/.test(css) && /\.urun-karti\.fiyat-guncellendi/.test(css));
+
+// 2026-11-11 REGRESYON KORUMASI: `zt` (zamanlama tavsiyesi) tanımsız kalmıştı.
+// `fiyatZekasiPaneli` içinde ReferenceError fırlıyor, `sonucGoster` yarıda
+// kesiliyordu → fiyat kartları HİÇ çizilmiyor, otomatik kaydırma çalışmıyordu.
+kontrol('app.js: zt tanımlı (zamanlama tavsiyesi)',
+  /const zt = sonuc\?\.(zamanlama|ozet)/.test(app));
+kontrol('app.js: zt beyan edilmeden kullanılmıyor',
+  (app.match(/\bzt\b/g) || []).length > 0
+  && (app.match(/(?:const|let|var)\s+zt\s*=/g) || []).length === 1);
+kontrol('app.js: zamanlama alanı sunucudan okunur',
+  /sonuc\?\.zamanlama \|\| sonuc\?\.ozet\?\.zamanlamaTavsiyesi/.test(app));
 
 /* ============ 6) SWR ============ */
 bolum('6) SWR hızlı yanıt sözleşmesi');

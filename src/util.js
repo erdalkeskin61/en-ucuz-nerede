@@ -11,7 +11,13 @@ const TR_COLORS = [
   // 2026-10-25: Türkçe'de yaygın ton adları (öneri akışında renk niyeti için)
   'eflatun', 'lila', 'fuşya', 'fusya', 'haki', 'hardal', 'vişne', 'visne', 'mercan',
   'somon', 'kiremit', 'bakır', 'bakir', 'bronz', 'çelik', 'celik', 'grafit', 'nefti',
-  'vizon', 'buz mavisi', 'saks mavisi', 'bebe mavisi', 'fıstık yeşili', 'fistik yesili',
+  'vizon', 'buz mavisi', 'saks mavisi', 'bebe mavisi',
+  // 2026-11-03: filament sektöründe yaygın iki renk adı eksikti. 'Ten' ve
+  // 'Naturel' Porima'nın gerçek varyant renkleri; tanınmadıkları için renk
+  // karşılaştırması 'bilinmiyor' dönüyor ve doğru ürün elenebiliyordu.
+  'ten', 'naturel', 'natural',
+  // 2026-11-03: Porima/xPLA ürün hatlarında geçen ton adları
+  'latte', 'mokka', 'mocha', 'taupe', 'kum', 'buz', 'fıstık yeşili', 'fistik yesili',
   'yavruağzı', 'yavruagzi', 'beyazımsı', 'kum rengi', 'taş rengi', 'tas rengi',
   // 3D Filament estetik varyantları
   'mermer', 'marble', 'ahşap', 'ahsap', 'wood', 'ipek', 'silk', 'glow', 'simli', 'glitter',
@@ -68,7 +74,17 @@ export function extractColors(text) {
   const t = ' ' + toLowerTr(text).replace(/[^a-zçğıöşü0-9\s-]/gi, ' ').replace(/\s+/g, ' ') + ' ';
   const found = new Set();
   for (const c of TR_COLORS) {
-    if (t.includes(' ' + c + ' ') || t.includes(' ' + c + '-') || t.includes('-' + c)) found.add(c);
+    if (t.includes(' ' + c + ' ') || t.includes(' ' + c + '-') || t.includes('-' + c)) {
+      found.add(c);
+      continue;
+    }
+    // 2026-11-04: Türkçe İYELİK EKİ. "Nane Yeşili" → yeşil, "Siyahı" → siyah,
+    // "Mavisi" → mavi. Önceden bu tonlar hiç renk sayılmadığı için farklı renkli
+    // ilan "renk bilinmiyor" diye geçiyor ve yanlış eşleşebiliyordu.
+    if (c.includes(' ')) continue;
+    for (const ek of ['i', 'ı', 'u', 'ü', 'si', 'sı', 'su', 'sü', 'yi', 'yı']) {
+      if (t.includes(' ' + c + ek + ' ')) { found.add(c); break; }
+    }
   }
   for (const [en, tr] of Object.entries(EN_TO_TR)) {
     if (t.includes(' ' + en + ' ')) found.add(en);
@@ -255,6 +271,10 @@ const SADE_COLORS = TR_COLORS.map(sadelestir);
 export function titleTokens(title, brand, { stripColors = false } = {}) {
   let t = sadelestir(title)
     // Malzeme çizgisi normalizasyonu: "PLA+" = "PLA Plus" = "plaplus" (aynı ürün çizgisi)
+    // "X PLA" = "xPLA": bazı satıcılar bitişik, bazıları ayrı yazar (2026-11-03).
+    // Ürün HATTI kimliğini yine hatCakismasi denetler; burada yalnızca yazım farkı
+    // token karşılaştırmasını bozmasın diye normalize edilir.
+    .replace(/\bx\s+pla\b/g, 'xpla')
     .replace(/\b(pla|petg|abs|tpu|asa|pa|pc)\s*\+/g, '$1plus')
     .replace(/\b(pla|petg|abs|tpu|asa|pa|pc)\s+plus\b/g, '$1plus')
     // Ölçü normalizasyonu (2026-10-25): satıcılar aynı çapı farklı yazar —
@@ -285,6 +305,30 @@ export function titleTokens(title, brand, { stripColors = false } = {}) {
   return new Set(out.length ? out : t);
 }
 
+/**
+ * UYUMLULUK LİSTESİ TEMİZLİĞİ (2026-11-04)
+ *
+ * Ölçülen hata: borsada "Creality Ender PLA Gri 1kg" kartı Hepsiburada'daki
+ * **"Sunlu PLA Filament 1kg – 1.75mm – Gri – 3D Yazıcı – Bambu Lab / Ender /
+ * Prusa / Creality Uyumlu"** ilanına gidiyordu. İlanın GERÇEK markası Sunlu;
+ * "Creality" yalnızca uyumluluk listesinde geçiyor. Marka kanıtı sayıldığı
+ * için marka çelişkisi devre dışı kalıyordu.
+ */
+const UYUMLULUK_RE = /\b(uyumlu|uygun|compatible|compatibility|için|for)\b/i;
+
+/**
+ * Marka kanıtı için başlığı temizler: UYUMLULUK listelerini ("… / Creality
+ * Uyumlu") ayıklar. Aksi hâlde başka markanın ilanı "marka başlıkta geçiyor"
+ * diye kabul ediliyordu (2026-11-04 Sunlu ↔ Creality vakası).
+ * @param {string} baslik
+ * @returns {string} küçük harfe çevrilmiş, uyumluluk parçaları çıkarılmış metin
+ */
+export function markaKanitMetni(baslik) {
+  const parcalar = String(baslik || '').split(/[–—|]|,\s|\s-\s/);
+  const temiz = parcalar.filter(p => !UYUMLULUK_RE.test(p));
+  return toLowerTr(temiz.length ? temiz.join(' ') : String(baslik || ''));
+}
+
 /** Jaccard benzerliği (0-1). renklerAyikla=true iken renk kelimeleri hesaba katılmaz. */
 
 /** İki başlık arasındaki ortak token sayısını hesaplar. */
@@ -307,8 +351,7 @@ export function titleSimilarity(a, b, brandA, brandB, { stripColors = false } = 
 }
 
 /** İki marka aynı mı? Tam eşitlik ya da kelime bazlı kapsama ("Beta Filament" ~ "Beta"). */
-export function brandAyni(a, b) {
-  if (!a || !b) return false;
+export function brandAyni(a, b) {  if (!a || !b) return false;
   const la = sadelestir(a).trim(), lb = sadelestir(b).trim();
   if (la === lb) return true;
   const wa = new Set(la.split(/\s+/)), wb = new Set(lb.split(/\s+/));
@@ -323,6 +366,38 @@ export function brandAyni(a, b) {
 export function brandWords(brand) {
   const stop = new Set([...TITLE_STOPWORDS_TR].map(sadelestir));
   return sadelestir(brand || '').split(/\s+/).filter(w => w.length >= 3 && !stop.has(w));
+}
+
+const MARKA_GENEL_SOZCUKLERI = new Set([
+  'filament', 'yazici', 'yazıcı', 'printer', 'baski', 'baskı', 'set', 'paket',
+  'adet', 'combo', 'model', 'seri', 'renk', 'pla', 'petg', 'abs', 'tpu', 'asa',
+  'pa', 'pc', 'resin', 'reçine', 'recine', '3d', 'yeni', 'orijinal', 'original',
+  'plus', 'pro', 'max', 'mini', 'ultra', 'lite', 'super',
+]);
+
+/**
+ * Marka alanı BOŞ/GEÇERSİZ olduğunda başlıktan "muhtemel marka"yı çıkarır.
+ *
+ * Ölçülen hata (2026-11-04): Trendyol kaynağında `brand` alanı boş geldiği için
+ * "eSun PLA+ Kemik Beyazı" ile **"Filamix Kemik Beyazı PLA+"** aynı ürün sayıldı;
+ * borsada eSun ürünü yerine Filamix ₺746,99 "en ucuz" gösterildi. Marka alanı
+ * yoksa bile başlığın ilk anlamlı kelimesi marka kanıtı olarak kullanılır.
+ *
+ * @param {string} metin
+ * @returns {string|null}
+ */
+export function muhtemelMarka(metin) {
+  const kelimeler = sadelestir(metin || '')
+    .replace(/[^a-z0-9\s+]/g, ' ').split(/\s+/).filter(Boolean);
+  for (const w of kelimeler) {
+    if (w.length < 3) continue;
+    if (/^\d/.test(w)) continue;
+    if (w.startsWith('plaplus') || w.startsWith('petg')) continue;
+    if (MARKA_GENEL_SOZCUKLERI.has(w)) continue;
+    if (extractColors(w).length) continue;
+    return w;
+  }
+  return null;
 }
 
 /** Aksesuar / yedek parça sözcükleri — ana ürünle karıştırılmamalı.
@@ -399,6 +474,260 @@ const GENEL_MARKA_SOZCUKLERI = new Set([
   '3d', 'baski', 'set', 'paket', 'adet', 'orijinal', 'original', 'yerli', 'ithal', 'genel',
 ]);
 
+/**
+ * ÜRÜN HATTI / MALZEME ÇAKIŞMASI (2026-11-03).
+ *
+ * Ölçülen gerçek hata: borsada "Porima PLA Siyah 1.75mm 1kg" kaydı, kaynak olarak
+ * Trendyol'daki **xPLA** ilanını (400 TL) kullanıyordu ama Porima 3D'nin **düz PLA**
+ * ürününü (612 TL) "en ucuz" olarak gösteriyordu. Benzer şekilde Silk / Premium /
+ * Hyper hatları düz PLA ile karışıyordu (ölçüm: sim 0.75 / 0.50 / 0.33).
+ *
+ * Kural:
+ *  - MALZEME farklıysa (PLA ↔ PETG/ABS/TPU/PC…) → farklı ürün.
+ *  - ÜRÜN HATTI göstergesi (xPLA, Hyper, Silk, Premium, Matte, Wood…) iki tarafta
+ *    da varsa ve kesişmiyorsa → farklı ürün. Yalnızca BİR tarafta varsa da farklı
+ *    ürün sayılır: "Hyper PLA" ile "PLA" aynı şey değildir; pahalı hattı düz PLA
+ *    fiyatıyla göstermek yanıltıcı olur (dürüstlük kuralı).
+ *
+ * 'eco' BİLİNÇLİ OLARAK DIŞARIDA: Porima xPLA'da "Eco" bir AMBALAJ seçeneğidir
+ * ("Latte / Eco / 1.75mm - 1kg"), ürün hattı değil. Onu hat saymak xPLA
+ * eşleşmelerini bozardı.
+ */
+const HAT_GOSTERGELERI = new Set([
+  'xpla', 'hyper', 'silk', 'premium', 'matte', 'tough', 'wood', 'stone',
+  'rainbow', 'army', 'smart', 'carbon', 'marble', 'metallic', 'glow', 'galaxy',
+  'star', 'simli', 'ahs', 'pearl',
+]);
+
+/**
+ * Malzeme tabanlı ALT HATLAR (2026-11-04).
+ *
+ * Ölçülen iki hata (kaynak arama yanlış ürünü seçiyordu):
+ *   - "Porima PLA Filament Siyah 1kg" → kaynak "Porima **PLA-CF** Siyah" (karbon
+ *     fiber katkılı; fiyatı düz PLA'nın 2 katı, fiyat kıyaslanamaz).
+ *   - "eSun PLA+ Beyaz 1kg" → kaynak "eSun Beyaz **PLA+HS**" (High Speed).
+ * Tokenizer "PLA+HS"i "plaplushs", "PLA-CF"i "pla cf" üretir; bu yüzden yalnızca
+ * kelime sözlüğü yetmiyor, malzeme tabanına bitişik ekleri de yakalamak gerek.
+ */
+const ALT_HAT_EKLERI = ['hs', 'cf', 'lw', 'esd'];
+
+/** "plaplushs" / "pla hs" / "pla-cf" gibi yazımlardan alt hat çıkarır. */
+function altHatEkle(hat, kelimeler, i) {
+  const w = kelimeler[i] || '';
+  const onceki = kelimeler[i - 1] || '';
+  // "ePLA-HS" (eSun) da PLA tabanlıdır; tek harf öneki tolere edilir.
+  const malzemeTabanli = /^(e?pla|petg|abs|tpu|asa|pa|pc)/.test(w);
+  const oncekiMalzeme = /^(e?pla|petg|abs|tpu|asa|pa|pc)/.test(onceki);
+  // "High Speed" yazımı da HS'dir.
+  if (w === 'speed' && onceki === 'high') hat.add('alt:hs');
+  for (const ek of ALT_HAT_EKLERI) {
+    // Bitişik yazım: "plaplushs", "placf", "petglw"
+    if (malzemeTabanli && w.length > ek.length + 2 && w.endsWith(ek)) {
+      hat.add(`alt:${ek}`);
+    }
+    // Ayrı yazım: "pla hs", "plaplus hs", "petg cf"
+    if (w === ek && oncekiMalzeme) hat.add(`alt:${ek}`);
+  }
+}
+
+const MALZEME_GOSTERGELERI = new Set([
+  'pla', 'petg', 'abs', 'tpu', 'asa', 'pc', 'pa', 'nylon', 'pet', 'pva', 'hips',
+  'reçine', 'resin', 'policarbonat',
+]);
+
+/** Başlıktan ürün hattı ve malzeme göstergelerini çıkarır. */
+function hatGostergeleri(baslik) {
+  // 2026-11-04: "PLA+" işareti sadelestirmede KAYBOLUYORDU ('pla +' → 'pla'),
+  // bu yüzden "Sunlu PLA+" ile "Sunlu PLA" ayırt edilemiyordu ve düz PLA,
+  // PLA+ ürününün fiyatı gibi gösteriliyordu. Artık '+' korunur.
+  const normalize = sadelestir(baslik || '')
+    .replace(/\b(pla|petg|abs|tpu|asa|pa|pc)\s*\+/g, '$1plus');
+  const t = ' ' + normalize.replace(/[^a-z0-9çğıöşü\s]/gi, ' ').replace(/\s+/g, ' ') + ' ';
+  const kelimeler = t.trim().split(' ').filter(Boolean);
+  const hat = new Set();
+  const malzeme = new Set();
+  for (let i = 0; i < kelimeler.length; i++) {
+    const w = kelimeler[i];
+    if (HAT_GOSTERGELERI.has(w)) hat.add(w);
+    if (MALZEME_GOSTERGELERI.has(w)) malzeme.add(w);
+    // "PLA+" → "plaplus" (bitişik yazım: "PLA+HS" → "plaplushs")
+    if (w.startsWith('plaplus')) hat.add('plaplus');
+    // Ayrı yazım: "PLA Plus"
+    if (w === 'plus' && (kelimeler[i - 1] === 'pla' || kelimeler[i - 1] === 'petg')) {
+      hat.add('plaplus');
+    }
+    // "Porima X Pla Siyah" → hat: xpla
+    if (w === 'x' && kelimeler[i + 1] === 'pla') hat.add('xpla');
+    // "Eco PLA" BİTİŞİK yazımı ürün hattıdır ("Porima Eco PLA Filament").
+    // Tek başına "Eco" ("Latte / Eco / 1.75mm - 1kg") ise AMBALAJ seçeneğidir;
+    // hat sayılırsa xPLA eşleşmeleri bozulur (2026-11-03).
+    if ((w === 'eco' && kelimeler[i + 1] === 'pla') || (w === 'pla' && kelimeler[i + 1] === 'eco')) {
+      hat.add('ecopla');
+    }
+    // PLA+HS / PLA-CF gibi alt hatlar (2026-11-04)
+    altHatEkle(hat, kelimeler, i);
+  }
+  return { hat, malzeme };
+}
+
+/**
+ * İki başlık farklı ürün hattı/malzemede mi?
+ * Kanıt yoksa (iki tarafta da gösterge yok) false döner — engelleme yapılmaz.
+ */
+export function hatCakismasi(a, b) {
+  const A = hatGostergeleri(a);
+  const B = hatGostergeleri(b);
+
+  if (A.malzeme.size && B.malzeme.size) {
+    let ortak = false;
+    for (const m of A.malzeme) if (B.malzeme.has(m)) { ortak = true; break; }
+    if (!ortak) return true;
+  }
+
+  // 2026-11-04: "PLA+" ile "PLA" AYRI kıyaslanır. Önceden tüm hatlar tek kümede
+  // olduğu için "Sunlu PLA+" ile "Sunlu Silk PLA+" ortak "plaplus" sayesinde
+  // eşleşiyordu (silk görmezden geliniyordu). Artık boyutlar ayrı:
+  //   1) ürün hattı (xpla/hyper/silk/premium/matte…)  2) PLA+  3) alt hat (HS/CF)
+  const cizgiA = [...A.hat].filter(h => !h.startsWith('alt:') && h !== 'plaplus');
+  const cizgiB = [...B.hat].filter(h => !h.startsWith('alt:') && h !== 'plaplus');
+  if (cizgiA.length || cizgiB.length) {
+    let ortak = false;
+    for (const h of cizgiA) if (cizgiB.includes(h)) { ortak = true; break; }
+    if (!ortak) return true;
+  }
+
+  // PLA+ bir ÜRÜN ÇİZGİSİDİR: bir tarafta varsa diğerinde de olmalı.
+  if (A.hat.has('plaplus') !== B.hat.has('plaplus')) return true;
+
+  // ALT HAT: PLA+HS / PLA-CF ayrı kıyaslanır (PLA+ ile PLA+HS aynı değildir).
+  const altA = [...A.hat].filter(h => h.startsWith('alt:'));
+  const altB = [...B.hat].filter(h => h.startsWith('alt:'));
+  if (altA.length || altB.length) {
+    let ortakAlt = false;
+    for (const h of altA) if (altB.includes(h)) { ortakAlt = true; break; }
+    if (!ortakAlt) return true;
+  }
+
+  return false;
+}
+
+/**
+ * MODEL SERİSİ ÇAKIŞMASI (2026-11-03).
+ *
+ * Ölçülen hata: "Creality K1 Max 3d Yazıcı" ile "Creality Ender 5 Max 3D Yazıcı"
+ * aynı marka + ortak "Max" kelimesi sayesinde %60+ benzerlikle EŞLEŞTİ. Bu yanlış
+ * ürün, doğru ürün (K1 Max 2025) YZ tarafından reddedilince "en ucuz" yerine geçti.
+ *
+ * Kural: iki başlıkta da MODEL GÖSTERGESİ varsa (K1, P1S, A1, S24, "Ender 5")
+ * ve hiçbiri ortak değilse ürünler farklıdır. Gösterge yoksa kanıt üretilmez.
+ */
+const OLCU_KELIMELERI = new Set([
+  'pla', 'petg', 'abs', 'tpu', 'asa', 'pc', 'pa', 'mm', 'cm', 'mt', 'm', 'kg', 'gr', 'g',
+  'ml', 'lt', 'l', 'w', 'v', 'a', 'mah', 'hz', 'ghz', 'dpi', 'adet', 'li', 'lu', 'x', 'boy',
+]);
+
+/** Model serisi sayılmaması gereken ürün türü sözcükleri ("Filament 1", "Set 2"). */
+const URUN_TURU_KELIMELERI = new Set([
+  'filament', 'yazici', 'printer', 'baski', 'set', 'paket', 'adet', 'combo', 'model', 'seri', 'renk',
+]);
+
+/** Varyant sözcükleri ("Max 3") model serisi sayılmaz — bunlar kritikVaryantCakismasi'nda. */
+const VARYANT_KELIMELERI = new Set([
+  'pro', 'max', 'plus', 'ultra', 'mini', 'lite', 'super', 'fe', 'se', 'ti', 'fold', 'flip',
+]);
+
+function modelSerisi(baslik) {
+  const t = sadelestir(baslik || '').replace(/[^a-z0-9\s]/g, ' ');
+  const set = new Set();
+  for (const m of t.matchAll(/\b([a-z]{1,4}\d{1,4}[a-z]?)\b/g)) {
+    const k = m[1];
+    if (/^\d/.test(k)) continue;
+    if (OLCU_KELIMELERI.has(k)) continue;
+    // RAL9005 / PANTONE 186 gibi RENK KODLARI model değildir (2026-11-04).
+    // Bir mağaza kodu yazar, diğeri yazmaz; model serisi sayılırsa aynı ürün
+    // "farklı model" diye reddediliyordu.
+    if (/^ral\d{3,4}$/.test(k) || /^pantone\d*$/.test(k)) continue;
+    set.add(k);
+  }
+  // Kelime + sayı çifti yalnızca ÖLÇÜ BİRİMİ TAKİP ETMİYORSA model göstergesidir.
+  // ("Ender 5" ✓ · "Filament 1.75mm" ✗ · "Gri 1.75 mm" ✗ · "1 kg" ✗)
+  // Sayıdan hemen sonra HARF/RAKAM geliyorsa ("Max 3d" → "3"+"d") sayı tek başına
+  // model numarası değildir; "Ender 5 Max" ise gerçek model göstergesidir.
+  for (const m of t.matchAll(/\b([a-z]{3,12})\s+(\d{1,3})(?![a-z0-9])(?!\s*(?:mm|cm|mt|m|kg|gr|g|ml|lt|l|gb|tb|mb|mah|ah|w|v|a|hz|ghz|dpi)\b)/g)) {
+    const kelime = m[1];
+    if (OLCU_KELIMELERI.has(kelime)) continue;
+    if (OLCU_KELIMELERI.has(m[2])) continue;
+    if (URUN_TURU_KELIMELERI.has(kelime)) continue;
+    if (VARYANT_KELIMELERI.has(kelime)) continue;
+    set.add(kelime + ' ' + m[2]);
+  }
+  // HARF SONEKLİ MODEL: "Kobra X", "iPhone X", "Ender Z".
+  // Ölçülen hata (2026-11-04): "Anycubic Kobra 2 Neo" kataloğu, aramada
+  // Trendyol'un **"Anycubic Kobra X"** ilanını kaynak seçiyordu. Kaynak başlığı
+  // "Kobra X" olunca "Kobra 4" adayı da eşleşiyordu (ikisinde de model numarası
+  // yok, ortak "anycubic/kobra" kelimeleri yetiyordu). Tek harfli sonek burada
+  // model göstergesi sayılır; yalnızca x/y/z kabul edilir (Türkçe "ve", "ile"
+  // gibi kısa kelimeler ve "3D" yanlış yakalanmasın).
+  for (const m of t.matchAll(/\b([a-z]{3,12})\s+([xyz])\b/g)) {
+    const kelime = m[1];
+    if (OLCU_KELIMELERI.has(kelime)) continue;
+    if (URUN_TURU_KELIMELERI.has(kelime)) continue;
+    if (VARYANT_KELIMELERI.has(kelime)) continue;
+    set.add(kelime + ' ' + m[2]);
+  }
+  return set;
+}
+
+export function modelSerisiCakismasi(a, b) {
+  const sa = modelSerisi(a);
+  const sb = modelSerisi(b);
+  if (!sa.size || !sb.size) return false;
+  for (const k of sa) if (sb.has(k)) return false;
+  return true;
+}
+
+/**
+ * KAPASİTE ÇAKIŞMASI (2026-11-03): 8GB ↔ 16GB, 128GB ↔ 256GB, 5000mAh ↔ 10000mAh.
+ * Bunlar farklı üründür; benzerlik yüksek olduğu için (aynı marka/seri) eskiden
+ * birleşiyorlardı. Gramaj/hacim miktarCakismasi'nda; burada dijital/güç birimleri.
+ */
+// Birimleri ORTAK TABANA çevir (500GB ↔ 1TB de yakalanır):
+//   GB/TB/MB → GB · mAh/Ah → mAh · Hz/GHz → Hz · W → W
+const KAPASITE_TABANI = {
+  gb: ['gb', 1], tb: ['gb', 1024], mb: ['gb', 1 / 1024],
+  mah: ['mah', 1], ah: ['mah', 1000],
+  hz: ['hz', 1], ghz: ['hz', 1e9],
+  w: ['w', 1],
+};
+
+function kapasiteler(baslik) {
+  const t = sadelestir(baslik || '').replace(/,/g, '.');
+  const harita = new Map();
+  for (const m of t.matchAll(/\b(\d+(?:\.\d+)?)\s*(gb|tb|mb|mah|ah|w|hz|ghz)\b/g)) {
+    const deger = parseFloat(m[1]);
+    const taban = KAPASITE_TABANI[m[2]];
+    if (!Number.isFinite(deger) || !taban) continue;
+    const [birim, carpan] = taban;
+    if (!harita.has(birim)) harita.set(birim, new Set());
+    harita.get(birim).add(Math.round(deger * carpan * 1000) / 1000);
+  }
+  return harita;
+}
+
+export function kapasiteCakismasi(a, b) {
+  const ka = kapasiteler(a);
+  const kb = kapasiteler(b);
+  if (!ka.size || !kb.size) return false;
+  for (const [birim, degerlerA] of ka) {
+    const degerlerB = kb.get(birim);
+    if (!degerlerB) continue;
+    let ortak = false;
+    for (const v of degerlerA) if (degerlerB.has(v)) { ortak = true; break; }
+    if (!ortak) return true;
+  }
+  return false;
+}
+
 /** Marka alanı gerçekten marka mı? (boş ya da ürün türü ise kullanılmaz) */
 function markaGecerliMi(m) {
   if (!m) return false;
@@ -450,6 +779,57 @@ export function kritikVaryantCakismasi(a, b) {
   return false;
 }
 
+/**
+ * YIL / SÜRÜM / EDİSYON EKİ (2026-11-03).
+ *
+ * Ölçülen gerçek hata: kaynak "Creality K1 Max 3d Yazıcı", aday
+ * "Creality K1 Max 2025 3D Yazıcı". Başlıklar yalnızca "2025" ile ayrıştığı
+ * hâlde YZ "sürüm/yıl farkı" diyerek AYNI ürünü reddetti; ardından daha düşük
+ * benzerlikli YANLIŞ ürün ("Ender 5 Max") eşleşti ve en ucuz teklif kaybedildi
+ * (fixx3d 36.245 TL görünmedi).
+ *
+ * Bu ekler ürün kimliğini DEĞİŞTİRMEZ: pazaryerleri/yeniden satıcılar yeni
+ * partiyi "2025", "yeni sürüm", "v2", "2. nesil" gibi etiketlerle ayırır.
+ * Kapasite (128GB), varyant (Pro/Ultra) ve miktar (800gr) KORUNUR — onlar
+ * gerçekten farklı üründür.
+ */
+const YIL_EDISYON_RE = /\b(20[2-3]\d)\b|\b(yeni\s+surum|yeni\s+versiyon|new\s+version|revizyon\s*\d|rev\s*\d|v\d{1,2}|\d{1,2}\s*\.?\s*nesil|\d{1,2}(?:st|nd|rd|th)\s+gen(?:eration)?|gen\s*\d{1,2})\b/g;
+
+/** Başlıktan yıl/sürüm/edisyon eklerini atar (kimlik karşılaştırması için). */
+export function yilEdisyonTemizle(baslik) {
+  return sadelestir(baslik || '').replace(YIL_EDISYON_RE, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * İki başlık YALNIZCA yıl/sürüm/edisyon ekiyle ayrışıyor mu?
+ * Evet ise ürün aynıdır; YZ'ye sormaya gerek yok (deterministik karar).
+ */
+export function yilEdisyonAyniMi(a, b) {
+  const hamA = sadelestir(a || '').replace(/\s+/g, ' ').trim();
+  const hamB = sadelestir(b || '').replace(/\s+/g, ' ').trim();
+  const ta = yilEdisyonTemizle(a);
+  const tb = yilEdisyonTemizle(b);
+  if (!ta || !tb) return false;
+
+  // Ekler atıldıktan sonra BİREBİR aynı → aynı ürün.
+  if (ta === tb) return true;
+
+  // KAPSAMA dalı (2026-11-03 sıkılaştırma): "biri diğerini kapsıyor" yalnızca
+  // GERÇEKTEN bir yıl/sürüm eki atıldıysa kabul edilir. Aksi hâlde kısa başlıklar
+  // ("Porima PLA Filament") her uzun Porima başlığıyla eşleşirdi.
+  const ekAtildi = ta !== hamA || tb !== hamB;
+  if (!ekAtildi) return false;
+
+  const kelA = new Set(ta.split(' ').filter(Boolean));
+  const kelB = new Set(tb.split(' ').filter(Boolean));
+  if (!kelA.size || !kelB.size) return false;
+  // En az 3 anlamlı kelime şartı (2 kelimelik jenerik başlıklar kanıt sayılmaz).
+  if (Math.min(kelA.size, kelB.size) < 3) return false;
+  let ortak = 0;
+  for (const w of kelA) if (kelB.has(w)) ortak++;
+  return ortak / Math.min(kelA.size, kelB.size) >= 0.9;
+}
+
 export function matchProducts(src, cand) {
   // Aksesuar/yedek parça koruması: aday başlığı aksesuar sözcüğü içeriyor ama kaynak
   // içermiyorsa AYNI ÜRÜN DEĞİLDİR (ör. Dyson V15 süpürge ↔ "V15 için filtre").
@@ -458,6 +838,20 @@ export function matchProducts(src, cand) {
   if (seriKoduCakismasi(src.title, cand.title)) return null;
   // Kritik varyant Ã§akÄ±ÅŸmasÄ± (iPhone 15 vs iPhone 15 Pro, S24 vs S24 Ultra) -> KESÄ°N RED
   if (kritikVaryantCakismasi(src.title, cand.title)) return null;
+  // Farklı ÜRÜN HATTI / MALZEME (xPLA ↔ PLA, PLA ↔ PETG) -> KESİN RED (2026-11-03)
+  if (hatCakismasi(src.title, cand.title)) return null;
+  // Farklı MODEL SERİSİ (K1 Max ↔ Ender 5 Max) ve KAPASİTE (8GB ↔ 16GB) -> KESİN RED.
+  // ANCAK barkod ya da model kodu BİREBİR eşleşiyorsa bunlar devre dışıdır: kesin
+  // kimlik başlıktan daha güçlüdür (2026-11-03).
+  {
+    const _sb = normalizeBarcode(src.barcode);
+    const _cb = normalizeBarcode(cand.barcode);
+    const _sm = normalizeModelCode(src.modelCode);
+    const _cm = normalizeModelCode(cand.modelCode);
+    const kesinKimlik = !!(_sb && _cb && _sb === _cb) || !!(_sm && _cm && _sm === _cm);
+    if (!kesinKimlik && modelSerisiCakismasi(src.title, cand.title)) return null;
+    if (!kesinKimlik && kapasiteCakismasi(src.title, cand.title)) return null;
+  }
 
   // NET MİKTAR (gramaj) koruması — 2026-10-29 "sahte ucuz" düzeltmesi.
   //
@@ -478,9 +872,22 @@ export function matchProducts(src, cand) {
   if (sb && cb && sb === cb) return { eslesme: 'barkod', skor: 1 };
 
   // Marka alanı "PLA"/satıcı adı gibi anlamsız değerler taşıyorsa kanıt sayılmaz.
-  const sMarka = markaGecerliMi(src.brand) ? src.brand : null;
-  const cMarka = markaGecerliMi(cand.brand) ? cand.brand : null;
+  // 2026-11-04: marka alanı BOŞSA başlıktan çıkarılır — aksi hâlde eSun kaynağı
+  // ile Filamix ilanı "marka bilinmiyor" sayılıp eşleşiyordu. Alan DOLU ama
+  // anlamsızsa (ör. Amazon'da "PLA") eskisi gibi kanıt üretmez: başlıktan marka
+  // tahmini yalnızca alan gerçekten boşken yapılır (yanlış "basic" tahminini önler).
+  const markaAlaniBos = (m) => m == null || String(m).trim() === '';
+  const sMarka = markaGecerliMi(src.brand)
+    ? src.brand
+    : (markaAlaniBos(src.brand) ? muhtemelMarka(src.title) : null);
+  const cMarka = markaGecerliMi(cand.brand)
+    ? cand.brand
+    : (markaAlaniBos(cand.brand) ? muhtemelMarka(cand.title) : null);
   const sim = titleSimilarity(src.title, cand.title, sMarka, cMarka, { stripColors: true });
+  // Marka kelimeleri ÇIKARILMADAN benzerlik. Marka farklıysa bu değer kullanılır;
+  // aksi hâlde marka adları silindiği için alakasız iki marka "birebir" görünür
+  // (ölçüm: "eSun ... Kemik Beyazı" ↔ "Filamix ... Kemik Beyazı" → sim 1.0).
+  const simHam = titleSimilarity(src.title, cand.title, null, null, { stripColors: true });
   const brandsOk = brandAyni(sMarka, cMarka);
   // Marka BİLİNMİYOR ≠ marka FARKLI. Kaynağın (ya da adayın) markası okunamadıysa
   // marka karşılaştırması kanıt üretmez; kararı başlık benzerliği verir.
@@ -504,8 +911,22 @@ export function matchProducts(src, cand) {
   // paket farkıdır; bu kontrol onları yok sayar ama "basic"/"matte"/"hyper" gibi
   // ürün çizgisi kelimelerini şart koşar.
   const olcuMu = (w) => /^\d+(mm|cm|mt|gr|kg|ml|lt|w|v|a|mah|hz|ghz|dpi)?$/.test(w);
+  // RENK kelimeleri kimlik kanıtı DEĞİLDİR (renk farkı ayrıca işaretlenir). Bazı
+  // renkler ('ten', 'naturel') stripColors listesinde olmadığı için token'lar renk
+  // taşıyabiliyordu; sonuç: rengi yazmayan mağaza ('Porima PLA Filament - 1Kg')
+  // yanlışlıkla 'kimlik eksik' sayılıyordu (2026-11-03).
+  const renkTokenleri = new Set();
+  for (const t of [src.title, cand.title]) {
+    for (const c of extractColors(t || '')) {
+      for (const w of sadelestir(c).split(/\s+/).filter(Boolean)) renkTokenleri.add(w);
+    }
+  }
+  // RAL9003 / PANTONE gibi RENK KODLARI kimlik kanıtı değil (aynı ürünün bir
+  // sitesi kodu yazar, diğeri yazmaz → 2026-11-03 Porima Beyaz vakası).
+  const renkKoduMu = (w) => /^ral\d{3,4}$/.test(w) || /^pantone\d*$/.test(w);
+  const anlamli = (w) => !olcuMu(w) && !renkTokenleri.has(w) && !renkKoduMu(w);
   const kimlikKapsama = (() => {
-    const ta = [...titleTokens(src.title, sMarka, { stripColors: true })].filter(w => !olcuMu(w));
+    const ta = [...titleTokens(src.title, sMarka, { stripColors: true })].filter(anlamli);
     const tb = titleTokens(cand.title, cMarka, { stripColors: true });
     if (!ta.length) return true; // kaynakta ayırt edici kelime yok → kanıt üretemez
     return ta.every(w => tb.has(w));
@@ -526,19 +947,65 @@ export function matchProducts(src, cand) {
       //  - marka FARKLI → kimlik kapsaması + yüksek benzerlik; ya da neredeyse birebir başlık
       //    (pazaryerlerinde "marka" alanı satıcı adı olabiliyor: pttavm'deki
       //    "Esun Açık Gri PLA Basic" ürününün markası "Urhanshop" yazıyordu — 2026-10-25)
+      // MARKA ÇELİŞKİSİ (2026-11-03): iki marka da BİLİNİYOR ve FARKLI ise, marka
+      // adı başlıklarda geçmiyorsa gevşek eşik KULLANILMAZ. Ölçülen hata:
+      // "Porima PLA Filament Ten 1kg" ile "FilenTa Ten Rengi PLA Premium Filament
+      // 1.75mm 1kg" %66 benzerlikle eşleşiyordu (ortak jenerik kelimeler: pla,
+      // filament, ten) ve yanlış mağaza "en ucuz" görünüyordu.
+      // Pazaryeri kuralı korunur: "marka" alanı satıcı adı olabiliyor (pttavm'de
+      // Ürün markası "Urhanshop" yazıyor) — o durumda GERÇEK marka başlıkta geçer.
+      const markaBaslikta = (() => {
+        const kaynakMarka = brandWords(sMarka);
+        const adayMarka = brandWords(cMarka);
+        // Uyumluluk listeleri ("… / Creality Uyumlu") marka kanıtı DEĞİLDİR.
+        const basC = markaKanitMetni(cand.title);
+        const basS = markaKanitMetni(src.title);
+        return kaynakMarka.some(w => basC.includes(w)) || adayMarka.some(w => basS.includes(w));
+      })();
+      const markaCeliskisi = !brandsOk && !brandBilinmiyor && !markaBaslikta;
+
       const gecerli = brandsOk
         ? (sim >= 0.45 || kapsama)
         : brandBilinmiyor
           ? ((kimlikKapsama && sim >= 0.5) || sim >= 0.8)
-          : ((kimlikKapsama && sim >= 0.6) || sim >= 0.85);
+          : markaCeliskisi
+            ? simHam >= 0.9       // farklı marka + başlıkta kanıt yok → neredeyse birebir şart
+            : ((kimlikKapsama && sim >= 0.6) || sim >= 0.85);
       if (!gecerli) return null;
     }
   }
+  // YALNIZCA yıl/sürüm eki farkı → aynı ürün (deterministik, YZ'ye sorulmaz).
+  // griAlan:false ⇒ pipeline semantik LLM çağırmaz (hız + yanlış ret önlenir).
+  if (yilEdisyonAyniMi(src.title, cand.title)) {
+    return { eslesme: 'benzerlik', skor: Math.max(sim, 0.9), yilEdisyon: true };
+  }
+
   // Başlık benzerliği (son çare): renk kelimeleri ayıklanır.
   if (brandsOk && sim >= 0.35) return { eslesme: 'benzerlik', skor: sim, griAlan: sim < 0.85 };
   if (!brandsOk) {
     if (brandBilinmiyor && ((kimlikKapsama && sim >= 0.5) || sim >= 0.8)) return { eslesme: 'benzerlik', skor: sim, griAlan: sim < 0.85 };
-    if (!brandBilinmiyor && ((kimlikKapsama && sim >= 0.6) || sim >= 0.85)) return { eslesme: 'benzerlik', skor: sim, griAlan: sim < 0.85 };
+    const markaBaslikta2 = (() => {
+      const a = brandWords(sMarka), b = brandWords(cMarka);
+      // Uyumluluk listeleri marka kanıtı sayılmaz (2026-11-04).
+      const basC = markaKanitMetni(cand.title), basS = markaKanitMetni(src.title);
+      return a.some(w => basC.includes(w)) || b.some(w => basS.includes(w));
+    })();
+    if (!brandBilinmiyor && markaBaslikta2 && ((kimlikKapsama && sim >= 0.6) || sim >= 0.85)) {
+      return { eslesme: 'benzerlik', skor: sim, griAlan: sim < 0.85 };
+    }
+    // Kısa ama AYIRT EDİCİ başlıklar (2026-11-03): "marka" alanı satıcı (ör.
+    // FilamentMarketim) ve aday başlığı kaynak MARKAYI + ürün çizgisinin TÜM ayırt
+    // edici kelimelerini içeriyorsa ("Porima PLA Filament - 1Kg"), düşük Jaccard
+    // (0.40) kanıt eksikliği değil BAŞLIK KISALIĞIdır. Farklı markalarda bu dal
+    // çalışmaz (FilenTa vakası korunur).
+    if (!brandBilinmiyor && markaBaslikta2 && kimlikKapsama && sim >= 0.35) {
+      return { eslesme: 'benzerlik', skor: sim, griAlan: true };
+    }
+    // Farklı marka + başlıkta marka kanıtı yok → yalnızca neredeyse birebir başlık.
+    // HAM benzerlik kullanılır (marka kelimeleri dahil), aksi hâlde sim yapay 1.0 olur.
+    if (!brandBilinmiyor && !markaBaslikta2 && simHam >= 0.9) {
+      return { eslesme: 'benzerlik', skor: sim, griAlan: false };
+    }
   }
   // Marka tutuyor ve kaynak kimliğinin tamamı adayda geçiyorsa kabul
   // (özlü başlıklar için; alakasız ürünler ~0.15 altında kalır)

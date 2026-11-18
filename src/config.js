@@ -46,6 +46,9 @@ const config = {
   // Yayında erişim kısıtı: .env'de ERISIM_ANAHTARI tanımlanırsa yalnızca anahtarı bilen
   // istekler kabul edilir (giriş sistemi değil, tek paylaşımlı anahtar; boşsa kısıt yok).
   erisimAnahtari: process.env.ERISIM_ANAHTARI || '',
+  // Yönetici paneli (/admin.html) ve yönetici API uçları için şifre.
+  // Boşsa ERISIM_ANAHTARI devralınır; ikisi de boşsa yalnızca localhost izinli olur.
+  adminAnahtari: process.env.ADMIN_ANAHTARI || process.env.ERISIM_ANAHTARI || '',
   // ScraperAPI anahtarı yalnızca buradan okunur; koda, ön yüze ve loglara asla yazılmaz.
   scraperApiKey: process.env.SCRAPERAPI_KEY || '',
   // Yedek kazıma sağlayıcıları (ScraperAPI kredisi tükenince otomatik devreye girer)
@@ -75,6 +78,14 @@ const config = {
     return Number.isFinite(n) && n >= 0 ? n * 60 * 1000 : 5 * 60 * 60 * 1000;
   })(),
   maxCandidatesPerSite: parseInt(process.env.MAX_CANDIDATES || '3', 10),
+  // Site başına zaman aşımı (2026-11-03). Önceki sabit değer 10 sn idi ve 61 site
+  // taramasında istekler 8'li genel kuyrukta beklediği için çoğu site hiç
+  // çalışmadan "timeout" sayılıyordu (ölçüm: 38/61). Artık zaman aşımı
+  // "ilerleme yok" temellidir (pipeline), kuyrukta bekleme sayılmaz.
+  siteTimeoutMs: (() => {
+    const n = parseInt(process.env.SITE_TIMEOUT_MS || '', 10);
+    return Number.isFinite(n) && n >= 5000 ? n : 30000;
+  })(),
   alarmCheckMinutes: parseInt(process.env.ALARM_CHECK_MINUTES || '360', 10),
   // 🧹 Önbellek bakımı (2026-11-01): data/cache/ altındaki JSON dosyaları.
   //  - cacheSaklamaGun: bu günden eski dosyalar silinir (varsayılan 30).
