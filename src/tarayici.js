@@ -429,12 +429,12 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     });
 
     const sayfa = await ctx.newPage();
-    const response = await sayfa.goto(url, {
+    let response = await sayfa.goto(url, {
       waitUntil: 'domcontentloaded',
       timeout: Math.min(timeoutMs, ZAMAN_ASIMI_MS),
     });
 
-    const status = response?.status() ?? 200;
+    let status = response?.status() ?? 200;
 
     // CF / Bot koruması kontrolü: gerekirse aşması için birkaç tur bekle
     let challenge = await isBotChallenge(sayfa);
@@ -444,6 +444,29 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
         challenge = await isBotChallenge(sayfa);
         if (!challenge) break;
       }
+    }
+
+    // Doğrudan alt sayfa/arama URL'sine gidildiğinde 403 veren WAF/oturum duvarlarında
+    // (Ticimax, IdeaSoft, Cloudflare) önce ana sayfayı ziyaret edip oturum çerezi al.
+    if ((challenge || status === 403) && (() => { try { return new URL(url).pathname.length > 1; } catch { return false; } })()) {
+      try {
+        const anaSayfa = new URL(url).origin + '/';
+        await sayfa.goto(anaSayfa, { waitUntil: 'domcontentloaded', timeout: 8000 });
+        await sayfa.waitForTimeout(1200);
+        response = await sayfa.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: Math.min(timeoutMs, ZAMAN_ASIMI_MS),
+        });
+        status = response?.status() ?? 200;
+        challenge = await isBotChallenge(sayfa);
+        if (challenge) {
+          for (let i = 0; i < 3; i++) {
+            await sayfa.waitForTimeout(1500);
+            challenge = await isBotChallenge(sayfa);
+            if (!challenge) break;
+          }
+        }
+      } catch { /* ana sayfa ısıtması başarısızsa mevcut durumla devam */ }
     }
 
     if (challenge || status === 403 || status === 429) {
@@ -467,9 +490,18 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     // (2026-11-09: Shopify .js uçları bu yüzden "JSON değil" hatası veriyordu.)
     const govde = jsonSarmalamasiCoz(html);
 
+    // Çözülen WAF/oturum çerezlerini sonraki HTTP istekleriyle paylaşmak için topla.
+    let cerezler = [];
+    try {
+      const hamCerezler = await ctx.cookies(url);
+      cerezler = (hamCerezler || [])
+        .filter(c => c?.name && c.value != null)
+        .map(c => `${c.name}=${c.value}`);
+    } catch { /* çerez okunamazsa boş kalır */ }
+
     // Başarılı istek devreyi sıfırlar
     circuitBreaker.recordSuccess(domain);
-    return { status: 200, body: govde, cookies: [], saglayici: 'tarayici', jsonSarmalamaCozuldu: govde !== html };
+    return { status: 200, body: govde, cookies: cerezler, userAgent: ua, saglayici: 'tarayici', jsonSarmalamaCozuldu: govde !== html };
   } catch (e) {
     circuitBreaker.recordFailure(domain);
     return { networkError: 'tarayıcı: ' + String(e.message || e).slice(0, 120), saglayici: 'tarayici' };

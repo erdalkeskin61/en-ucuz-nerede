@@ -131,13 +131,21 @@ export async function impitDene(url, init = {}, opts = {}) {
 /**
  * `fetch` uyumlu tek giriş noktası: önce impit, olmazsa yerleşik `fetch`.
  *
+ * ÖNEMLİ: `impit` her tarayıcı profili için uyumlu User-Agent, Sec-Ch-Ua,
+ * Sec-Fetch-* ve Accept-Encoding (zstd dahil) başlıklarını kendisi üretir.
+ * Yerleşik `fetch` yedeğinde ise `opts.fallbackHeaders` devreye girer; böylece
+ * `impit`'in kendi tutarlı Chrome/Firefox başlıkları bozulmaz.
+ *
  * @returns {Promise<{response:any, katman:'impit'|'fetch', ms:number}>}
  */
 export async function httpIste(url, init = {}, opts = {}) {
   const t0 = Date.now();
   const deneme = await impitDene(url, init, opts);
   if (deneme) return deneme;
-  const response = await fetch(url, init);
+  const fallbackHeaders = opts.fallbackHeaders && typeof opts.fallbackHeaders === 'object'
+    ? { ...opts.fallbackHeaders, ...(init.headers || {}) }
+    : init.headers;
+  const response = await fetch(url, { ...init, headers: fallbackHeaders });
   DURUM.sayac.fetch++;
   return { response, katman: 'fetch', ms: Date.now() - t0 };
 }

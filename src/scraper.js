@@ -430,7 +430,7 @@ async function rawFetchZenRows(targetUrl, { render, premium, timeoutMs, method =
  *  IP'sinden tarayıcı benzeri başlıklarla. Kişisel kullanım hacmi düşük olduğundan
  *  uygundur; kredi harcamaz. POST + özel başlıklar destekler (IdeaSoft token akışı).
  *  Yönlendirmeler takip edilir; yanıt kodlaması sayfanın bildirdiği şekilde çözülür. */
-const DOGRUDAN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win61; x61) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const DOGRUDAN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 // Bazı siteler çerez onayı verilmeden arama sonuçlarını sunmuyor (Vatan: onaysız
 // istek boş kabuk döner — "0 ürün" sayfası bile gelmez). Kişisel kullanım için
@@ -438,6 +438,32 @@ const DOGRUDAN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win61; x61) AppleWebKit/537.3
 const DOGRUDAN_CEREZLER = {
   vatan: 'cookie_consent_user_accepted=true; checkCookie=true; cookie_consent_level=%7B%22strictly-necessary%22%3Atrue%2C%22functionality%22%3Atrue%2C%22tracking%22%3Atrue%2C%22targeting%22%3Atrue%7D',
 };
+
+// Tarayıcının çözdüğü WAF/oturum çerezleri (ör. cf_clearance): sonraki düz HTTP /
+// impit isteklerinde tekrar Chromium açmadan doğrudan geçmek için 20 dk saklanır.
+const WAF_CEREZ_ONBELLEK = new Map(); // domain -> { cookieHeader, ua, bitis }
+const WAF_CEREZ_TTL_MS = 20 * 60 * 1000;
+
+function wafCerezKaydet(domain, sonuc) {
+  if (!domain || !sonuc || sonuc.status !== 200 || !Array.isArray(sonuc.cookies) || !sonuc.cookies.length) return;
+  const cookieHeader = sonuc.cookies.filter(Boolean).join('; ');
+  if (!cookieHeader) return;
+  WAF_CEREZ_ONBELLEK.set(domain, {
+    cookieHeader,
+    ua: sonuc.userAgent || null,
+    bitis: Date.now() + WAF_CEREZ_TTL_MS,
+  });
+}
+
+function wafCerezOku(domain) {
+  const k = WAF_CEREZ_ONBELLEK.get(domain);
+  if (!k) return null;
+  if (Date.now() > k.bitis) {
+    WAF_CEREZ_ONBELLEK.delete(domain);
+    return null;
+  }
+  return k;
+}
 
 /**
  * 🛡️ Katlamalı bekleme + jitter (2026-11-13).
@@ -522,7 +548,7 @@ async function impitHafifDene(targetUrl, opts = {}) {
   }
 }
 
-async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null }) {
+async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null, profil = null }) {
   let domain = 'default';
   try { domain = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch {}
   if (circuitBreaker.isOpen(domain)) {
@@ -540,28 +566,41 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
     if (method === 'POST' && !(headers && Object.keys(headers).some(k => k.toLowerCase() === 'origin'))) {
       try { ekOrigin = { Origin: new URL(targetUrl).origin }; } catch { /* hatalı URL ise başlıksız devam */ }
     }
-    // Siteye özel onay çerezi (çağıran Cookie göndermiyorsa).
+    // Siteye özel onay çerezi veya tarayıcının önceden çözdüğü WAF çerezi (çağıran Cookie göndermiyorsa).
+    const cagiriciCerezVar = headers && Object.keys(headers).some(k => k.toLowerCase() === 'cookie');
+    const cagiriciUaVar = headers && Object.keys(headers).some(k => k.toLowerCase() === 'user-agent');
+    const waf = (!cagiriciCerezVar && !(site && DOGRUDAN_CEREZLER[site])) ? wafCerezOku(domain) : null;
     let ekCerez = {};
-    if (site && DOGRUDAN_CEREZLER[site] && !(headers && Object.keys(headers).some(k => k.toLowerCase() === 'cookie'))) {
-      ekCerez = { Cookie: DOGRUDAN_CEREZLER[site] };
+    if (!cagiriciCerezVar) {
+      if (site && DOGRUDAN_CEREZLER[site]) ekCerez = { Cookie: DOGRUDAN_CEREZLER[site] };
+      else if (waf?.cookieHeader) ekCerez = { Cookie: waf.cookieHeader };
     }
-    // 🧬 2026-11-17: Node fetch yerine Chrome TLS parmak izli impit katmanı.
-    // `impit` yüklenemezse `httpIste` otomatik olarak yerleşik fetch'e düşer;
-    // böylece davranış impit yokken de aynıdır (yalnızca JA3 farkı kalmaz).
+    const ekUa = (!cagiriciUaVar && waf?.ua && /cf_clearance=/i.test(waf.cookieHeader || ''))
+      ? { 'User-Agent': waf.ua }
+      : {};
+    // 🧬 2026-11-17: Node fetch yerine Chrome/Firefox TLS parmak izli impit katmanı.
+    // impit kendi profiliyle tutarlı User-Agent, Sec-Ch-Ua* ve Accept-Encoding (zstd)
+    // başlıklarını kendisi gönderir; üzerine eski UA basmak WAF'ı 403'e düşürüyordu.
+    // Yerleşik fetch'e düşülürse fallbackHeaders devreye girer.
     const { response: res, katman } = await httpIste(targetUrl, {
       method,
       redirect: 'follow',
       headers: {
-        'User-Agent': DOGRUDAN_UA,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'tr-TR,tr;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
         ...ekOrigin,
         ...ekCerez,
+        ...ekUa,
         ...(headers || {}),
       },
       body: method === 'POST' ? body : undefined,
       signal: controller.signal,
+    }, {
+      profil: profil || undefined,
+      fallbackHeaders: {
+        'User-Agent': DOGRUDAN_UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+      },
     });
     const buf = await res.arrayBuffer();
     // Oturum çerezi gerektiren çok adımlı akışlar (ör. urhanshop postback) doğrudan
@@ -571,6 +610,7 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
     const saglayici = katman === 'impit' ? 'dogrudan+impit' : 'dogrudan';
     const textBody = kodlamaCoz(buf);
     if (res.status === 403 || res.status === 429 || BOT_CHALLENGE_RE.test(textBody.slice(0, 2000))) {
+      if (waf) WAF_CEREZ_ONBELLEK.delete(domain);
       circuitBreaker.recordFailure(domain);
     } else if (res.status === 200 && !isEmptyBody(textBody)) {
       circuitBreaker.recordSuccess(domain);
@@ -663,10 +703,10 @@ async function rawFetch(targetUrl, opts = {}) {
 
       // 🛡️ 2026-11-13 GEÇİCİ ENGEL KURTARMASI:
       // 403/429/bot challenge → hemen pes etme. Kademeli bekleme (jitter) sonrası
-      // aynı isteği BİR kez daha dene. Hâlâ engelliyse sağlayıcı eskalasyonuna düş.
+      // farklı TLS profiliyle (firefox) BİR kez daha dene. Hâlâ engelliyse eskalasyon.
       if (geciciEngelMi(directResult)) {
         await sleepWithJitter(1);
-        const tekrar = await rawFetchDirect(targetUrl, opts);
+        const tekrar = await rawFetchDirect(targetUrl, { ...opts, profil: opts.profil || 'firefox' });
         if (tekrar.status === 200 && !isEmptyBody(tekrar.body)) return tekrar;
         directResult = tekrar;
       }
@@ -694,7 +734,10 @@ async function rawFetch(targetUrl, opts = {}) {
       }
       const r = await tarayiciIleCek(targetUrl, { timeoutMs: opts.timeoutMs });
       tarayiciResult = r;
-      if (r.status === 200 && !isEmptyBody(r.body) && !hataSayfasiMi(r.body, r.status)) return r;
+      if (r.status === 200 && !isEmptyBody(r.body) && !hataSayfasiMi(r.body, r.status)) {
+        wafCerezKaydet(domain, r);
+        return r;
+      }
     }
   } else {
     console.warn('[scraper] ' + domain + ' cooldown durumunda — doğrudan proxy sağlayıcısına yönlendiriliyor.');
@@ -729,6 +772,7 @@ async function rawFetch(targetUrl, opts = {}) {
       tarayiciResult = browserFallback;
       if (browserFallback.status === 200 && !isEmptyBody(browserFallback.body)
           && !hataSayfasiMi(browserFallback.body, browserFallback.status)) {
+        wafCerezKaydet(domain, browserFallback);
         return browserFallback;
       }
       // Tarayıcı da hata sayfası döndürdüyse (SPA'lar bunu 200 ile veriyor) bu hostu
