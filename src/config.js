@@ -105,10 +105,11 @@ const config = {
   })(),
 };
 
-/** Eksik gizli anahtarları kontrol eder; sorun listesini döndürür. */
+/** Eksik zorunlu gizli anahtarları kontrol eder; sorun listesini döndürür.
+ *  Kazıma API anahtarları (ScraperAPI/Crawlbase/ZenRows/ScrapingBee) isteğe
+ *  bağlıdır; sistem kotasız impit + tarayıcı katmanlarıyla tek başına çalışır. */
 export function secretProblems() {
   const problems = [];
-  if (!config.scraperApiKey) problems.push('SCRAPERAPI_KEY .env dosyasında tanımlı değil.');
   if (!config.ai.apiKey) problems.push('EVREN_LLM_API_KEY .env dosyasında tanımlı değil.');
   return problems;
 }

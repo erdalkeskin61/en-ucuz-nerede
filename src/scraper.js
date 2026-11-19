@@ -595,40 +595,46 @@ function yedekTuru(opts) {
   return 'crawlbase';
 }
 
-/** Yedek sağlayıcıyla çeker; uygun sağlayıcı yoksa dürüst hata döndürür. */
+/** Yedek sağlayıcıyla çeker; anahtarı tanımlı olmayan isteğe bağlı sağlayıcıları atlar. */
 async function yedekFetch(targetUrl, opts) {
   const tur = yedekTuru(opts);
   if (tur === null) {
     return { networkError: 'Doğrudan çekim de başarısız oldu; bu site IP\'ye bağlı oturum gerektirdiği için başka sağlayıcıyla taranamaz' };
   }
   if (tur === 'crawlbase') {
-    // Düz GET'ler: önce Crawlbase (1 istek); site Crawlbase'i engelliyse ZenRows
-    // düz isteği (1 kredi) denenir. İkisi de başarısızsa yerel IP'den doğrudan
-    // deneme yapılır (kişisel kullanımda genellikle yeterlidir).
-    const r = await rawFetchCrawlbase(targetUrl, opts);
-    const basarisiz = !r.status || r.status >= 100 || r.timedOut || r.networkError;
-    if (!basarisiz) return r;
-    const z = await rawFetchZenRows(targetUrl, opts);
-    const zBasarisiz = !z.status || z.status >= 100 || z.timedOut || z.networkError;
-    if (!zBasarisiz) return z;
+    // Düz GET'ler: tanımlıysa önce Crawlbase (1 istek), yoksa/engellenirse ZenRows düz istek.
+    let sonHata = null;
+    if (config.crawlbaseToken) {
+      const r = await rawFetchCrawlbase(targetUrl, opts);
+      const basarisiz = !r.status || r.status >= 100 || r.timedOut || r.networkError;
+      if (!basarisiz) return r;
+      sonHata = r;
+    }
+    if (config.zenrowsApiKey) {
+      const z = await rawFetchZenRows(targetUrl, opts);
+      const zBasarisiz = !z.status || z.status >= 100 || z.timedOut || z.networkError;
+      if (!zBasarisiz) return z;
+      sonHata = sonHata || z;
+    }
     if ((opts.method || 'GET') === 'GET') {
       const d = await rawFetchDirect(targetUrl, opts);
       const dBasarisiz = !d.status || d.status >= 100 || d.timedOut || d.networkError || isEmptyBody(d.body);
       if (!dBasarisiz) return d;
     }
-    return r;
+    return sonHata;
   }
   if (tur === 'crawlbase-js') {
-    // Render siteleri: Crawlbase JS (1 kredi). ZenRows premium yedek KALDIRILDI
-    // (2026-10-21): premium istek 25 kredi tutuyor ve HB/Çiçeksepeti duvarına karşı
-    // çoğu kez o da başarısız oluyordu — bir test koşusunda ~1.700 kredi yakmıştı.
-    // Yerel tarayıcı (TARAYICI_SITELER) + Crawlbase JS yeterli; ikisi de geçemezse
-    // dürüst hata verilir (kullanıcı kuralı: gereksiz API harcaması yok).
-    const r = await rawFetchCrawlbase(targetUrl, { ...opts, render: true });
-    return r;
+    if (!config.crawlbaseToken) return null;
+    return await rawFetchCrawlbase(targetUrl, { ...opts, render: true });
   }
-  if (tur === 'zenrows-premium') return rawFetchZenRows(targetUrl, { ...opts, render: true, premium: true });
-  if (tur === 'zenrows') return rawFetchZenRows(targetUrl, opts);
+  if (tur === 'zenrows-premium') {
+    if (!config.zenrowsApiKey) return null;
+    return rawFetchZenRows(targetUrl, { ...opts, render: true, premium: true });
+  }
+  if (tur === 'zenrows') {
+    if (!config.zenrowsApiKey) return null;
+    return rawFetchZenRows(targetUrl, opts);
+  }
   return { networkError: 'Bilinmeyen yedek sağlayıcı: ' + tur };
 }
 
@@ -648,6 +654,8 @@ async function rawFetch(targetUrl, opts = {}) {
   const isCooldown = circuitBreaker.isOpen(domain);
 
   let directResult = null;
+  let tarayiciResult = null;
+  let scraperApiResult = null;
   if (!isCooldown) {
     if (!DOGRUDAN_HARIC.has(opts.site) && !opts.render) {
       directResult = await rawFetchDirect(targetUrl, opts);
@@ -685,6 +693,7 @@ async function rawFetch(targetUrl, opts = {}) {
         if (hafif) return hafif;
       }
       const r = await tarayiciIleCek(targetUrl, { timeoutMs: opts.timeoutMs });
+      tarayiciResult = r;
       if (r.status === 200 && !isEmptyBody(r.body) && !hataSayfasiMi(r.body, r.status)) return r;
     }
   } else {
@@ -694,6 +703,7 @@ async function rawFetch(targetUrl, opts = {}) {
   // ScraperAPI birincil sağlayıcı (başarılı 200 ise dön)
   if (config.scraperApiKey && !scraperApiTukendi.bitti) {
     const r = await rawFetchScraperApi(targetUrl, opts);
+    scraperApiResult = r;
     if (r.status === 200 && !isEmptyBody(r.body)) return r;
     if (krediBittiMi(r)) {
       scraperApiTukendi = { bitti: true, ts: Date.now() };
@@ -716,6 +726,7 @@ async function rawFetch(targetUrl, opts = {}) {
         return hafif;
       }
       const browserFallback = await tarayiciIleCek(targetUrl, { timeoutMs: 15000 });
+      tarayiciResult = browserFallback;
       if (browserFallback.status === 200 && !isEmptyBody(browserFallback.body)
           && !hataSayfasiMi(browserFallback.body, browserFallback.status)) {
         return browserFallback;
@@ -728,10 +739,15 @@ async function rawFetch(targetUrl, opts = {}) {
     } catch {}
   }
 
-  // Yedek sağlayıcı (Crawlbase / ZenRows)
+  // Yedek sağlayıcı (Crawlbase / ZenRows — yalnızca anahtarları tanımlıysa denenir)
   const y = await yedekFetch(targetUrl, opts);
   if (y && y.status === 200) return y;
-  return directResult || y;
+  return directResult || tarayiciResult || scraperApiResult || y || {
+    networkError: isCooldown
+      ? `${domain} geçici beklemede (bot koruması cooldown)`
+      : `${domain} erişilemedi (doğrudan ve tarayıcı katmanları engellendi)`,
+    saglayici: 'dogrudan',
+  };
 }
 
 /** Sağlayıcı durumunu dışarıya (ör. /api/durum) bildirir; anahtarlar asla yazılmaz. */
