@@ -158,7 +158,7 @@ kontrol('başlık satırı', tel.startsWith('🖨️ 3D BASKI FİYAT TEKLİFİ')
 kontrol('gramaj satırı', /Model Ağırlığı: 160 gram/.test(tel));
 kontrol('süre satırı', /Baskı Süresi: ~4 saat/.test(tel));
 kontrol('birim fiyat KDV hariç', /Birim Fiyat: 247,23 TL \(KDV Hariç\)/.test(tel), tel);
-kontrol('hazırlayan satırı', /Hazırlayan: En Ucuz Nerede\? Baskı Asistanı/.test(tel));
+kontrol('hazırlayan satırı', /Hazırlayan: Baskı Hesap Baskı Asistanı/.test(tel));
 kontrol('malzeme satırı var', /Malzeme: /.test(tel));
 
 /* ------------------------------------------------------------------ */

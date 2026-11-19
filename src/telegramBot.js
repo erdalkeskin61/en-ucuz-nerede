@@ -1,5 +1,5 @@
 /**
- * 🤖 En Ucuz Nerede — Telegram Akıllı Fiyat Asistanı — 2026-11-02
+ * 🤖 Baskı Hesap — Telegram Akıllı Fiyat Asistanı — 2026-11-02
  *
  * Bot artık yalnızca URL ile çalışmıyor; iki yönlü bir asistana dönüştürüldü:
  *
@@ -344,7 +344,7 @@ function botLinki(yuk = '') {
 
 /** Sorgu boşken / sonuç yokken gösterilen yönlendirme kartı. */
 function inlineIpucu() {
-  const metin = '🔎 <b>En Ucuz Nerede?</b> — 61 mağazada canlı fiyat karşılaştırması.\n\n'
+  const metin = '🔎 <b>Baskı Hesap</b> — 61 mağazada canlı fiyat karşılaştırması.\n\n'
     + 'Ürün adını yazın: <i>Creality Ender PLA</i>, <i>Bambu Lab P1S</i>, <i>eSun PLA+</i>…\n\n'
     + `👉 ${botLinki()}`;
   return {
@@ -428,7 +428,7 @@ function inlineSonucPaketi({
   satirlar.push('');
   satirlar.push(`🔗 <a href="${esc(enIyi.url)}">${esc(enIyi.site || 'En ucuz mağaza')} — satın al</a>`);
   if (yas) satirlar.push(`🕒 Son tarama: ${esc(yas)}`);
-  satirlar.push('📊 @EnUcuzNerede · 61 mağaza');
+  satirlar.push('📊 @BaskiHesap · 61 mağaza');
 
   const butonlar = temiz.map(t => ([{
     text: `🛒 ${String(t.site || 'Mağaza').slice(0, 18)} — ${botPara(t.fiyat)}`,
@@ -1209,7 +1209,7 @@ async function sonucGonderVeBitir(token, chatId, msgId, url, opts = {}) {
 /* Komutlar                                                            */
 /* ------------------------------------------------------------------ */
 
-const YARDIM_METNI = `🏷️ <b>En Ucuz Nerede? — Fiyat Asistanı</b>
+const YARDIM_METNI = `⚡ <b>Baskı Hesap — Fiyat Asistanı</b>
 
 <b>İki şekilde arama yapabilirsiniz:</b>
 1) 🔗 <b>Ürün linki</b> gönderin — 61 mağazada aynı ürünü arar.

@@ -1,4 +1,4 @@
-/* En Ucuz Nerede — modern SaaS / FinTech arayüzü (2026-10-30) */
+/* Baskı Hesap — modern SaaS / FinTech arayüzü (2026-10-30) */
 /* Tasarım dili: Apple'ın ferahlığı, Linear'ın netliği, Stripe'ın gradyanları. */
 
 :root {
@@ -128,11 +128,28 @@ code {
 }
 .ustbar .kap { display: flex; align-items: center; justify-content: space-between; height: 62px; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #1c2333; font-size: 19px; }
+/* 🎨 2026-11-19: "Baskı Hesap" logosu — üst barda YALNIZCA logo görünür
+   (marka yazısı kaldırıldı). Logonun kendisinde "BASKI HESAP" yazdığı için
+   yanına metin eklemek tekrar olurdu. Logo koyu "HESAP" harfleri içerdiğinden
+   her iki temada da beyaz çip üzerinde gösterilir; aksi hâlde karanlık modda
+   yazı kaybolur. `object-fit: contain` oranı bozmadan kutuya sığdırır. */
+.logo-gorsel {
+  width: 62px; height: 51px; flex: none; display: block;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 11px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .14), 0 0 0 1px rgba(15, 23, 42, .06);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.logo:hover .logo-gorsel { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, .18), 0 0 0 1px rgba(15, 23, 42, .08); }
+html[data-theme="dark"] .logo-gorsel {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5), 0 0 0 1px rgba(148, 163, 184, .22);
+}
 .logo-isaret {
   font-size: 22px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
   background: var(--ana-gradyan); border-radius: 12px; box-shadow: 0 4px 12px rgba(52, 80, 209, 0.3);
 }
-.logo-yazi b { color: var(--ana); }
 .menu a {
   color: var(--gri-metin); text-decoration: none; font-weight: 600; font-size: 15px;
   padding: 9px 16px; border-radius: 11px; margin-left: 4px; transition: background .15s, color .15s;
@@ -676,6 +693,33 @@ td.fiyat-hucre { font-weight: 800; white-space: nowrap; }
 /* ============ Alt bar ============ */
 .altbar { margin-top: 52px; padding: 26px 0 34px; color: #9aa1ad; font-size: 13px; border-top: 1px solid var(--cizgi); background: #fff; }
 .altbar p { margin: 0 0 10px; line-height: 1.6; }
+/* 🎨 2026-11-19: Alt bilgi marka satırı (logo + ad + alan adı) */
+.footer-marka {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--cizgi);
+}
+.footer-marka-logo {
+  width: 34px; height: 29px; flex: none; display: block;
+  object-fit: contain;
+  background: #fff; border-radius: 8px; padding: 2px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .08);
+}
+.footer-marka-ad { font-size: 14px; font-weight: 800; color: var(--metin); letter-spacing: -.01em; }
+.footer-marka-ad b { color: var(--ana); }
+.footer-marka-alan {
+  margin-left: auto; font-size: 12.5px; font-weight: 600;
+  color: var(--gri-metin); text-decoration: none;
+  padding: 4px 10px; border-radius: 999px; background: var(--zemin-2);
+  border: 1px solid var(--cizgi);
+  transition: color .15s, background .15s, border-color .15s;
+}
+.footer-marka-alan:hover { color: var(--ana); border-color: var(--ana); background: var(--ana-acik); }
+html[data-theme="dark"] .footer-marka-logo { box-shadow: 0 0 0 1px rgba(148, 163, 184, .22); }
+@media (max-width: 480px) {
+  .footer-marka-alan { margin-left: 0; }
+  .footer-marka { flex-wrap: wrap; }
+}
 /* Satış ortaklığı şeffaflık notu (2026-10-28) */
 .afiliye-bildirim { max-width: 780px; padding: 10px 12px; border-left: 3px solid var(--mavi, #3450D1); background: #f5f7ff; border-radius: 6px; color: #5b6472; font-size: 12.5px; }
 .afiliye-bildirim b { color: #3b4453; }
@@ -1826,7 +1870,6 @@ main.kap { padding-top: 8px; }
   display: grid; place-items: center;
   box-shadow: 0 6px 16px -4px rgba(67, 56, 202, 0.5);
 }
-.logo-yazi b { color: var(--ana); }
 .menu { margin-left: auto; display: flex; gap: 4px; }
 .menu a {
   font-size: 13.5px; font-weight: 600; color: var(--gri-metin);
@@ -2860,6 +2903,7 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
   .kap { padding: 0 16px; }
   .ustbar .kap { height: 60px; gap: 10px; }
   .logo { font-size: 16px; }
+  .logo-gorsel { width: 50px; height: 41px; border-radius: 9px; padding: 3px; }
   .logo-isaret { width: 34px; height: 34px; border-radius: 10px; font-size: 17px; }
   .menu a { padding: 7px 10px; font-size: 12.5px; }
   .hero { border-radius: 22px; margin-top: 18px; }
@@ -5882,6 +5926,36 @@ html[data-theme="dark"] .fis-rozet {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 10px;
+}
+/* 🎨 2026-11-19: Teklif fişi marka başlığı (yazdırmada da görünür) */
+.fis-marka {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 9px;
+  margin-bottom: 9px;
+  border-bottom: 1px dashed var(--cizgi);
+}
+.fis-marka-logo {
+  width: 40px; height: 34px; flex: none; display: block;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  padding: 2px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .08);
+}
+.fis-marka-ad {
+  font-size: 13.5px; font-weight: 800; color: var(--metin); letter-spacing: -.01em;
+}
+.fis-marka-ad b { color: var(--ana); }
+.fis-marka-alan {
+  margin-left: auto;
+  font-size: 10.5px; font-weight: 600; color: var(--gri-metin-hafif);
+  font-variant-numeric: tabular-nums;
+}
+@media print {
+  /* Yazdırmada arka plan/gölge harcanmasın; logo yine görünür. */
+  .fis-marka-logo { box-shadow: none; border: 1px solid #ddd; }
 }
 .fis-baslik {
   font-size: 14px;

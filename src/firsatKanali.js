@@ -269,7 +269,7 @@ export function firsatMesajiOlustur(f) {
     `🏷️ Durum: ${esc(f.durum)}`,
     '👉 Fırsatı İncele ve Satın Al:',
     esc(f.url),
-    '🏷️ @EnUcuzNerede | Gerçek Fiyat Takipçisi',
+    '⚡ @BaskiHesap | Gerçek Fiyat Takipçisi',
   ];
   return satirlar.join('\n');
 }
@@ -626,7 +626,7 @@ export function firsatIstatistik() {
 export async function firsatTestGonder(opts = {}) {
   const ayar = firsatAyar();
   const kanal = opts.kanal || ayar.kanal;
-  if (!kanal) throw new Error('Önce kanal kimliğini kaydedin (ör. @enucuzneredefirsatlari veya -100...).');
+  if (!kanal) throw new Error('Önce kanal kimliğini kaydedin (ör. @baskihesapfirsatlari veya -100...).');
   const s = getSettings();
   const token = opts.botToken || s.telegram?.botToken;
   if (!token) throw new Error('Telegram Bot Token tanımlı değil.');
@@ -641,7 +641,7 @@ export async function firsatTestGonder(opts = {}) {
     ? '🧪 <b>TEST PAYLAŞIMI</b> — aşağıdaki fırsat gerçek son taramadan alınmıştır.\n\n' + firsatMesajiOlustur(f)
     : '🧪 <b>TEST PAYLAŞIMI</b>\n\nKanala bağlantı başarılı. '
       + 'Şu anda paylaşılabilir gerçek bir fırsat yok; uydurma fiyat gönderilmez.\n\n'
-      + '🏷️ @EnUcuzNerede | Gerçek Fiyat Takipçisi';
+      + '⚡ @BaskiHesap | Gerçek Fiyat Takipçisi';
   const gonderilecek = f
     ? { ...f, image: opts.gorselsiz ? null : f.image }
     : { anahtar: 'test', urun: 'test', site: '', fiyat: 0, referans: 0, indirim: 0,

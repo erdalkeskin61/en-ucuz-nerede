@@ -167,7 +167,9 @@ try {
     kontrol('ID:2 kaynakUrl dolu', typeof v.kaynakUrl === 'string' && v.kaynakUrl.length > 10,
       String(v.kaynakUrl));
     kontrol('ID:2 gerçek ürün başlığı var',
-      typeof v.urun === 'string' && /pla[\s-]*hs/i.test(v.urun), String(v.urun));
+      // 2026-11-19: canlı radar başlığı "eSUN PLA+HS …" olarak yazdı ("PLA HS"
+      // yerine "PLA+HS"). Ürün adı varyantı gerçek; ayırıcıya `+` eklendi.
+      typeof v.urun === 'string' && /pla[\s+_-]*hs/i.test(v.urun), String(v.urun));
     kontrol('ID:2 stok/fiyat kaydı var',
       v.stokta === true && Number(v.fiyat) > 0, `stokta:${v.stokta} fiyat:${v.fiyat}`);
     console.log(`  ℹ️  ID:${satir.id} → ${v.site} ₺${v.fiyat} · ${String(v.urun).slice(0, 46)}`);

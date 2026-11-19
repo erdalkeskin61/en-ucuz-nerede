@@ -1,4 +1,4 @@
-﻿# 📋 En Ucuz Nerede? — Kıdemli Mimari & Ürün Analiz Raporu
+﻿# 📋 Baskı Hesap — Kıdemli Mimari & Ürün Analiz Raporu
 
 > **Hazırlayan:** DeepSeek-V4.1-Flash (Kıdemli Yazılım Mimarı & YZ Uzmanı)
 > **Kapsam:** Mimari olgunluk değerlendirmesi, darboğaz analizi ve 3 aşamalı yol haritası

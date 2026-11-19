@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-En Ucuz Nerede — Evrensel Slicer Post-Processor
+Baskı Hesap — Evrensel Slicer Post-Processor
 ================================================
 
 Bambu Studio, OrcaSlicer ve PrusaSlicer'ın "Post-processing scripts" alanına
@@ -16,7 +16,7 @@ Betik G-Code'un son satırlarındaki meta yorumları okur:
     ; filament_type = PLA
     ; filament_colour = #000000
 
-… ardından En Ucuz Nerede API'sinden en ucuz stoklu makarayı sorar ve
+… ardından Baskı Hesap API'sinden en ucuz stoklu makarayı sorar ve
 Windows / macOS / Linux bildirimi gösterir.
 
 GÜVENLİK KURALLARI
@@ -59,7 +59,7 @@ def _cikti_utf8():
 # ----------------------------------------------------------------------
 # Ayarlar
 # ----------------------------------------------------------------------
-API_TABAN_DEFAULT = os.environ.get("ENUCUZ_API", "https://enucuznerede.com").rstrip("/")
+API_TABAN_DEFAULT = os.environ.get("BASKIHESAP_API", "https://baskihesap.tech").rstrip("/")
 API_YOL = "/api/embed/oner"
 ZAMAN_ASIMI = 1.5          # saniye (spec)
 SON_SATIR_SAYISI = 200     # G-Code'un sonu taranır
@@ -196,9 +196,9 @@ def _windows_toast(baslik, govde, link):
             "$Metinler.Item(0).AppendChild($Sablon.CreateTextNode($env:ENU_TITLE)) > $null;"
             "$Metinler.Item(1).AppendChild($Sablon.CreateTextNode($env:ENU_BODY)) > $null;"
             "$toast = [Windows.UI.Notifications.ToastNotification]::new($Sablon);"
-            "$toast.Tag = 'EnUcuzNerede';"
+            "$toast.Tag = 'BaskiHesap';"
             "[Windows.UI.Notifications.ToastNotificationManager]::"
-            "CreateToastNotifier('En Ucuz Nerede').Show($toast);"
+            "CreateToastNotifier('Baskı Hesap').Show($toast);"
         )
         ortam = dict(os.environ, ENU_TITLE=baslik, ENU_BODY=govde)
         try:
@@ -286,7 +286,7 @@ def api_sorgula(malzeme, gramaj, renk=None, kaynak="orca", taban=None):
     try:
         import urllib.request
         istek = urllib.request.Request(
-            url, headers={"User-Agent": "EnUcuzNerede-Slicer/1.0"},
+            url, headers={"User-Agent": "BaskiHesap-Slicer/1.0"},
         )
         with urllib.request.urlopen(istek, timeout=ZAMAN_ASIMI) as yanit:
             return json.loads(yanit.read().decode("utf-8"))
@@ -370,7 +370,7 @@ def ana(argv):
             return 0
         en_ucuz = veri["enUcuz"]
         link = en_ucuz.get("yonlendirmeLinki") or en_ucuz.get("hamLink")
-        baslik = "🏷️ En Ucuz Nerede: Filament Fırsatı"
+        baslik = "⚡ Baskı Hesap: Filament Fırsatı"
         govde = veri.get("bildirimMetni") or (
             "Bu baskı %.0f g %s harcayacak. En ucuz makara ₺%.2f (%s)."
             % (float(gramaj), malzeme, float(en_ucuz.get("fiyat") or 0),
@@ -381,14 +381,14 @@ def ana(argv):
 
     # 2) Kurulum testi
     if len(argv) >= 2 and argv[1] == "--test":
-        print("En Ucuz Nerede — Slicer eklentisi kurulum testi")
+        print("Baskı Hesap — Slicer eklentisi kurulum testi")
         print("API:", API_TABAN_DEFAULT + API_YOL)
         veri = api_sorgula("PLA", 340, None, "test")
         if not veri:
             print("SONUÇ: API'ye ulaşılamadı (internet/bağlantı kontrolü).")
             return 1
         print("SONUÇ:", veri.get("status"), "|", veri.get("bildirimMetni"))
-        ok = bildirim_goster("🏷️ En Ucuz Nerede", "Kurulum testi başarılı!", None)
+        ok = bildirim_goster("⚡ Baskı Hesap", "Kurulum testi başarılı!", None)
         print("Bildirim:", "gösterildi" if ok else "gösterilemedi (sorun değil)")
         return 0
 

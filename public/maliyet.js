@@ -337,7 +337,7 @@
       `• Baskı Süresi: ~${h.sureSaat} saat`,
       `• Birim Fiyat: ₺${tl(h.satis[durum.seciliKar]?.fiyat || h.secilen)} (KDV Hariç)`,
       '',
-      'Hazırlayan: En Ucuz Nerede? Baskı Asistanı',
+      'Hazırlayan: Baskı Hesap Baskı Asistanı',
     ].join('\n');
 
     const durumEl = $('kopyalaDurum');

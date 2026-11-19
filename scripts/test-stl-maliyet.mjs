@@ -839,7 +839,7 @@ kontrol('metin: gramaj + doluluk', /160 g \(PLA · %20 doluluk\)/.test(metin), m
 kontrol('metin: teklif tutarı', /TEKLİF TUTARI:\* ₺/.test(metin));
 kontrol('metin: kalemler (elektrik + amortisman)',
   /Elektrik: ₺/.test(metin) && /amortismanı: ₺/.test(metin));
-kontrol('metin: radar imzası', /EnUcuzNerede/.test(metin));
+kontrol('metin: radar imzası', /Baskı Hesap/.test(metin));
 kontrol('metin: WhatsApp kalın biçimi (*…*)', /\*3D BASKI TEKLİF FİŞİ\*/.test(metin));
 kontrol('metin: 4000 karakter altı', metin.length < 4000, String(metin.length));
 

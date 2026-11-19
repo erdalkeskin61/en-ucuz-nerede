@@ -1,4 +1,4 @@
-/* Yönetici Kontrol Merkezi (/admin.html) — En Ucuz Nerede? */
+/* Yönetici Kontrol Merkezi (/admin.html) — Baskı Hesap */
 
 const $ = (s) => document.querySelector(s);
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-En Ucuz Nerede — Filament Maliyet Radarı (Cura eklentisi)
+Baskı Hesap — Filament Maliyet Radarı (Cura eklentisi)
 
-Dilimleme bittiğinde harcanacak filament gramajını okur, En Ucuz Nerede
+Dilimleme bittiğinde harcanacak filament gramajını okur, Baskı Hesap
 API'sinden (GET /api/embed/oner) en ucuz stoklu makarayı sorar ve Cura
 içinde tek tıkla satın alma bağlantısı olan bir bildirim gösterir.
 
@@ -28,7 +28,7 @@ from UM.Logger import Logger
 from UM.Message import Message
 
 # Test / kendi sunucunuz için ortam değişkeniyle geçersiz kılınabilir.
-API_TABAN = os.environ.get("ENUCUZ_API", "https://enucuznerede.com").rstrip("/")
+API_TABAN = os.environ.get("BASKIHESAP_API", "https://baskihesap.tech").rstrip("/")
 API_YOL = "/api/embed/oner"
 ZAMAN_ASIMI = 1.5  # saniye — dilimlemeyi kilitlememeli
 
@@ -129,7 +129,7 @@ def api_sorgula(malzeme, gramaj, kaynak="cura"):
         })
         url = "%s%s?%s" % (API_TABAN, API_YOL, parametreler)
         istek = urllib.request.Request(
-            url, headers={"User-Agent": "EnUcuzNerede-Cura/1.0"},
+            url, headers={"User-Agent": "BaskiHesap-Cura/1.0"},
         )
         with urllib.request.urlopen(istek, timeout=ZAMAN_ASIMI) as yanit:
             return json.loads(yanit.read().decode("utf-8"))
@@ -249,7 +249,7 @@ class EnUcuzNeredeExtension(Extension):
 
             en_ucuz = veri["enUcuz"]
             link = en_ucuz.get("yonlendirmeLinki") or en_ucuz.get("hamLink")
-            baslik = "🏷️ En Ucuz Nerede: Filament Fırsatı"
+            baslik = "⚡ Baskı Hesap: Filament Fırsatı"
             govde = veri.get("bildirimMetni") or (
                 "Bu baskı %.0f g %s harcayacak. En ucuz makara ₺%.2f (%s)."
                 % (gramaj, malzeme, float(en_ucuz.get("fiyat") or 0),

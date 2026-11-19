@@ -1,4 +1,4 @@
-﻿// En Ucuz Nerede? — Background Service Worker
+﻿// Baskı Hesap — Background Service Worker
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'START_COMPARE') {

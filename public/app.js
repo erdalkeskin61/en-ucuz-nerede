@@ -1,4 +1,4 @@
-/* En Ucuz Nerede — ana sayfa mantığı */
+/* Baskı Hesap — ana sayfa mantığı */
 
 /* ================= 🍞 Mikro Toast + kopyalama geri bildirimi (2026-11-12) =================
  *
@@ -3360,7 +3360,7 @@ function embedKodu(q, tema) {
   const src = taban + '/widget?q=' + encodeURIComponent(q) + '&tema=' + tema;
   return '<iframe src="' + src + '" width="320" height="180" '
     + 'frameborder="0" loading="lazy" '
-    + 'title="Canlı fiyat — En Ucuz Nerede?" '
+    + 'title="Canlı fiyat — Baskı Hesap" '
     + 'style="border:0;border-radius:12px;overflow:hidden"></iframe>';
 }
 
@@ -5122,7 +5122,7 @@ function sepetPaylasOzeti(sonuc) {
 function sepetWhatsappMetni(sonuc, link) {
   const o = sepetPaylasOzeti(sonuc);
   const satirlar = [];
-  satirlar.push('*En Ucuz Nerede? — Sepet Özeti*');
+  satirlar.push('*Baskı Hesap — Sepet Özeti*');
   satirlar.push(`📦 Toplam Tutar: ${tl(o.toplam)}${o.tasarruf > 0 ? ` (${tl(o.tasarruf)} Tasarruf!)` : ''}`);
   satirlar.push('Mağazalar:');
   for (const g of o.gruplar) {

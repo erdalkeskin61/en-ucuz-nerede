@@ -65,7 +65,11 @@ const config = {
     grayZoneMax: 0.85,
     enableSemanticLLM: true,
   },
-  dataDir: path.join(__dirname, '..', 'data'),
+  // Veri dizini: DATA_DIR ile taşınabilir (Docker volume / izole test).
+  // Tanımsızsa proje kökündeki `data/` kullanılır (geriye dönük uyumlu).
+  dataDir: process.env.DATA_DIR
+    ? path.resolve(process.env.DATA_DIR)
+    : path.join(__dirname, '..', 'data'),
   cacheTtlMs: (parseInt(process.env.CACHE_TTL_MINUTES || '360', 10)) * 60 * 1000,
   // Anlık sonuç (stale-while-revalidate) ömrü. Ürün bu süre içinde taranmışsa
   // sonuç ANINDA (≈0,2 sn) gösterilir ve arka planda sessizce tazelenir.

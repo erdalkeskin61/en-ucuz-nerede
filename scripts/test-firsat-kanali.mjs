@@ -151,7 +151,7 @@ kontrol('referanssız ürün paylaşılmaz',
 /* ---------------------------------------------------------------- */
 bolum('2) Mesaj ve Telegram isteği');
 const mesaj = firsatMesajiOlustur(dip);
-for (const metin of ['GÜNÜN FIRSATI', 'Mağaza:', 'İndirim:', 'Kargo:', 'Durum:', '@EnUcuzNerede', 'Tasarruf']) {
+for (const metin of ['GÜNÜN FIRSATI', 'Mağaza:', 'İndirim:', 'Kargo:', 'Durum:', '@BaskiHesap', 'Tasarruf']) {
   kontrol(`mesajda "${metin}" var`, mesaj.includes(metin));
 }
 kontrol('mesajda eski fiyat <s> ile', mesaj.includes('<s>22.000,00 TL</s>'));

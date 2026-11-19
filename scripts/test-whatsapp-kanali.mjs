@@ -88,7 +88,7 @@ const d = {
     { site: 'Hepsiburada', fiyat: 789.99 },
     { site: 'Trendyol', fiyat: 879 },
   ],
-  afiliyeUrl: 'https://enucuznerede.com/yonlendir?site=ventatek&sku=ABC123',
+  afiliyeUrl: 'https://baskihesap.tech/yonlendir?site=ventatek&sku=ABC123',
 };
 
 const kart = whatsappKartOlustur(d);
@@ -109,7 +109,7 @@ kontrol('diğer mağazalar listelenir',
 kontrol('tasarruf satırı', kart.includes('₺120,35'));
 kontrol('afiliye link kartta', kart.includes(d.afiliyeUrl));
 kontrol('satın alma başlığı kalın', kart.includes('*Satın Alma Linki:*'));
-kontrol('alt marka', kart.includes('En Ucuz Nerede?'));
+kontrol('alt marka', kart.includes('Baskı Hesap'));
 kontrol('mesaj sınırı içinde', kart.length <= MESAJ_LIMIT, String(kart.length));
 kontrol('HTML etiketi YOK', !/<\/?[a-z][^>]*>/i.test(kart));
 
@@ -138,7 +138,7 @@ const f = {
   fark: 141.34,
   kargo: 'Ücretsiz Kargo',
   durum: 'Stokta',
-  url: 'https://enucuznerede.com/yonlendir?site=ventatek',
+  url: 'https://baskihesap.tech/yonlendir?site=ventatek',
 };
 const fk = whatsappFirsatKartOlustur(f);
 kontrol('fırsat başlığı', fk.includes('*GÜNÜN FIRSATI:'));

@@ -1,7 +1,7 @@
 {
-  "name": "En Ucuz Nerede? — Fiyat Karşılaştırma",
-  "short_name": "En Ucuz Nerede",
-  "description": "Türkiye'deki 60 alışveriş sitesinde aynı ürünün gerçek en ucuz fiyatını bulur. Barkod okut, fotoğraftan ürün ara, sepetini böl.",
+  "name": "Baskı Hesap — 3D Baskı Maliyet & En Ucuz Fiyat",
+  "short_name": "Baskı Hesap",
+  "description": "3D baskı maliyetini hesapla, 60+ mağazada filamentin gerçek en ucuz fiyatını bul. STL yükle, parça maliyetini gör, fiyat alarmı kur.",
   "lang": "tr",
   "dir": "ltr",
   "start_url": "/?pwa=1",

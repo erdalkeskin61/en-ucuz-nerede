@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-En Ucuz Nerede — Cura eklenti giriş noktası.
+Baskı Hesap — Cura eklenti giriş noktası.
 
 Cura, plugins/<id>/__init__.py içindeki `register(app)` fonksiyonunu çağırır.
 Dönen sözlükteki `extension` nesnesi Cura yaşam döngüsüne bağlanır.
@@ -14,14 +14,14 @@ def getMetaData():
     """Cura'nın eklenti listesinde görünen bilgiler."""
     return {
         "plugin": {
-            "name": "En Ucuz Nerede - Filament Maliyet Radarı",
+            "name": "Baskı Hesap - Filament Maliyet Radarı",
             "description": (
                 "Dilimleme bittiğinde harcanacak filamenti ve en ucuz stoklu "
                 "makarayı gösterir. Tek tıkla satın alma bağlantısı açar."
             ),
             "version": "1.0.0",
-            "author": "En Ucuz Nerede",
-            "website": "https://enucuznerede.com/slicer.html",
+            "author": "Baskı Hesap",
+            "website": "https://baskihesap.tech/slicer.html",
         }
     }
 

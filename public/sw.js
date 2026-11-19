@@ -12,7 +12,7 @@
  *  - Görseller/vendor kütüphanesi: cache-first (nadiren değişir, bant genişliği önemli).
  *  - `/api/*`: hiç önbelleklenmez.
  */
-const SURUM = 'eun-v11';
+const SURUM = 'eun-v12';
 const KABUK_DOSYALARI = [
   '/',
   '/style.css',
@@ -27,6 +27,8 @@ const KABUK_DOSYALARI = [
   '/sepet.js',
   '/sepetHesap.js',
   '/manifest.json',
+  '/logo.png',
+  '/ikon-192.png',
   // Grafik kütüphanesi artık yerel (2026-10-28): CDN yok, çevrimdışı da çalışır.
   '/vendor/chart.umd.min.js',
 ];
@@ -111,10 +113,10 @@ self.addEventListener('push', (event) => {
   try {
     veri = event.data ? event.data.json() : {};
   } catch {
-    veri = { title: 'En Ucuz Nerede?', body: event.data ? event.data.text() : '' };
+    veri = { title: 'Baskı Hesap', body: event.data ? event.data.text() : '' };
   }
 
-  const baslik = String(veri.title || '🏷️ En Ucuz Nerede?').slice(0, 120);
+  const baslik = String(veri.title || 'Baskı Hesap').slice(0, 120);
   const govde = String(veri.body || '').slice(0, 240);
   const url = String(veri.url || '/');
 

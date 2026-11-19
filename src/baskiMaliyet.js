@@ -597,6 +597,6 @@ export function teklifMetni(hesap) {
     `• Baskı Süresi: ~${hesap.sureSaat} saat`,
     `• Birim Fiyat: ${tl(hesap.secilen)} (KDV Hariç)`,
     '',
-    'Hazırlayan: En Ucuz Nerede? Baskı Asistanı',
+    'Hazırlayan: Baskı Hesap Baskı Asistanı',
   ].join('\n');
 }

@@ -1,4 +1,4 @@
-﻿# 🏷️ En Ucuz Nerede? — Chrome & Edge Alışveriş Eklentisi (Extension)
+﻿# 🏷️ Baskı Hesap — Chrome & Edge Alışveriş Eklentisi (Extension)
 
 Bu eklenti, popüler e-ticaret sitelerinde (Trendyol, Hepsiburada, Amazon TR, MediaMarkt, Vatan, N11, İtopya, Pazarama vb.) bir ürünü incelerken **tek tıkla Türkiye'deki diğer 54 sitedeki en ucuz net fiyatı** bulmanızı sağlar.
 
@@ -8,7 +8,7 @@ Bu eklenti, popüler e-ticaret sitelerinde (Trendyol, Hepsiburada, Amazon TR, Me
 
 1. **Akıllı Floating Badge (Yüzen Buton):**
    - Desteklenen herhangi bir sitede ürün sayfasına girdiğinizde sağ altta otomatik, şık ve rahatsız etmeyen bir rozet belirir.
-   - Ürün adını algılar ve *"54 Sitede Tara ➔"* çağrısı sunar.
+   - Ürün adını algılar ve *"68 Sitede Tara ➔"* çağrısı sunar.
    - Tıkladığınızda yeni sekmede karşılaştırma otomatik olarak başlatılır.
    - İstemezseniz tek tıkla (`✕`) o oturum için kapatabilirsiniz.
 
@@ -33,7 +33,7 @@ Bu eklenti, popüler e-ticaret sitelerinde (Trendyol, Hepsiburada, Amazon TR, Me
    ```text
    C:\Users\Erdal Keskin\Documents\Varsayılan Proje\en-ucuz-nerede\extension
    ```
-5. Eklenti yüklendi! Sağ üstteki yapboz simgesine tıklayıp **En Ucuz Nerede?** eklentisini sabitleyin (Pin).
+5. Eklenti yüklendi! Sağ üstteki yapboz simgesine tıklayıp **Baskı Hesap** eklentisini sabitleyin (Pin).
 
 ---
 
@@ -52,6 +52,6 @@ Bu eklenti, popüler e-ticaret sitelerinde (Trendyol, Hepsiburada, Amazon TR, Me
 1. Uygulamanızın arka planda çalıştığından emin olun (`http://localhost:3000`).
 2. Tarayıcınızda herhangi bir ürün sayfasına gidin:
    - Örn: Trendyol veya Hepsiburada'da bir telefon, filament veya kulaklık sayfası.
-3. Sayfanın sağ altında beliren **"🏷️ En Ucuz Nerede? — 54 Sitede Tara ➔"** rozetine tıklayın.
+3. Sayfanın sağ altında beliren **"🏷️ Baskı Hesap — 68 Sitede Tara ➔"** rozetine tıklayın.
 4. Veya tarayıcı araç çubuğundaki eklenti simgesine basıp **"Karşılaştır"** deyin.
 5. Karşılaştırma sayfası otomatik açılacak ve 55 sitedeki en ucuz fiyatlar semantik doğrulama ile listelenecektir!

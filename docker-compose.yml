@@ -1,5 +1,5 @@
 # =============================================================================
-# En Ucuz Nerede? — Azure Ubuntu VM üretim yığını
+# Baskı Hesap — Azure Ubuntu VM üretim yığını
 # =============================================================================
 #   İnternet → Cloudflare (CDN/WAF/SSL) → Caddy (:80/:443) → Node (:3000)
 #
@@ -78,7 +78,7 @@ services:
       # Alan adı ve ACME e-postası Caddyfile içinde kullanılır.
       # Cloudflare "Full (strict)" kullanılıyorsa Origin Certificate'i
       # Caddy'ye tanıtın (aşağıdaki Caddyfile notuna bakın).
-      SITE_DOMAIN: "${SITE_DOMAIN:-enucuznerede.com}"
+      SITE_DOMAIN: "${SITE_DOMAIN:-baskihesap.tech}"
       ACME_EMAIL: "${ACME_EMAIL:-}"
     logging:
       driver: json-file

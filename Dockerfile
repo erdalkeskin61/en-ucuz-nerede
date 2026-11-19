@@ -1,5 +1,5 @@
 # =============================================================================
-# En Ucuz Nerede? — Üretim imajı (Azure Ubuntu VM / Docker)
+# Baskı Hesap — Üretim imajı (Azure Ubuntu VM / Docker)
 # =============================================================================
 # Taban: node:22-bookworm-slim
 #   • Debian bookworm = glibc → `impit` (Rust/N-API) prebuilt ikilisi çalışır.

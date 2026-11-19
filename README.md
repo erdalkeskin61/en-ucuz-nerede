@@ -1,4 +1,4 @@
-# 🏷️ En Ucuz Nerede?
+# 🏷️ Baskı Hesap
 
 Türkiye'deki **61 e-ticaret mağazasında** aynı ürünün **gerçekte ödeyeceğin**
 en ucuz fiyatını bulan fiyat karşılaştırma platformu.
@@ -657,7 +657,7 @@ manuel fiyat girildiğinde gizlenir (uydurma mağaza önerisi yok).
 • Baskı Süresi: ~4 saat
 • Birim Fiyat: 247,23 TL (KDV Hariç)
 
-Hazırlayan: En Ucuz Nerede? Baskı Asistanı
+Hazırlayan: Baskı Hesap Baskı Asistanı
 ```
 
 `navigator.clipboard` yoksa/izin vermezse gizli `textarea` + `execCommand('copy')`
@@ -719,7 +719,7 @@ GET /api/embed/oner?malzeme=PLA&gramaj=340&renk=Siyah&kaynak=cura
     "makaradanCikanAdet": 2,
     "kalanGramaj": 660,
     "stok": true,
-    "yonlendirmeLinki": "https://enucuznerede.com/yonlendir?urunId=4&kaynak=cura"
+    "yonlendirmeLinki": "https://baskihesap.tech/yonlendir?urunId=4&kaynak=cura"
   },
   "bildirimMetni": "Bu baskı 340 g Siyah PLA gerektiriyor. …"
 }
@@ -739,10 +739,10 @@ GET /api/embed/oner?malzeme=PLA&gramaj=340&renk=Siyah&kaynak=cura
 
 | Dosya | Ne yapar |
 |---|---|
-| `plugins/cura/EnUcuzNerede/` | Cura eklentisi (`plugin.json`, `__init__.py`, `EnUcuzNeredeExtension.py`) |
+| `plugins/cura/BaskiHesap/` | Cura eklentisi (`plugin.json`, `__init__.py`, `BaskiHesapExtension.py`) |
 | `tools/slicer-hook/en_ucuz_slicer.py` | Bambu/Orca/Prusa post-processor |
 | `public/slicer.html` | İndirme + 3 adım kurulum rehberi |
-| `public/indir/EnUcuzNerede.curapackage` | Cura'ya sürükle-bırak paket (geçerli ZIP) |
+| `public/indir/BaskiHesap.curapackage` | Cura'ya sürükle-bırak paket (geçerli ZIP) |
 
 **Cura:** `.curapackage` dosyasını Cura penceresine sürükleyin → yeniden başlatın.
 Eklenti `sliceProcessFinished` (yoksa `materialAmountsChanged`) sinyaline bağlanır,
@@ -1036,7 +1036,7 @@ motoru, Telegram indirme akışı, web sözleşmesi). `--canli` ile gerçek EVRE
 
 ## 📢 WhatsApp Fırsat Kanalı
 
-Telegram'daki (`@enucuzneredefirsatlari`) otonom dip fiyat ve radar bildirimlerini
+Telegram'daki (`@baskihesapfirsatlari`) otonom dip fiyat ve radar bildirimlerini
 **WhatsApp Kanalları** (`…@newsletter`) ve **gruplarına** (`…@g.us`) taşır.
 Türkiye'de WhatsApp kullanımı Telegram'dan çok daha yaygın; fırsatlar gruplarda
 hızla yayılır ve afiliye tıklamaları artar.
@@ -1083,8 +1083,8 @@ _(⚠️ 2 tükenen/stokta olmayan mağaza elendi)_
 📊 *Diğer Stoklu Seçenekler:*
 • Koçtaş: ₺785,00 · • Hepsiburada: ₺789,99 · • Trendyol: ₺879,00
 🛒 *Satın Alma Linki:*
-https://enucuznerede.com/yonlendir?site=ventatek&sku=…
-🏷️ *En Ucuz Nerede?* | 3D Baskı Fırsat Kanalı
+https://baskihesap.tech/yonlendir?site=ventatek&sku=…
+🏷️ *Baskı Hesap* | 3D Baskı Fırsat Kanalı
 ```
 
 Görsel varsa (`resimliGonder`) mesaj **tek parça resim açıklaması** olarak gider
@@ -1144,7 +1144,7 @@ komisyonlu linke gider, alt köşedeki marka bağlantısı organik backlink üre
 ### Kullanım
 
 ```html
-<iframe src="https://enucuznerede.com/widget?urun=bambu-lab-p1s&tema=dark"
+<iframe src="https://baskihesap.tech/widget?urun=bambu-lab-p1s&tema=dark"
         width="320" height="180" frameborder="0" loading="lazy"></iframe>
 ```
 
@@ -1178,7 +1178,7 @@ enjeksiyon yüzeyini kapatır.
 3. 💰 canlı fiyat (26 px) + ⚖️ birim fiyat (`₺453,12 / kg`)
 4. 🟢 Stokta Var · 🚚 Ücretsiz Kargo rozetleri
 5. `🛒 En Ucuza Satın Al (Mağaza)` — `target="_blank" rel="noopener sponsored"`
-6. `⚡ EnUcuzNerede.com` alt imza — **dofollow** (bilinçli SEO tercihi)
+6. `⚡ BaskiHesap.com` alt imza — **dofollow** (bilinçli SEO tercihi)
 7. `🔥 DİP` rozeti — yalnızca V2 dedektörü gerçek dip fiyatı doğruladıysa
 
 Toplam boyut (**HTML + CSS + JS**) **14,4 KB** — 15 KB hedefinin altında.
@@ -1236,7 +1236,7 @@ http://localhost:3000/widget?urun=bambu-lab-p1s&tema=dark
 
 Yerelde (`localhost`, `127.0.0.1`, `192.168.x.x`, `10.x`, `172.16–31.x`)
 alt imza **🧪 localhost:3000** olarak görünür ve yerel sunucuya bağlanır —
-var olmayan `EnUcuzNerede.com` adresine link verilmez. Gerçek alan adına
+var olmayan `BaskiHesap.com` adresine link verilmez. Gerçek alan adına
 geçildiğinde etiket ve bağlantı otomatik olarak üretim adresini kullanır.
 
 `?urun=` slug'ı yazım farklarına toleranttır: `pla-plus` ↔ `pla` (PLA+),
@@ -1381,7 +1381,7 @@ renk/varyant (`renkAyni:false`) da elenir. Fiyat okunamıyorsa teklif sayılmaz.
 • Trendyol: ₺445,00
 ━━━━━━━━━━━━━━━━━━━━
 💡 Diğer mağazalara göre ₺56,00 tasarruf!
-🏷️ @EnUcuzNerede | Otonom Fiyat Radarı
+🏷️ @BaskiHesap | Otonom Fiyat Radarı
 ```
 
 Butonlar: **🛒 Stoktaki En Ucuz Mağazaya Git** (afiliye link) ve

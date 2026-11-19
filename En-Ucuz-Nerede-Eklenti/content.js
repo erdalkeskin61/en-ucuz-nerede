@@ -1,4 +1,4 @@
-// En Ucuz Nerede? — In-Page Smart Comparison Panel & Live Floating Pill
+// Baskı Hesap — In-Page Smart Comparison Panel & Live Floating Pill
 
 (function () {
   'use strict';
@@ -74,7 +74,7 @@
         <div class="eun-pill-icon" id="eunPillIcon">🏷️<span class="eun-pulse" id="eunPulse"></span></div>
         <div class="eun-pill-body">
           <div class="eun-pill-top">
-            <span class="eun-pill-brand">En Ucuz Nerede?</span>
+            <span class="eun-pill-brand">Baskı Hesap</span>
             <span class="eun-pill-action" id="eunPillAction">Fiyatları Gör ➔</span>
           </div>
           <div class="eun-pill-sub" id="eunPillSub">54 Sitede Fiyat Ara</div>
@@ -89,7 +89,7 @@
           <div class="eun-panel-title-box">
             <span class="eun-header-icon">🏷️</span>
             <div>
-              <div class="eun-panel-title">En Ucuz Nerede?</div>
+              <div class="eun-panel-title">Baskı Hesap</div>
               <div class="eun-panel-subtitle" id="eunPanelSub">54 Sitede Canlı Fiyat Analizi</div>
             </div>
           </div>

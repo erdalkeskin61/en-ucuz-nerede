@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#3450D1" />
-  <title>Slicer Eklentisi — En Ucuz Nerede</title>
+  <title>Slicer Eklentisi — Baskı Hesap</title>
   <meta name="description" content="Cura, Bambu Studio, OrcaSlicer ve PrusaSlicer için ücretsiz eklenti. Dilimleme bittiğinde harcanacak filamenti ve en ucuz stoklu makarayı gösterir." />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/ikon-192.png" />
@@ -20,9 +20,8 @@
 <body class="sayfa-slicer">
   <header class="ustbar">
     <div class="kap">
-      <a class="logo" href="/">
-        <span class="logo-isaret">🏷️</span>
-        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      <a class="logo" href="/" aria-label="Baskı Hesap — ana sayfa">
+        <img class="logo-gorsel" src="/logo.png" alt="Baskı Hesap" width="36" height="30" decoding="async" />
       </a>
       <nav class="menu">
         <a href="/">Karşılaştır</a>
@@ -97,7 +96,7 @@
             </div>
           </header>
           <a class="sl-indir-btn" href="/indir/EnUcuzNerede.curapackage" download>
-            ⬇️ EnUcuzNerede.curapackage
+            ⬇️ Baskı Hesap — Cura paketi
           </a>
           <ol class="sl-adimlar">
             <li><code>.curapackage</code> dosyasını Cura penceresine <b>sürükleyip bırakın</b>.</li>
@@ -211,7 +210,7 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
     "parcaBasiMaliyet": 157.65,
     "makaradanCikanAdet": 2,
     "stok": true,
-    "yonlendirmeLinki": "https://enucuznerede.com/yonlendir?urunId=4&amp;kaynak=cura"
+    "yonlendirmeLinki": "https://baskihesap.tech/yonlendir?urunId=4&amp;kaynak=cura"
   },
   "bildirimMetni": "Bu baskı 340 g Siyah PLA gerektiriyor. …"
 }</pre>
@@ -223,6 +222,10 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
 
   <footer class="sl-altbilgi">
     <div class="kap">
+      <div class="footer-marka">
+        <img class="footer-marka-logo" src="/logo.png" alt="Baskı Hesap" width="34" height="29" decoding="async" />
+        <a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>
+      </div>
       <p>Slicer eklentisi ücretsizdir ve hesap gerektirmez. Satın alma bağlantıları
         komisyonlu olabilir; fiyatınızı değiştirmez.</p>
     </div>

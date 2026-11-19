@@ -1,4 +1,4 @@
-# En Ucuz Nerede? — Tanıtım Paketi
+# Baskı Hesap — Tanıtım Paketi
 
 > Bu dosya hazır kopyala-yapıştır metinler içerir. `[ALAN ADI]` yazan yerleri kendi
 > alan adınızla değiştirin. Hiçbir metinde **uydurma kullanıcı sayısı, uydurma tasarruf
@@ -24,7 +24,7 @@
 
 > 3D baskıda en pahalı hata, yanlış yerden almaktır.
 >
-> En Ucuz Nerede?, Türkiye'deki 60'tan fazla mağazada aynı ürünün **gerçekte ödeyeceğin**
+> Baskı Hesap, Türkiye'deki 60'tan fazla mağazada aynı ürünün **gerçekte ödeyeceğin**
 > tutarını karşılaştırıyor. Etiket fiyatı değil — kargo, kupon ve kampanyalar düşüldükten
 > sonraki tutar.
 >
@@ -43,7 +43,7 @@
 
 **Title (60 karakter civarı):**
 ```
-3D Filament & Yazıcı Fiyat Karşılaştırma — En Ucuz Nerede?
+3D Filament & Yazıcı Fiyat Karşılaştırma — Baskı Hesap
 ```
 
 **Meta description (155 karakter):**
@@ -143,7 +143,7 @@ başka bir mağazada %25 daha ucuza görüyorsun.
 
 Sorun fiyat değil, görünürlük.
 
-En Ucuz Nerede?'yi bu yüzden yaptım: Türkiye'deki 60+ mağazayı tek
+Baskı Hesap'yi bu yüzden yaptım: Türkiye'deki 60+ mağazayı tek
 ekranda, "gerçekte ödeyeceğin tutar" üzerinden karşılaştıran bir araç.
 
 Neye dikkat ettik:
@@ -244,12 +244,12 @@ Denedim, "bunu neden daha önce bulamadım" dedim. Bak bir ara 👇
 
 ## 10. E-posta — mağaza partnerliği (B2B)
 
-**Konu:** En Ucuz Nerede? — 60+ mağaza arasında öne çıkma teklifi
+**Konu:** Baskı Hesap — 60+ mağaza arasında öne çıkma teklifi
 
 ```
 Merhaba [Yetkili],
 
-Ben [Ad], En Ucuz Nerede?'yi geliştiriyorum — 3D baskı ürünlerinde
+Ben [Ad], Baskı Hesap'yi geliştiriyorum — 3D baskı ürünlerinde
 (filament, reçine, yazıcı, yedek parça) 60+ mağazayı karşılaştıran
 Türkçe bir fiyat aracı.
 
@@ -290,7 +290,7 @@ Saygılarımla,
 BAŞLIK: Türkiye'de 3D filament fiyatlarını "gerçek ödenecek tutar"
 üzerinden karşılaştıran ücretsiz araç yayında
 
-[Şehir], [Tarih] — En Ucuz Nerede? ( [ALAN ADI] ), 3D baskı
+[Şehir], [Tarih] — Baskı Hesap ( [ALAN ADI] ), 3D baskı
 malzemelerinde Türkiye'deki 60'tan fazla mağazanın fiyatlarını
 karşılaştıran ücretsiz bir web uygulaması olarak yayında.
 

@@ -15,7 +15,7 @@
   var siteKok = location.origin;
 
   // Yerelde gerçek alan adı yok: var olmayan domaine link verme.
-  var MARKA = 'EnUcuzNerede.com';
+  var MARKA = 'baskihesap.tech';
   var yerelMi = (function () {
     var h = '';
     try { h = location.hostname || ''; } catch (e) { h = ''; }
@@ -28,7 +28,7 @@
     return false;
   })();
   var markaAdi = yerelMi && location.host ? location.host : MARKA;
-  var markaUrl = yerelMi && location.origin ? location.origin + '/' : 'https://enucuznerede.com/';
+  var markaUrl = yerelMi && location.origin ? location.origin + '/' : 'https://baskihesap.tech/';
   var markaIkon = yerelMi ? '🧪' : '⚡';
 
   // 758.65 → "₺758,65"

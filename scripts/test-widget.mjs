@@ -86,7 +86,7 @@ kontrol('parametresiz bulunamaz', widgetUrunBul({}) === null);
 /* ------------------------------------------------------------------ */
 bolum('3) 📦 Widget yükü ve dürüstlük');
 
-const v = widgetVerisi({ id: hedef.id, ref: 'maker-blogu', tabanUrl: 'https://enucuznerede.com' });
+const v = widgetVerisi({ id: hedef.id, ref: 'maker-blogu', tabanUrl: 'https://baskihesap.tech' });
 kontrol('bulundu', v.bulundu === true, v.neden);
 kontrol('ok:true', v.ok === true);
 kontrol('ürün adı var', typeof v.urun?.ad === 'string' && v.urun.ad.length > 2);

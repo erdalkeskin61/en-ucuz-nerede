@@ -5,28 +5,28 @@
   <!-- 2026-11-12: `interactive-widget=resizes-content` — mobil klavye açıldığında
        görünür alanı klavyeye göre küçültür; arama butonu klavyenin altında kalmaz. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-  <title>3D Filament &amp; Yazıcı Fiyat Karşılaştırma — En Ucuz Nerede?</title>
+  <title>3D Filament &amp; Yazıcı Fiyat Karşılaştırma — Baskı Hesap</title>
   <meta name="theme-color" content="#4338CA" />
   <meta name="description" content="60+ mağazada 3D filament, reçine ve yazıcının gerçek ödenecek fiyatını karşılaştır. Kargo ve kupon dahil. STL yükle, parça maliyetini gör." />
   <!-- Sosyal paylaşım (Open Graph / Twitter). Alan adı yayına alınınca
        og:url ve og:image değerlerini TAM adres yapın (ör. https://alanadiniz/og-gorsel.png). -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="En Ucuz Nerede?" />
+  <meta property="og:site_name" content="Baskı Hesap" />
   <meta property="og:locale" content="tr_TR" />
-  <meta property="og:title" content="Etiket fiyatı değil, ödenecek tutar — En Ucuz Nerede?" />
+  <meta property="og:title" content="Etiket fiyatı değil, ödenecek tutar — Baskı Hesap" />
   <meta property="og:description" content="Aynı filamentin kargo, kupon ve kampanya sonrası gerçek en ucuz fiyatını 60+ mağazada bulur. Ücretsiz, üyelik yok." />
   <meta property="og:image" content="/og-gorsel.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="En Ucuz Nerede? — 60+ mağazada gerçek en ucuz fiyat" />
+  <meta property="og:image:alt" content="Baskı Hesap — 60+ mağazada gerçek en ucuz fiyat" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Etiket fiyatı değil, ödenecek tutar — En Ucuz Nerede?" />
+  <meta name="twitter:title" content="Etiket fiyatı değil, ödenecek tutar — Baskı Hesap" />
   <meta name="twitter:description" content="60+ mağazada 3D filament ve yazıcının gerçek ödenecek fiyatı. Kargo dahil. Ücretsiz, üyelik yok." />
   <meta name="twitter:image" content="/og-gorsel.png" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/ikon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="En Ucuz Nerede" />
+  <meta name="apple-mobile-web-app-title" content="Baskı Hesap" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -46,9 +46,8 @@
 <body>
   <header class="ustbar">
     <div class="kap">
-      <a class="logo" href="/">
-        <span class="logo-isaret">🏷️</span>
-        <span class="logo-yazi">En Ucuz <b>Nerede?</b></span>
+      <a class="logo" href="/" aria-label="Baskı Hesap — ana sayfa">
+        <img class="logo-gorsel" src="/logo.png" alt="Baskı Hesap" width="36" height="30" decoding="async" />
       </a>
       <nav class="menu">
         <a href="/" class="etkin">Karşılaştır</a>
@@ -707,6 +706,10 @@
 
   <footer class="altbar">
     <div class="kap">
+      <div class="footer-marka">
+        <img class="footer-marka-logo" src="/logo.png" alt="Baskı Hesap" width="34" height="29" decoding="async" />
+        <a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>
+      </div>
       <p>
         Fiyatlar sitelerden anlık okunur; etiket fiyatı yerine gerçekte ödenecek tutar gösterilir.
         Taksitler indirim sayılmaz, koşullu kampanyalar ayrıca belirtilir.
@@ -802,7 +805,7 @@
           <div class="fis-fiyat-not" id="fisKarNotu">Atölye kâr marjı dahildir</div>
         </div>
         <div class="fis-dipnot">
-          <span>⚡ Fiyat Doğrulama: <b>EnUcuzNerede</b> · 62 mağaza canlı radar</span>
+          <span>⚡ Fiyat Doğrulama: <b>Baskı Hesap</b> · 62 mağaza canlı radar</span>
         </div>
       </div>
       <div class="fis-alt-butonlar">
@@ -817,7 +820,7 @@
     // PWA service worker (2026-10-28): yalnızca güvenli bağlamda (https/localhost)
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=11').catch(() => { /* PWA olmadan da çalışır */ });
+        navigator.serviceWorker.register('/sw.js?v=12').catch(() => { /* PWA olmadan da çalışır */ });
       });
     }
   </script>

@@ -1,5 +1,5 @@
 /**
- * En Ucuz Nerede — sunucu.
+ * Baskı Hesap — sunucu.
  * Giriş/kayıt sistemi yoktur (kişisel kullanım); yayına alırken erişimi ters vekil
  * (ör. Basic Auth ya da VPN) ile kısıtlayabilirsiniz.
  */
@@ -1555,7 +1555,7 @@ app.get('/sepet/paylas/:id', (req, res) => {
       '<!doctype html><html lang="tr"><meta charset="utf-8"><title>Sepet bulunamadı</title>'
       + '<body style="font-family:system-ui;padding:48px;text-align:center;background:#F8FAFC">'
       + '<h1>🔍 Sepet bulunamadı</h1><p>Bağlantı geçersiz ya da 30 günlük saklama süresi dolmuş olabilir.</p>'
-      + '<a href="/" style="color:#4338CA;font-weight:700">En Ucuz Nerede? ana sayfa</a></body></html>',
+      + '<a href="/" style="color:#4338CA;font-weight:700">Baskı Hesap ana sayfa</a></body></html>',
     );
   }
   res.sendFile(path.join(__dirname, 'public', 'sepet-paylas.html'));
@@ -1886,7 +1886,7 @@ app.post('/api/alarm/test-whatsapp-kanal', adminGerekli, async (req, res) => {
         { site: 'Hepsiburada', fiyat: 789.99 },
         { site: 'Trendyol', fiyat: 879 },
       ],
-      afiliyeUrl: 'https://enucuznerede.com/yonlendir?site=ventatek&sku=ornek',
+      afiliyeUrl: 'https://baskihesap.tech/yonlendir?site=ventatek&sku=ornek',
     };
 
     const kart = whatsappKartOlustur(durum);
@@ -1941,7 +1941,7 @@ app.post('/api/push/unsubscribe', (req, res) => {
 app.post('/api/push/test', async (req, res) => {
   try {
     const r = await pushGonder({
-      baslik: req.body?.baslik || '🔔 En Ucuz Nerede? — bildirimler açık',
+      baslik: req.body?.baslik || '🔔 Baskı Hesap — bildirimler açık',
       govde: req.body?.govde || 'Fiyat alarmlarını bu cihazdan alacaksınız.',
       url: req.body?.url || '/',
       etiket: 'eun-test',
@@ -2163,7 +2163,7 @@ app.get('/api/sponsor/tikla/:id', (req, res) => {
       '<!doctype html><html lang="tr"><meta charset="utf-8"><title>Kampanya bulunamadı</title>'
       + '<body style="font-family:system-ui;padding:48px;text-align:center;background:#F8FAFC">'
       + '<h1>🔍 Kampanya bulunamadı</h1><p>Bağlantı geçersiz ya da kampanya sona ermiş olabilir.</p>'
-      + '<a href="/" style="color:#3450D1;font-weight:700">En Ucuz Nerede? ana sayfa</a></body></html>',
+      + '<a href="/" style="color:#3450D1;font-weight:700">Baskı Hesap ana sayfa</a></body></html>',
     );
 
     // Güvenlik: yalnızca http(s). Şemalar veritabanında doğrulanıyor, burada
@@ -2790,7 +2790,7 @@ function kuponZamanlayiciBaslat() {
 
 app.listen(config.port, config.host, () => {
   const problems = secretProblems();
-  console.log('En Ucuz Nerede çalışıyor: http://' + (config.host === '0.0.0.0' ? 'localhost' : config.host) + ':' + config.port);
+  console.log('Baskı Hesap çalışıyor: http://' + (config.host === '0.0.0.0' ? 'localhost' : config.host) + ':' + config.port);
   if (config.erisimAnahtari) console.log('Erişim kısıtı: AÇIK (ERISIM_ANAHTARI tanımlı)');
   // 🚨 CANLI GÜVENLİK UYARISI (2026-11-18): 0.0.0.0 tüm arayüzlere bağlanır.
   // Yönetici anahtarı yoksa panel yalnızca loopback'e açıktır; ama ters vekil

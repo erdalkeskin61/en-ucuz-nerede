@@ -1,4 +1,4 @@
-# En Ucuz Nerede? — robots.txt
+# Baskı Hesap — robots.txt (baskihesap.tech)
 # Herkese açık sayfalar taranabilir; yönetici paneli ve API uçları kapalıdır.
 
 User-agent: *

@@ -145,7 +145,7 @@ kontrol('sunucu: bulunamayan sepet 404', /Paylaşılan sepet bulunamadı/.test(s
 kontrol('HTML: paylaş butonu', /id="sepetWhatsappBtn"[^>]*>💬 WhatsApp ile Paylaş</.test(html));
 kontrol('HTML: link butonu', /id="sepetLinkBtn"/.test(html));
 kontrol('HTML: kopyala butonu', /id="sepetKopyaBtn"/.test(html));
-kontrol('app: WhatsApp metni başlığı', /En Ucuz Nerede\? — Sepet Özeti/.test(app));
+kontrol('app: WhatsApp metni başlığı', /Baskı Hesap — Sepet Özeti/.test(app));
 kontrol('app: toplam + tasarruf satırı', /📦 Toplam Tutar:/.test(app) && /Tasarruf!/.test(app));
 kontrol('app: mağaza satırı biçimi', /• \$\{g\.siteName\}: \$\{adlar\} \(\$\{tl\(g\.toplam\)\}\)/.test(app));
 kontrol('app: paylaşım linki satırı', /🔗 Listeyi İncele:/.test(app));

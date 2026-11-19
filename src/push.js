@@ -37,7 +37,7 @@ export function vapidAnahtarlari() {
   }
   if (!subject) {
     // VAPID "sub" alanı bir iletişim adresi olmalı (mailto: veya https:).
-    subject = s.alarmEmail ? `mailto:${s.alarmEmail}` : 'mailto:destek@enucuznerede.app';
+    subject = s.alarmEmail ? `mailto:${s.alarmEmail}` : 'mailto:destek@baskihesap.tech';
   }
 
   // Anahtarlar değiştiyse (ilk üretim ya da env) kalıcılaştır.
@@ -71,7 +71,7 @@ export async function pushGonder(bildirim = {}) {
   }
 
   const payload = JSON.stringify({
-    title: String(bildirim.baslik || 'En Ucuz Nerede?').slice(0, 120),
+    title: String(bildirim.baslik || 'Baskı Hesap').slice(0, 120),
     body: String(bildirim.govde || '').slice(0, 240),
     url: bildirim.url || '/',
     tag: bildirim.etiket || 'eun-fiyat',
@@ -130,7 +130,7 @@ export async function pushCihazaGonder(subscription, bildirim = {}) {
   }
 
   const payload = JSON.stringify({
-    title: String(bildirim.baslik || 'En Ucuz Nerede?').slice(0, 120),
+    title: String(bildirim.baslik || 'Baskı Hesap').slice(0, 120),
     body: String(bildirim.govde || '').slice(0, 240),
     url: bildirim.url || '/',
     tag: bildirim.etiket || ('eun-alarm-' + endpoint.slice(-12)),

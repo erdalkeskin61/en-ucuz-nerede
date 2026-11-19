@@ -1,10 +1,10 @@
 # =============================================================================
-# En Ucuz Nerede? — Caddy ters vekil yapılandırması
+# Baskı Hesap — Caddy ters vekil yapılandırması
 # =============================================================================
 #   İnternet → Cloudflare (CDN/WAF/SSL termination) → Caddy → app:3000
 #
 # Ortam değişkenleri (docker-compose.yml'den gelir):
-#   SITE_DOMAIN  → ör. enucuznerede.com
+#   SITE_DOMAIN  → ör. baskihesap.tech
 #   ACME_EMAIL   → Let's Encrypt bildirim adresi
 #
 # SSL MODLARI — hangisini seçmelisin?

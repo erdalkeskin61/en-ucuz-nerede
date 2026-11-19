@@ -235,7 +235,7 @@ kontrol('tg: ic dugum yeniden yaratilir (stil)',
 
 /* --- Sunucu: biçimli test mesajı --- */
 kontrol('alarms: sendTestTelegram bicimli kart',
-  /En Ucuz Nerede — Canlı Fiyat Alarmı Testi/.test(alarmsSrc));
+  /Baskı Hesap — Canlı Fiyat Alarmı Testi/.test(alarmsSrc));
 kontrol('alarms: test zamani satiri', /<b>Test Zamanı:<\/b>/.test(alarmsSrc));
 kontrol('alarms: 7/24 tarama durumu', /Sistem 7\/24 fiyat düşüşlerini tarıyor/.test(alarmsSrc));
 kontrol('alarms: getMe ile bot dogrulamasi', /getMe/.test(alarmsSrc));

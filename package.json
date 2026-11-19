@@ -51,6 +51,7 @@
     "test:self-healing": "node scripts/test-self-healing.mjs",
     "test:impit-katalog": "node scripts/test-impit-katalog.mjs",
     "test:canli-hazirlik": "node scripts/test-canli-hazirlik.mjs",
+    "deploy:paket": "node scripts/deploy-paket.mjs",
     "check:impit": "node scripts/check-impit.mjs",
     "test:oneri-akis": "node scripts/test-oneri-akis.mjs",
     "test:admin": "node scripts/test-admin-panel.mjs"

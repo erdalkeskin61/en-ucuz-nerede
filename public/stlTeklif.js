@@ -160,6 +160,6 @@ export function teklifMetni(t, secenek = {}) {
   satirlar.push(`🏷️ *TEKLİF TUTARI:* ₺${para(t.satisFiyati)}`);
   satirlar.push(`_(atölye kâr marjı %${t.karYuzde} dahil · kâr ₺${para(t.kar)})_`);
   satirlar.push(cizgi);
-  satirlar.push('⚡ Fiyat doğrulama: EnUcuzNerede · 62 mağaza canlı radar');
+  satirlar.push('⚡ Fiyat doğrulama: Baskı Hesap · 62 mağaza canlı radar');
   return satirlar.join('\n');
 }

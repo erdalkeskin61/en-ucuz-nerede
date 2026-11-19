@@ -115,7 +115,7 @@ export function whatsappKartOlustur(d) {
       satirlar.push(italik(`${Number(d.tukenenSayisi)} mağaza tükendi/stokta yok olarak elendi.`));
     }
     satirlar.push('Bir sonraki turda yeniden denenecek.');
-    satirlar.push(CIZGI, '🏷️ *En Ucuz Nerede?* | 3D Baskı Fırsat Kanalı');
+    satirlar.push(CIZGI, '⚡ *Baskı Hesap* | 3D Baskı Fırsat Kanalı');
     return satirlar.join('\n');
   }
 
@@ -166,7 +166,7 @@ export function whatsappKartOlustur(d) {
     satirlar.push(italik(`Kısmi tarama: ${Number(d.taranmayan) || 0} site yanıt vermedi.`));
   }
 
-  satirlar.push(CIZGI, '🏷️ *En Ucuz Nerede?* | 3D Baskı Fırsat Kanalı');
+  satirlar.push(CIZGI, '⚡ *Baskı Hesap* | 3D Baskı Fırsat Kanalı');
   return kirp(satirlar.join('\n'), MESAJ_LIMIT);
 }
 
@@ -194,7 +194,7 @@ export function whatsappFirsatKartOlustur(f) {
   if (f.url) {
     satirlar.push(CIZGI, '🛒 *Fırsatı İncele ve Satın Al:*', String(f.url));
   }
-  satirlar.push(CIZGI, '🏷️ *En Ucuz Nerede?* | Gerçek Fiyat Takipçisi');
+  satirlar.push(CIZGI, '⚡ *Baskı Hesap* | Gerçek Fiyat Takipçisi');
   return kirp(satirlar.join('\n'), MESAJ_LIMIT);
 }
 

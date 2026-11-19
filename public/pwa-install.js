@@ -54,7 +54,7 @@
         <button type="button" class="pwa-kurulum-kapat" data-pwa-kapat aria-label="Kapat">✕</button>
         <div class="pwa-kurulum-ikon" aria-hidden="true">📱</div>
         <div class="pwa-kurulum-metin">
-          <h2 id="pwaKurulumBaslik">En Ucuz Nerede'yi ana ekranınıza ekleyin</h2>
+          <h2 id="pwaKurulumBaslik">Baskı Hesap'ı ana ekranınıza ekleyin</h2>
           <p>Tek dokunuşla barkod okutun, fotoğraftan arayın ve fiyat alarmlarını anında alın.</p>
           <div class="pwa-kurulum-ios" hidden>
             <div class="pwa-ios-adim">

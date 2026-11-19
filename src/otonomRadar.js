@@ -600,7 +600,7 @@ function tohumla() {
 
 /**
  * Telegram Chat ID / Kanal adını doğrular ve normalize eder.
- * Kullanıcı @ koymadan "enucuzneredefirsatlari" yazdıysa başına otomatik @ ekler.
+ * Kullanıcı @ koymadan "baskihesapfirsatlari" yazdıysa başına otomatik @ ekler.
  */
 export function temizChatId(id) {
   let s = String(id || '').trim();
@@ -1363,7 +1363,7 @@ export function radarKartOlustur(d) {
   if (d.kismi) {
     satirlar.push(`ℹ️ <i>Kısmi tarama: ${Number(d.taranmayan) || 0} site yanıt vermedi.</i>`);
   }
-  satirlar.push('', '🏷️ @EnUcuzNerede | Otonom Fiyat Radarı');
+  satirlar.push('', '⚡ @BaskiHesap | Otonom Fiyat Radarı');
   return satirlar.join('\n');
 }
 

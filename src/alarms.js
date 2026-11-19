@@ -110,7 +110,7 @@ async function mailGonder(konu, icerik) {
     auth: { user: s.smtp.user, pass: s.smtp.pass },
   });
   const bilgi = await transporter.sendMail({
-    from: gecerli ? fromAdres : `"En Ucuz Nerede?" <${fromAdres}>`,
+    from: gecerli ? fromAdres : `"Baskı Hesap" <${fromAdres}>`,
     to: s.alarmEmail,
     subject: konu,
     text: icerik,
@@ -265,7 +265,7 @@ async function tekUrunKontrol(t, testHooks = {}) {
         'Doğrulama: fiyat alarm öncesi sayfa yeniden çekilerek teyit edildi.\n' +
         koşulluKampanyaMetni({ kampanyaKosullu: hedefAsan.koşullu }) + '\n' +
         'Ürün linki: ' + hedefAsan.url + '\n\n' +
-        '— En Ucuz Nerede';
+        '— Baskı Hesap';
       let gitti = false;
       let hata = null;
       // 📈 Trend grafiği: 90 günlük gerçek fiyat geçmişi varsa PNG eklenir.
@@ -355,7 +355,7 @@ async function tekUrunKontrol(t, testHooks = {}) {
         'Doğrulama: fiyat alarm öncesi sayfa yeniden çekilerek teyit edildi.\n' +
         koşulluKampanyaMetni({ kampanyaKosullu: yeniEnUcuz.koşullu }) + '\n' +
         'Ürün linki: ' + yeniEnUcuz.url + '\n\n' +
-        '— En Ucuz Nerede';
+        '— Baskı Hesap';
       let gitti = false;
       let hata = null;
       try {
@@ -401,13 +401,13 @@ async function tekUrunKontrol(t, testHooks = {}) {
           'Durum: ' + stoktaYokSayisi + ' mağazanın tamamında stok yok\n' +
           'Son bilinen en ucuz: ' + (yeniEnUcuz ? formatTL(yeniEnUcuz.fiyat) + ' — ' + yeniEnUcuz.siteName : 'bilinmiyor') + '\n' +
           'Ürün linki: ' + link + '\n\n' +
-          '— En Ucuz Nerede'
+          '— Baskı Hesap'
         : 'Takip ettiğiniz ürün yeniden stokta!\n\n' +
           urunSatiri +
           'Stok: ' + stokOzetSatiri(siteKayitlari) + '\n' +
           'En ucuz (stokta): ' + (yeniEnUcuz ? formatTL(yeniEnUcuz.fiyat) + ' — ' + yeniEnUcuz.siteName : 'henüz okunamadı') + '\n' +
           'Ürün linki: ' + link + '\n\n' +
-          '— En Ucuz Nerede';
+          '— Baskı Hesap';
       let gitti = false;
       let hata = null;
       try {
@@ -481,7 +481,7 @@ export async function sendTestEmail() {
   const urun = takip?.urun || 'Örnek ürün (Rampage X-Ranger 7.1 RGB USB Kulaklık)';
   const site = takip?.sonFiyatlar?.[0]?.site ? (adapterById(takip.sonFiyatlar[0].site)?.name || 'Trendyol') : 'Trendyol';
   const fiyat = takip?.sonFiyatlar?.[0]?.fiyat ?? 1699;
-  const konu = '🧪 Test e-postası — En Ucuz Nerede fiyat alarmı çalışıyor';
+  const konu = '🧪 Test e-postası — Baskı Hesap fiyat alarmı çalışıyor';
   const icerik =
     'Bu bir test e-postasıdır. Alarm sistemini kurarken gönderilir.\n\n' +
     'Örnek alarm biçimi:\n' +
@@ -497,7 +497,7 @@ export async function sendTestEmail() {
     '- Sepette %5 indirim (uygulamaya özel)\n' +
     '----------------------------------------\n' +
     'Günde 5 kez (09:00, 12:00, 15:00, 18:00, 21:00) fiyat kontrolü yapılır.\n\n' +
-    '— En Ucuz Nerede';
+    '— Baskı Hesap';
   const gonderim = await mailGonder(konu, icerik);
   return { ok: true, konu, icerik, messageId: gonderim?.messageId || null, alici: gonderim?.alici || null };
 }
@@ -685,7 +685,7 @@ export async function sendTestTelegram(opts = {}) {
   }
 
   const satirlar = [
-    '🔔 <b>En Ucuz Nerede — Canlı Fiyat Alarmı Testi</b> 🚀',
+    '🔔 <b>Baskı Hesap — Canlı Fiyat Alarmı Testi</b> 🚀',
     '',
     '✅ <b>Telegram bildirim hattınız başarıyla bağlandı!</b>',
     `🕒 <b>Test Zamanı:</b> ${tg(tarih)}`,
@@ -706,7 +706,7 @@ export async function sendTestTelegram(opts = {}) {
 }
 
 export async function sendTestWhatsApp(opts = {}) {
-  const konu = '🧪 Test Bildirimi — En Ucuz Nerede WhatsApp';
+  const konu = '🧪 Test Bildirimi — Baskı Hesap WhatsApp';
   const icerik = 'Tebrikler! WhatsApp fiyat alarm bildirimleri başarıyla bağlandı. 🚀\n\nTakip ettiğin ürünlerde fiyat düşüşü olduğunda buraya anlık bildirim gönderilecek.';
   await whatsappGonder(konu, icerik, opts);
   return { ok: true };
