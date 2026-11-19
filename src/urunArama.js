@@ -16,7 +16,7 @@ import {
 const KAYNAK_CACHE = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 saat
 
-const _3D_KELIMELER = /\b(filament|pla|petg|abs|tpu|reçine|recine|resin|ender|bambu|creality|elegoo|anycubic|prusa|nozzle|hotend|extruder|tabla|3d|yazıcı|yazici)\b/i;
+const _3D_KELIMELER = /\b(filament|pla|petg|abs|tpu|asa|pc|pa|cf|reçine|recine|resin|ender|bambu|creality|elegoo|anycubic|prusa|esun|sunlu|porima|microzey|kobra|neptune|k1|k1c|p1s|p1p|a1|x1c|hyper|silk|nozzle|hotend|extruder|tabla|pei|3d|yazıcı|yazici|baskı|baski)\b/i;
 
 export function dogalDilTavsiyeMi(metin) {
   if (!metin || typeof metin !== 'string') return false;
@@ -364,7 +364,7 @@ export function katalogdanKaynakAdayi(sorgu, opts = {}) {
   };
 }
 
-export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 3500, signal: disSinyal = null, katalogTtlMs = undefined } = {}) {
+export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disSinyal = null, katalogTtlMs = undefined } = {}) {
   const temizSorgu = String(sorgu || '').trim();
   if (!temizSorgu || temizSorgu.length < 2) return null;
 
@@ -390,8 +390,8 @@ export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 3500, signal: disS
   // filamentler yalnız n11'de stokta olabiliyor.
   const is3D = _3D_KELIMELER.test(temizSorgu);
   const hedefSiteler = is3D
-    ? ['porima3d', 'filamentmarketim', 'robotistan', '3dmarketim', 'samm', 'trendyol', 'hepsiburada', 'n11']
-    : ['trendyol', 'hepsiburada', 'amazon', 'n11', 'vatan', 'mediamarkt'];
+    ? ['porima3d', 'robotistan', 'filamentdepom', '3dortgen', 'filamentsan', 'kirpilab', 'efilament', 'makerpazar', '3dmarketim', 'samm', 'filamentmarketim', 'domirobot', 'robolinkmarket', 'hepsiburada', 'trendyol', 'n11']
+    : ['robotistan', 'samm', 'direnc', 'hepsiburada', 'vatan', 'mediamarkt', 'trendyol', 'amazon', 'n11'];
 
   // 🛑 2026-11-14: AbortController yayılımı. Zaman aşımında promise'i yalnızca
   // reddetmek yetmiyordu — altındaki fetch/tarayıcı isteği arka planda çalışmaya

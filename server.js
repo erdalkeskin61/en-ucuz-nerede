@@ -1247,8 +1247,8 @@ app.post('/api/compare', async (req, res) => {
         }
 
         if (!bulunan?.url) {
-          throw new Error(`"${arananSorgu}" için karşılaştırılabilecek uygun bir ürün bulunamadı. `
-            + 'Lütfen ürün modelini biraz daha detaylı yazın veya doğrudan ürün linkini yapıştırın.');
+          throw new Error(`"${arananSorgu}" için mağazalarda karşılaştırılabilecek uygun bir ürün bulunamadı. `
+            + 'Marka ve modeli biraz daha detaylı yazarak (ör. "eSun PLA+ Siyah 1kg") tekrar deneyin.');
         }
         const hedefSite = detectSite(bulunan.url);
         if (!hedefSite) throw new Error('Bulunan ürünün sitesi desteklenmiyor.');

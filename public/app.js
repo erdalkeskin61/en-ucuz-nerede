@@ -1413,10 +1413,10 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
  * gerçek ürün linkleri. Örnek linkler canlı doğrulanmış ürünlere gider.
  */
 const REHBER_ORNEK_URUNLER = [
-  { ad: 'Creality Ender PLA Gri', url: 'https://www.trendyol.com/creality/ender-pla-filament-gri-1-75mm-1kg-p-746534543' },
-  { ad: 'Bambu Lab P1S 3D Yazıcı', url: 'https://3dcim.com/bambu-lab-p1s-719' },
   { ad: 'Porima PETG Filament', url: 'https://porima3d.com/products/porima-petg-filament' },
   { ad: 'Anycubic UV Reçine', url: 'https://porima3d.com/products/anycubic-standart-recine' },
+  { ad: 'Bambu Lab P1S 3D Yazıcı', url: 'https://3dcim.com/bambu-lab-p1s-719' },
+  { ad: 'eSun PLA+ (Ürün Adıyla Ara)', url: 'eSun PLA+ Siyah 1kg' },
 ];
 
 /**
@@ -1440,10 +1440,15 @@ function hataGoster(mesaj, tur = 'genel') {
   if (!kutu) return;
 
   // Tür sezimi: açık tür verilmediyse mesaj metninden çıkar.
+  // ÖNEMLİ: Ürün adıyla aramada ("eSun PLA+") mesaj "ürün linki" sözcüğünü
+  // içerse bile kategori linki hatası GÖSTERİLMEZ; yalnızca girdi gerçekten URL ise
+  // `kategori` rehberi açılır.
   const kucuk = String(mesaj || '').toLocaleLowerCase('tr-TR');
+  const girdiLinkMi = linkGibiMi($('#urunUrl')?.value || '');
   let tip = tur;
   if (tip === 'genel') {
-    if (/kategori|desteklenmiyor|ürün linki|urun linki|ürün sayfas|koleksiyon/.test(kucuk)) tip = 'kategori';
+    if (girdiLinkMi && /kategori|desteklenmiyor|ürün linki|urun linki|ürün sayfas|koleksiyon/.test(kucuk)) tip = 'kategori';
+    else if (!girdiLinkMi && /bulunamadı|bulunamadi/.test(kucuk)) tip = 'urun_bulunamadi';
     else if (/bağlantı|baglanti|network|fetch|internet|zaman aşımı|ulaşılamadı/.test(kucuk)) tip = 'ag';
   }
 
@@ -1454,6 +1459,12 @@ function hataGoster(mesaj, tur = 'genel') {
       aciklama: 'Bu bir kategori, anasayfa veya arama sayfası bağlantısı gibi görünüyor. '
         + '61 mağazada anlık fiyat karşılaştırabilmemiz için lütfen ürünün kendi detay '
         + 'sayfasının linkini yapıştırın. Aşağıdaki örneklerden biriyle hemen deneyebilirsiniz.',
+    },
+    urun_bulunamadi: {
+      ikon: '🔎',
+      baslik: 'Ürün Adıyla Eşleşme Bulunamadı',
+      aciklama: mesaj || 'Bu ürün adıyla eşleşen mağaza kaydı bulunamadı. Marka ve modeli biraz '
+        + 'daha net yazarak (ör. "Porima PLA", "eSun PLA+ Siyah 1kg") tekrar deneyin.',
     },
     gecersiz: {
       ikon: '🔍',
@@ -3631,7 +3642,6 @@ function kartHtml(r) {
       ${cashbackHtml}
       ${kuponHtml}
       ${kampanyaHtml}
-  // 🖨️ 3D baskı için "Yüksek Birim Maliyet" uyarısı bu satırın altında kalır.
       ${birimHtml}
       ${kdvHtml}
       ${baskiRozetHtml}
