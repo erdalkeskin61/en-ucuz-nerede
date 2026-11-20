@@ -774,13 +774,14 @@ async function rawFetch(targetUrl, opts = {}) {
   // 403 / WAF engeli durumunda yerel stealth tarayıcıyı yedek olarak dene
   if ((opts.method || 'GET') === 'GET' && !TARAYICI_SITELER.has(opts.site) && !circuitBreaker.isOpen(domain)) {
     try {
-      // 🧬 2026-11-17: Chromium'dan önce SON bir hafif impit şansı.
-      // Doğrudan istek 403/challenge yediyse Chrome TLS parmak izi bazen geçer
-      // (özellikle DataDome/Akamai'nin Node fetch'i tanıdığı sitelerde).
-      const hafif = await impitHafifDene(targetUrl, { ...opts, ...(TR_PROXY_URL ? { proxyUrl: TR_PROXY_URL } : {}) });
-      if (hafif) {
-        console.log('[scraper] ' + domain + ' → impit hafif katmanı 403 sonrası geçti (tarayıcı açılmadı).');
-        return hafif;
+      // Doğrudan deneme zaten başarısız olduysa aynı çıkış IP'siyle 3. kez impit
+      // atıp circuitBreaker eşiğini (3) tarayıcıdan ÖNCE doldurma; yalnızca TR_PROXY_URL varsa dene.
+      if (TR_PROXY_URL && !TR_PROXY_SITELER.has(opts.site)) {
+        const hafif = await impitHafifDene(targetUrl, { ...opts, proxyUrl: TR_PROXY_URL });
+        if (hafif) {
+          console.log('[scraper] ' + domain + ' → impit+trProxy 403 sonrası geçti (tarayıcı açılmadı).');
+          return hafif;
+        }
       }
       const browserFallback = await tarayiciIleCek(targetUrl, { timeoutMs: 15000 });
       tarayiciResult = browserFallback;
