@@ -13,6 +13,7 @@ import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
 import { detectSite, adapters } from './src/sites/index.js';
+import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi } from './src/util.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
 import { sepetOptimize } from './src/basketOptimizer.js';
@@ -1076,6 +1077,9 @@ function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {
  * @returns {boolean}
  */
 function adAnahtariBenzer(katalogAd, sorgu) {
+  if (parcaMi(katalogAd) !== parcaMi(sorgu)) return false;
+  if (kritikVaryantCakismasi(katalogAd, sorgu)) return false;
+  if (modelSerisiCakismasi(katalogAd, sorgu)) return false;
   const norm = (s) => String(s || '')
     .toLocaleLowerCase('tr-TR')
     .replace(/[ıİ]/g, 'i')
@@ -1085,9 +1089,10 @@ function adAnahtariBenzer(katalogAd, sorgu) {
   const hedef = norm(katalogAd);
   const kaynak = norm(sorgu);
   if (!hedef || !kaynak) return false;
-  const kelimeler = kaynak.split(' ').filter(w => w.length >= 3);
+  const hedefTokens = new Set(hedef.split(' ').filter(Boolean));
+  const kelimeler = kaynak.split(' ').filter(w => w.length >= 2 || /\d/.test(w));
   if (!kelimeler.length) return false;
-  return kelimeler.every(k => hedef.includes(k));
+  return kelimeler.every(k => hedefTokens.has(k) || (k.length >= 3 && hedef.includes(k)));
 }
 
 app.post('/api/compare', async (req, res) => {

@@ -420,31 +420,48 @@ const AKSESUAR_KELIMELERI = [
   'ekstruder', 'extruder', 'extruder dislisi',
   'kayis', 'gt2 kayis', 'kasnak', 'gergi',
   'step motor', 'step motoru',
-  'anakart', 'mainboard', 'motherboard',
+  'anakart', 'anakarti', 'anakartlari', 'mainboard', 'mainboardu', 'motherboard', 'motherboardu',
+  'kontrol karti', 'surucu', 'surucusu', 'step surucu', 'step driver', 'driver', 'driveri', 'tmc2208', 'tmc2209', 'pcb',
+  'guc kaynagi', 'psu', 'power supply',
+  'ekran', 'ekrani', 'ekran modulu', 'dokunmatik ekran', 'lcd', 'modul', 'modulu',
+  'kamera', 'kamerasi', 'kasa kamerasi', 'anten', 'anteni',
+  'arka panel', 'yan panel', 'on kapak', 'kapagi', 'baski kafasi', 'isitma tablasi',
+  'fpc kablo', 'fpc kablosu', 'kayisi', 'disli', 'dislisi', 'kasnagi', 'rulman', 'rulmani', 'kaplin',
+  'ekstruderi', 'extruderi', 'hotendi', 'hotend kiti',
   'bltouch', 'crtouch', 'cr touch', 'sensor', 'sensoru', 'prob', 'probu', 'filament sensoru',
-  'salyangoz fan', 'radyal fan', 'aksiyel fan', 'sogutucu blok', 'heatsink',
+  'fan', 'fani', 'fanlari', 'salyangoz fan', 'radyal fan', 'aksiyel fan', 'sogutucu blok', 'heatsink',
 ];
 
+function aksesuarEslesmeleri(metin) {
+  const t = sadelestir(metin || '');
+  if (!t) return [];
+  return AKSESUAR_KELIMELERI.filter(k => {
+    const desen = new RegExp('(^|[^a-z0-9])' + k.replace(/\s+/g, '\\s+') + '($|[^a-z0-9])');
+    return desen.test(t);
+  });
+}
+
+/** Başlık elektronik/mekanik yedek parça veya aksesuar mı? */
+export function parcaMi(baslik) {
+  const t = sadelestir(baslik || '');
+  if (!t) return false;
+  if (aksesuarEslesmeleri(t).length > 0) return true;
+  return /(^|[^a-z0-9])(uyumlu|uygun|icin)($|[^a-z0-9])/.test(t);
+}
+
 /**
- * Aday, kaynağın aksesuarı mı? Asimetrik kural: aday aksesuar sinyali taşıyor,
- * kaynak taşımıyorsa farklı üründür. İki sinyal kullanılır:
- *  1) Aksesuar sözcüğü (sözcük sınırıyla; "kablosuz" ≠ "kablo")
- *  2) "uyumlu" / "için" kalıbı — yedek parça ilanlarının neredeyse tamamında var,
- *     ana ürün başlıklarında yok ("Dyson V15 için filtre", "... ile Uyumlu Boru").
+ * Aday, kaynağın (veya tersi) yedek parçası/aksesuarı mı?
+ * Elektronik/mekanik yedek parça asla tam yazıcı ile eşleştirilmez.
  */
 function aksesuarUyusmazligi(kaynakBaslik, adayBaslik) {
   const kaynak = sadelestir(kaynakBaslik || '');
   const aday = sadelestir(adayBaslik || '');
   if (!kaynak || !aday) return false;
 
-  // Sözcük sınırıyla ara: "kablo" sözcüğü "kablosuz" içinde sayılmamalı.
-  const kelimeler = (t) => AKSESUAR_KELIMELERI.filter(k => {
-    const desen = new RegExp('(^|[^a-z0-9])' + k.replace(/\s+/g, '\\s+') + '($|[^a-z0-9])');
-    return desen.test(t);
-  });
-  const adayKelime = kelimeler(aday);
-  const kaynakKelime = new Set(kelimeler(kaynak));
-  if (adayKelime.length && !adayKelime.some(k => kaynakKelime.has(k))) return true;
+  const kaynakKelime = aksesuarEslesmeleri(kaynak);
+  const adayKelime = aksesuarEslesmeleri(aday);
+  if (adayKelime.length && !adayKelime.some(k => kaynakKelime.includes(k))) return true;
+  if (kaynakKelime.length && !adayKelime.length) return true;
 
   // "uyumlu" / "için" kalıbı (kaynakta yoksa aday aksesuardır)
   const uyumKalibi = /(^|[^a-z0-9])(uyumlu|uygun|icin)($|[^a-z0-9])/;
@@ -796,7 +813,7 @@ export function gercekMarkaBul(rawBrand, rawTitle, siteId = null, siteName = nul
  * takÄ±lar baÅŸlÄ±kta uyuÅŸmuyorsa (biri Pro, diÄŸeri dÃ¼z) kesinlikle farklÄ± modeldir.
  */
 const KRITIK_VARYANTLAR = [
-  'pro max', 'pro', 'plus', 'ultra', 'mini', 'ti', 'super', 'max', 'fe', 'lite', 'se', 'fold', 'flip'
+  'pro max', 'pro', 'plus', 'ultra', 'mini', 'ti', 'super', 'max', 'fe', 'lite', 'se', 'ke', 'fold', 'flip'
 ];
 
 export function varyantBul(baslik) {

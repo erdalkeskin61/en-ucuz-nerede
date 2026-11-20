@@ -9,7 +9,7 @@ import { adapterById } from './sites/index.js';
 import { katalogUrunleriAra } from './katalogSync.js';
 import {
   titleSimilarity, modelSerisiCakismasi, hatCakismasi, kapasiteCakismasi,
-  extractColors, brandAyni, toLowerTr,
+  extractColors, brandAyni, toLowerTr, parcaMi, kritikVaryantCakismasi,
 } from './util.js';
 
 // Bellek içi hızlı önbellek (aynı arama tekrarlanırsa 0 ms)
@@ -45,7 +45,7 @@ export function dogalDilTavsiyeMi(metin) {
   return false;
 }
 
-const AKSESUAR_REGEX = /\b(silikon\s*çorap|silikon\s*corap|çorap|corap|termistör|termistor|ısıtıcı\s*blok|isitici\s*blok|ısıtıcı|isitici|hotend|nozzle|nozül|nozul|tabla|pei|yay\s*çeliği|kayış|kayis|kasnak|step\s*motor|anakart|bltouch|sensör|sensor|prob|probe|fan|yedek\s*parça|yedek\s*parca|kablo|adaptör|adaptor)\b/i;
+const AKSESUAR_REGEX = /\b(silikon\s*çorap|silikon\s*corap|çorap|corap|termistör|termistor|ısıtıcı\s*blok|isitici\s*blok|ısıtıcı|isitici|hotend|nozzle|nozül|nozul|tabla|pei|yay\s*çeliği|kayış|kayis|kasnak|step\s*motor|anakart(?:[ıi]|lar[ıi]?)?|mainboard|motherboard|kontrol\s*kart[ıi]|sürücü(?:sü)?|surucu(?:su)?|step\s*driver|driver[ıi]?|pcb|güç\s*kaynağ[ıi]|guc\s*kaynag[ıi]|psu|power\s*supply|ekran(?:[ıi]|\s*modül[üu]?)?|lcd|dokunmatik\s*ekran|modül[üu]?|modul[u]?|kamera(?:s[ıi])?|anten[i]?|panel[i]?|kapak|kapağ[ıi]|bltouch|sensör|sensor|prob|probe|fan(?:[ıi]|lar[ıi]?)?|yedek\s*parça|yedek\s*parca|kablo(?:su)?|adaptör|adaptor)\b/i;
 
 /**
  * Tire normalizasyonu (2026-11-10).
@@ -75,17 +75,16 @@ export function sorguPuanla(urunBaslik, sorgu) {
   const b = tireNormalize(String(urunBaslik).toLocaleLowerCase('tr-TR'));
   const s = tireNormalize(String(sorgu).toLocaleLowerCase('tr-TR'));
 
-  // Sorguda aksesuar/parça aranmıyorsa, adayda aksesuar geçiyorsa ASLA ana ürün sayılamaz!
-  if (!AKSESUAR_REGEX.test(s) && AKSESUAR_REGEX.test(b)) {
+  // Sorgu ile aday aynı kategoride olmalı: yazıcı ararken elektronik/mekanik parça, parça ararken tam yazıcı seçilmez.
+  const sorguParca = parcaMi(sorgu) || AKSESUAR_REGEX.test(s);
+  const adayParca = parcaMi(urunBaslik) || AKSESUAR_REGEX.test(b);
+  if (sorguParca !== adayParca) {
     return 0;
   }
 
-  // MODEL SERİSİ ÇAKIŞMASI → aday bu sorgunun ürünü DEĞİLDİR (2026-11-04).
-  // Ölçülen hata: "Anycubic Kobra 2 Neo 3D Yazıcı" sorgusunda "Anycubic Kobra X"
-  // ilanı en yüksek puanı alıp kaynak seçildi; ardından radar "Kobra 2 Neo"
-  // yerine bu yanlış kaynağa göre eşleşen "Kobra 4"ü en ucuz gösterdi.
-  // Kelime örtüşmesi (anycubic/kobra/3d/yazıcı) burada yanıltıcıydı.
+  // MODEL SERİSİ ÇAKIŞMASI & VARYANT FARKI → aday bu sorgunun ürünü DEĞİLDİR.
   if (modelSerisiCakismasi(urunBaslik, sorgu)) return 0;
+  if (kritikVaryantCakismasi(urunBaslik, sorgu)) return 0;
   // ÜRÜN HATTI / MALZEME (2026-11-04): "eSun PLA+ Beyaz" sorgusunda kaynak
   // "eSun Hyper PLA" seçiliyordu; "Sunlu PLA+ Filament 1kg" sorgusunda ise
   // "Sunlu Silk PLA+" — ikisi de farklı ürün, fiyatları kıyaslanamaz.
@@ -163,17 +162,21 @@ export function aksesuarAdayMi(sorgu, adayBaslik) {
   const baslik = String(adayBaslik || '');
   if (!baslik) return false;
   // Kullanıcı zaten parça arıyorsa parça sonucu geçerlidir.
-  if (AKSESUAR_REGEX.test(String(sorgu || ''))) return false;
+  if (parcaMi(sorgu) || AKSESUAR_REGEX.test(String(sorgu || ''))) return false;
   // Sorgu ana ürün (yazıcı/filament) ise, başlığında parça geçen aday elenir.
-  return AKSESUAR_REGEX.test(baslik);
+  return parcaMi(baslik) || AKSESUAR_REGEX.test(baslik);
 }
 
 export function kaynakEslesirMi(sorgu, aday) {
   const baslik = String(aday?.title || '');
   if (!baslik) return false;
 
-  // 0) YEDEK PARÇA KORUMASI (2026-11-10): yazıcı ararken aksesuar seçilmez.
+  // 0) YEDEK PARÇA KORUMASI: yazıcı ↔ elektronik parça çapraz eşleşmesini engelle
+  //    (varyant çakışması çağıran taraftaki sorguPuanla >= 0.35 filtresinde elenir).
   if (aksesuarAdayMi(sorgu, baslik)) return false;
+  const sorguParca = parcaMi(sorgu) || AKSESUAR_REGEX.test(String(sorgu || ''));
+  const adayParca = parcaMi(baslik) || AKSESUAR_REGEX.test(baslik);
+  if (sorguParca !== adayParca) return false;
 
   // 1) RENK: iki tarafta da bilinen renk varsa ve kesişmiyorsa farklı ürün.
   const qRenk = extractColors(sorgu);
