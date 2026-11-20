@@ -137,6 +137,13 @@ export const SITE_KARGO_VARSAYILANLARI = {
     applies: true,
     note: 'Kargo 129 TL · 3.000 TL üzeri ücretsiz',
   },
+  // ---- 2026-11-21 (kullanıcı bildirimi) ----
+  'filamentdepom': {
+    fee: 120,
+    freeOver: 2000,
+    applies: true,
+    note: 'Kargo 120 TL · 2.000 TL ve üzeri ücretsiz',
+  },
   // ---- 2026-10-26 (2. grup, kullanıcı bildirimi) ----
   // NOT: fixx3d kendi sayfalarında "2000 TL ve üzeri ücretsiz kargo" yazıyor
   // (ürün + ana sayfa + footer). Kullanıcı 3.000 TL / 99,90 TL bildirdi; kullanıcı
