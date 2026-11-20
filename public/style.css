@@ -3310,6 +3310,8 @@ html[data-theme="dark"] .oneri-oge.aktif { background: var(--ana-acik); }
 }
 .bento-rozet.yesil { color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil-cizgi); }
 .bento-rozet.kirmizi { color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi-cizgi); }
+.bento-rozet.uyari { color: #92400E; background: #FEF3C7; border-color: #FCD34D; white-space: normal; }
+html[data-theme="dark"] .bento-rozet.uyari { color: #FCD34D; background: rgba(245, 158, 11, 0.18); border-color: rgba(252, 211, 77, 0.4); }
 .bento-cta {
   margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   font-size: 13px; font-weight: 800; text-decoration: none; color: #fff;

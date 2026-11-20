@@ -181,9 +181,9 @@ export function firsatAdayiBul(sonuc, opts = {}) {
 
   const kargo = secili.product.pricing?.kargo || {};
   let kargoMetni = 'Sepette netleşir';
-  if (secili.kargoBedava || kargo.ucret === 0 || kargo.uygulanir === false
-    || /ücretsiz|bedava/i.test(String(kargo.aciklama || ''))
-    || /ücretsiz|bedava/i.test(String(secili.product.shipping || ''))) {
+  if (kargo.uygulanir === false
+    || secili.product.shipping?.applies === false
+    || (secili.kargoBedava === true && kargo.uygulanir == null)) {
     kargoMetni = 'Ücretsiz Kargo';
   } else if (Number.isFinite(Number(kargo.ucret)) && Number(kargo.ucret) > 0) {
     kargoMetni = `${para(kargo.ucret)} Kargo`;

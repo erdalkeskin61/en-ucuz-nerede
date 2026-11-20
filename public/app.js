@@ -2249,7 +2249,11 @@ function kartlariFiltreleVeCiz(filtre = 'hepsi') {
   } else if (filtre === 'stokta_yok') {
     liste = liste.filter(r => r.status === 'found' && r.product?.inStock === false);
   } else if (filtre === 'kargo') {
-    liste = liste.filter(r => r.status === 'found' && (r.kargoBedava || r.product?.pricing?.kargo?.ucret === 0 || r.product?.pricing?.kargo?.uygulanir === false || /ücretsiz|bedava/i.test(String(r.product?.shipping || ''))));
+    liste = liste.filter(r => r.status === 'found' && (
+      r.product?.pricing?.kargo?.uygulanir === false
+      || r.product?.shipping?.applies === false
+      || (r.kargoBedava === true && r.product?.pricing?.kargo?.uygulanir == null)
+    ));
   } else if (filtre === 'resmi') {
     liste = liste.filter(r => r.status === 'found' && (r.resmiSatici || ['trendyol', 'hepsiburada', 'amazon', 'vatan', 'mediamarkt', 'teknosa', 'itopya', 'robitshop', 'robotistan', 'direnc', 'samm'].includes(r.site)));
   } else if (filtre === 'taksit') {
@@ -2395,14 +2399,16 @@ function bentoOzetCiz(sonuc) {
   const { enUcuz, enPahali, fark, yuzde, min, ort, max, gecmisVar, gun } = v;
   const p = enUcuz.r.product;
   const pr = p.pricing || {};
-  const kargoBedava = enUcuz.r.kargoBedava
-    || pr.kargo?.uygulanir === false
-    || pr.kargo?.ucret === 0;
+  const kargoBedava = pr.kargo?.uygulanir === false
+    || p.shipping?.applies === false
+    || (enUcuz.r.kargoBedava === true && pr.kargo?.uygulanir == null);
   const kargoNotu = kargoBedava
     ? '<span class="bento-rozet yesil">📦 Kargo dahil (ücretsiz)</span>'
-    : (Number(pr.kargo?.ucret) > 0
+    : (pr.kargo?.uygulanir === true && Number(pr.kargo?.ucret) > 0
       ? `<span class="bento-rozet yesil">📦 Kargo dahil (${tl(pr.kargo.ucret)} kargo toplama eklendi)</span>`
-      : '<span class="bento-rozet">📦 Kargo sepette belli</span>');
+      : (Number(pr.kargo?.freeOver) > 0
+        ? `<span class="bento-rozet uyari" title="${esc(pr.kargo?.aciklama || 'Kargo ücreti sepette netleşir')}">⚠️ +Kargo sepette eklenir (${tl(pr.kargo.freeOver)} üzeri ücretsiz)</span>`
+        : '<span class="bento-rozet uyari" title="Mağaza kargo ücretini ürün sayfasında belirtmiyor; gerçek toplam sepette artabilir.">⚠️ +Kargo sepette eklenir</span>'));
   const stokNotu = p.inStock === false
     ? '<span class="bento-rozet kirmizi">🔴 Tükendi</span>'
     : '<span class="bento-rozet yesil">🟢 Stokta</span>';
@@ -2680,12 +2686,15 @@ function sonucGoster(sonuc, opts = {}) {
     const enUcuzTeklif = bulunanlar.find(r =>
       r.enUcuz || ((r.siteName === o.enUcuzSite || SITE_ADLARI[r.site] === o.enUcuzSite) && r.product?.inStock !== false));
     const ekKargo = enUcuzTeklif?.product?.pricing?.kargo;
-    const kargoBilindi = ekKargo?.uygulanir === true || ekKargo?.uygulanir === false || enUcuzTeklif?.kargoBedava;
+    const ucretsizKargo = ekKargo?.uygulanir === false
+      || enUcuzTeklif?.product?.shipping?.applies === false
+      || (enUcuzTeklif?.kargoBedava === true && ekKargo?.uygulanir == null);
+    const kargoBilindi = ekKargo?.uygulanir === true || ucretsizKargo;
     const kargoOzeti = (ekKargo?.uygulanir === true && Number(ekKargo.ucret) > 0)
       ? `📦 ${tl(ekKargo.ucret)} kargo dahil`
-      : (kargoBilindi ? '📦 Kargo dahil (ücretsiz)' : '📦 Kargo sepette belli');
+      : (ucretsizKargo ? '📦 Kargo dahil (ücretsiz)' : '⚠️ +Kargo sepette eklenir');
     const stokEkNot = stoktaYokSayisi > 0 ? ` · ${stoktaVarSayisi} mağazada stokta` : '';
-    $('#ozetKutu').innerHTML = `<div class="etiket">${kargoBilindi ? '🏷️ En ucuz (kargo dahil)' : '🏷️ En ucuz (stokta var)'}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
+    $('#ozetKutu').innerHTML = `<div class="etiket">${kargoBilindi ? '🏷️ En ucuz (kargo dahil)' : '🏷️ En ucuz (+kargo sepette)'}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
   } else {
     $('#ozetKutu').innerHTML = `<div class="etiket">Sonuç</div><div class="fiyat">—</div><div class="yer">Stokta ürün bulunamadı</div>`;
   }
@@ -3505,7 +3514,10 @@ function kartHtml(r) {
   const eslesme = { model_kodu: 'model kodu eşleşmesi', barkod: 'barkod eşleşmesi', benzerlik: 'başlık benzerliği', kaynak: 'kaynak ürün' };
 
   const rozetler = [];
-  if (r.kargoBedava) rozetler.push('<span class="etiket-rozeti rozet-kargo">📦 Ücretsiz Kargo</span>');
+  const kargoFree = pr.kargo?.uygulanir === false
+    || p.shipping?.applies === false
+    || (r.kargoBedava === true && pr.kargo?.uygulanir == null);
+  if (kargoFree) rozetler.push('<span class="etiket-rozeti rozet-kargo">📦 Ücretsiz Kargo</span>');
   else if (Number(p.pricing?.kargo?.ucret) > 0 && p.pricing?.kargo?.uygulanir !== false) {
     rozetler.push(`<span class="etiket-rozeti rozet-kargo-ucretli">🚚 +${tl(p.pricing.kargo.ucret)} Kargo</span>`);
   }
@@ -3680,7 +3692,7 @@ function kartHtml(r) {
     <div class="kart-kargo-alani">
       <div class="kart-kargo" title="${esc(pr.kargo?.aciklama || '')}">
         <span>🚚 Kargo</span>
-        <span class="ucret">${pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? 'Bedava' : (pr.kargo?.freeOver ? 'Sepette belli' : 'Bilinmiyor'))}</span>
+        <span class="ucret">${pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? 'Bedava' : (pr.kargo?.freeOver ? `Sepette eklenir (${tl(pr.kargo.freeOver)} üzeri bedava)` : 'Sepette belli'))}</span>
       </div>
       ${kargoEsikIpucuHtml}
       ${tamamlayiciButonu(pr, r)}

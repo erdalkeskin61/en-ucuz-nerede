@@ -352,11 +352,9 @@ export function sorgulariOlustur(analiz = {}) {
 /** Kargo metni (telegramBot'a bağımlı olmadan — döngüsel import olmasın). */
 function kargoEtiketi(r) {
   const kargo = r?.product?.pricing?.kargo || {};
-  const bedava = r?.kargoBedava === true
-    || kargo.uygulanir === false
-    || Number(kargo.ucret) === 0
-    || /ücretsiz|bedava/i.test(String(kargo.aciklama || ''))
-    || /ücretsiz|bedava/i.test(String(r?.product?.shipping || ''));
+  const bedava = kargo.uygulanir === false
+    || r?.product?.shipping?.applies === false
+    || (r?.kargoBedava === true && kargo.uygulanir == null);
   if (bedava) return 'Kargo Bedava';
   if (Number(kargo.ucret) > 0 && kargo.uygulanir !== false) return `+${Number(kargo.ucret).toFixed(2)} TL Kargo`;
   if (kargo.freeOver) return 'Sepette belli';

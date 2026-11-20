@@ -1114,10 +1114,8 @@ app.post('/api/compare', async (req, res) => {
     renkAyni: r.renkAyni,
     enUcuz: !!r.enUcuz,
     kargoBedava: r.product ? (
-      r.product.pricing?.kargo?.ucret === 0 ||
       r.product.pricing?.kargo?.uygulanir === false ||
-      /ücretsiz|bedava/i.test(String(r.product.pricing?.kargo?.aciklama || '')) ||
-      /ücretsiz|bedava/i.test(String(r.product.shipping || ''))
+      r.product.shipping?.applies === false
     ) : false,
     resmiSatici: r.product ? (
       ['trendyol', 'hepsiburada', 'amazon', 'vatan', 'mediamarkt', 'teknosa', 'itopya', 'koctas', 'robitshop', 'robotistan', 'direnc', 'samm'].includes(r.site) &&

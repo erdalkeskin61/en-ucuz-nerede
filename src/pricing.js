@@ -316,14 +316,16 @@ export function computePricing(product, classified) {
 
   // 4) Kargo görünümü (mevcut sözleşme: uygulanir true/false/null)
   let kargoUygulanir = null;
-  let kargoUcret = 0;
+  let kargoUcret = null;
   let kargoAciklama = ship.note || 'Kargo bilgisi alınamadı';
   const kargoAdim = nef.breakdown.find(b => b.step === 'shipping');
   if (nef.shippingInfo.free) {
     kargoUygulanir = false;
+    kargoUcret = 0;
     kargoAciklama = kargoAdim?.note || 'Ücretsiz kargo (eşik aşıldı)';
   } else if (nef.shippingInfo.unknown) {
     kargoUygulanir = null;
+    kargoUcret = null;
     kargoAciklama = kargoAdim?.note || ship.note || 'Kargo ücreti sepette netleşir';
   } else if (nef.shippingInfo.fee != null && nef.shippingInfo.fee > 0) {
     kargoUygulanir = true;
@@ -331,6 +333,7 @@ export function computePricing(product, classified) {
     kargoAciklama = ship.note || kargoAdim?.note || 'Ücrete tabi';
   } else if (ship.applies === false) {
     kargoUygulanir = false;
+    kargoUcret = 0;
     kargoAciklama = ship.note || 'Ücretsiz kargo';
   } else if (ship.freeOver != null && kargoUygulanir !== true) {
     kargoAciklama = formatTL(ship.freeOver) + ' üzeri ücretsiz kargo (ürün eşiğin altında; kargo ücreti sepette netleşir)';
