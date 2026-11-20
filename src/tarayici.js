@@ -351,6 +351,7 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
   sonKullanim = Date.now();
   let ctx = null;
   let ctxBizim = false;
+  let sayfa = null;
 
   try {
     const t = await tarayiciAl();
@@ -372,9 +373,8 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
       },
     };
 
-    if (UZAK_MOD) {
-      // 🌐 CDP bağlantısında yeni bağlam oluşturmak her tarayıcıda desteklenmez;
-      // mevcut bağlam varsa onu kullan (kapanışta KAPATMA — başkasının olabilir).
+    if (UZAK_MOD && !/^wss?:\/\//i.test(REMOTE_BROWSER_URL)) {
+      // 🌐 CDP bağlantısında mevcut bağlam paylaşılır (kapanışta yalnız sayfa kapatılır).
       const mevcut = t.contexts?.() || [];
       if (mevcut.length) {
         ctx = mevcut[0];
@@ -388,8 +388,10 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
       ctxBizim = true;
     }
 
-    // İleri düzey stealth initScript enjeksiyonları (defense-in-depth)
-    await ctx.addInitScript(() => {
+    if (!ctx._eunHazirlandi) {
+      ctx._eunHazirlandi = true;
+      // İleri düzey stealth initScript enjeksiyonları (defense-in-depth)
+      await ctx.addInitScript(() => {
       // 1) navigator.webdriver sil
       Object.defineProperty(navigator, 'webdriver', {
         get: () => undefined,
@@ -440,18 +442,19 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
       Object.defineProperty(navigator, 'deviceMemory', { get: () => 8, configurable: true });
     });
 
-    // Görsel, medya ve fontları engelleyerek tarama hızını 5x katına çıkar
-    await ctx.route('**/*', (route) => {
-      const type = route.request().resourceType();
-      if (type === 'image' || type === 'media' || type === 'font') {
-        return route.abort();
-      }
-      route.continue();
-    });
+      // Görsel, medya ve fontları engelleyerek tarama hızını 5x katına çıkar
+      await ctx.route('**/*', (route) => {
+        const type = route.request().resourceType();
+        if (type === 'image' || type === 'media' || type === 'font') {
+          return route.abort();
+        }
+        route.continue();
+      });
+    }
 
     const bitisMs = Date.now() + Math.max(8000, Math.min(timeoutMs || ZAMAN_ASIMI_MS, 25000));
     const kalanMs = () => Math.max(1000, bitisMs - Date.now());
-    const sayfa = await ctx.newPage();
+    sayfa = await ctx.newPage();
     let response = await sayfa.goto(url, {
       waitUntil: 'domcontentloaded',
       timeout: Math.min(kalanMs(), ZAMAN_ASIMI_MS),
@@ -532,7 +535,8 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     if (!yerelTarayiciHatasi) circuitBreaker.recordFailure(domain);
     return { networkError: 'tarayıcı: ' + msg.slice(0, 120), saglayici: 'tarayici' };
   } finally {
-    // Uzak bağlamı KAPATMA (paylaşımlı olabilir); yalnızca kendi açtığımızı kapat.
+    if (sayfa) await sayfa.close().catch(() => {});
+    // Uzak CDP bağlamını KAPATMA (paylaşımlı olabilir); yalnızca kendi açtığımızı kapat.
     if (ctx && ctxBizim) await ctx.close().catch(() => {});
     sayfaBirak();
     sonKullanim = Date.now();
