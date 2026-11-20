@@ -126,10 +126,20 @@ async function yerelTarayiciBaslat() {
 
 /** Uzak tarayıcıya bağlanır (ws → connect, http → connectOverCDP). */
 async function uzakTarayiciBaglan() {
+  let ekHeaders = {};
+  try {
+    const u = new URL(REMOTE_BROWSER_URL);
+    // SSH tüneli üzerinden `host.docker.internal` ile bağlanıldığında uzak sunucuda
+    // `127.0.0.1` dinleyen Playwright/Chrome Host başlığı kontrolünden 403 vermesin.
+    if (u.hostname === 'host.docker.internal') {
+      ekHeaders = { Host: '127.0.0.1' + (u.port ? ':' + u.port : '') };
+    }
+  } catch { /* ham URL ile devam */ }
+  const opts = { timeout: 20000, ...(Object.keys(ekHeaders).length ? { headers: ekHeaders } : {}) };
   if (/^wss?:\/\//i.test(REMOTE_BROWSER_URL)) {
-    return chromium.connect(REMOTE_BROWSER_URL, { timeout: 20000 });
+    return chromium.connect(REMOTE_BROWSER_URL, opts);
   }
-  return chromium.connectOverCDP(REMOTE_BROWSER_URL, { timeout: 20000 });
+  return chromium.connectOverCDP(REMOTE_BROWSER_URL, opts);
 }
 
 const STEALTH_ARGS = [
