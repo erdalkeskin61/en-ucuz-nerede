@@ -2399,10 +2399,10 @@ function bentoOzetCiz(sonuc) {
     || pr.kargo?.uygulanir === false
     || pr.kargo?.ucret === 0;
   const kargoNotu = kargoBedava
-    ? '<span class="bento-rozet yesil">📦 Kargo dahil</span>'
+    ? '<span class="bento-rozet yesil">📦 Kargo dahil (ücretsiz)</span>'
     : (Number(pr.kargo?.ucret) > 0
-      ? `<span class="bento-rozet">📦 +${tl(pr.kargo.ucret)} kargo</span>`
-      : '<span class="bento-rozet">📦 Kargo sepette</span>');
+      ? `<span class="bento-rozet yesil">📦 Kargo dahil (${tl(pr.kargo.ucret)} kargo toplama eklendi)</span>`
+      : '<span class="bento-rozet">📦 Kargo sepette belli</span>');
   const stokNotu = p.inStock === false
     ? '<span class="bento-rozet kirmizi">🔴 Tükendi</span>'
     : '<span class="bento-rozet yesil">🟢 Stokta</span>';
@@ -2677,8 +2677,15 @@ function sonucGoster(sonuc, opts = {}) {
   if (tamamiTukendi) {
     $('#ozetKutu').innerHTML = `<div class="etiket" style="color:#dc2626">⚠️ Tüm Mağazalarda Tükendi</div><div class="fiyat" style="color:#dc2626">Stok Yok</div><div class="yer">${bulunanlar.length} mağazanın tamamında stok tükenmiş</div>`;
   } else if (o.enUcuzSite) {
+    const enUcuzTeklif = bulunanlar.find(r =>
+      r.enUcuz || ((r.siteName === o.enUcuzSite || SITE_ADLARI[r.site] === o.enUcuzSite) && r.product?.inStock !== false));
+    const ekKargo = enUcuzTeklif?.product?.pricing?.kargo;
+    const kargoBilindi = ekKargo?.uygulanir === true || ekKargo?.uygulanir === false || enUcuzTeklif?.kargoBedava;
+    const kargoOzeti = (ekKargo?.uygulanir === true && Number(ekKargo.ucret) > 0)
+      ? `📦 ${tl(ekKargo.ucret)} kargo dahil`
+      : (kargoBilindi ? '📦 Kargo dahil (ücretsiz)' : '📦 Kargo sepette belli');
     const stokEkNot = stoktaYokSayisi > 0 ? ` · ${stoktaVarSayisi} mağazada stokta` : '';
-    $('#ozetKutu').innerHTML = `<div class="etiket">🏷️ En ucuz (stokta var)</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)}${stokEkNot}</div>`;
+    $('#ozetKutu').innerHTML = `<div class="etiket">${kargoBilindi ? '🏷️ En ucuz (kargo dahil)' : '🏷️ En ucuz (stokta var)'}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
   } else {
     $('#ozetKutu').innerHTML = `<div class="etiket">Sonuç</div><div class="fiyat">—</div><div class="yer">Stokta ürün bulunamadı</div>`;
   }
@@ -3648,9 +3655,16 @@ function kartHtml(r) {
       ${r.sahteIndirim?.sahteIndirim ? `<span class="sahte-indirim-rozet" tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}" data-ipucu="${esc(r.sahteIndirim.tooltip)}">⚠️ Şişirilmiş Liste Fiyatı<small>iddia %${esc(String(r.sahteIndirim.iddiaEdilenIndirim ?? '—'))} · gerçek %${esc(String(r.sahteIndirim.gercekTasarruf ?? '0'))}</small></span>` : ''}
       ${r.sahteIndirim?.gercekFirsat ? `<span class="gercek-firsat-rozet" title="${esc(r.sahteIndirim.tooltip || 'Son 90 günün en düşük fiyatı')}">🔥 GERÇEK FIRSAT<small>Son 90 günün dip fiyatı</small></span>` : ''}
       <div class="fiyat-at-not">
-        ${pr.ekIndirim > 0 ? `Ürüne özel indirim düşüldü: −${tl(pr.ekIndirim)}` : ''}
-        ${pr.kargo?.uygulanir ? `+ kargo ${tl(pr.kargo.ucret)}` : ''}
-        ${pr.toplam != null ? (stoktaYok ? '⚠️ son bilinen fiyat — ürün şu anda tükendi' : 'gerçekte ödenecek tutar') : 'fiyat hesaplanamadı'}
+        ${pr.ekIndirim > 0 ? `Ürüne özel indirim düşüldü: −${tl(pr.ekIndirim)} · ` : ''}
+        ${pr.toplam != null
+          ? (stoktaYok
+            ? '⚠️ son bilinen fiyat — ürün şu anda tükendi'
+            : (pr.kargo?.uygulanir === true && Number(pr.kargo?.ucret) > 0
+              ? `<b>Kargo dahil toplam</b> (ürün ${tl(pr.araToplam ?? pr.taban)} + kargo ${tl(pr.kargo.ucret)})`
+              : (pr.kargo?.uygulanir === false
+                ? '<b>Kargo dahil toplam</b> (ücretsiz kargo)'
+                : 'gerçekte ödenecek tutar (kargo sepette belli)')))
+          : 'fiyat hesaplanamadı'}
       </div>
       ${dokumHtml}
       ${cashbackHtml}
