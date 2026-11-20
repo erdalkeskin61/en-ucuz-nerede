@@ -1718,8 +1718,11 @@ function anlikNotuGuncelle(durum = {}) {
   const parcalar = [];
 
   if (durum.tazeleniyor) {
+    const sayacNot = Number(durum.bitenSite) > 0 && SITE_SIRASI.length > 0
+      ? ` (${Math.min(Number(durum.bitenSite), SITE_SIRASI.length)}/${SITE_SIRASI.length})`
+      : '';
     parcalar.push(`⚡ Bu ürün ${durum.yasMetni || 'daha önce'} tarandı (Hafızadan gösteriliyor)`
-      + ' · Mağazalar canlı kontrol ediliyor...');
+      + ` · Mağazalar canlı kontrol ediliyor${sayacNot}...`);
   } else if (durum.tazelemeHatasi) {
     parcalar.push(`⚠️ Fiyatlar güncellenemedi (${String(durum.tazelemeHatasi).slice(0, 70)}) — `
       + 'aşağıdaki sonuç son taramaya ait.');
@@ -1880,8 +1883,15 @@ function karsilastirmaIsle(job) {
     $('#araBtn').textContent = MOD_BUTON[aramaModu] || 'Fiyatları Bul';
 
     // 1) Tazeleme sürüyor: kısmi sonuçları snapshot ile BİRLEŞTİRİP canlı göster.
+    // Not: Ürün adıyla aramada POST aşamasında `#durumAlani` açılmış olabilir;
+    // eski sonuç ekrana basılırken `keepDurum: false` ile tarama kutusu gizlenir,
+    // canlı ilerleme `#sonAramaNotu` üzerinden gösterilir (`68/68` kutusu takılı kalmaz).
     if (job.tazeleniyor) {
-      anlikNotuGuncelle({ tazeleniyor: true, yasMetni: job.yasMetni });
+      const durumEl = $('#durumAlani');
+      if (durumEl && !durumEl.hidden && job.result) durumEl.hidden = true;
+      const bitenSite = Object.values(job.progress || {})
+        .filter(p => p && p.status && p.status !== 'running').length;
+      anlikNotuGuncelle({ tazeleniyor: true, yasMetni: job.yasMetni, bitenSite });
       const surum = job.surum || 0;
       if (surum !== anlikSurum) {
         anlikSurum = surum;
@@ -1889,9 +1899,9 @@ function karsilastirmaIsle(job) {
         if (birlestirilmis) {
           sonSonuc = birlestirilmis;
           zamanlaCiz(() => {
-            sonucGoster(birlestirilmis, { keepDurum: true, kaydir: false, canli: true });
+            sonucGoster(birlestirilmis, { keepDurum: true, kaydir: false, canli: true, yasMetni: job.yasMetni || null });
             appRenderFrame = null;
-            anlikNotuGuncelle({ tazeleniyor: true, yasMetni: job.yasMetni });
+            anlikNotuGuncelle({ tazeleniyor: true, yasMetni: job.yasMetni, bitenSite });
           });
         }
       }
@@ -1905,6 +1915,8 @@ function karsilastirmaIsle(job) {
     anlikMod = false;
 
     if (job.result && job.result.kaynak) {
+      const durumEl = $('#durumAlani');
+      if (durumEl && !durumEl.hidden) durumEl.hidden = true;
       sonSonuc = job.result;
       zamanlaCiz(() => {
         // Tazeleme bittiyse veri CANLI → mühür "az önce"; bitmediyse (hata/

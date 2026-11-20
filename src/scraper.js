@@ -303,8 +303,9 @@ async function rawFetchScraperApi(targetUrl, { render, timeoutMs, method = 'GET'
   if (session) params.set('session_number', String(session));
   // Özel başlık göndermek (ör. Accept-Content-Token) keep_headers ister.
   if (headers && Object.keys(headers).length) params.set('keep_headers', 'true');
+  const apiTimeout = Math.min(timeoutMs || 25000, render ? 45000 : 25000);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), apiTimeout);
   try {
     const res = await fetch('https://api.scraperapi.com/?' + params.toString(), {
       method,

@@ -155,16 +155,25 @@ function zamanAsimliCalistir(calisma, sinirMs, site, aktivite) {
         return;
       }
 
+      if (simdi - baslangic >= sertSinir) {
+        bitir({
+          site: site.id, siteName: site.name, status: 'timeout',
+          reason: 'Bu site ' + Math.round(sinirMs / 1000) + ' sn boyunca ilerleme kaydetmedi (üst sınır aşıldı)',
+          product: null, matchBasis: null, renkAyni: null,
+          examined: [], queriesTried: [], requestsSpent: 0,
+        });
+        return;
+      }
+
       let kuyruk = 0;
       try { kuyruk = kuyrukDurumu().bekleyen; } catch { kuyruk = 0; }
       if (kuyruk > 0) return;     // sistem dolu → bekleme sahibine yazılmaz
 
       biriken += gecen;
-      if (biriken >= sinirMs || simdi - baslangic >= sertSinir) {
+      if (biriken >= sinirMs) {
         bitir({
           site: site.id, siteName: site.name, status: 'timeout',
-          reason: 'Bu site ' + Math.round(sinirMs / 1000) + ' sn boyunca ilerleme kaydetmedi'
-            + (simdi - baslangic >= sertSinir ? ' (üst sınır aşıldı)' : ''),
+          reason: 'Bu site ' + Math.round(sinirMs / 1000) + ' sn boyunca ilerleme kaydetmedi',
           product: null, matchBasis: null, renkAyni: null,
           examined: [], queriesTried: [], requestsSpent: 0,
         });

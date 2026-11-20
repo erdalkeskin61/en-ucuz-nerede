@@ -29,6 +29,8 @@ import { katalogUrunleriAra } from './katalogSync.js';
 // DAHİL hesaplanıyor; eski kayıtlar ~%20 düşük görünüyordu → geçersiz sayılır.
 
 export const SNAPSHOT_SURUMU = 3;
+/** Bayat-iken-tazele (SWR) modunun kabul edeceği en eski snapshot yaşı (7 gün). */
+export const BAYAT_SWR_MAX_YAS_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DB_YOLU = path.join(config.dataDir, 'en_ucuz_nerede.db');
 let db = null;
@@ -378,12 +380,40 @@ export function fiyatFarki(eskiSonuc, yeniSonuc) {
   return { degisen, yeni: yeniSiteler, kaybolan };
 }
 
-/** Kullanıcıya gösterilecek "yaş" metni: "az önce", "12 dk önce", "3 sa 20 dk önce". */
+/**
+ * Ürün adıyla en yakın anlık snapshot'ı getirir (tam / ifade eşleşmesi).
+ * URL'siz aramalarda 2-7 günlük önceki sonucu 0 sn'de göstermek için kullanılır.
+ */
+export function sorgudanAnlikAl(sorgu, opts = {}) {
+  const maxYas = Number.isFinite(opts.maxYasMs) ? opts.maxYasMs : BAYAT_SWR_MAX_YAS_MS;
+  if (!(maxYas > 0)) return null;
+  const adaylar = snapshotAra(sorgu, { limit: 3, maxYasMs: maxYas });
+  const secilen = adaylar.find(a => a && a.puan >= 60 && a.payload?.kaynak?.url);
+  if (!secilen) return null;
+  const yasMs = Math.max(0, Date.now() - Number(secilen.ts));
+  return {
+    payload: secilen.payload,
+    ts: Number(secilen.ts),
+    yasMs,
+    anahtar: secilen.anahtar,
+    urun: secilen.urun || secilen.payload?.kaynak?.urun || null,
+    enUcuz: secilen.enUcuz ?? null,
+    enUcuzSite: secilen.enUcuzSite ?? null,
+    kaynakUrl: secilen.payload.kaynak.url,
+  };
+}
+
+/** Kullanıcıya gösterilecek "yaş" metni: "az önce", "12 dk önce", "3 sa 20 dk önce", "2 gün önce". */
 export function yasMetni(yasMs) {
   const dk = Math.floor(Number(yasMs || 0) / 60000);
   if (dk < 1) return 'az önce';
   if (dk < 60) return `${dk} dk önce`;
   const sa = Math.floor(dk / 60);
+  if (sa >= 24) {
+    const gun = Math.floor(sa / 24);
+    const kalanSa = sa % 24;
+    return kalanSa ? `${gun} gün ${kalanSa} sa önce` : `${gun} gün önce`;
+  }
   const kalanDk = dk % 60;
   return kalanDk ? `${sa} sa ${kalanDk} dk önce` : `${sa} sa önce`;
 }

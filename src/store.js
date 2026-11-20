@@ -1419,9 +1419,7 @@ export function getFiyatAnalizi(modelKodu, barkod, url) {
   const sinir90 = simdi - 90 * GUN_MS;
   const sinir30 = simdi - 30 * GUN_MS;
 
-  const doksan = [];               // {p, t}
-  const otuzGunluk = new Map();    // 'YYYY-MM-DD' -> {toplam, adet}
-
+  const hamDoksan = [];            // {p, t, gun}
   for (const r of rows) {
     // Gözlem zamanı: net_price = gerçekte ödenen (kargo dahil) tutar.
     const p = Number(r.net_price != null ? r.net_price : r.price);
@@ -1430,17 +1428,31 @@ export function getFiyatAnalizi(modelKodu, barkod, url) {
     if (!Number.isFinite(t)) continue;
     if (t < sinir90) continue;      // 90 günden eski
     const gun = String(r.ts).slice(0, 10);
-    doksan.push({ p, t, gun });
+    hamDoksan.push({ p, t, gun });
+  }
 
-    if (t >= sinir30) {
-      const g = otuzGunluk.get(gun) || { toplam: 0, adet: 0 };
-      g.toplam += p; g.adet += 1;
-      otuzGunluk.set(gun, g);
+  if (!hamDoksan.length) {
+    return bos('Bu ürünün kayıtları 90 günden eski. Yeni karşılaştırma yapıldıkça radar yeniden dolar.', pid, kaynak);
+  }
+
+  // Geçmişte döviz/aksesuar hatasından sızmış aşırı düşük değerleri (< medyanın %20'si) ayıkla.
+  let doksan = hamDoksan;
+  if (hamDoksan.length >= 5) {
+    const sirali = hamDoksan.map(x => x.p).sort((a, b) => a - b);
+    const med = sirali[Math.floor(sirali.length / 2)];
+    if (Number.isFinite(med) && med > 0) {
+      const temiz = hamDoksan.filter(x => x.p >= med * 0.20);
+      if (temiz.length >= 3) doksan = temiz;
     }
   }
 
-  if (!doksan.length) {
-    return bos('Bu ürünün kayıtları 90 günden eski. Yeni karşılaştırma yapıldıkça radar yeniden dolar.', pid, kaynak);
+  const otuzGunluk = new Map();    // 'YYYY-MM-DD' -> {toplam, adet}
+  for (const x of doksan) {
+    if (x.t >= sinir30) {
+      const g = otuzGunluk.get(x.gun) || { toplam: 0, adet: 0 };
+      g.toplam += x.p; g.adet += 1;
+      otuzGunluk.set(x.gun, g);
+    }
   }
 
   const fiyatlar = doksan.map(x => x.p);

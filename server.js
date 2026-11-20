@@ -31,7 +31,7 @@ import {
 } from './src/healthPulse.js';
 import { dbBakimCalistir, dbBakimDurumu, dbBoyutlari } from './src/dbBakim.js';
 import { logDurumu, logRotasyonuYap, eskiArsivleriTemizle, LOG_PATH, ESIK_BAYT as LOG_ESIK_BAYT } from './src/logRotasyon.js';
-import { anlikAl, anlikYaz, fiyatFarki, yasMetni, anlikIstatistik, snapshotKapat } from './src/anlikOnbellek.js';
+import { anlikAl, anlikYaz, fiyatFarki, yasMetni, anlikIstatistik, snapshotKapat, BAYAT_SWR_MAX_YAS_MS, sorgudanAnlikAl } from './src/anlikOnbellek.js';
 import {
   startFirsatScheduler, firsatIstatistik, firsatTestGonder,
   firsatlariTara, firsatZamanlayiciDurdur, firsatKapat, FIRSAT_VARSAYILAN,
@@ -1187,13 +1187,76 @@ app.post('/api/compare', async (req, res) => {
     ...ek,
   });
 
-  /* ---- 0) ÜRÜN ADIYLA ARAMA: ASENKRON İŞ (2026-11-14) --------------------
-   * ÖNCEKİ SORUN: `await hizliKaynakUrunBul(url)` POST yanıtından ÖNCE
-   * çalışıyordu → en kötü durumda 5 kademe × 3.5 sn = 17.5 sn kör bekleme.
-   * Artık iş ANINDA oluşturulup jobId dönülür; ürün çözümü job içinde
-   * aşamalı olarak yapılır ve SSE üzerinden canlı akar.
+  const tazeZorla = req.body?.taze === true;
+  const swrMaxYasMs = config.snapshotTtlMs > 0 ? Math.max(config.snapshotTtlMs, BAYAT_SWR_MAX_YAS_MS) : 0;
+  const tazelemeTamamlandi = (anlik, job, yeni) => {
+    job.result = yeni;
+    job.kaynak = yeni.kaynak || job.kaynak;
+    job.tazeleniyor = false;
+    job.tazelemeBitti = true;
+    job.tazelemeFarki = fiyatFarki(anlik.payload, yeni);
+    job.anlikTs = Date.now();
+    job.anlikYasMs = 0;
+    job.surum = (job.surum || 1) + 1;
+  };
+  const tazelemeHataAldi = (job, e) => {
+    job.tazeleniyor = false;
+    job.tazelemeHatasi = String(e.message || e);
+    job.surum = (job.surum || 1) + 1;
+  };
+  const arkaPlanTazelemeBaslat = (hedefUrl, anlik, job) => {
+    job.mod = 'tazeleme';
+    job.tazeleniyor = true;
+    job.surum = 1;
+    job.anlikTs = anlik.ts;
+    job.anlikYasMs = anlik.yasMs;
+    job.status = 'done';
+    job.result = anlik.payload;
+    job.kaynak = anlik.payload.kaynak || null;
+    job.faz = 'bitti';
+    job.fazNotu = 'Hafızadan gösteriliyor, arka planda tazeleniyor';
+    karsilastirmaCalistir(hedefUrl, job, formatSonuc)
+      .then((yeni) => tazelemeTamamlandi(anlik, job, yeni))
+      .catch((e) => tazelemeHataAldi(job, e));
+  };
+
+  /* ---- 0) ÜRÜN ADIYLA ARAMA: ANLIK SWR + ASENKRON İŞ --------------------
+   * Önce son 7 günde bu ürün adıyla alınmış bir snapshot varsa HEMEN döndürülür
+   * ("2 gün önce tarandı · canlı güncelleniyor") ve arka planda tazelenir.
    */
   if (arananSorgu) {
+    const sorguAnlikHam = tazeZorla ? null : sorgudanAnlikAl(arananSorgu, { maxYasMs: swrMaxYasMs });
+    if (sorguAnlikHam?.kaynakUrl) {
+      const anlik = { ...sorguAnlikHam, payload: baskiZenginlestir(sorguAnlikHam.payload) };
+      const hedefSite = detectSite(sorguAnlikHam.kaynakUrl);
+      const job = yeniKarsilastirma({
+        url: sorguAnlikHam.kaynakUrl,
+        site: hedefSite?.id || anlik.payload?.kaynak?.site || null,
+        mod: 'tazeleme',
+        arananSorgu,
+        kaynakAd: anlik.urun || arananSorgu,
+        tazeleniyor: true,
+        surum: 1,
+        anlikTs: anlik.ts,
+        anlikYasMs: anlik.yasMs,
+      });
+      arkaPlanTazelemeBaslat(sorguAnlikHam.kaynakUrl, anlik, job);
+      return res.json({
+        isId: job.id,
+        id: job.id,
+        ...anlikBilgisi(anlik),
+        surum: job.surum,
+        sonuc: anlik.payload,
+        onbellekSonuc: anlik.payload,
+        stale: true,
+        mod: 'tazeleme',
+        arama: true,
+        sonGuncelleme: anlik.ts,
+        yasMs: anlik.yasMs,
+        ttlMs: config.snapshotTtlMs,
+      });
+    }
+
     const job = yeniKarsilastirma({ mod: 'arama', faz: 'cozum', arananSorgu });
     job.arananSorgu = arananSorgu;
 
@@ -1289,35 +1352,10 @@ app.post('/api/compare', async (req, res) => {
           if (job.kaynakKatmani === 'katalog') job.katman = 0;
 
           // Anlık (SWR) sonuç varsa hemen sun, arka planda tazele.
-          const tazeZorla = req.body?.taze === true;
-          const anlikHam = tazeZorla ? null : anlikAl(bulunan.url);
+          const anlikHam = tazeZorla ? null : anlikAl(bulunan.url, { maxYasMs: swrMaxYasMs });
           const anlik = anlikHam ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) } : null;
           if (anlik) {
-            job.mod = 'tazeleme';
-            job.tazeleniyor = true;
-            job.surum = 1;
-            job.anlikTs = anlik.ts;
-            job.anlikYasMs = anlik.yasMs;
-            job.status = 'done';
-            job.result = anlik.payload;
-            job.kaynak = anlik.payload.kaynak || null;
-            fazAyarla('bitti', 'Hafızadan gösteriliyor, arka planda tazeleniyor');
-            karsilastirmaCalistir(bulunan.url, job, formatSonuc)
-              .then((yeni) => {
-                job.result = yeni;
-                job.kaynak = yeni.kaynak || job.kaynak;
-                job.tazeleniyor = false;
-                job.tazelemeBitti = true;
-                job.tazelemeFarki = fiyatFarki(anlik.payload, yeni);
-                job.anlikTs = simdi();
-                job.anlikYasMs = 0;
-                job.surum = (job.surum || 1) + 1;
-              })
-              .catch((e) => {
-                job.tazeleniyor = false;
-                job.tazelemeHatasi = String(e.message || e);
-                job.surum = (job.surum || 1) + 1;
-              });
+            arkaPlanTazelemeBaslat(bulunan.url, anlik, job);
             return;
           }
         }
@@ -1376,9 +1414,8 @@ app.post('/api/compare', async (req, res) => {
   }
 
   // ---- 1) ANLIK SONUÇ (2026-10-29) ----
-  // Ürün son 5 saat içinde taranmışsa: sonucu HEMEN döndür, arka planda tazele.
-  const tazeZorla = req.body?.taze === true;
-  const anlikHam = tazeZorla ? null : anlikAl(url);
+  // Ürün son 7 gün içinde taranmışsa: sonucu HEMEN döndür, arka planda tazele.
+  const anlikHam = tazeZorla ? null : (anlikAl(url) || anlikAl(url, { maxYasMs: swrMaxYasMs }));
   // Eski snapshot'larda 3D alanları yoksa okuma anında türet (0 sn korunur).
   const anlik = anlikHam ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) } : null;
   if (anlik) {
@@ -1389,33 +1426,13 @@ app.post('/api/compare', async (req, res) => {
       anlikTs: anlik.ts,
       anlikYasMs: anlik.yasMs,
     });
-    // Eski sonuç hemen gösterilebilsin diye iş "bitmiş" sayılır; `tazeleniyor` bayrağı
-    // istemciye "oyumaya devam et" der.
     job.status = 'done';
     job.result = anlik.payload;
     job.kaynak = anlik.payload.kaynak || null;
 
-    // Arka plan tazeleme — kullanıcıyı BEKLETMEZ, hata olursa eski sonuç korunur.
     karsilastirmaCalistir(url, job, formatSonuc)
-      .then((yeni) => {
-        const fark = fiyatFarki(anlik.payload, yeni);
-        job.result = yeni;
-        job.kaynak = yeni.kaynak || job.kaynak;
-        job.tazeleniyor = false;
-        job.tazelemeBitti = true;
-        // Snapshot `karsilastirmaCalistir` içinde güncellendi; yaş sıfırlandı.
-        job.anlikTs = Date.now();
-        job.anlikYasMs = 0;
-        job.tazelemeFarki = fark;
-        // İş sürümü artar → istemci yeni fiyatları çizer ve farkı vurgular.
-        job.surum = (job.surum || 1) + 1;
-      })
-      .catch((e) => {
-        // DÜRÜSTLÜK: eski sonuç korunur, kullanıcıya "güncellenemedi" denir.
-        job.tazeleniyor = false;
-        job.tazelemeHatasi = String(e.message || e);
-        job.surum = (job.surum || 1) + 1;
-      });
+      .then((yeni) => tazelemeTamamlandi(anlik, job, yeni))
+      .catch((e) => tazelemeHataAldi(job, e));
 
     return res.json({
       isId: job.id,
