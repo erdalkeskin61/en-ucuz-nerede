@@ -370,9 +370,11 @@ export function brandWords(brand) {
 
 const MARKA_GENEL_SOZCUKLERI = new Set([
   'filament', 'yazici', 'yazıcı', 'printer', 'baski', 'baskı', 'set', 'paket',
-  'adet', 'combo', 'model', 'seri', 'renk', 'pla', 'petg', 'abs', 'tpu', 'asa',
-  'pa', 'pc', 'resin', 'reçine', 'recine', '3d', 'yeni', 'orijinal', 'original',
-  'plus', 'pro', 'max', 'mini', 'ultra', 'lite', 'super',
+  'adet', 'combo', 'model', 'seri', 'renk', 'pla', 'epla', 'xpla', 'hpla', 'pla+',
+  'petg', 'abs', 'tpu', 'asa', 'pa', 'pc', 'resin', 'reçine', 'recine', '3d',
+  'yeni', 'orijinal', 'original', 'plus', 'pro', 'max', 'mini', 'ultra', 'lite',
+  'super', 'basic', 'matte', 'silk', 'hyper', 'rapid', 'tough', 'high', 'speed',
+  'evo', 'meta', 'wood', 'marble', 'glossy', 'sparkle', 'glitter', 'transparent',
 ]);
 
 /**
@@ -738,6 +740,48 @@ function markaGecerliMi(m) {
   const kelimeler = s.split(/\s+/).filter(Boolean);
   if (kelimeler.length && kelimeler.every(w => GENEL_MARKA_SOZCUKLERI.has(w))) return false;
   return true;
+}
+
+/**
+ * Verilen marka değeri mağazanın KENDİ adı mı?
+ * Shopify `vendor` alanında pek çok satıcı ürün markası yerine kendi mağaza adını
+ * yazar (ör. `filamenthane` mağazası "eSUN PLA+" ürününde `vendor: "Filamenthane"`).
+ */
+export function magazaAdiMarkaMi(marka, siteId, siteName) {
+  const m = sadelestir(marka || '').replace(/\s+/g, '');
+  if (!m || m.length < 3) return false;
+  for (const aday of [siteId, siteName]) {
+    const s = sadelestir(aday || '').replace(/\s+/g, '');
+    if (!s || s.length < 3) continue;
+    if (m === s) return true;
+    if (Math.min(m.length, s.length) >= 4 && (m.includes(s) || s.includes(m))) return true;
+  }
+  return false;
+}
+
+/**
+ * Satıcı adı marka alanına sızdıysa (Filamenthane + "eSUN PLA+"), başlıktaki
+ * gerçek üretici markasını çıkarır; kendi markalı mağazada (Porima 3D + "Porima PLA")
+ * ise markayı korur.
+ */
+export function gercekMarkaBul(rawBrand, rawTitle, siteId = null, siteName = null) {
+  const b = String(rawBrand || '').trim();
+  const title = String(rawTitle || '').trim();
+  if (!b) return muhtemelMarka(title) || null;
+  if (!magazaAdiMarkaMi(b, siteId, siteName)) return b;
+
+  // Başlık mağaza adıyla başlıyorsa önce onu soyup gerçek marka token'ını ara.
+  let temizBaslik = title;
+  const bEsc = b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  temizBaslik = temizBaslik.replace(new RegExp(`^${bEsc}[\\s\\-–—:|]+`, 'i'), '').trim();
+  const tahmin = muhtemelMarka(temizBaslik);
+  if (tahmin && !magazaAdiMarkaMi(tahmin, siteId, siteName)) {
+    const orijinalKelime = temizBaslik.split(/\s+/).find(w => sadelestir(w) === tahmin);
+    return orijinalKelime || tahmin;
+  }
+  // Başlıkta gerçekten kendi markası geçiyorsa (Porima3D + "Porima PLA") koru;
+  // aksi halde satıcı adını marka sanma → null dön.
+  return title && sadelestir(title).includes(sadelestir(b)) ? b : null;
 }
 
 /**

@@ -331,6 +331,10 @@ function kaynakOncelikSirala(liste) {
     const aKirilgan = KIRILGAN_KAYNAK_SITELER.has(a.siteId) ? 1 : 0;
     const bKirilgan = KIRILGAN_KAYNAK_SITELER.has(b.siteId) ? 1 : 0;
     if (aKirilgan !== bKirilgan) return aKirilgan - bKirilgan;
+    // Stokta olduğu bilinen adaylar stokta olmayanların önüne geçer
+    const aStokDisi = (a.stokta === 0 || a.stokta === false) ? 1 : 0;
+    const bStokDisi = (b.stokta === 0 || b.stokta === false) ? 1 : 0;
+    if (aStokDisi !== bStokDisi) return aStokDisi - bStokDisi;
     const puanFark = (b.puan || 0) - (a.puan || 0);
     if (Math.abs(puanFark) > 1e-6) return puanFark;
     const af = a.fiyat != null ? 0 : (a.price != null ? 0 : 1);

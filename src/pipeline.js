@@ -23,7 +23,7 @@ import {
 } from './pricing.js';
 import { getFiyatAnalizi } from './store.js';
 import { urunIcinKampanyalar } from './kuponlar.js';
-import { matchProducts, sameColor, titleSimilarity, titleTokens, countTokenOverlap, kritikVaryantCakismasi, toLowerTr, normalizeModelCode, normalizeBarcode, brandAyni, brandWords, extractColors, dominantColor } from './util.js';
+import { matchProducts, sameColor, titleSimilarity, titleTokens, countTokenOverlap, kritikVaryantCakismasi, toLowerTr, normalizeModelCode, normalizeBarcode, brandAyni, brandWords, extractColors, dominantColor, magazaAdiMarkaMi, gercekMarkaBul } from './util.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { birimFiyat, birimSirala, birimFiyatHesapla } from './birimFiyat.js';
 import {
@@ -410,6 +410,7 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
         result.examined.push({ url: cand.url, sonuc: 'sayfa okunamadı: ' + String(e.message || e).slice(0, 120) });
         continue;
       }
+      magazaMarkasiniTemizle(product, adapter);
       let match = matchProducts(src, product);
 
       // Belirsiz / Gri Alan Kontrolü:
@@ -547,6 +548,17 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
  * Kampanya sınıflandırması yapılmaz → koşullu/koşulsuz kampanya indirimleri
  * uygulanmaz. Bu muhafazakâr bir varsayımdır: fiyat asla olduğundan UCUZ görünmez.
  */
+function magazaMarkasiniTemizle(urun, adapter) {
+  if (!urun || !adapter) return;
+  if (!magazaAdiMarkaMi(urun.brand, adapter.id, adapter.name)) return;
+  const gMarka = gercekMarkaBul(urun.brand, urun.title, adapter.id, adapter.name);
+  if (gMarka && !magazaAdiMarkaMi(gMarka, adapter.id, adapter.name)) {
+    const bEsc = String(urun.brand || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (bEsc) urun.title = String(urun.title || '').replace(new RegExp(`^${bEsc}[\\s\\-–—:|]+`, 'i'), '').trim();
+    urun.brand = gMarka;
+  }
+}
+
 function fiyatlaHizli(product) {
   product.siteKampanyalari = [];
   product.classifiedCampaigns = [];
@@ -1040,6 +1052,9 @@ export async function runComparison(sourceUrl, opts = {}) {
       throw new Error('Kaynak ürün okunamadı (' + adapter.name + '): ' + ayrinti);
     }
   }
+  // Kaynak marka mağazanın kendi adıysa ("Filamenthane eSUN PLA+"), sorgu ve eşleşmede
+  // sahte marka bozulmasın diye başlıktan gerçek üretici markasını çıkar.
+  magazaMarkasiniTemizle(srcProduct, adapter);
   const sourceResult = {
     site: adapter.id,
     siteName: adapter.name,

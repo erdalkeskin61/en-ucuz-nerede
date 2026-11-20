@@ -38,7 +38,7 @@
 import { dbBaglantisi } from './store.js';
 import { adapterById } from './sites/index.js';
 import { httpIste } from './impitIstemci.js';
-import { titleSimilarity, toLowerTr } from './util.js';
+import { titleSimilarity, toLowerTr, gercekMarkaBul } from './util.js';
 import { kdvDahilFiyat, kdvOraniBul } from './kdv.js';
 
 /* ================================================================== */
@@ -210,12 +210,14 @@ export function shopifyUrunleriCoz(json, hedef = {}) {
       : (p.image?.src || null);
 
     const baslik = String(p.title).trim();
+    const siteAd = hedef.siteName || adapterById(siteId)?.name || siteId;
+    const temizMarka = gercekMarkaBul(p.vendor, baslik, siteId, siteAd);
     satirlar.push({
       siteId,
       urunUrl: base + '/products/' + handle,
       baslik,
       temizBaslik: temizBaslik(baslik),
-      marka: p.vendor ? String(p.vendor).trim() : null,
+      marka: temizMarka,
       fiyat,
       stokta: varyantlar.length ? (varyantlar.some(v => v && v.available !== false) ? 1 : 0) : null,
       gorselUrl: gorsel,

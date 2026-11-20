@@ -22,14 +22,19 @@
  */
 import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
-import { dominantColor, sameColor } from '../util.js';
+import { dominantColor, sameColor, magazaAdiMarkaMi, gercekMarkaBul } from '../util.js';
 import { miktarCikar } from '../birimFiyat.js';
 
-/** Marka adını başlığa yalnızca başlıkta geçmiyorsa ekler (tekrarı önler). */
-function markaliBaslik(vendor, title) {
+/** Marka adını başlığa yalnızca başlıkta geçmiyorsa ve mağaza kendi adını
+ *  satıcı alanı olarak basmamışsa ekler ("Filamenthane eSUN PLA+" hatasını önler). */
+function markaliBaslik(vendor, title, siteId = null, siteName = null) {
   const t = String(title || '').trim();
   const v = String(vendor || '').trim();
   if (!v) return t;
+  if (siteId && magazaAdiMarkaMi(v, siteId, siteName)) {
+    const gercek = gercekMarkaBul(v, t, siteId, siteName);
+    if (!gercek || !magazaAdiMarkaMi(gercek, siteId, siteName)) return t;
+  }
   const norm = (x) => x.toLocaleLowerCase('tr-TR');
   return norm(t).includes(norm(v)) ? t : (v + ' ' + t);
 }
@@ -204,10 +209,10 @@ export function shopifySite(cfg) {
       const data = guvenliJsonAyristir(r.body, 'Shopify arama yanıtı JSON değil.');
       const urunler = data?.resources?.results?.products || [];
       return urunler.map(u => ({
-        title: markaliBaslik(u.vendor, u.title),
+        title: markaliBaslik(u.vendor, u.title, this.id, this.name),
         url: base + '/products/' + u.handle,
         price: u.price != null ? parseFloat(u.price) : null,
-        brand: u.vendor || null,
+        brand: gercekMarkaBul(u.vendor, u.title, this.id, this.name),
       })).filter(u => u.title && u.url);
     },
 
@@ -235,10 +240,12 @@ export function shopifySite(cfg) {
         const aday = enIyiVaryant(variants, opts.kaynak);
         if (aday) { v = aday; kaynakSecim = aday._kanit ? 'kaynak-eşleşmesi' : 'stokta-ilk'; }
       }
-      // 3) Shopify'ın kendi seçimi / ilk stoklu / ilk varyant.
+      // 3) Stokta olan seçili / ilk stoklu varyant / yoksa ilk varyant.
       if (!v) {
-        v = variants.find(x => x.id === js.selected_or_first_available_variant?.id)
+        const secili = variants.find(x => x.id === js.selected_or_first_available_variant?.id);
+        v = (secili && secili.available !== false ? secili : null)
           || variants.find(x => x.available !== false)
+          || secili
           || variants[0]
           || {};
         kaynakSecim = 'varsayılan';
@@ -247,7 +254,7 @@ export function shopifySite(cfg) {
       const price = v.price != null ? v.price / 100 : null;
       const compare = v.compare_at_price != null ? v.compare_at_price / 100 : null;
       const varyantAdi = String(v.title || '').trim();
-      const tamBaslik = (markaliBaslik(js.vendor, js.title)
+      const tamBaslik = (markaliBaslik(js.vendor, js.title, this.id, this.name)
         + (varyantAdi && !/^default title$/i.test(varyantAdi) ? ' - ' + varyantAdi : '')).trim();
 
       return {
@@ -255,7 +262,7 @@ export function shopifySite(cfg) {
         siteName: this.name,
         url,
         title: tamBaslik,
-        brand: js.vendor || null,
+        brand: gercekMarkaBul(js.vendor, js.title, this.id, this.name),
         modelCode: v.sku || null,
         barcode: v.barcode || null,
         color: dominantColor(`${js.title} ${varyantAdi}`),
