@@ -2176,6 +2176,8 @@ export function vitrinVerisi(opts = {}) {
     // DÜRÜSTLÜK (2026-11-03): bu oran mağazanın ETİKET indirimi DEĞİL, stokta olan
     // mağazalar arasındaki farktır. %60 üzeri oran büyük olasılıkla farklı PAKET
     // boyutunun eşleşmesidir (ölçüm: Microzey PLA %88) → rozet gösterilmez.
+    // %80 üzeri fark ise döviz/hatalı fiyat sinyalidir → vitrin kartı atlanır.
+    if (hamYuzde > 80) continue;
     const farkGuvenilir = hamYuzde > 0 && hamYuzde <= 60;
     const indirimYuzde = farkGuvenilir ? hamYuzde : 0;
 

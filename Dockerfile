@@ -20,6 +20,7 @@ FROM node:22-bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     NODE_ENV=production \
     TZ=Europe/Istanbul \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     npm_config_update_notifier=false \
     npm_config_fund=false
 
@@ -43,7 +44,9 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit
 # ---- Chromium (opsiyonel ama varsayılan açık) ----
 ARG PLAYWRIGHT_KUR=1
 RUN if [ "$PLAYWRIGHT_KUR" = "1" ]; then \
-      npx playwright install --with-deps chromium ; \
+      mkdir -p /ms-playwright && \
+      npx playwright install --with-deps chromium && \
+      chmod -R a+rX /ms-playwright ; \
     else \
       echo "PLAYWRIGHT_KUR=0 → Chromium kurulmadı (TARAYICI_KAPALI=1 önerilir)"; \
     fi

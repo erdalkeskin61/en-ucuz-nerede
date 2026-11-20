@@ -12,6 +12,29 @@ import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
 import { findJsonLdProduct, dominantColor, decodeEntities, parseNum, jsSayi, absUrl } from '../util.js';
 import { extractSelfHealingPrice, extractSelfHealingTitle, extractSelfHealingImage } from '../selfHealingParser.js';
+
+/** Ticimax ürün HTML'indeki `currencies` dizisinden döviz kurunu okur. */
+function ticimaxKurCoz(html, currency) {
+  if (!html || !currency || currency === 'TRY') return null;
+  const arrM = html.match(/"currencies"\s*:\s*(\[[\s\S]{10,4000}?\])/);
+  if (arrM) {
+    try {
+      const liste = JSON.parse(arrM[1]);
+      if (Array.isArray(liste)) {
+        const kayit = liste.find(x => String(x?.dovizKodu || '').toUpperCase() === currency);
+        const kur = Number(kayit?.kur);
+        if (Number.isFinite(kur) && kur > 1) return kur;
+      }
+    } catch { /* JSON kısmi kesildiyse regex yedeğine düş */ }
+  }
+  const esc = currency.replace(/[^A-Z]/gi, '');
+  if (!esc) return null;
+  const re = new RegExp(`"dovizKodu"\\s*:\\s*"${esc}"[\\s\\S]{0,160}?"kur"\\s*:\\s*([\\d.]+)`, 'i');
+  const m = html.match(re);
+  const kur = Number(m?.[1]);
+  return Number.isFinite(kur) && kur > 1 ? kur : null;
+}
+
 export function ticimaxSite(cfg) {
   const { id, name, hosts, base, aramaYolu = '/arama?kelime=' } = cfg;
   return {
@@ -143,6 +166,15 @@ export function ticimaxSite(cfg) {
         else currency = 'USD';
       }
 
+      const kur = currency !== 'TRY' ? ticimaxKurCoz(html, currency) : null;
+      let finalFiyat = fiyat;
+      let finalListPrice = listPrice;
+      if (kur != null) {
+        finalFiyat = Math.round(fiyat * kur * 100) / 100;
+        if (finalListPrice != null) finalListPrice = Math.round(finalListPrice * kur * 100) / 100;
+        currency = 'TRY';
+      }
+
       return {
         site: this.id,
         siteName: this.name,
@@ -152,8 +184,8 @@ export function ticimaxSite(cfg) {
         modelCode: stokKodu,
         barcode: barkod,
         color: dominantColor(title),
-        listPrice,
-        sellingPrice: fiyat,
+        listPrice: finalListPrice,
+        sellingPrice: finalFiyat,
         currency,
         inStock: stokta,
         seller: null,
