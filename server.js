@@ -930,8 +930,8 @@ app.get('/api/jobs', (req, res) => {
 function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {}) {
   const secenekler = {
     signal: job.iptalKontrolu.signal,
-    // Tazeleme modunda sayfa önbelleği atlanır → fiyat gerçekten siteden okunur.
-    taze: job.mod === 'tazeleme',
+    // Tazeleme modunda veya taze:true istendiğinde sayfa önbelleği atlanır → fiyat gerçekten siteden okunur.
+    taze: job.mod === 'tazeleme' || job.taze === true,
     // Opsiyonel site alt kümesi (teşhis/test). Verilmezse tüm siteler taranır —
     // varsayılan davranış değişmez (2026-10-29).
     ...(Array.isArray(job.siteler) && job.siteler.length ? { siteler: job.siteler } : {}),
@@ -1262,7 +1262,7 @@ app.post('/api/compare', async (req, res) => {
       });
     }
 
-    const job = yeniKarsilastirma({ mod: 'arama', faz: 'cozum', arananSorgu });
+    const job = yeniKarsilastirma({ mod: 'arama', faz: 'cozum', arananSorgu, taze: tazeZorla });
     job.arananSorgu = arananSorgu;
 
     // Arka plan işçisi — yanıt döndükten SONRA çalışır.
@@ -1313,6 +1313,7 @@ app.post('/api/compare', async (req, res) => {
           fazAyarla('cozum', 'Ürün mağazalarda aranıyor…');
           const ham = await hizliKaynakUrunBul(arananSorgu, {
             signal: job.iptalKontrolu?.signal || null,
+            taze: tazeZorla,
           });
           if (ham?.url) {
             const katalogdan = ham.kaynak === 'katalog';
@@ -1458,7 +1459,7 @@ app.post('/api/compare', async (req, res) => {
   }
 
   // ---- 2) NORMAL TARAMA ----
-  const job = yeniKarsilastirma();
+  const job = yeniKarsilastirma({ taze: tazeZorla });
   karsilastirmaCalistir(url, job, formatSonuc)
     .then(result => { job.status = 'done'; job.result = result; })
     .catch(e => { job.status = 'error'; job.error = String(e.message || e); });

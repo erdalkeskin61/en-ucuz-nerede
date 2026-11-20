@@ -1365,7 +1365,9 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
     `<span class="cip" id="cip-${s}"><span class="nokta"></span>${SITE_ADLARI[s]}</span>`).join('');
 
   try {
-    const govde = zorlaTaze ? { url, taze: true } : { url };
+    // "Fiyatları Bul" / form araması her zaman güncel tarama başlatır; geçmiş önbellek
+    // sonucunu kullanıcıya tekrar sunmaz. (SWR akışı API katmanında korunur.)
+    const govde = { url, taze: true };
     zorlaTaze = false;
     const res = await fetch('/api/compare', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

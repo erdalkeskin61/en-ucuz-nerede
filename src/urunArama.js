@@ -414,12 +414,12 @@ export function katalogdanKaynakAdayi(sorgu, opts = {}) {
   };
 }
 
-export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disSinyal = null, katalogTtlMs = undefined } = {}) {
+export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disSinyal = null, katalogTtlMs = undefined, taze = false } = {}) {
   const temizSorgu = String(sorgu || '').trim();
   if (!temizSorgu || temizSorgu.length < 2) return null;
 
   const key = temizSorgu.toLocaleLowerCase('tr-TR');
-  const cached = KAYNAK_CACHE.get(key);
+  const cached = taze ? null : KAYNAK_CACHE.get(key);
   if (cached && (Date.now() - cached.ts < CACHE_TTL_MS)) {
     return cached.urun;
   }
