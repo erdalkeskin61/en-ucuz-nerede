@@ -887,6 +887,8 @@ async function karsilastirmaAkisiniTamamla({
         priceExVat: r.product.priceExVat ?? null,
         birim: birimFiyat(r.product),
         varyant: r.product.varyant || null,
+        enDusukFiyatNotu: r.product.enDusukFiyatNotu || null,
+        kalanStok: r.product.kalanStok ?? null,
         birimHesap: birimFiyatHesapla(
           r.product.title,
           r.product.pricing?.toplam ?? r.product.sellingPrice,

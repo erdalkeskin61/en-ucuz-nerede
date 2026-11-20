@@ -1159,6 +1159,8 @@ app.post('/api/compare', async (req, res) => {
       // Varyant şeffaflığı (2026-11-03): Shopify gibi çok varyantlı mağazalarda
       // hangi varyantın seçildiği görünür olsun.
       varyant: r.product.varyant || null,
+      enDusukFiyatNotu: r.product.enDusukFiyatNotu || null,
+      kalanStok: r.product.kalanStok ?? null,
       // 🧵 Filament/reçine birim fiyat rozeti (2026-11-01).
       birimHesap: birimFiyatHesapla(
         r.product.title,

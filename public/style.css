@@ -2452,6 +2452,41 @@ html[data-theme="dark"] .gercek-firsat-rozet {
 }
 html[data-theme="dark"] .etiket-fiyat.supheli { color: #FCD34D; border-bottom-color: #B45309; }
 
+/* Mağaza sayfası "Son X Günün En Düşük Fiyatı!" ve kalan stok rozetleri */
+.magaza-dip-rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #9F1239;
+  background: linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%);
+  border: 1px solid #FDA4AF;
+  cursor: help;
+}
+html[data-theme="dark"] .magaza-dip-rozet {
+  color: #FDA4AF;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.22) 0%, rgba(190, 18, 60, 0.12) 100%);
+  border-color: rgba(253, 164, 175, 0.42);
+}
+.rozet.stok-az {
+  color: #9A3412;
+  background: #FFF7ED;
+  border-color: #FDBA74;
+  font-weight: 700;
+}
+html[data-theme="dark"] .rozet.stok-az {
+  color: #FDBA74;
+  background: rgba(234, 88, 12, 0.18);
+  border-color: rgba(253, 186, 116, 0.4);
+}
+
 /* Tooltip: `data-ipucu` taşıyan rozetlerde fare/klavye ile açıklama.
    Mobilde dokunma da çalışsın diye rozet odaklanabilir (tabindex=0). */
 .sahte-indirim-rozet[data-ipucu]::after {

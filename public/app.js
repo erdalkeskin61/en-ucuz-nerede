@@ -3645,10 +3645,12 @@ function kartHtml(r) {
           ${p.color ? `<span class="rozet renk">Renk: ${esc(p.color)}</span>` : ''}
           ${p.modelCode ? `<span class="rozet">Model: ${esc(p.modelCode)}</span>` : ''}
           ${stoktaYok ? '<span class="rozet stok-yok">🔴 Stokta Yok</span>' : '<span class="rozet stok-var">🟢 Stokta Var</span>'}
+          ${!stoktaYok && Number(p.kalanStok) > 0 ? `<span class="rozet stok-az" title="Mağaza sayfasındaki kalan stok uyarısı">⏳ Son ${Number(p.kalanStok)} Ürün</span>` : ''}
         </div>
       </div>
     </div>
     <div class="kart-fiyat">
+      ${p.enDusukFiyatNotu ? `<div class="magaza-dip-rozet" title="${esc(SITE_ADLARI[r.site] || r.siteName || 'Mağaza')} ürün sayfasında belirtilen dip fiyat rozeti">📉 ${esc(p.enDusukFiyatNotu)}</div>` : ''}
       ${pr.etiket && pr.etiket > (pr.araToplam ?? pr.taban) ? `<div class="etiket-fiyat ${r.sahteIndirim?.sahteIndirim ? 'supheli' : ''}"${r.sahteIndirim?.sahteIndirim ? ` tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}"` : ''}>${tl(pr.etiket)}</div>` : ''}
       <div class="gercek-fiyat ${r.enUcuz ? 'ek' : ''}">${tl(pr.toplam ?? pr.araToplam ?? p.sellingPrice)}</div>
       ${stoktaYok ? '<span class="stok-fiyat-rozet" title="Ürün şu anda tükendi; gösterilen fiyat son bilinen fiyattır.">Tükendi</span>' : ''}

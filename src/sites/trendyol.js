@@ -92,6 +92,15 @@ export default {
       }
     }
 
+    // Mağaza fiyat & stok rozetleri (örn. "Son 90 Günün En Düşük Fiyatı!", "Son 2 Ürün")
+    const enDusukGun = Number(wv.lowestPriceDuration);
+    const enDusukFiyatNotu = (Number.isFinite(enDusukGun) && enDusukGun > 0)
+      ? `Son ${enDusukGun} Günün En Düşük Fiyatı!`
+      : (wv.tagDetails?.some(t => t?.tag === 'lowest_price') ? 'Dönem İçi En Düşük Fiyat!' : null);
+    const kalanStok = (wv.isRunningOut && Number(wv.runningOutQuantity) > 0 && Number(wv.runningOutQuantity) <= 10)
+      ? Number(wv.runningOutQuantity)
+      : null;
+
     return {
       site: this.id,
       siteName: this.name,
@@ -108,6 +117,8 @@ export default {
       seller: listing.merchant?.name || null,
       image: Array.isArray(p.images) ? (p.images[0]?.url || p.images[0] || null) : null,
       campaigns: [...campaigns],
+      enDusukFiyatNotu,
+      kalanStok,
       shipping,
     };
   },
