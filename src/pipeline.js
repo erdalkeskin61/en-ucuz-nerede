@@ -410,6 +410,10 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
         result.examined.push({ url: cand.url, sonuc: 'sayfa okunamadı: ' + String(e.message || e).slice(0, 120) });
         continue;
       }
+      if (product?.currency && String(product.currency).toUpperCase() !== 'TRY') {
+        result.examined.push({ url: cand.url, sonuc: 'para birimi TRY değil (' + product.currency + ')' });
+        continue;
+      }
       magazaMarkasiniTemizle(product, adapter);
       let match = matchProducts(src, product);
 
@@ -606,6 +610,42 @@ async function classifyAndPrice(product, siteName) {
 }
 
 /**
+ * Piyasa medyanının %20'sinden daha düşük kalan aşırı düşük (döviz/aksesuar
+ * kaynaklı) sahte fiyatları temizler (en az 3 mağaza eşleştiğinde).
+ */
+export function asiriDusukFiyatlariAyikla(siteResults, sourceResult = null, onProgress = null) {
+  const havuz = sourceResult ? [sourceResult, ...siteResults] : siteResults;
+  const gecerli = (liste) => liste
+    .filter(r => r && r.status === 'found' && r.product && Number.isFinite(karsilastirmaFiyati(r)) && karsilastirmaFiyati(r) > 0);
+
+  let referans = gecerli(havuz).filter(r => r.product.inStock !== false && r.renkAyni !== false);
+  if (referans.length < 3) referans = gecerli(havuz);
+  if (referans.length < 3) return [];
+
+  const fiyatlar = referans.map(r => karsilastirmaFiyati(r)).sort((a, b) => a - b);
+  const orta = Math.floor(fiyatlar.length / 2);
+  const medyan = fiyatlar.length % 2 === 1
+    ? fiyatlar[orta]
+    : (fiyatlar[orta - 1] + fiyatlar[orta]) / 2;
+  if (!Number.isFinite(medyan) || medyan <= 0) return [];
+
+  const altSinir = medyan * 0.20;
+  const elenenler = [];
+  for (const r of siteResults) {
+    if (!r || r.status !== 'found' || !r.product) continue;
+    const fiyat = karsilastirmaFiyati(r);
+    if (!Number.isFinite(fiyat) || fiyat <= 0 || fiyat >= altSinir) continue;
+    r.status = 'error';
+    r.reason = `Hatalı/tutarsız fiyat algılandı (${Math.round(fiyat)} TL — piyasa medyanının %20 altında)`;
+    r.product = null;
+    r.enUcuz = false;
+    elenenler.push(r.site);
+    if (typeof onProgress === 'function') onProgress(r.site, r);
+  }
+  return elenenler;
+}
+
+/**
  * Ortak tarama & sonuç derleme hattı (`runComparison` ve `runComparisonByQuery` paylaşır).
  */
 async function karsilastirmaAkisiniTamamla({
@@ -695,6 +735,7 @@ async function karsilastirmaAkisiniTamamla({
     }));
 
   const siteResults = [...tamamlananlar.filter(Boolean), ...iptalEdilenler];
+  asiriDusukFiyatlariAyikla(siteResults, sourceResult, onProgress);
 
   // Doğrudan ürün adıyla arama modunda tek bir ön-kaynak yoktu: bulunan ilk
   // stoklu/uygun gerçek mağaza sonucunu referans kaynak olarak terfi ettir.

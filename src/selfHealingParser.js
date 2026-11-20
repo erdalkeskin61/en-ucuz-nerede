@@ -206,6 +206,7 @@ function kademe5Heuristic(html) {
   ];
 
   const GURULTU = /taksit|kargo|indirim|kazan|puan|kupon|bedava|ücretsiz|ucretsiz|kampanya|havale|eft/;
+  const SONRASI_GURULTU = /^\s*(?:ve\s*)?(?:üzeri|uzeri|ücretsiz|ucretsiz|bedava|kargo|taksit|aylık|aylik|puan|kupon|indirim)\b/;
 
   for (const re of desenler) {
     let m;
@@ -215,16 +216,19 @@ function kademe5Heuristic(html) {
       const ham = m[1] || m[2];
       if (!ham) continue;
 
-      // Bağlam = AYNI metin düğümündeki, eşleşmeden hemen önceki sözcükler.
-      // 90 karakterlik kör pencere ÖNCEKİ kardeş elementi de yakalıyordu:
-      // "<div>Kargo 45,00 TL</div><div>1.450,00 TL</div>" → ikinci fiyat da
-      // "kargo" gürültüsü sayılıp atlanıyordu (ölçüldü). Bu yüzden pencere
-      // son `>` karakterinden sonrasıyla sınırlanır.
+      // Bağlam = AYNI metin düğümündeki, eşleşmeden hemen önceki VE hemen sonraki sözcükler.
+      // ("3.000 TL ve üzeri ücretsiz kargo" → "üzeri ücretsiz kargo" sonradan gelir.)
       const bas = Math.max(0, m.index - 90);
       const ham2 = govde.slice(bas, m.index);
       const sonEtiket = ham2.lastIndexOf('>');
       const baglam = kucultTr(duzMetin(sonEtiket >= 0 ? ham2.slice(sonEtiket + 1) : ham2));
       if (GURULTU.test(baglam)) continue;
+
+      const bitis = m.index + m[0].length;
+      const hamSonra = govde.slice(bitis, bitis + 50);
+      const ilkEtiket = hamSonra.indexOf('<');
+      const sonrasi = kucultTr(duzMetin(ilkEtiket >= 0 ? hamSonra.slice(0, ilkEtiket) : hamSonra));
+      if (SONRASI_GURULTU.test(sonrasi)) continue;
 
       const g = fiyatGecerliMi(parseNum(ham));
       if (g != null) return g;

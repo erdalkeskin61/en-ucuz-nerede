@@ -428,40 +428,42 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
       route.continue();
     });
 
+    const bitisMs = Date.now() + Math.max(8000, Math.min(timeoutMs || ZAMAN_ASIMI_MS, 25000));
+    const kalanMs = () => Math.max(1000, bitisMs - Date.now());
     const sayfa = await ctx.newPage();
     let response = await sayfa.goto(url, {
       waitUntil: 'domcontentloaded',
-      timeout: Math.min(timeoutMs, ZAMAN_ASIMI_MS),
+      timeout: Math.min(kalanMs(), ZAMAN_ASIMI_MS),
     });
 
     let status = response?.status() ?? 200;
 
-    // CF / Bot koruması kontrolü: gerekirse aşması için birkaç tur bekle
+    // CF / Bot koruması kontrolü: gerekirse aşması için süre bütçesi dahilinde bekle
     let challenge = await isBotChallenge(sayfa);
     if (challenge) {
-      for (let i = 0; i < 6; i++) {
-        await sayfa.waitForTimeout(2000);
+      for (let i = 0; i < 4 && kalanMs() > 3500; i++) {
+        await sayfa.waitForTimeout(1800);
         challenge = await isBotChallenge(sayfa);
         if (!challenge) break;
       }
     }
 
     // Doğrudan alt sayfa/arama URL'sine gidildiğinde 403 veren WAF/oturum duvarlarında
-    // (Ticimax, IdeaSoft, Cloudflare) önce ana sayfayı ziyaret edip oturum çerezi al.
-    if ((challenge || status === 403) && (() => { try { return new URL(url).pathname.length > 1; } catch { return false; } })()) {
+    // (Ticimax, IdeaSoft, Cloudflare) zaman kaldıysa ana sayfayı ziyaret edip oturum çerezi al.
+    if ((challenge || status === 403) && kalanMs() > 6000 && (() => { try { return new URL(url).pathname.length > 1; } catch { return false; } })()) {
       try {
         const anaSayfa = new URL(url).origin + '/';
-        await sayfa.goto(anaSayfa, { waitUntil: 'domcontentloaded', timeout: 8000 });
-        await sayfa.waitForTimeout(1200);
+        await sayfa.goto(anaSayfa, { waitUntil: 'domcontentloaded', timeout: Math.min(6000, kalanMs()) });
+        await sayfa.waitForTimeout(900);
         response = await sayfa.goto(url, {
           waitUntil: 'domcontentloaded',
-          timeout: Math.min(timeoutMs, ZAMAN_ASIMI_MS),
+          timeout: Math.min(kalanMs(), ZAMAN_ASIMI_MS),
         });
         status = response?.status() ?? 200;
         challenge = await isBotChallenge(sayfa);
         if (challenge) {
-          for (let i = 0; i < 3; i++) {
-            await sayfa.waitForTimeout(1500);
+          for (let i = 0; i < 2 && kalanMs() > 2000; i++) {
+            await sayfa.waitForTimeout(1200);
             challenge = await isBotChallenge(sayfa);
             if (!challenge) break;
           }

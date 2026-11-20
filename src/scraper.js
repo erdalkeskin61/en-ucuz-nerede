@@ -558,7 +558,7 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
   await hostSlotAl(domain);
   await rateLimiter.acquire(domain);
   const controller = new AbortController();
-  const effectiveTimeout = timeoutMs || 10000;
+  const effectiveTimeout = Math.min(timeoutMs || 12000, 12000);
   const timer = setTimeout(() => controller.abort(), effectiveTimeout);
   try {
     // POST isteklerinde tarayıcı gibi Origin gönder (CSRF doğrulamaları ister).
@@ -758,7 +758,7 @@ async function rawFetch(targetUrl, opts = {}) {
   }
 
   // 403 / WAF engeli durumunda yerel stealth tarayıcıyı yedek olarak dene
-  if ((opts.method || 'GET') === 'GET' && !TARAYICI_SITELER.has(opts.site)) {
+  if ((opts.method || 'GET') === 'GET' && !TARAYICI_SITELER.has(opts.site) && !circuitBreaker.isOpen(domain)) {
     try {
       // 🧬 2026-11-17: Chromium'dan önce SON bir hafif impit şansı.
       // Doğrudan istek 403/challenge yediyse Chrome TLS parmak izi bazen geçer
@@ -880,15 +880,19 @@ async function fetchPageInner(targetUrl, opts = {}) {
   //    opts.renderRetry kadar ek deneme yapılır (premium KULLANILMAZ).
   if (opts.renderRetry > 0) {
     render = true;
+    let domain = 'default';
+    try { domain = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch {}
     let ok = null;
     for (let i = 0; i < opts.renderRetry; i++) {
-      const r = await rawFetch(targetUrl, { render: true, timeoutMs: 90000, method, headers: reqHeaders, body: reqBody, session, site });
+      if (circuitBreaker.isOpen(domain) && !config.scraperApiKey && !config.crawlbaseToken && !config.zenrowsApiKey) break;
+      const r = await rawFetch(targetUrl, { render: true, timeoutMs: 25000, method, headers: reqHeaders, body: reqBody, session, site });
       attempts.push(describeAttempt(r, true));
       if (krediBittiMi(r)) {
         logRequest({ site, purpose, url: targetUrl, cached: false, error: 'scraperapi_kredi_bitti', requests: attempts.length });
         throw new FetchError('ScraperAPI aylık kredisi tükendi. Krediler sonraki fatura döneminde yenilenir ya da dashboard.scraperapi.com/billing üzerinden plan yükseltilebilir.', { status: 103, attempts });
       }
       if (r.status === 200 && !isEmptyBody(r.body)) { ok = r; break; }
+      if (/cooldown|bot koruması/i.test(r?.networkError || '') && !config.scraperApiKey) break;
     }
     if (ok) {
       const basarili = attempts.filter(a => a.durum === 200).length;

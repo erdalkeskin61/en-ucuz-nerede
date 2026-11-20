@@ -45,10 +45,12 @@ export function ticimaxSite(cfg) {
       let m;
       while ((m = re.exec(html))) {
         const url = absUrl(base, m[2]);
+        if (!url || url.includes('{{') || url.includes('}}')) continue;
         gorulen.set(url, { title: decodeEntities(m[1]).trim(), url, _konum: m.index });
       }
       while ((m = re2.exec(html))) {
         const url = absUrl(base, m[1]);
+        if (!url || url.includes('{{') || url.includes('}}')) continue;
         if (!gorulen.has(url)) gorulen.set(url, { title: decodeEntities(m[2]).trim(), url, _konum: m.index });
       }
 
@@ -58,9 +60,13 @@ export function ticimaxSite(cfg) {
       // kartı dışına taşmamak için pencere 3000 kr ile sınırlıdır.
       for (const k of sonuclar) {
         const dilim = html.slice(k._konum, k._konum + 3000);
-        const fm = dilim.match(/discountPriceSpan">\s*₺?\s*([\d.,]+)/i)
-          || dilim.match(/class="[^"]*(?:sale-price|productPrice|new-price)[^"]*"[^>]*>\s*₺?\s*([\d.,]+)/i);
-        if (fm) k.price = parseNum(fm[1]);
+        const fm = dilim.match(/discountPriceSpan">\s*(?:₺|TRY|TL|[$€£]|USD|EUR)?\s*([\d.,]+)/i)
+          || dilim.match(/class="[^"]*(?:sale-price|productPrice|new-price)[^"]*"[^>]*>\s*(?:₺|TRY|TL|[$€£]|USD|EUR)?\s*([\d.,]+)/i);
+        if (fm) {
+          const onEk = fm[0];
+          const dovizKart = /(?:[$€£]|\b(?:USD|EUR|GBP)\b)/i.test(onEk) && !/[₺]|\bTL\b|\bTRY\b/i.test(onEk);
+          if (!dovizKart) k.price = parseNum(fm[1]);
+        }
       }
       for (const k of sonuclar) delete k._konum;
       return sonuclar.slice(0, 30);
@@ -123,6 +129,20 @@ export function ticimaxSite(cfg) {
       const kampanyalar = [];
       if (listPrice) kampanyalar.push('Liste fiyatından indirimli');
 
+      const ticimaxPara = html.match(/"productCurrency"\s*:\s*"([A-Z]{3})"/)?.[1];
+      const jsonLdPara = p?.offers?.priceCurrency;
+      const gosterimMetin = [
+        html.match(/"indirimliFiyatiStr"\s*:\s*"([^"]+)"/)?.[1],
+        html.match(/"satisFiyatiStr"\s*:\s*"([^"]+)"/)?.[1],
+        html.match(/discountPriceSpan">\s*([^<]{1,40})</i)?.[1],
+      ].filter(Boolean).join(' ');
+      let currency = (ticimaxPara || jsonLdPara || 'TRY').toUpperCase();
+      if (currency === 'TRY' && /(?:[$€£]|\b(?:USD|EUR|GBP)\b)/i.test(gosterimMetin) && !/[₺]|\bTRY\b|\bTL\b/i.test(gosterimMetin)) {
+        if (/€|\bEUR\b/i.test(gosterimMetin)) currency = 'EUR';
+        else if (/£|\bGBP\b/i.test(gosterimMetin)) currency = 'GBP';
+        else currency = 'USD';
+      }
+
       return {
         site: this.id,
         siteName: this.name,
@@ -134,7 +154,7 @@ export function ticimaxSite(cfg) {
         color: dominantColor(title),
         listPrice,
         sellingPrice: fiyat,
-        currency: 'TRY',
+        currency,
         inStock: stokta,
         seller: null,
         image: (html.match(/<meta property="og:image" content="([^"]+)"/i)?.[1])
