@@ -505,8 +505,11 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     circuitBreaker.recordSuccess(domain);
     return { status: 200, body: govde, cookies: cerezler, userAgent: ua, saglayici: 'tarayici', jsonSarmalamaCozuldu: govde !== html };
   } catch (e) {
-    circuitBreaker.recordFailure(domain);
-    return { networkError: 'tarayıcı: ' + String(e.message || e).slice(0, 120), saglayici: 'tarayici' };
+    const msg = String(e?.message || e);
+    // Yerel tarayıcı kurulu değilse / başlatılamadıysa hedef siteyi bot cooldown'a SOKMA.
+    const yerelTarayiciHatasi = /Executable doesn't exist|Failed to launch|TARAYICI_KAPALI|Target .* closed/i.test(msg);
+    if (!yerelTarayiciHatasi) circuitBreaker.recordFailure(domain);
+    return { networkError: 'tarayıcı: ' + msg.slice(0, 120), saglayici: 'tarayici' };
   } finally {
     // Uzak bağlamı KAPATMA (paylaşımlı olabilir); yalnızca kendi açtığımızı kapat.
     if (ctx && ctxBizim) await ctx.close().catch(() => {});

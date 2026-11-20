@@ -188,9 +188,15 @@ function yumusakEngelKoy(domain, neden) {
   if (t.unref) t.unref();
 }
 
-/** ScraperAPI'nin "kredi tükendi" 103'ünü tanır (yeniden denemek anlamsızdır). */
+/** ScraperAPI'nin kredi tükendi / geçersiz anahtar yanıtlarını tanır. */
 function krediBittiMi(res) {
-  return res && res.status === 103 && /exhausted the API Credits/i.test(res.body || '');
+  if (!res) return false;
+  const body = String(res.body || '');
+  if (res.status === 103 && /exhausted the API Credits/i.test(body)) return true;
+  if ((res.status === 401 || res.status === 403 || res.status === 429) && res.saglayici === 'scraperapi') {
+    return /exhausted|api credits?|invalid api key|account suspended|plan limit/i.test(body);
+  }
+  return false;
 }
 
 // ScraperAPI eşzamanlılık sınırına saygı: hesap sınırı 5 fiziksel istek.
