@@ -77,22 +77,24 @@ async function impitSinifiAl() {
   }
 }
 
-/** Profil başına tekil impit örneği (çerez/bağlantı havuzu korunur). */
-async function impitOrnegi(profil = null) {
+/** Profil + opsiyonel proxy başına tekil impit örneği (çerez/bağlantı havuzu korunur). */
+async function impitOrnegi(profil = null, proxyUrl = null) {
   if (impitKapaliMi()) return null;
   const Sinif = await impitSinifiAl();
   if (!Sinif) return null;
-  const anahtar = profil || impitProfili();
+  const p = String(proxyUrl || '').trim();
+  const anahtar = (profil || impitProfili()) + (p ? '|' + p : '');
   if (ornekler.has(anahtar)) return ornekler.get(anahtar);
   try {
     const ornek = new Sinif({
-      browser: anahtar,
+      browser: profil || impitProfili(),
       // TLS hatalarını YUTMA: sahte sertifika ile "başarılı" görünmek istemiyoruz.
       ignoreTlsErrors: false,
       // Emülasyon desteklenmiyorsa normal UA'ya düş (siteyi tamamen kaybetmeyelim).
       vanillaFallback: true,
       timeout: 20000,
-      ...(String(process.env.IMPIT_HTTP3 || '') === '1' ? { http3: true } : {}),
+      ...(p ? { proxyUrl: p } : {}),
+      ...(!p && String(process.env.IMPIT_HTTP3 || '') === '1' ? { http3: true } : {}),
     });
     ornekler.set(anahtar, ornek);
     return ornek;
@@ -108,11 +110,11 @@ async function impitOrnegi(profil = null) {
  *
  * @param {string} url
  * @param {RequestInit} [init]
- * @param {{profil?:string}} [opts]
+ * @param {{profil?:string, proxyUrl?:string}} [opts]
  * @returns {Promise<{response:any, katman:'impit', ms:number}|null>}
  */
 export async function impitDene(url, init = {}, opts = {}) {
-  const istemci = await impitOrnegi(opts.profil);
+  const istemci = await impitOrnegi(opts.profil, opts.proxyUrl);
   if (!istemci) return null;
   const t0 = Date.now();
   try {

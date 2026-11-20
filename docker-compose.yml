@@ -42,6 +42,9 @@ services:
       - "127.0.0.1:3000:3000"
     # Chromium'un /dev/shm kullanımı için (Playwright önerisi).
     shm_size: "1gb"
+    # SSH tüneli (TR VDS Proxy / Uzak Tarayıcı) için host makineye erişim.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # 4 GB VM: uygulama 2 GB'ı geçerse yeniden başlat.
     mem_limit: 2g
     healthcheck:

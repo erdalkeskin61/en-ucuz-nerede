@@ -269,6 +269,11 @@ const TARAYICI_SITELER = new Set(['incehesap', 'teknosa', 'pttavm', 'trendyol', 
 // başarısız olursa sağlayıcı zinciri devreye girer. İstisnalar:
 //  - RENDER_SITELERI + TR_ZOR + n11 → yerel tarayıcı (TARAYICI_SITELER) ya da Crawlbase
 const DOGRUDAN_HARIC = new Set([...RENDER_SITELERI, ...TR_ZOR_SITELER, 'n11']);
+const TR_PROXY_URL = String(process.env.TR_PROXY_URL || '').trim();
+const TR_PROXY_SITELER = new Set([
+  ...DOGRUDAN_HARIC, 'mediamarkt', 'vatan', 'itopya', 'pazarama',
+  'ciceksepeti', 'hepsiburada', '3dultra', 'domirobot',
+]);
 
 let scraperApiTukendi = { bitti: false, ts: 0 };
 let zenrowsTukendi = { bitti: false, ts: 0 };
@@ -555,7 +560,7 @@ async function impitHafifDene(targetUrl, opts = {}) {
   }
 }
 
-async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null, profil = null }) {
+async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null, profil = null, proxyUrl = null }) {
   let domain = 'default';
   try { domain = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch {}
   if (circuitBreaker.isOpen(domain)) {
@@ -589,6 +594,7 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
     // impit kendi profiliyle tutarlı User-Agent, Sec-Ch-Ua* ve Accept-Encoding (zstd)
     // başlıklarını kendisi gönderir; üzerine eski UA basmak WAF'ı 403'e düşürüyordu.
     // Yerleşik fetch'e düşülürse fallbackHeaders devreye girer.
+    const etkinProxy = proxyUrl || (TR_PROXY_URL && TR_PROXY_SITELER.has(site) ? TR_PROXY_URL : '');
     const { response: res, katman } = await httpIste(targetUrl, {
       method,
       redirect: 'follow',
@@ -603,6 +609,7 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
       signal: controller.signal,
     }, {
       profil: profil || undefined,
+      ...(etkinProxy ? { proxyUrl: etkinProxy } : {}),
       fallbackHeaders: {
         'User-Agent': DOGRUDAN_UA,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -770,7 +777,7 @@ async function rawFetch(targetUrl, opts = {}) {
       // 🧬 2026-11-17: Chromium'dan önce SON bir hafif impit şansı.
       // Doğrudan istek 403/challenge yediyse Chrome TLS parmak izi bazen geçer
       // (özellikle DataDome/Akamai'nin Node fetch'i tanıdığı sitelerde).
-      const hafif = await impitHafifDene(targetUrl, opts);
+      const hafif = await impitHafifDene(targetUrl, { ...opts, ...(TR_PROXY_URL ? { proxyUrl: TR_PROXY_URL } : {}) });
       if (hafif) {
         console.log('[scraper] ' + domain + ' → impit hafif katmanı 403 sonrası geçti (tarayıcı açılmadı).');
         return hafif;
@@ -821,6 +828,7 @@ export function saglayiciDurumu() {
     crawlbase: config.crawlbaseToken ? 'hazır' : 'anahtar yok',
     zenrows: config.zenrowsApiKey ? (zenrowsTukendi.bitti ? 'kredi tükendi' : 'hazır') : 'anahtar yok',
     dogrudan: 'aktif — varsayılan (yerel Türkiye IP; 60 sitenin ~53\'ü sağlayıcısız çekilir)',
+    trProxy: TR_PROXY_URL ? 'aktif (' + TR_PROXY_URL.replace(/\/\/[^@]+@/, '//') + ')' : 'yok',
     impit: impitDurumu(),
     tarayici: 'aktif (yerel Chromium; yalnızca gerçekten JS render/challenge gereken sayfalar için)',
     nazikMod: {

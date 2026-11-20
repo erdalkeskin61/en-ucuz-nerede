@@ -67,9 +67,30 @@ const TARAYICI_KAPALI = ['1', 'true', 'on', 'yes'].includes(
  * `TARAYICI_CHANNEL=none` ise doğrudan 3. adım kullanılır.
  */
 const CHANNEL_TERCIHI = String(process.env.TARAYICI_CHANNEL || 'auto').toLowerCase();
+const TR_PROXY_URL = String(process.env.TR_PROXY_URL || '').trim();
+
+function trProxyAyarlari() {
+  if (!TR_PROXY_URL) return undefined;
+  try {
+    const u = new URL(TR_PROXY_URL);
+    if (!u.hostname || !u.port && u.protocol !== 'http:' && u.protocol !== 'https:' && !/^socks/.test(u.protocol)) return undefined;
+    const proxy = { server: `${u.protocol}//${u.host}` };
+    if (u.username) proxy.username = decodeURIComponent(u.username);
+    if (u.password) proxy.password = decodeURIComponent(u.password);
+    return proxy;
+  } catch {
+    return undefined;
+  }
+}
 
 function yerelAcilisSecenekleri() {
-  return { headless: true, args: STEALTH_ARGS, ignoreDefaultArgs: ['--enable-automation'] };
+  const proxy = trProxyAyarlari();
+  return {
+    headless: true,
+    args: STEALTH_ARGS,
+    ignoreDefaultArgs: ['--enable-automation'],
+    ...(proxy ? { proxy } : {}),
+  };
 }
 
 /** Kanal sırasına göre yerel tarayıcıyı başlatır (ilk başarılı olan). */
