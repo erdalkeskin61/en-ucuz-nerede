@@ -316,51 +316,94 @@ export function sorguKademeleriUret(sorgu) {
  * @param {string} sorgu
  * @param {{ttlMs?:number}} [opts]
  */
+/**
+ * Veri merkezi IP'lerinde (Azure/AWS/Oracle) getProduct sayfası sık 403/WAF
+ * engeline takılan mağazalar. Ürün adı aramasında kaynak seçerken açık 3D/teknoloji
+ * mağazaları her zaman bunların ÖNÜNE alınır (yine de karşılaştırmada taranırlar).
+ */
+export const KIRILGAN_KAYNAK_SITELER = new Set([
+  'trendyol', 'amazon', 'n11', 'hepsiburada', 'ciceksepeti',
+  'teknosa', 'pttavm', 'vatan', 'mediamarkt', 'itopya',
+]);
+
+function kaynakOncelikSirala(liste) {
+  return [...liste].sort((a, b) => {
+    const aKirilgan = KIRILGAN_KAYNAK_SITELER.has(a.siteId) ? 1 : 0;
+    const bKirilgan = KIRILGAN_KAYNAK_SITELER.has(b.siteId) ? 1 : 0;
+    if (aKirilgan !== bKirilgan) return aKirilgan - bKirilgan;
+    const puanFark = (b.puan || 0) - (a.puan || 0);
+    if (Math.abs(puanFark) > 1e-6) return puanFark;
+    const af = a.fiyat != null ? 0 : (a.price != null ? 0 : 1);
+    const bf = b.fiyat != null ? 0 : (b.price != null ? 0 : 1);
+    if (af !== bf) return af - bf;
+    return (a.fiyat ?? a.price ?? Infinity) - (b.fiyat ?? b.price ?? Infinity);
+  });
+}
+
+function benzersizSiteAdaylari(siraliListe, max = 5) {
+  const goruldu = new Set();
+  const out = [];
+  for (const x of siraliListe) {
+    if (!x || !x.url) continue;
+    const anahtar = x.siteId || x.url;
+    if (goruldu.has(anahtar)) continue;
+    goruldu.add(anahtar);
+    out.push(x);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 export function katalogdanKaynakAdayi(sorgu, opts = {}) {
   const temiz = String(sorgu || '').trim();
   if (temiz.length < 2) return null;
 
   let adaylar = [];
   try {
-    adaylar = katalogUrunleriAra(temiz, { limit: 10, ttlMs: opts.ttlMs });
+    adaylar = katalogUrunleriAra(temiz, { limit: 15, ttlMs: opts.ttlMs });
   } catch {
     return null;
   }
   if (!Array.isArray(adaylar) || !adaylar.length) return null;
 
   const puanli = adaylar
-    .map(a => ({ ...a, puan: sorguPuanla(a.baslik, temiz) }))
-    // Fiyatı olan kayıt küçük bir bonus alır: kıyası doğrudan üretir, ek sayfa
-    // okuması gerekmez. Eşitlik bozucudur, ilgililiğin önüne geçmez.
-    .map(a => ({ ...a, puan: a.puan + (a.fiyat != null ? 0.03 : 0) }))
-    .filter(a => a.puan >= 0.35)
-    .sort((a, b) => (b.puan - a.puan)
-      || ((a.fiyat == null ? 1 : 0) - (b.fiyat == null ? 1 : 0))
-      || ((a.fiyat || Infinity) - (b.fiyat || Infinity)));
+    .map(a => ({ ...a, url: a.urunUrl, puan: sorguPuanla(a.baslik, temiz) + (a.fiyat != null ? 0.03 : 0) }))
+    .filter(a => a.puan >= 0.35);
 
-  const secilen = puanli.find(a => kaynakEslesirMi(temiz, {
-    title: a.baslik, brand: a.marka, url: a.urunUrl,
-  }));
+  const eslesenler = kaynakOncelikSirala(
+    puanli.filter(a => kaynakEslesirMi(temiz, {
+      title: a.baslik, brand: a.marka, url: a.urunUrl,
+    }))
+  );
+  const benzersiz = benzersizSiteAdaylari(eslesenler, 5);
+  const secilen = benzersiz[0];
   if (!secilen) return null;
 
-  const adapter = adapterById(secilen.siteId);
+  const cevir = (x) => {
+    const adapter = adapterById(x.siteId);
+    return {
+      url: x.urunUrl,
+      title: x.baslik,
+      price: x.fiyat ?? null,
+      brand: x.marka ?? null,
+      siteId: x.siteId,
+      siteName: adapter?.name || x.siteId,
+      stokta: x.stokta,
+      gorselUrl: x.gorselUrl || null,
+      paraBirimi: x.paraBirimi || null,
+      // 🗂️ Katalogdan geldiğini AÇIKÇA işaretle (uydurma "canlı tarama" görüntüsü yok).
+      kaynak: 'katalog',
+      kaynakTur: x.kaynakTur || null,
+      guncellemeTs: x.guncellemeTs || null,
+      katalogYasMs: x.yasMs ?? null,
+      aramaKademesi: 0,
+      aramaSorgusu: temiz,
+    };
+  };
+
   return {
-    url: secilen.urunUrl,
-    title: secilen.baslik,
-    price: secilen.fiyat ?? null,
-    brand: secilen.marka ?? null,
-    siteId: secilen.siteId,
-    siteName: adapter?.name || secilen.siteId,
-    stokta: secilen.stokta,
-    gorselUrl: secilen.gorselUrl || null,
-    paraBirimi: secilen.paraBirimi || null,
-    // 🗂️ Katalogdan geldiğini AÇIKÇA işaretle (uydurma "canlı tarama" görüntüsü yok).
-    kaynak: 'katalog',
-    kaynakTur: secilen.kaynakTur || null,
-    guncellemeTs: secilen.guncellemeTs || null,
-    katalogYasMs: secilen.yasMs ?? null,
-    aramaKademesi: 0,
-    aramaSorgusu: temiz,
+    ...cevir(secilen),
+    yedekAdaylar: benzersiz.slice(1).map(cevir),
   };
 }
 
@@ -445,14 +488,20 @@ export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disS
         ...a,
         puan: sorguPuanla(a.title, aramaSorgusu),
       }))
-      .filter(a => a.puan >= 0.35)
-      .sort((a, b) => b.puan - a.puan);
+      .filter(a => a.puan >= 0.35);
 
-    // Sıralamadan sonra ÜRÜN KİMLİĞİ doğrulaması: yalnızca gerçekten aynı ürün
-    // olan ilk aday kaynak seçilir. Eşleşen yoksa `null` döner — uydurma kaynak
-    // seçilmez, çağıran taraf "bulunamadı" der (dürüst davranış).
-    // Varyant koruması: renk/malzeme/model serisi denetimi HER kademede aynı.
-    return puanli.find(a => kaynakEslesirMi(aramaSorgusu, a)) || null;
+    // Sıralamadan sonra ÜRÜN KİMLİĞİ doğrulaması: açık mağazalar (non-WAF)
+    // her zaman kırılgan pazaryerlerinin (Trendyol/Amazon/HB) önüne alınır.
+    // İlk kaynak okunamazsa (403) yedek adaylar sırayla denenebilir.
+    const eslesenler = kaynakOncelikSirala(
+      puanli.filter(a => kaynakEslesirMi(aramaSorgusu, a))
+    );
+    const benzersiz = benzersizSiteAdaylari(eslesenler, 5);
+    if (!benzersiz.length) return null;
+    return {
+      ...benzersiz[0],
+      yedekAdaylar: benzersiz.slice(1),
+    };
   };
 
   // KADEMELİ ARAMA (2026-11-05): ilk kademede bulunursa DUR (fazladan istek yok).

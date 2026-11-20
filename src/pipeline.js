@@ -34,6 +34,7 @@ import { HIZLI_SITELER } from './basketOptimizer.js';
 import { kuyrukDurumu } from './scraper.js';
 import { katalogSiteAdayi } from './katalogSync.js';
 import { kargoCikar } from './kargo.js';
+import { sorguKademeleriUret, KIRILGAN_KAYNAK_SITELER } from './urunArama.js';
 
 /** Kaynak üründen arama sorguları üretir: önce model kodu, yoksa marka + başlık anahtar kelimeleri. */
 // Renk ton belirteçleri: tek başına renk DEĞİL ama renk ifadesinin parçasıdır
@@ -593,6 +594,408 @@ async function classifyAndPrice(product, siteName) {
 }
 
 /**
+ * Ortak tarama & sonuç derleme hattı (`runComparison` ve `runComparisonByQuery` paylaşır).
+ */
+async function karsilastirmaAkisiniTamamla({
+  adapter = null,
+  sourceUrl = null,
+  srcProduct,
+  sourceResult = null,
+  queries,
+  others,
+  opts = {},
+  startedAt,
+  onProgress,
+  iptalMi,
+  maxCandidates,
+  siniflandir,
+  signal,
+  sorguMetni = null,
+}) {
+  for (const a of others) {
+    onProgress(a.id, { site: a.id, status: 'running', note: 'Aranıyor: ' + (queries[0] || '') });
+  }
+
+  // Kaynak ürünün YZ sınıflandırması arama sürerken başlar (kritik yola eklenmez)
+  const kaynakSiniflandirma = (sourceResult && adapter)
+    ? (siniflandir
+      ? classifyAndPrice(srcProduct, adapter.name)
+      : Promise.resolve().then(() => fiyatlaHizli(srcProduct)))
+      .then(() => onProgress(adapter.id, sourceResult))
+    : Promise.resolve();
+
+  // 3) Siteler paralel araştırılır; bir sitede ürün bulunduğu anda o sitenin YZ
+  //    kampanya sınıflandırması + fiyat hesabı çalışır (tarama sürerken).
+  const tamamlananlar = [];
+  const isler = others.map(a => (async () => {
+    if (iptalMi()) return null;
+    const siteZamanAsimi = Math.max(3000, Number(opts.siteTimeoutMs) || config.siteTimeoutMs);
+    const aktivite = { deger: 0 };
+    const arama = findOnSite(a, srcProduct, queries, (id, r) => {
+      onProgress(id, r.status === 'found' || r.status === 'error' || r.status === 'not_found'
+        ? r
+        : { site: id, status: 'running', note: 'Aranıyor...' });
+    }, maxCandidates, iptalMi, {
+      semantik: opts.semantik !== false,
+      taze: opts.taze === true,
+      aktivite,
+    });
+
+    const res = await zamanAsimliCalistir(arama, siteZamanAsimi, a, aktivite);
+    if (iptalMi() && res.status !== 'found') {
+      return { ...res, status: 'iptal', reason: 'Kullanıcı iptal etti' };
+    }
+    if (res.status === 'found' && res.product) {
+      fiyatlaHizli(res.product);
+      onProgress(a.id, res);
+      if (siniflandir) {
+        classifyAndPrice(res.product, res.siteName)
+          .then(() => onProgress(a.id, res))
+          .catch(() => {});
+      }
+    } else if (res.status === 'timeout' || res.status === 'error') {
+      onProgress(a.id, res);
+    }
+    tamamlananlar.push(res);
+    return res;
+  })().catch(() => null));
+
+  if (signal) {
+    await new Promise((resolve) => {
+      if (iptalMi()) return resolve();
+      let kalan = isler.length;
+      if (!kalan) return resolve();
+      isler.forEach(p => p.then(() => { if (--kalan <= 0) resolve(); }, () => { if (--kalan <= 0) resolve(); }));
+      signal.addEventListener('abort', () => resolve(), { once: true });
+    });
+    if (iptalMi()) kaynakSiniflandirma.catch(() => {});
+    else await Promise.race([kaynakSiniflandirma, new Promise(r => setTimeout(r, 4000))]);
+  } else {
+    await Promise.all(isler);
+    await Promise.race([kaynakSiniflandirma, new Promise(r => setTimeout(r, 4000))]);
+  }
+
+  const iptalEdilenler = others
+    .filter(a => !tamamlananlar.some(r => r && r.site === a.id))
+    .map(a => ({
+      site: a.id, siteName: a.name, status: 'iptal', reason: 'Kullanıcı iptal etti',
+      product: null, matchBasis: null, renkAyni: null, examined: [], queriesTried: [], requestsSpent: 0,
+    }));
+
+  const siteResults = [...tamamlananlar.filter(Boolean), ...iptalEdilenler];
+
+  // Doğrudan ürün adıyla arama modunda tek bir ön-kaynak yoktu: bulunan ilk
+  // stoklu/uygun gerçek mağaza sonucunu referans kaynak olarak terfi ettir.
+  let etkinAdapterId = adapter?.id || null;
+  let etkinAdapterAd = adapter?.name || null;
+  let etkinSourceUrl = sourceUrl;
+  let etkinSrcProduct = srcProduct;
+  let allResults = sourceResult ? [sourceResult, ...siteResults] : [...siteResults];
+
+  if (!sourceResult) {
+    const bulunanlar = stokSirala(siteResults).filter(r => r.status === 'found' && r.product);
+    if (!bulunanlar.length) {
+      throw new Error(`"${sorguMetni || srcProduct?.title || ''}" için açık mağazalarda eşleşen ürün bulunamadı. `
+        + 'Marka ve modeli biraz daha detaylı yazarak tekrar deneyin.');
+    }
+    const secilenKaynak = bulunanlar.find(r => r.product.inStock !== false && r.renkAyni !== false && Number.isFinite(karsilastirmaFiyati(r)))
+      || bulunanlar[0];
+    etkinAdapterId = secilenKaynak.site;
+    etkinAdapterAd = secilenKaynak.siteName;
+    etkinSourceUrl = secilenKaynak.product.url || '';
+    etkinSrcProduct = secilenKaynak.product;
+    onProgress(secilenKaynak.site, { ...secilenKaynak, matchBasis: 'kaynak' });
+  }
+
+  const found = allResults.filter(r => r.status === 'found' && r.product);
+  const stok = stokOzet(allResults);
+  const siraliResults = stokSirala(allResults);
+
+  let fiyatAnalizi = null;
+  let fiyatZekasi = null;
+  try {
+    const pid = etkinSrcProduct?.modelCode || etkinSrcProduct?.barcode || etkinSrcProduct?.title || '';
+    fiyatAnalizi = getFiyatAnalizi(pid, etkinSrcProduct?.barcode, etkinSourceUrl);
+    fiyatZekasi = enUcuzFiyatDegerlendir(allResults, fiyatAnalizi);
+    sahteIndirimleriIsaretle(allResults, fiyatAnalizi);
+  } catch (e) {
+    fiyatZekasi = { tavsiye: 'veri_yok', durum: null, neden: 'Fiyat geçmişi okunamadı: ' + String(e.message || e).slice(0, 80) };
+  }
+
+  const uygunFiyatli = (r) => Number.isFinite(karsilastirmaFiyati(r));
+  const eligible = found.filter(r => r.renkAyni !== false && uygunFiyatli(r) && r.product.inStock !== false);
+  let cheapest = null;
+  for (const r of eligible) {
+    if (!cheapest || karsilastirmaFiyati(r) < karsilastirmaFiyati(cheapest)) cheapest = r;
+  }
+  if (cheapest) cheapest.enUcuz = true;
+
+  const sortedEligible = [...eligible].sort((a, b) => karsilastirmaFiyati(a) - karsilastirmaFiyati(b));
+  const runnerUp = sortedEligible.length > 1 ? sortedEligible[1] : null;
+  let nedenDahaUcuz = null;
+  if (cheapest && runnerUp && !iptalMi()) {
+    try {
+      nedenDahaUcuz = await Promise.race([
+        explainCheapest(cheapest, runnerUp, etkinSrcProduct),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2500)),
+      ]);
+    } catch {}
+  }
+
+  let zamanlamaTavsiyesi = null;
+  try {
+    const enUcuzTutar = cheapest?.product?.pricing?.toplam ?? cheapest?.product?.sellingPrice ?? null;
+    zamanlamaTavsiyesi = zamanlamaTahminiYap({
+      guncelFiyat: enUcuzTutar,
+      analiz: fiyatAnalizi,
+      magazaId: cheapest?.site,
+    });
+  } catch {}
+
+  const totalRequests = allResults.reduce((s, r) => s + (r.requestsSpent || 0), 0);
+  const afiliyeAyar = afiliyeAyarlari();
+
+  const sonuc = {
+    kaynak: {
+      site: etkinAdapterId,
+      siteName: etkinAdapterAd,
+      url: etkinSourceUrl,
+      afiliyeUrl: afiliyeLink(etkinAdapterId, etkinSourceUrl, afiliyeAyar),
+      urun: etkinSrcProduct.title,
+      marka: etkinSrcProduct.brand,
+      modelKodu: etkinSrcProduct.modelCode,
+      barkod: etkinSrcProduct.barcode,
+      renk: etkinSrcProduct.color,
+      fiyat: etkinSrcProduct.pricing?.toplam ?? etkinSrcProduct.sellingPrice,
+      resim: etkinSrcProduct.image,
+      aramaSorgulari: queries,
+    },
+    sonuclar: siraliResults.map(r => ({
+      site: r.site,
+      siteName: r.siteName,
+      status: r.status,
+      reason: r.reason,
+      matchBasis: r.matchBasis,
+      renkAyni: r.renkAyni,
+      enUcuz: !!r.enUcuz,
+      baski: r.product ? baskiKartiBilgisi({
+        ...r.product,
+        birim: birimFiyat(r.product),
+      }) : null,
+      kargoBedava: r.product ? (
+        r.product.pricing?.kargo?.ucret === 0 ||
+        r.product.pricing?.kargo?.uygulanir === false ||
+        /ücretsiz|bedava/i.test(String(r.product.pricing?.kargo?.aciklama || '')) ||
+        /ücretsiz|bedava/i.test(String(r.product.shipping || ''))
+      ) : false,
+      resmiSatici: r.product ? (
+        ['trendyol', 'hepsiburada', 'amazon', 'vatan', 'mediamarkt', 'teknosa', 'itopya', 'koctas', 'robitshop', 'robotistan', 'direnc', 'samm'].includes(r.site) &&
+        (!r.product.seller || /trendyol|hepsiburada|amazon|vatan|mediamarkt|teknosa|itopya|robitshop|robotistan|direnc|samm/i.test(r.product.seller) ||
+         (r.product.brand && String(r.product.seller).toLowerCase().includes(String(r.product.brand).toLowerCase())))
+      ) : false,
+      vadeFarksizTaksit: r.product ? (
+        (r.product.campaigns || []).some(c => /vade farksız|faizsiz|peşin fiyatına/i.test(c)) ||
+        (r.product.pricing?.kampanyaTaksit || []).length > 0 ||
+        /vade farksız|peşin fiyatına/i.test(r.product.title || '')
+      ) : false,
+      requestsSpent: r.requestsSpent,
+      queriesTried: r.queriesTried,
+      incelenen: r.examined,
+      sisirilmisEtiket: !!r.sisirilmisEtiket,
+      etiketOrani: r.etiketOrani ?? null,
+      product: r.product ? {
+        url: r.product.url,
+        afiliyeUrl: afiliyeLink(r.site, r.product.url, afiliyeAyar),
+        title: r.product.title,
+        brand: r.product.brand,
+        modelCode: r.product.modelCode,
+        barcode: r.product.barcode,
+        color: r.product.color,
+        inStock: r.product.inStock,
+        seller: r.product.seller,
+        image: r.product.image,
+        sellingPrice: r.product.sellingPrice,
+        listPrice: r.product.listPrice,
+        shipping: r.product.shipping,
+        campaigns: r.product.campaigns,
+        classifiedCampaigns: r.product.classifiedCampaigns,
+        pricing: r.product.pricing,
+        vatIncluded: r.product.vatIncluded ?? null,
+        vatRate: r.product.vatRate ?? null,
+        priceExVat: r.product.priceExVat ?? null,
+        birim: birimFiyat(r.product),
+        varyant: r.product.varyant || null,
+        birimHesap: birimFiyatHesapla(
+          r.product.title,
+          r.product.pricing?.toplam ?? r.product.sellingPrice,
+        ),
+      } : null,
+    })),
+    ozet: {
+      toplamSureMs: Date.now() - startedAt,
+      harcananIstek: totalRequests,
+      bulunanSiteSayisi: stok.bulunanSiteSayisi,
+      stoktaVarSayisi: stok.stoktaVarSayisi,
+      stoktaYokSayisi: stok.stoktaYokSayisi,
+      tamamiTukendi: stok.tamamiTukendi,
+      ayniRenkSayisi: eligible.length,
+      enUcuzSite: cheapest ? cheapest.siteName : null,
+      enUcuzFiyat: cheapest ? karsilastirmaFiyati(cheapest) : null,
+      nedenDahaUcuz,
+      fiyatZekasi: fiyatZekasi || null,
+      zamanlamaTavsiyesi: zamanlamaTavsiyesi || null,
+      sahteIndirim: (() => {
+        const uygun = allResults.filter(r => r?.status === 'found' && r?.product
+          && r.product.inStock !== false && r.renkAyni !== false
+          && Number.isFinite(Number(r.product.pricing?.toplam ?? r.product.sellingPrice)));
+        if (!uygun.length) return null;
+        const enUcuz = uygun.reduce((a, b) => (
+          Number(b.product.pricing?.toplam ?? b.product.sellingPrice)
+            < Number(a.product.pricing?.toplam ?? a.product.sellingPrice) ? b : a));
+        return enUcuz.sahteIndirim || null;
+      })(),
+      fiyatAnalizi: fiyatAnalizi || null,
+      birimFiyat: (() => {
+        try {
+          const liste = allResults
+            .filter(r => r.status === 'found' && r.product)
+            .map(r => ({
+              site: r.site,
+              siteName: r.siteName,
+              title: r.product.title,
+              sellingPrice: r.product.sellingPrice,
+              pricing: r.product.pricing,
+              renkAyni: r.renkAyni !== false,
+            }));
+          const b = birimSirala(liste, {
+            referansGram: birimFiyat({ title: etkinSrcProduct.title }).gram,
+          });
+          return {
+            referansGram: b.referansGram,
+            enIyiKg: b.enIyiKg ? {
+              site: b.enIyiKg.site,
+              siteName: b.enIyiKg.siteName,
+              tlKg: b.enIyiKg.birim.tlKg,
+              gram: b.enIyiKg.birim.gram,
+              fiyat: b.enIyiKg.birim.fiyat,
+              tahmini: b.enIyiKg.birim.tlKgTahmini,
+            } : null,
+            enIyiL: b.enIyiL ? {
+              site: b.enIyiL.site,
+              siteName: b.enIyiL.siteName,
+              tlL: b.enIyiL.birim.tlL,
+              ml: b.enIyiL.birim.ml,
+              fiyat: b.enIyiL.birim.fiyat,
+            } : null,
+            tuzaklar: b.tuzaklar,
+            okunamayan: b.okunamayan,
+            toplam: b.toplam,
+          };
+        } catch {
+          return null;
+        }
+      })(),
+      iptalEdildi: iptalMi(),
+      taranmayanSiteSayisi: allResults.filter(r => r.status === 'iptal').length,
+    },
+  };
+
+  sonuc.zamanlama = zamanlamaTavsiyesi || null;
+
+  try {
+    const medyanKg = sonuc.ozet?.birimFiyat?.medyanKg ?? null;
+    for (const r of sonuc.sonuclar) {
+      if (r?.product?.birim) {
+        r.birimUyari = yuksekBirimMaliyet(r.product.birim, medyanKg);
+      }
+    }
+    sonuc.ozet.baskiOzet = {
+      ...baskiOzeti(sonuc.sonuclar),
+      yuksekBirimSayisi: sonuc.sonuclar.filter(r => r.birimUyari).length,
+    };
+  } catch { /* 3D özeti başarısız olsa da ana sonuç döner */ }
+
+  return sonuc;
+}
+
+/**
+ * Tek bir kaynak ürün sayfası (örn. Trendyol 403) okunamadığında veya hiç kaynak
+ * URL seçilemediğinde doğrudan ürün adı sorgusuyla tüm açık mağazaları tarar.
+ *
+ * @param {string} sorgu kullanıcının aradığı ürün adı
+ * @param {{onProgress?: Function, maxCandidates?: number}} opts
+ */
+export async function runComparisonByQuery(sorgu, opts = {}) {
+  const temizSorgu = String(sorgu || '').trim();
+  if (!temizSorgu || temizSorgu.length < 2) {
+    throw new Error('Aranacak ürün adı çok kısa.');
+  }
+  const onProgress = opts.onProgress || (() => {});
+  const maxCandidates = opts.maxCandidates || config.maxCandidatesPerSite;
+  const signal = opts.signal || null;
+  const iptalMi = () => !!(signal && signal.aborted);
+  const siniflandir = opts.siniflandir !== false;
+  const startedAt = Date.now();
+
+  const sanalKaynak = {
+    site: 'arama',
+    siteName: 'Ürün Adı Araması',
+    url: '',
+    title: temizSorgu,
+    brand: null,
+    modelCode: null,
+    barcode: null,
+    color: dominantColor(temizSorgu) || null,
+    sellingPrice: null,
+    listPrice: null,
+    inStock: true,
+    shipping: null,
+    campaigns: [],
+  };
+
+  const kademeler = sorguKademeleriUret(temizSorgu);
+  const tumSorgular = [];
+  for (const q of [temizSorgu, ...kademeler, ...buildQueries(sanalKaynak)]) {
+    const s = String(q || '').trim();
+    if (s.length >= 2 && !tumSorgular.some(x => x.toLowerCase() === s.toLowerCase())) {
+      tumSorgular.push(s);
+    }
+  }
+  const sorguSiniri = Number.isFinite(opts.maxQueries) && opts.maxQueries > 0
+    ? Math.floor(opts.maxQueries)
+    : 3;
+  const queries = tumSorgular.slice(0, sorguSiniri);
+
+  const siteFiltresi = Array.isArray(opts.siteler) && opts.siteler.length ? new Set(opts.siteler) : null;
+  const hizliKume = new Set(HIZLI_SITELER);
+  const others = adapters
+    .filter(a => (!siteFiltresi || siteFiltresi.has(a.id)))
+    .sort((a, b) => {
+      const ak = KIRILGAN_KAYNAK_SITELER.has(a.id) ? 1 : 0;
+      const bk = KIRILGAN_KAYNAK_SITELER.has(b.id) ? 1 : 0;
+      if (ak !== bk) return ak - bk;
+      return (hizliKume.has(b.id) ? 1 : 0) - (hizliKume.has(a.id) ? 1 : 0);
+    });
+
+  return karsilastirmaAkisiniTamamla({
+    adapter: null,
+    sourceUrl: null,
+    srcProduct: sanalKaynak,
+    sourceResult: null,
+    queries,
+    others,
+    opts,
+    startedAt,
+    onProgress,
+    iptalMi,
+    maxCandidates,
+    siniflandir,
+    signal,
+    sorguMetni: temizSorgu,
+  });
+}
+
+/**
  * Tam karşılaştırma çalıştırır.
  * @param {string} sourceUrl kullanıcının yapıştırdığı ürün linki
  * @param {{onProgress?: Function, maxCandidates?: number}} opts
@@ -600,12 +1003,8 @@ async function classifyAndPrice(product, siteName) {
 export async function runComparison(sourceUrl, opts = {}) {
   const onProgress = opts.onProgress || (() => {});
   const maxCandidates = opts.maxCandidates || config.maxCandidatesPerSite;
-  // İptal sinyali (2026-10-27): kullanıcı "İptal" derse kalan siteler taranmaz,
-  // o ana kadar bulunan sonuçlar kısmi olarak döner. O anda uçuşta olan istekler
-  // (en fazla ESZAMANLI_SITE kadar) kendi zaman aşımına kadar sürer; yeni istek açılmaz.
   const signal = opts.signal || null;
   const iptalMi = () => !!(signal && signal.aborted);
-  // YZ kampanya sınıflandırması: sepet gibi toplu işlerde kapatılabilir (hız).
   const siniflandir = opts.siniflandir !== false;
   const startedAt = Date.now();
 
@@ -618,23 +1017,14 @@ export async function runComparison(sourceUrl, opts = {}) {
     throw new Error('Bu bağlantı ' + adapter.name + ' ürün sayfası gibi görünmüyor. Lütfen doğrudan ürün linkini yapıştırın.');
   }
 
-  // 1) Kaynak ürün
-  // Geçici kazıma hataları (boş sayfa, anlık 403/429, yavaş SSR) tek denemeyle
-  // ürünü tamamen düşürüyordu — sepet gibi toplu işlerde bu bir ürünü kaybetmek
-  // demek. Bir kez TAZE sayfayla yeniden denenir (2026-10-28).
   onProgress(adapter.id, { site: adapter.id, status: 'running', note: 'Kaynak ürün okunuyor...' });
   const srcCtx = { spend: 0 };
-  // İkinci turda (sepet) kaynak ürün önbellekten değil, canlı okunur: ilk turda önbelleğe
-  // sağlıklı ama fiyatsız bir sayfa yazılmış olabilir (2026-10-28).
   const kaynakOpts = (opts.tazeKaynak || opts.taze) ? { fresh: true } : {};
   let srcProduct;
   try {
     srcProduct = await adapter.getProduct(sourceUrl, srcCtx, kaynakOpts);
   } catch (e) {
     const ilkHata = e;
-    // Nazik bekleme (2026-10-28): aynı siteye anında ikinci istek atmak, sitenin
-    // yumuşak engellemesini (404 + hata sayfası) büyütüyordu. Kısa ve rastgele bir
-    // aradan sonra taze sayfayla bir kez daha denenir.
     await new Promise((r) => setTimeout(r, 1200 + Math.floor(Math.random() * 1300)));
     try {
       onProgress(adapter.id, { site: adapter.id, status: 'running', note: 'Kaynak ürün yeniden okunuyor...' });
@@ -664,371 +1054,32 @@ export async function runComparison(sourceUrl, opts = {}) {
   };
   onProgress(adapter.id, sourceResult);
 
-  // 2) Sorgular ve paralel arama
-  // Sorgu sayısı sınırlandırılabilir: sepet gibi toplu işlerde bulunamayan her site
-  // 4 sorgu deniyordu (30 site × 4 = 120 arama). 2 sorgu süreyi kabaca yarıya indirir.
   const tumSorgular = buildQueries(srcProduct);
   const sorguSiniri = Number.isFinite(opts.maxQueries) && opts.maxQueries > 0
     ? Math.floor(opts.maxQueries)
     : tumSorgular.length;
   const queries = tumSorgular.slice(0, sorguSiniri);
-  // Siteler isteğe bağlı olarak sınırlandırılabilir (sepet "hızlı mod").
   const siteFiltresi = Array.isArray(opts.siteler) && opts.siteler.length ? new Set(opts.siteler) : null;
   const hizliKume = new Set(HIZLI_SITELER);
   const others = adapters
     .filter(a => a.id !== adapter.id && (!siteFiltresi || siteFiltresi.has(a.id)))
     .sort((a, b) => (hizliKume.has(b.id) ? 1 : 0) - (hizliKume.has(a.id) ? 1 : 0));
-  for (const a of others) {
-    onProgress(a.id, { site: a.id, status: 'running', note: 'Aranıyor: ' + (queries[0] || '') });
-  }
 
-  // Kaynak ürünün YZ sınıflandırması arama sürerken başlar (kritik yola eklenmez)
-  const kaynakSiniflandirma = (siniflandir
-    ? classifyAndPrice(srcProduct, adapter.name)
-    : Promise.resolve().then(() => fiyatlaHizli(srcProduct)))
-    .then(() => onProgress(adapter.id, sourceResult));
-
-  // 3) Siteler paralel araştırılır; bir sitede ürün bulunduğu anda o sitenin YZ
-  //    kampanya sınıflandırması + fiyat hesabı çalışır (tarama sürerken).
-  //
-  //    İPTAL (2026-10-27): iptal edilirse TÜM sitelerin bitmesini beklemeyiz — o ana
-  //    kadar tamamlanmış sonuçlarla hemen döneriz. Uçuştaki istekler arka planda
-  //    kendi kendine biter (sonuçları yok sayılır). Aksi halde "iptal" 76 saniye
-  //    sürüyordu çünkü Promise.all 60 sitenin hepsini bekliyordu.
-  const tamamlananlar = [];
-  const isler = others.map(a => (async () => {
-    if (iptalMi()) return null;
-    const siteZamanAsimi = Math.max(3000, Number(opts.siteTimeoutMs) || config.siteTimeoutMs);
-    const aktivite = { deger: 0 };
-    const arama = findOnSite(a, srcProduct, queries, (id, r) => {
-      onProgress(id, r.status === 'found' || r.status === 'error' || r.status === 'not_found'
-        ? r
-        : { site: id, status: 'running', note: 'Aranıyor...' });
-    }, maxCandidates, iptalMi, {
-      semantik: opts.semantik !== false,
-      taze: opts.taze === true,
-      aktivite,
-    });
-
-    // Site bazlı zaman aşımı (2026-11-03): duvar saati değil İLERLEME temelli.
-    // Kuyrukta bekleme sayılmaz; yalnızca gerçekten takılan site kesilir.
-    const res = await zamanAsimliCalistir(arama, siteZamanAsimi, a, aktivite);
-    if (iptalMi() && res.status !== 'found') {
-      return { ...res, status: 'iptal', reason: 'Kullanıcı iptal etti' };
-    }
-    if (res.status === 'found' && res.product) {
-      // ⚡ Fiyatlandırma hemen hesaplanır ve anında arayüze basılır (0 ms gecikme)
-      fiyatlaHizli(res.product);
-      onProgress(a.id, res);
-      // Kampanya analizi arka planda zenginleştirir (kritik yolu bekletmez)
-      if (siniflandir) {
-        classifyAndPrice(res.product, res.siteName)
-          .then(() => onProgress(a.id, res))
-          .catch(() => {});
-      }
-    } else if (res.status === 'timeout' || res.status === 'error') {
-      onProgress(a.id, res);
-    }
-    tamamlananlar.push(res);
-    return res;
-  })().catch(() => null));
-
-  if (signal) {
-    // Tüm işlerin bitmesi YA DA iptal sinyali — hangisi önce gelirse
-    await new Promise((resolve) => {
-      // DİKKAT: sinyal bu noktaya gelmeden ÖNCE iptal edilmiş olabilir (kaynak ürün
-      // okunurken tıklanması gibi). addEventListener geçmiş olayı yakalamaz; bu yüzden
-      // önce mevcut durumu kontrol etmek ZORUNLU — aksi halde promise hiç çözülmüyor
-      // ve iptal, tüm sitelerin bitmesini bekliyordu (2026-10-28 hatası).
-      if (iptalMi()) return resolve();
-      let kalan = isler.length;
-      if (!kalan) return resolve();
-      isler.forEach(p => p.then(() => { if (--kalan <= 0) resolve(); }, () => { if (--kalan <= 0) resolve(); }));
-      signal.addEventListener('abort', () => resolve(), { once: true });
-    });
-    // İptal edildiyse kaynak sınıflandırmasını da beklemeyiz (YZ yavaş olabilir)
-    if (iptalMi()) kaynakSiniflandirma.catch(() => {});
-    else await Promise.race([kaynakSiniflandirma, new Promise(r => setTimeout(r, 4000))]);
-  } else {
-    await Promise.all(isler);
-    await Promise.race([kaynakSiniflandirma, new Promise(r => setTimeout(r, 4000))]);
-  }
-
-  // Hiç sonuç üretmeyen siteler (iptal anında uçuşta kalanlar) "iptal" olarak işaretlenir
-  const iptalEdilenler = others
-    .filter(a => !tamamlananlar.some(r => r && r.site === a.id))
-    .map(a => ({
-      site: a.id, siteName: a.name, status: 'iptal', reason: 'Kullanıcı iptal etti',
-      product: null, matchBasis: null, renkAyni: null, examined: [], queriesTried: [], requestsSpent: 0,
-    }));
-
-  const siteResults = [...tamamlananlar.filter(Boolean), ...iptalEdilenler];
-
-  const allResults = [sourceResult, ...siteResults];
-  const found = allResults.filter(r => r.status === 'found' && r.product);
-  const stok = stokOzet(allResults);
-  // KESİN HİYERARŞİ (2026-10-30): stokta olanlar her zaman önce. Sıralama burada
-  // BİR KEZ yapılır; web arayüzü, öneri kartları, sepet ve tarayıcı eklentisi aynı
-  // sırayı devralır. Böylece "en ucuz tükendi" hiçbir katmanda üste geçemez.
-  const siraliResults = stokSirala(allResults);
-
-  // ---- FİYAT ZEKASI (2026-10-30) ----
-  // Sahte indirim & dip fiyat radarı: güncel en ucuz fiyatı SQLite geçmişiyle kıyaslar.
-  // Geçmiş yoksa uydurma yapılmaz; "veri yok" denir (arayüz bunu dürüstçe gösterir).
-  let fiyatAnalizi = null;
-  let fiyatZekasi = null;
-  try {
-    const pid = srcProduct?.modelCode || srcProduct?.barcode || srcProduct?.title || '';
-    fiyatAnalizi = getFiyatAnalizi(pid, srcProduct?.barcode, sourceUrl);
-    fiyatZekasi = enUcuzFiyatDegerlendir(allResults, fiyatAnalizi);
-    // 🚨 V2 SAHTE İNDİRİM DEDEKTÖRÜ (2026-11-05): her mağaza teklifi için
-    // üstü çizili liste fiyatı gerçek geçmişle kıyaslanır.
-    //   Kural A: liste > maxFiyat60 × 1.15  veya  liste > ortFiyat30 × 1.25
-    //   Kural B: satış ≤ minFiyat90 (+tolerans)
-    //   Kural C: |satış − ortFiyat30| ≤ %5 → piyasa normali (rozet yok)
-    // Geçmiş yetersizse (<3 gün) rozet BASILMAZ — cold-start ürünlerde yanıltıcı
-    // etiket üretmek düzeltmeye çalıştığımız sorunun aynısı olurdu.
-    sahteIndirimleriIsaretle(allResults, fiyatAnalizi);
-  } catch (e) {
-    // Geçmiş okunamazsa karşılaştırma YİNE çalışır; yalnızca radar görünmez.
-    fiyatZekasi = { tavsiye: 'veri_yok', durum: null, neden: 'Fiyat geçmişi okunamadı: ' + String(e.message || e).slice(0, 80) };
-  }
-
-  // 4) En ucuz: aynı renkteki, stoğu olan, FİYATI OKUNABİLEN ürünler arasından.
-  //    Fiyat kuralı tek kaynaktan gelir (karsilastirmaFiyati): gerçek ödenecek
-  //    tutar yoksa satış fiyatına düşer. Önceden yalnız `pricing.toplam` aranıyordu;
-  //    kaynak mağazada bu alan boş olduğunda stokta+ucuz teklif eleniyor ve
-  //    "en ucuz bulunamadı" deniyordu (2026-11-05 canlı vaka).
-  const uygunFiyatli = (r) => Number.isFinite(karsilastirmaFiyati(r));
-  const eligible = found.filter(r => r.renkAyni !== false && uygunFiyatli(r) && r.product.inStock !== false);
-  let cheapest = null;
-  for (const r of eligible) {
-    if (!cheapest || karsilastirmaFiyati(r) < karsilastirmaFiyati(cheapest)) cheapest = r;
-  }
-  if (cheapest) cheapest.enUcuz = true;
-
-  // İkinci en ucuz teklif (neden daha ucuz açıklaması için)
-  const sortedEligible = [...eligible].sort((a, b) => karsilastirmaFiyati(a) - karsilastirmaFiyati(b));
-  const runnerUp = sortedEligible.length > 1 ? sortedEligible[1] : null;
-  let nedenDahaUcuz = null;
-  // İptal edildiyse YZ açıklamasını ATLA: bu çağrı yavaş olabiliyor (60-120 sn) ve
-  // kullanıcı zaten taramayı durdurmuş durumda. 2026-10-27: iptal 90 sn sürüyordu,
-  // sebep buydu.
-  if (cheapest && runnerUp && !iptalMi()) {
-    try {
-      nedenDahaUcuz = await Promise.race([
-        explainCheapest(cheapest, runnerUp, srcProduct),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2500)),
-      ]);
-    } catch {}
-  }
-
-  // ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" Karar Tahmincisi (2026-11-05)
-  let zamanlamaTavsiyesi = null;
-  try {
-    const enUcuzTutar = cheapest?.product?.pricing?.toplam ?? cheapest?.product?.sellingPrice ?? null;
-    zamanlamaTavsiyesi = zamanlamaTahminiYap({
-      guncelFiyat: enUcuzTutar,
-      analiz: fiyatAnalizi,
-      magazaId: cheapest?.site,
-    });
-  } catch {}
-
-  const totalRequests = allResults.reduce((s, r) => s + (r.requestsSpent || 0), 0);
-
-  // Satış ortaklığı ayarları TEK KEZ okunur (2026-10-28): sonuç başına DB sorgusu
-  // yapılmasın. Yalnızca dışa giden adres süslenir; fiyat/sıralama dokunulmaz.
-  const afiliyeAyar = afiliyeAyarlari();
-
-  const sonuc = {
-    kaynak: {
-      site: adapter.id,
-      siteName: adapter.name,
-      url: sourceUrl,
-      afiliyeUrl: afiliyeLink(adapter.id, sourceUrl, afiliyeAyar),
-      urun: srcProduct.title,
-      marka: srcProduct.brand,
-      modelKodu: srcProduct.modelCode,
-      barkod: srcProduct.barcode,
-      renk: srcProduct.color,
-      fiyat: srcProduct.pricing?.toplam ?? srcProduct.sellingPrice,
-      resim: srcProduct.image,
-      aramaSorgulari: queries,
-    },
-    sonuclar: siraliResults.map(r => ({
-      site: r.site,
-      siteName: r.siteName,
-      status: r.status,
-      reason: r.reason,
-      matchBasis: r.matchBasis,
-      renkAyni: r.renkAyni,
-      enUcuz: !!r.enUcuz,
-      // 🖨️ 3D Baskı Uzmanlık Modülü (2026-10-30): çap + hammadde + karta taşınan
-      // birim maliyet verisi. 3D dışı ürünlerde null (kartta widget gösterilmez).
-      baski: r.product ? baskiKartiBilgisi({
-        ...r.product,
-        birim: birimFiyat(r.product),
-      }) : null,
-      // Filtreleme etiketleri (Kargo Bedava, Resmi Satıcı, Vade Farksız Taksit)
-      kargoBedava: r.product ? (
-        r.product.pricing?.kargo?.ucret === 0 ||
-        r.product.pricing?.kargo?.uygulanir === false ||
-        /ücretsiz|bedava/i.test(String(r.product.pricing?.kargo?.aciklama || '')) ||
-        /ücretsiz|bedava/i.test(String(r.product.shipping || ''))
-      ) : false,
-      resmiSatici: r.product ? (
-        ['trendyol', 'hepsiburada', 'amazon', 'vatan', 'mediamarkt', 'teknosa', 'itopya', 'koctas', 'robitshop', 'robotistan', 'direnc', 'samm'].includes(r.site) &&
-        (!r.product.seller || /trendyol|hepsiburada|amazon|vatan|mediamarkt|teknosa|itopya|robitshop|robotistan|direnc|samm/i.test(r.product.seller) ||
-         (r.product.brand && String(r.product.seller).toLowerCase().includes(String(r.product.brand).toLowerCase())))
-      ) : false,
-      vadeFarksizTaksit: r.product ? (
-        (r.product.campaigns || []).some(c => /vade farksız|faizsiz|peşin fiyatına/i.test(c)) ||
-        (r.product.pricing?.kampanyaTaksit || []).length > 0 ||
-        /vade farksız|peşin fiyatına/i.test(r.product.title || '')
-      ) : false,
-      requestsSpent: r.requestsSpent,
-      queriesTried: r.queriesTried,
-      incelenen: r.examined,
-      // Sahte indirim radarı: bu mağazanın üstü çizili etiketi piyasa
-      // ortalamasının %20 üzerindeyse arayüz sarı uyarı basar (2026-10-30).
-      sisirilmisEtiket: !!r.sisirilmisEtiket,
-      etiketOrani: r.etiketOrani ?? null,
-      product: r.product ? {
-        url: r.product.url,
-        // Yalnızca "Ürüne git" bağlantısında kullanılır; `url` temiz kalır
-        // (önbellek/eşleştirme/yeniden tarama adresiyle birebir aynı olmalı).
-        afiliyeUrl: afiliyeLink(r.site, r.product.url, afiliyeAyar),
-        title: r.product.title,
-        brand: r.product.brand,
-        modelCode: r.product.modelCode,
-        barcode: r.product.barcode,
-        color: r.product.color,
-        inStock: r.product.inStock,
-        seller: r.product.seller,
-        image: r.product.image,
-        sellingPrice: r.product.sellingPrice,
-        listPrice: r.product.listPrice,
-        shipping: r.product.shipping,
-        campaigns: r.product.campaigns,
-        classifiedCampaigns: r.product.classifiedCampaigns,
-        pricing: r.product.pricing,
-        // 🧾 KDV şeffaflığı (2026-10-31): direnc.net gibi KDV hariç yayımlayan
-        // mağazalarda gösterilen fiyat KDV DAHİL tutardır.
-        vatIncluded: r.product.vatIncluded ?? null,
-        vatRate: r.product.vatRate ?? null,
-        priceExVat: r.product.priceExVat ?? null,
-        // Birim fiyat (₺/kg, ₺/L) — 2026-10-29. Miktar okunamazsa null'lar döner;
-        // uydurma yok. Sıralamayı DEĞİŞTİRMEZ, ayrı bir görünüm sunar.
-        birim: birimFiyat(r.product),
-        // Varyant şeffaflığı (2026-11-03): çok varyantlı mağazalarda (Shopify)
-        // hangi varyantın seçildiği ve NEDEN seçildiği görünür olsun.
-        varyant: r.product.varyant || null,
-        // 🧵 Filament/reçine birim fiyat rozeti (2026-11-01): yalnızca filament ve
-        // reçinede dolu; yazıcı/aksesuarda null.
-        birimHesap: birimFiyatHesapla(
-          r.product.title,
-          r.product.pricing?.toplam ?? r.product.sellingPrice,
-        ),
-      } : null,
-    })),
-    ozet: {
-      toplamSureMs: Date.now() - startedAt,
-      harcananIstek: totalRequests,
-      bulunanSiteSayisi: stok.bulunanSiteSayisi,
-      stoktaVarSayisi: stok.stoktaVarSayisi,
-      stoktaYokSayisi: stok.stoktaYokSayisi,
-      tamamiTukendi: stok.tamamiTukendi,
-      ayniRenkSayisi: eligible.length,
-      enUcuzSite: cheapest ? cheapest.siteName : null,
-      // Fiyat tek kaynaktan: pricing.toplam yoksa sellingPrice.
-      enUcuzFiyat: cheapest ? karsilastirmaFiyati(cheapest) : null,
-      nedenDahaUcuz,
-      // ---- SAHTE İNDİRİM & DİP FİYAT RADARI (2026-10-30) ----
-      // Fiyat geçmişi varsa karar raporu; yoksa `tavsiye:'veri_yok'` (uydurma yok).
-      fiyatZekasi: fiyatZekasi || null,
-      // ⏱️ "Şimdi mi Almalısın, Beklemeli misin?" (2026-11-05)
-      zamanlamaTavsiyesi: zamanlamaTavsiyesi || null,
-    // V2: en ucuz stoklu teklifin etiket denetimi (Telegram/radar kartı için).
-    sahteIndirim: (() => {
-      const uygun = allResults.filter(r => r?.status === 'found' && r?.product
-        && r.product.inStock !== false && r.renkAyni !== false
-        && Number.isFinite(Number(r.product.pricing?.toplam ?? r.product.sellingPrice)));
-      if (!uygun.length) return null;
-      const enUcuz = uygun.reduce((a, b) => (
-        Number(b.product.pricing?.toplam ?? b.product.sellingPrice)
-          < Number(a.product.pricing?.toplam ?? a.product.sellingPrice) ? b : a));
-      return enUcuz.sahteIndirim || null;
-    })(),
-      fiyatAnalizi: fiyatAnalizi || null,
-      // Birim fiyat görünümü (2026-10-29): farklı gramajlı ürünler arasında
-      // "sahte ucuz" tuzağını gösterir. Sıralamayı DEĞİŞTİRMEZ.
-      birimFiyat: (() => {
-        try {
-          const liste = allResults
-            .filter(r => r.status === 'found' && r.product)
-            .map(r => ({
-              site: r.site,
-              siteName: r.siteName,
-              title: r.product.title,
-              sellingPrice: r.product.sellingPrice,
-              pricing: r.product.pricing,
-              renkAyni: r.renkAyni !== false,
-            }));
-          const b = birimSirala(liste, {
-            // Referans: kaynak ürünün gramajı (kullanıcının baktığı ürün)
-            referansGram: birimFiyat({ title: srcProduct.title }).gram,
-          });
-          return {
-            referansGram: b.referansGram,
-            enIyiKg: b.enIyiKg ? {
-              site: b.enIyiKg.site,
-              siteName: b.enIyiKg.siteName,
-              tlKg: b.enIyiKg.birim.tlKg,
-              gram: b.enIyiKg.birim.gram,
-              fiyat: b.enIyiKg.birim.fiyat,
-              tahmini: b.enIyiKg.birim.tlKgTahmini,
-            } : null,
-            enIyiL: b.enIyiL ? {
-              site: b.enIyiL.site,
-              siteName: b.enIyiL.siteName,
-              tlL: b.enIyiL.birim.tlL,
-              ml: b.enIyiL.birim.ml,
-              fiyat: b.enIyiL.birim.fiyat,
-            } : null,
-            tuzaklar: b.tuzaklar,
-            okunamayan: b.okunamayan,
-            toplam: b.toplam,
-          };
-        } catch {
-          return null;
-        }
-      })(),
-      // Kullanıcı iptal ettiyse hangi sitelerin taranamadığı görünsün
-      iptalEdildi: iptalMi(),
-      taranmayanSiteSayisi: allResults.filter(r => r.status === 'iptal').length,
-    },
-  };
-
-  // ---- 🟢 FOMO (2026-11-08): istemci `sonuc.zamanlama` alanını okur ----
-  // Aynı nesne `ozet.zamanlamaTavsiyesi` altında da korunur (geriye dönük uyum).
-  sonuc.zamanlama = zamanlamaTavsiyesi || null;
-
-  // ---- 🖨️ 3D Baskı Uzmanlık Modülü özeti (2026-10-30) ----
-  // Medyan ₺/kg üzerinden "Yüksek Birim Maliyet" işareti ve filtre sayaçları.
-  try {
-    const medyanKg = sonuc.ozet?.birimFiyat?.medyanKg ?? null;
-    for (const r of sonuc.sonuclar) {
-      if (r?.product?.birim) {
-        r.birimUyari = yuksekBirimMaliyet(r.product.birim, medyanKg);
-      }
-    }
-    sonuc.ozet.baskiOzet = {
-      ...baskiOzeti(sonuc.sonuclar),
-      yuksekBirimSayisi: sonuc.sonuclar.filter(r => r.birimUyari).length,
-    };
-  } catch { /* 3D özeti başarısız olsa da ana sonuç döner */ }
-
-  return sonuc;
+  return karsilastirmaAkisiniTamamla({
+    adapter,
+    sourceUrl,
+    srcProduct,
+    sourceResult,
+    queries,
+    others,
+    opts,
+    startedAt,
+    onProgress,
+    iptalMi,
+    maxCandidates,
+    siniflandir,
+    signal,
+  });
 }
 
 /**

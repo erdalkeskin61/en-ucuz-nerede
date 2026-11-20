@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import './src/httpPool.js';
 import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
-import { runComparison } from './src/pipeline.js';
+import { runComparison, runComparisonByQuery } from './src/pipeline.js';
 import { detectSite, adapters } from './src/sites/index.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
@@ -50,7 +50,7 @@ import { baskiApiBagla } from './src/baskiApi.js';
 import { linkCoz } from './src/linkArama.js';
 import { pushDurum, pushGonder } from './src/push.js';
 import { onerileriGetir } from './src/oneriler.js';
-import { hizliKaynakUrunBul } from './src/urunArama.js';
+import { hizliKaynakUrunBul, KIRILGAN_KAYNAK_SITELER } from './src/urunArama.js';
 import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
   katalogSyncDurumu, katalogUrunleriAra,
@@ -926,8 +926,8 @@ app.get('/api/jobs', (req, res) => {
  * geçmişine + anlık önbelleğe kaydeder (2026-10-29: anlık sonuç için ayrıştırıldı;
  * normal tarama ve arka plan tazelemesi aynı yolu kullanır).
  */
-function karsilastirmaCalistir(url, job, formatSonuc) {
-  return runComparison(url, {
+function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {}) {
+  const secenekler = {
     signal: job.iptalKontrolu.signal,
     // Tazeleme modunda sayfa önbelleği atlanır → fiyat gerçekten siteden okunur.
     taze: job.mod === 'tazeleme',
@@ -951,10 +951,11 @@ function karsilastirmaCalistir(url, job, formatSonuc) {
       };
 
       if (info.matchBasis === 'kaynak' && info.product) {
+        const etkinUrl = url || info.product.url || '';
         job.kaynak = {
           site: info.site,
           siteName: info.siteName,
-          url,
+          url: etkinUrl,
           urun: info.product.title,
           marka: info.product.brand,
           modelKodu: info.product.modelCode,
@@ -992,8 +993,13 @@ function karsilastirmaCalistir(url, job, formatSonuc) {
         if (job.tazeleniyor) job.surum = (job.surum || 1) + 1;
       }
     },
-  })
+  };
+  const calisma = (!url && arananSorgu)
+    ? runComparisonByQuery(arananSorgu, secenekler)
+    : runComparison(url, secenekler);
+  return calisma
     .then(result => {
+      const kayitUrl = url || result?.kaynak?.url || '';
       // Geçmiş + fiyat zaman serisi + anlık önbellek
       if (result && result.kaynak && result.ozet) {
         // En ucuz teklifin ürün adresi geçmişe de yazılır (2026-10-31):
@@ -1001,7 +1007,7 @@ function karsilastirmaCalistir(url, job, formatSonuc) {
         const enUcuzTeklif = (result.sonuclar || []).find(s =>
           s.enUcuz && s.status === 'found' && s.product && s.renkAyni !== false);
         store.addHistory({
-          url,
+          url: kayitUrl,
           urun: result.kaynak.urun,
           modelKodu: result.kaynak.modelKodu,
           enUcuzSite: result.ozet.enUcuzSite,
@@ -1052,7 +1058,7 @@ function karsilastirmaCalistir(url, job, formatSonuc) {
         && !result.ozet?.iptalEdildi
         && !(result.ozet?.taranmayanSiteSayisi > 0);
       const bulunanVar = (result.sonuclar || []).some(s => s.status === 'found' && s.product);
-      if (tamTarama && bulunanVar) anlikYaz(url, result);
+      if (tamTarama && bulunanVar && kayitUrl) anlikYaz(kayitUrl, result);
       return result;
     });
 }
@@ -1198,26 +1204,35 @@ app.post('/api/compare', async (req, res) => {
       try {
         fazAyarla('cozum', 'Ürün aranıyor…');
 
-        // 🧭 Katman 0: yerel katalog/geçmiş (dış mağazaya çıkmadan)
+        // 🧭 Katman 0: yerel katalog/geçmiş (kırılgan olmayan mağaza varsa)
         let bulunan = null;
+        let yedekRadar = null;
         try {
           const yerel = katalogGetir({ sadeceAktif: true })
             .find(k => adAnahtariBenzer(k.ad, arananSorgu));
           if (yerel) {
             const durum = radarDurumVerisi(yerel.id);
             const yerelUrl = durum?.afiliyeUrl || durum?.hamUrl || yerel.url;
-            if (yerelUrl) {
-              bulunan = {
+            const yerelSite = yerelUrl ? detectSite(yerelUrl) : null;
+            const yerelSiteId = durum?.siteId || yerelSite?.id || null;
+            if (yerelUrl && yerelSite) {
+              const kayit = {
                 url: yerelUrl,
-                siteId: durum?.siteId || null,
+                siteId: yerelSiteId,
                 ad: yerel.ad,
                 katman: 0,
                 kaynak: 'katalog',
-                // Radar kataloğunun son okuma zamanı → istemci "X dk önce" yazar.
                 katalogYasMs: durum?.ts ? Math.max(0, Date.now() - Number(durum.ts)) : null,
                 guncellemeTs: durum?.ts || null,
               };
-              job.katman = 0;
+              // Radar URL'si Trendyol/Amazon gibi kırılgan bir sitedeyse hemen ona
+              // kilitlenme — önce açık mağazaları ara, kırılgan URL'yi yedek tut.
+              if (KIRILGAN_KAYNAK_SITELER.has(yerelSiteId)) {
+                yedekRadar = kayit;
+              } else {
+                bulunan = kayit;
+                job.katman = 0;
+              }
             }
           }
         } catch { /* katalog okunamadı → katman 1 */ }
@@ -1241,63 +1256,112 @@ app.post('/api/compare', async (req, res) => {
               kaynak: ham.kaynak || null,
               katalogYasMs: ham.katalogYasMs ?? null,
               guncellemeTs: ham.guncellemeTs ?? null,
+              yedekAdaylar: Array.isArray(ham.yedekAdaylar) ? ham.yedekAdaylar : [],
             };
             if (katalogdan) fazAyarla('cozum', 'Ürün yerel katalog indeksinde bulundu.');
+          } else if (yedekRadar) {
+            bulunan = yedekRadar;
           }
         }
 
-        if (!bulunan?.url) {
-          throw new Error(`"${arananSorgu}" için mağazalarda karşılaştırılabilecek uygun bir ürün bulunamadı. `
-            + 'Marka ve modeli biraz daha detaylı yazarak (ör. "eSun PLA+ Siyah 1kg") tekrar deneyin.');
-        }
-        const hedefSite = detectSite(bulunan.url);
-        if (!hedefSite) throw new Error('Bulunan ürünün sitesi desteklenmiyor.');
-
-        job.url = bulunan.url;
-        job.site = hedefSite.id;
-        job.kaynakAd = bulunan.ad || bulunan.title || null;
-        // 🗂️ Kaynağın nereden bulunduğu AÇIKÇA taşınır:
-        //   katalog → yerel indeks (ağ isteği yok), yasMs = kaydın yaşı
-        //   dis-arama → mağazalarda canlı arama
-        job.kaynakKatmani = (bulunan.kaynak === 'katalog' || bulunan.katman === 0) ? 'katalog' : 'dis-arama';
-        job.katalogYasMs = bulunan.katalogYasMs ?? null;
-        if (job.kaynakKatmani === 'katalog') job.katman = 0;
-
-        // Anlık (SWR) sonuç varsa hemen sun, arka planda tazele.
-        const tazeZorla = req.body?.taze === true;
-        const anlikHam = tazeZorla ? null : anlikAl(bulunan.url);
-        const anlik = anlikHam ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) } : null;
-        if (anlik) {
-          job.mod = 'tazeleme';
-          job.tazeleniyor = true;
-          job.surum = 1;
-          job.anlikTs = anlik.ts;
-          job.anlikYasMs = anlik.yasMs;
-          job.status = 'done';
-          job.result = anlik.payload;
-          job.kaynak = anlik.payload.kaynak || null;
-          fazAyarla('bitti', 'Hafızadan gösteriliyor, arka planda tazeleniyor');
-          karsilastirmaCalistir(bulunan.url, job, formatSonuc)
-            .then((yeni) => {
-              job.result = yeni;
-              job.kaynak = yeni.kaynak || job.kaynak;
-              job.tazeleniyor = false;
-              job.tazelemeBitti = true;
-              job.tazelemeFarki = fiyatFarki(anlik.payload, yeni);
-              job.anlikTs = simdi();
-              job.anlikYasMs = 0;
-              job.surum = (job.surum || 1) + 1;
-            })
-            .catch((e) => {
-              job.tazeleniyor = false;
-              job.tazelemeHatasi = String(e.message || e);
-              job.surum = (job.surum || 1) + 1;
-            });
-          return;
+        // Aday URL listesi: açık mağazalar en başta, kırılgan siteler yedekte.
+        const hamAdaylar = [
+          bulunan,
+          ...(bulunan?.yedekAdaylar || []),
+          ...(yedekRadar && bulunan?.url !== yedekRadar.url ? [yedekRadar] : []),
+        ].filter(x => x && x.url && detectSite(x.url));
+        const benzersizAdaylar = [];
+        const gorulenUrl = new Set();
+        for (const a of hamAdaylar) {
+          if (gorulenUrl.has(a.url)) continue;
+          gorulenUrl.add(a.url);
+          benzersizAdaylar.push(a);
         }
 
-        fazAyarla('tarama', 'Mağazalar taranıyor…');
-        const result = await karsilastirmaCalistir(bulunan.url, job, formatSonuc);
+        bulunan = benzersizAdaylar[0] || bulunan || null;
+        if (bulunan?.url) {
+          const hedefSite = detectSite(bulunan.url);
+          job.url = bulunan.url;
+          job.site = hedefSite?.id || bulunan.siteId || null;
+          job.kaynakAd = bulunan.ad || bulunan.title || arananSorgu;
+          job.kaynakKatmani = (bulunan.kaynak === 'katalog' || bulunan.katman === 0) ? 'katalog' : 'dis-arama';
+          job.katalogYasMs = bulunan.katalogYasMs ?? null;
+          if (job.kaynakKatmani === 'katalog') job.katman = 0;
+
+          // Anlık (SWR) sonuç varsa hemen sun, arka planda tazele.
+          const tazeZorla = req.body?.taze === true;
+          const anlikHam = tazeZorla ? null : anlikAl(bulunan.url);
+          const anlik = anlikHam ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) } : null;
+          if (anlik) {
+            job.mod = 'tazeleme';
+            job.tazeleniyor = true;
+            job.surum = 1;
+            job.anlikTs = anlik.ts;
+            job.anlikYasMs = anlik.yasMs;
+            job.status = 'done';
+            job.result = anlik.payload;
+            job.kaynak = anlik.payload.kaynak || null;
+            fazAyarla('bitti', 'Hafızadan gösteriliyor, arka planda tazeleniyor');
+            karsilastirmaCalistir(bulunan.url, job, formatSonuc)
+              .then((yeni) => {
+                job.result = yeni;
+                job.kaynak = yeni.kaynak || job.kaynak;
+                job.tazeleniyor = false;
+                job.tazelemeBitti = true;
+                job.tazelemeFarki = fiyatFarki(anlik.payload, yeni);
+                job.anlikTs = simdi();
+                job.anlikYasMs = 0;
+                job.surum = (job.surum || 1) + 1;
+              })
+              .catch((e) => {
+                job.tazeleniyor = false;
+                job.tazelemeHatasi = String(e.message || e);
+                job.surum = (job.surum || 1) + 1;
+              });
+            return;
+          }
+        }
+
+        // Aday kaynak URL'lerini sırayla dene (örn. Trendyol 403 verirse otomatik
+        // sonraki mağazaya düş); hiçbiri okunamazsa doğrudan sorguyla tüm açık
+        // mağazaları tara (`runComparisonByQuery`).
+        let result = null;
+        for (let idx = 0; idx < benzersizAdaylar.length; idx++) {
+          if (job.iptalKontrolu?.signal?.aborted) break;
+          const aday = benzersizAdaylar[idx];
+          const adaySite = detectSite(aday.url);
+          job.url = aday.url;
+          job.site = adaySite?.id || aday.siteId || null;
+          job.kaynakAd = aday.ad || aday.title || arananSorgu;
+          fazAyarla(
+            idx === 0 ? 'tarama' : 'cozum',
+            idx === 0 ? 'Mağazalar taranıyor…' : `${adaySite?.name || 'Alternatif mağaza'} üzerinden okunuyor…`
+          );
+          try {
+            result = await karsilastirmaCalistir(aday.url, job, formatSonuc);
+            break;
+          } catch (e) {
+            if (job.iptalKontrolu?.signal?.aborted) throw e;
+            console.warn('[arama] kaynak okunamadı, yedek deneniyor:', adaySite?.id || aday.url, '|', String(e.message || e).slice(0, 100));
+            job.partialResults = [];
+            job.progress = {};
+            job.kaynak = null;
+          }
+        }
+
+        if (!result) {
+          job.site = null;
+          job.url = arananSorgu;
+          job.kaynakAd = arananSorgu;
+          fazAyarla('tarama', 'Mağazalar ürün adıyla doğrudan taranıyor…');
+          result = await karsilastirmaCalistir(null, job, formatSonuc, { arananSorgu });
+          if (result?.kaynak) {
+            job.url = result.kaynak.url || job.url;
+            job.site = result.kaynak.site || null;
+            job.kaynakAd = result.kaynak.urun || arananSorgu;
+          }
+        }
+
         job.status = 'done';
         job.result = result;
         fazAyarla('bitti', null);
