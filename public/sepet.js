@@ -466,6 +466,9 @@ async function hesapla() {
     });
     const v = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(v.hata || 'Sepet isteği başarısız');
+    try {
+      if (window.gtag) window.gtag('event', 'sepet_optimize', { adet: Number(dogrulama.adet || 0) });
+    } catch { /* analitik yoksa sorun değil */ }
     durum.isId = v.isId;
     hesapDongusu(v.isId);
   } catch (e) {

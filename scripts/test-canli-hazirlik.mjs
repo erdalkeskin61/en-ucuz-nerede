@@ -118,7 +118,8 @@ kontrol('sitemap: Content-Type application/xml', /application\/xml; charset=utf-
 kontrol('PUBLIC_URL varsa OG/CSS mutlaklaştırma', /og-gorsel\.png/.test(serverSrc));
 kontrol('og:url eklenir', /og:url/.test(serverSrc));
 kontrol('canonical eklenir', /rel="canonical"/.test(serverSrc));
-kontrol('PUBLIC_URL yoksa statik davranış korunur (next())', /if \(!acik\) return next\(\);/.test(serverSrc));
+kontrol('PUBLIC_URL ve GA4 yoksa statik davranış korunur (next())', /if \(!acik && !ga4Snip\) return next\(\);/.test(serverSrc));
+kontrol('GA4 ölçüm kimliği desteği (.env GA_MEASUREMENT_ID)', /ga4HeadSnip/.test(serverSrc) && /GA_MEASUREMENT_ID/.test(oku('src/seoSayfalar.js')));
 
 /* ================================================================== */
 bolum('5) 🚨 ADMIN_ANAHTARI güvenlik uyarısı');

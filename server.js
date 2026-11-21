@@ -54,7 +54,7 @@ import { onerileriGetir } from './src/oneriler.js';
 import { hizliKaynakUrunBul, KIRILGAN_KAYNAK_SITELER } from './src/urunArama.js';
 import {
   SEO_KATEGORILER, seoUrunListesi, seoUrunBul, sitemapKayitlari,
-  urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml,
+  urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
 } from './src/seoSayfalar.js';
 import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
@@ -578,49 +578,55 @@ app.get('/urun/:slug', (req, res) => {
 });
 
 /**
- * GET / ve /index.html — PUBLIC_URL tanımlıysa sosyal paylaşım etiketlerini
- * MUTLAK adrese çevirir (WhatsApp/X/LinkedIn önizlemeleri göreli yolu açamaz).
- * PUBLIC_URL yoksa hiçbir şey değiştirilmez: statik dosya olduğu gibi sunulur.
+ * Kamuya açık HTML sayfalarını sunar:
+ *   1) PUBLIC_URL tanımlıysa canonical + og:url + mutlak og:image / twitter:image ekler.
+ *   2) GA_MEASUREMENT_ID tanımlıysa </head> öncesine Google Analytics 4 (gtag.js) ekler.
+ * İkisi de boşsa hiçbir şey değiştirilmez: statik dosya olduğu gibi sunulur.
  */
-app.get(['/', '/index.html'], (req, res, next) => {
+function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEkle = true } = {}) {
   const acik = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
-  if (!acik) return next(); // mevcut statik davranış korunur
-  const dosya = path.join(__dirname, 'public', 'index.html');
-  fs.readFile(dosya, 'utf8', (err, html) => {
-    if (err) return next();
-    const tamKok = yayinKoku(req);
-    const cikti = html
-      // og:image ve twitter:image göreli yolu → tam adres
-      .replace(/content="\/og-gorsel\.png"/g, `content="${tamKok}/og-gorsel.png"`)
-      // og:url + canonical (tek kez, og:image:alt bloğunun önüne)
-      .replace(
-        '<meta property="og:image:alt"',
-        `<meta property="og:url" content="${tamKok}/" />\n  `
-        + `<link rel="canonical" href="${tamKok}/" />\n  `
-        + '<meta property="og:image:alt"',
-      );
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=60');
-    res.send(cikti);
-  });
-});
+  const ga4Snip = ga4HeadSnip();
+  if (!acik && !ga4Snip) return next();
 
-app.get(['/maliyet.html', '/sepet.html', '/slicer.html'], (req, res, next) => {
-  const acik = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
-  if (!acik) return next();
-  const yol = req.path;
-  const dosya = path.join(__dirname, 'public', path.basename(yol));
+  const dosya = path.join(__dirname, 'public', dosyaAdi);
   fs.readFile(dosya, 'utf8', (err, html) => {
     if (err) return next();
-    const tamKok = yayinKoku(req);
-    const cikti = html
-      .replace(/content="\/og-gorsel\.png"/g, `content="${tamKok}/og-gorsel.png"`)
-      .replace('</head>', `  <link rel="canonical" href="${tamKok}${yol}" />\n  <meta property="og:url" content="${tamKok}${yol}" />\n</head>`);
+    let cikti = html;
+    if (acik && canonicalEkle) {
+      const tamKok = yayinKoku(req);
+      cikti = cikti.replace(/content="\/og-gorsel\.png"/g, `content="${tamKok}/og-gorsel.png"`);
+      if (anaSayfa) {
+        cikti = cikti.replace(
+          '<meta property="og:image:alt"',
+          `<meta property="og:url" content="${tamKok}/" />\n  `
+          + `<link rel="canonical" href="${tamKok}/" />\n  `
+          + '<meta property="og:image:alt"',
+        );
+      } else {
+        cikti = cikti.replace(
+          '</head>',
+          `  <link rel="canonical" href="${tamKok}${req.path}" />\n  <meta property="og:url" content="${tamKok}${req.path}" />\n</head>`,
+        );
+      }
+    }
+    if (ga4Snip) {
+      cikti = cikti.replace('</head>', `  ${ga4Snip}\n</head>`);
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=60');
     res.send(cikti);
   });
-});
+}
+
+app.get(['/', '/index.html'], (req, res, next) => statikHtmlSun(req, res, next, 'index.html', { anaSayfa: true }));
+
+app.get(['/maliyet.html', '/sepet.html', '/slicer.html'], (req, res, next) => (
+  statikHtmlSun(req, res, next, path.basename(req.path))
+));
+
+app.get('/sepet-paylas.html', (req, res, next) => (
+  statikHtmlSun(req, res, next, 'sepet-paylas.html', { canonicalEkle: false })
+));
 
 app.use(express.static(path.join(__dirname, 'public')));
 

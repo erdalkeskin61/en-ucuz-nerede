@@ -41,6 +41,35 @@ export function htmlKacis(metin) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * 📊 Google Analytics 4 (GA4) ölçüm kimliği — `.env` içinde `GA_MEASUREMENT_ID=G-...`.
+ * Yalnızca geçerli `G-...` biçimi kabul edilir (XSS / enjeksiyon koruması).
+ */
+export function ga4OlcumId() {
+  const raw = String(process.env.GA_MEASUREMENT_ID || '').trim().toUpperCase();
+  return /^G-[A-Z0-9]{4,20}$/.test(raw) ? raw : '';
+}
+
+/** Tüm kamuya açık sayfalara eklenen hafif GA4 + giden mağaza tıklama parçası. */
+export function ga4HeadSnip() {
+  const id = ga4OlcumId();
+  if (!id) return '';
+  return [
+    `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>`,
+    '<script>',
+    '  window.dataLayer = window.dataLayer || [];',
+    '  function gtag(){dataLayer.push(arguments);}',
+    '  gtag(\'js\', new Date());',
+    `  gtag('config', '${id}');`,
+    '  document.addEventListener(\'click\', function(e) {',
+    '    var a = e.target && e.target.closest ? e.target.closest(\'a[href^="http"]\') : null;',
+    '    if (!a || a.hostname === location.hostname) return;',
+    '    try { gtag(\'event\', \'magaza_tiklama\', { magaza: a.hostname.replace(/^www\\./, \'\'), sayfa: location.pathname, etiket: (a.textContent || \'\').trim().slice(0, 80) }); } catch (_) {}',
+    '  }, true);',
+    '</script>',
+  ].join('\n  ');
+}
+
 function jsonLdMetni(obj) {
   return JSON.stringify(obj).replace(/</g, '\\u003c');
 }
@@ -279,6 +308,7 @@ function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'we
     .map(o => `<script type="application/ld+json">${jsonLdMetni(o)}</script>`)
     .join('\n  ');
 
+  const ga4Snip = ga4HeadSnip();
   return `<!DOCTYPE html>
 <html lang="tr" data-theme="light">
 <head>
@@ -343,7 +373,7 @@ function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'we
     .seo-kat-hap.etkin { background: var(--ana); color: #fff; border-color: var(--ana); }
     @media (max-width: 640px) { .seo-ust { grid-template-columns: 1fr; } .seo-gorsel { width: 84px; height: 84px; } }
   </style>
-  ${jsonScripts}
+  ${jsonScripts}${ga4Snip ? `\n  ${ga4Snip}` : ''}
 </head>
 <body>
   <header class="ustbar">

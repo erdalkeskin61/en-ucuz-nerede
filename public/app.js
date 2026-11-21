@@ -1376,6 +1376,14 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
     const data = await guvenliJson(res);
     if (!res.ok) throw new Error(data.hata || 'İstek başarısız');
     aktifIs = data.isId;
+    try {
+      if (window.gtag) {
+        window.gtag('event', 'urun_arama', {
+          tur: /^https?:/i.test(url) ? 'link' : 'metin',
+          sorgu: String(url || '').slice(0, 100),
+        });
+      }
+    } catch { }
     // Son aramayı yerelde sakla: Ayarlar'a gidip dönünce input ve sonuç geri yüklensin.
     try { localStorage.setItem('son_arama', JSON.stringify({ url, isId: data.isId, ts: Date.now() })); } catch { }
 
@@ -3949,6 +3957,9 @@ $('#oneriForm').addEventListener('submit', async (e) => {
     });
     const data = await guvenliJson(res);
     if (!res.ok) throw new Error(data.hata || 'İstek başarısız');
+    try {
+      if (window.gtag) window.gtag('event', 'urun_oneri', { sorgu: String(ihtiyac || '').slice(0, 100) });
+    } catch { }
     oneriIzle(data.id ?? data.isId);
   } catch (err) {
     oneriHataGoster(err.message);
