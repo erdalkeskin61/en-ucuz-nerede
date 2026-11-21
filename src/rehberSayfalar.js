@@ -272,6 +272,72 @@ const YAZICI_KARSILASTIRMALARI = [
       return '500 mm/s Klipper giriş-orta segment karşılaştırması';
     },
   },
+  {
+    yol: '/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke',
+    ikon: '🚀',
+    kisaBaslik: 'Bambu Lab A1 Mini vs Ender 3 V3 KE',
+    h1: 'Bambu Lab A1 Mini vs Creality Ender 3 V3 KE',
+    title: 'Bambu Lab A1 Mini vs Ender 3 V3 KE — Başlangıç İçin Hangisi? | Baskı Hesap',
+    description: 'Bambu Lab A1 Mini (180mm, AMS Lite) ve Creality Ender 3 V3 KE (220mm, Klipper) teknik farkları ve bugünkü kargo dahil Türkiye fiyatları.',
+    ozet: 'İlk 3D yazıcısını alacakların en çok sorduğu iki modeli baskı alanı, çok renkli baskı (AMS Lite), ses seviyesi ve bugünkü Türkiye fiyatlarıyla kıyasladık.',
+    solAd: 'Bambu Lab A1 Mini',
+    sagAd: 'Creality Ender 3 V3 KE',
+    solRegex: /bambu\s*lab\s*a1\s*mini/i,
+    sagRegex: /ender\s*3\s*v3\s*ke/i,
+    ozellikler: [
+      ['Baskı Hacmi', '180 × 180 × 180 mm', '220 × 220 × 240 mm (%85+ daha fazla hacim)'],
+      ['Mekanik Yapı', 'Kantilever + lineer raylar', 'Çift Z + lineer X raylı köprü gövde'],
+      ['Çoklu Renk Desteği', 'AMS Lite ile 4 renge kadar tak-çalıştır', 'Tek renk (harici mod olmadan tek makara)'],
+      ['Hız & Kalibrasyon', 'Tam otomatik titreşim/akış + sessiz motor', '500 mm/s Klipper + CR Touch otomatik Z-offset'],
+      ['Nozul Değişimi', 'Tek klipsli hızlı nozul değişimi', 'Unicorn / vida tipi değişim'],
+      ['Fiyat / Başlangıç Konforu', 'Tak-çalıştır ekosistem, sıfır ayar gereksinimi', 'Genelde daha düşük maliyet + geniş tabla'],
+    ],
+    solKimler: '180 mm baskı hacmi yeten, çok sessiz çalışma, tek tıkla çok renkli (AMS Lite) yükseltme ve minimum bakım isteyen kullanıcılar için idealdir.',
+    sagKimler: 'Kask, büyük kutu veya geniş parça basacağı için 220×220×240 mm hacme ihtiyaç duyan ve bütçeyi daha aşağıda tutmak isteyenler için güçlüdür.',
+    sss: [
+      { soru: '180 mm baskı hacmi küçük kalır mı?', cevap: 'Figür, hobi ve günlük düzenleyicilerin çoğu 180 mm içine sığar; ancak büyük kutular veya kask parçaları için Ender 3 V3 KE’nin 220 mm tablası ciddi avantaj sağlar.' },
+      { soru: 'Hangisi daha sessiz çalışır?', cevap: 'Bambu Lab A1 Mini aktif motor gürültüsü iptali sayesinde masa başında çok daha sessiz baskı alır.' },
+    ],
+    canliOzet: (u) => {
+      const a = urunBul(u, /bambu\s*lab\s*a1\s*mini/i);
+      const b = urunBul(u, /ender\s*3\s*v3\s*ke/i);
+      if (a?.enUcuzFiyat > 0 && b?.enUcuzFiyat > 0) return `A1 Mini: ${formatTL(a.enUcuzFiyat)} · V3 KE: ${formatTL(b.enUcuzFiyat)}`;
+      return 'Başlangıç segmenti: AMS Lite konforu vs 220mm hacim';
+    },
+  },
+  {
+    yol: '/karsilastir/creality-k1-max-vs-bambu-lab-p1s',
+    ikon: '🏗️',
+    kisaBaslik: 'Creality K1 Max vs Bambu Lab P1S',
+    h1: 'Creality K1 Max vs Bambu Lab P1S Karşılaştırması',
+    title: 'Creality K1 Max vs Bambu Lab P1S + Canlı Türkiye Fiyatları | Baskı Hesap',
+    description: '300mm hacimli Creality K1 Max ile 256mm Bambu Lab P1S CoreXY yazıcıların teknik farkları ve kargo dahil en ucuz mağaza fiyatları.',
+    ozet: 'Üst segment CoreXY alırken "300×300 mm dev baskı alanı mı (K1 Max), yoksa AMS çok renkli baskı ve Bambu ekosistemi mi (P1S)?" sorusunu canlı fiyatlarla yanıtlıyoruz.',
+    solAd: 'Creality K1 Max',
+    sagAd: 'Bambu Lab P1S',
+    solRegex: /creality\s*k1\s*max|\bk1\s*max\b/i,
+    sagRegex: /bambu\s*lab\s*p1s/i,
+    ozellikler: [
+      ['Baskı Hacmi', '300 × 300 × 300 mm', '256 × 256 × 256 mm'],
+      ['Kasa & Mimari', 'CoreXY kapalı kasa + LiDAR ilk katman', 'CoreXY kapalı kasa'],
+      ['Maksimum Hız', '600 mm/s (Klipper / Creality OS)', '500 mm/s'],
+      ['Çoklu Renk', 'Tek makara odaklı', 'AMS ile 4–16 renk destekli'],
+      ['Yapay Zeka Kamera / LiDAR', 'Dahili AI kamera + LiDAR tarayıcı', 'Dahili izleme kamerası (LiDAR yok)'],
+      ['Kullanım Odağı', 'Büyük tek parça endüstriyel/prototip baskılar', 'Çok renkli baskı + yüksek baskı tutarlılığı'],
+    ],
+    solKimler: 'Tek seferde 30 cm’ye varan büyük gövde, kask veya mimari maket basması gerekenler için fiyatıyla çok güçlüdür.',
+    sagKimler: '256 mm tabla yeterli olan, çok renkli/çok malzemeli baskı (AMS) ve sıfıra yakın kalibrasyon zahmeti arayanlar için öne çıkar.',
+    sss: [
+      { soru: 'Creality K1 Max’ın en büyük artısı nedir?', cevap: '300×300×300 mm baskı hacmi sayesinde 256 mm sınıfı yazıcılarda ikiye bölmek zorunda kalacağınız parçaları tek seferde basabilirsiniz.' },
+      { soru: 'P1S ile K1 Max aynı dayanıklılıkta filamentler basabilir mi?', cevap: 'Evet, ikisi de kapalı kasalı CoreXY olduğu için ABS, ASA, PETG ve doğru nozul/tabla ile teknik filamentleri basabilir.' },
+    ],
+    canliOzet: (u) => {
+      const a = urunBul(u, /creality\s*k1\s*max|\bk1\s*max\b/i);
+      const b = urunBul(u, /bambu\s*lab\s*p1s/i);
+      if (a?.enUcuzFiyat > 0 && b?.enUcuzFiyat > 0) return `K1 Max: ${formatTL(a.enUcuzFiyat)} · P1S: ${formatTL(b.enUcuzFiyat)}`;
+      return '300mm dev hacim vs Bambu AMS CoreXY kıyaslaması';
+    },
+  },
 ];
 
 function madalya(idx) {
@@ -281,13 +347,16 @@ function madalya(idx) {
   return `#${idx + 1}`;
 }
 
-function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
-  const canonicalUrl = `${tabanUrl}/rehber/en-ucuz-pla-filament`;
-  const plaUrunler = tumUrunler
-    .filter(u => u.kategoriSlug === 'pla-filament' && u.enUcuzFiyat > 0)
+/** PLA ve PETG/TPU gibi canlı sıralama listeleri için ortak şablon. */
+function canliSiralamaRehberiHtml(tumUrunler, tabanUrl, {
+  yol, breadcrumbAd, rozet, h1Html, title, description, altMetin, bosMesaj, filtreFn, sssListesi,
+}) {
+  const canonicalUrl = `${tabanUrl}${yol}`;
+  const urunler = tumUrunler
+    .filter(u => filtreFn(u) && u.enUcuzFiyat > 0)
     .sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat);
 
-  const satirlar = plaUrunler.map((u, idx) => `
+  const satirlar = urunler.map((u, idx) => `
     <tr>
       <td><span class="sira-madalya">${madalya(idx)}</span></td>
       <td><a href="${htmlKacis(u.yol)}" style="color:var(--ana);font-weight:700;text-decoration:none">${htmlKacis(u.ad)}</a></td>
@@ -297,11 +366,8 @@ function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
       <td>${u.enUcuzUrl ? `<a class="seo-cta ikincil" style="padding:5px 10px;font-size:12px" href="${htmlKacis(u.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">Mağaza ↗</a>` : `<a href="${htmlKacis(u.yol)}">İncele</a>`}</td>
     </tr>`).join('');
 
-  const sss = sssBolumu([
-    { soru: 'Bu listedeki PLA fiyatlarına kargo dahil mi?', cevap: 'Evet. Kargo ücreti bilinen tüm mağazalarda kargo bedeli toplama eklenerek sıralama yapılır; sepette kargo hesaplayan mağazalar ise ürün sayfasında açıkça işaretlenir.' },
-    { soru: 'Çoklu PLA alırken kargodan nasıl tasarruf edilir?', cevap: 'Akıllı Sepet aracında istediğiniz filamentleri girerseniz, sistem mağazaların ücretsiz kargo eşiklerini hesaplayıp tek mağaza mı yoksa bölünmüş sepet mi daha ucuz olduğunu çıkarır.' },
-  ]);
-
+  const sss = sssBolumu(sssListesi);
+  const enUcuz = urunler[0];
   const jsonLdList = [
     {
       '@context': 'https://schema.org',
@@ -309,13 +375,13 @@ function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: `${tabanUrl}/` },
         { '@type': 'ListItem', position: 2, name: 'Rehberler', item: `${tabanUrl}/rehber` },
-        { '@type': 'ListItem', position: 3, name: 'En Ucuz PLA Filamentler', item: canonicalUrl },
+        { '@type': 'ListItem', position: 3, name: breadcrumbAd, item: canonicalUrl },
       ],
     },
-    ...(plaUrunler.length ? [{
+    ...(urunler.length ? [{
       '@context': 'https://schema.org',
       '@type': 'ItemList',
-      itemListElement: plaUrunler.slice(0, 20).map((u, idx) => ({
+      itemListElement: urunler.slice(0, 20).map((u, idx) => ({
         '@type': 'ListItem',
         position: idx + 1,
         url: `${tabanUrl}${u.yol}`,
@@ -325,35 +391,152 @@ function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
     ...(sss.jsonLd ? [sss.jsonLd] : []),
   ];
 
-  const enUcuz = plaUrunler[0];
   return sayfaIskeleti({
-    title: 'Kilogramı En Ucuz PLA Filamentler — Canlı Türkiye Sıralaması | Baskı Hesap',
-    description: 'Sunlu, Porima, Creality Ender PLA, eSun ve diğer 1.75mm PLA filamentlerin kargo dahil en ucuz güncel fiyat sıralaması.',
+    title,
+    description,
     canonicalUrl,
     ogImage: `${tabanUrl}/og-gorsel.png`,
     ogType: 'article',
     jsonLdList,
     aktifNav: 'rehber',
     govdeHtml: `
-      <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>En Ucuz PLA Filamentler</span></nav>
+      <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>${htmlKacis(breadcrumbAd)}</span></nav>
       ${heroAlani({
-        rozet: '🏷️ Canlı ₺/kg PLA Sıralaması',
-        baslikHtml: 'Türkiye\'nin <b>en ucuz PLA</b> filamentleri',
-        altMetin: '60+ mağazadan çekilen kargo dahil stoklu 1.75mm PLA ve PLA+ filament teklifleri en düşük fiyattan başlayarak otomatik sıralanır.',
+        rozet,
+        baslikHtml: h1Html,
+        altMetin,
         istatistikler: [
           enUcuz ? `🥇 Lider: <b>${htmlKacis(enUcuz.ad)} · ${formatTL(enUcuz.enUcuzFiyat)}</b>` : '🔍 Canlı sıralama',
-          `📦 <b>${plaUrunler.length}</b> stoklu model`,
+          `📦 <b>${urunler.length}</b> stoklu model`,
           '🚚 Kargo dahil kıyas',
         ],
       })}
       <section class="seo-kart">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-          <h2 style="margin:0">Güncel Kargo Dahil PLA Sıralaması</h2>
-          <a class="seo-cta" style="padding:9px 15px;font-size:13px" href="/sepet.html">🧺 Çoklu Filamentte Kargoyu Sıfırla</a>
+          <h2 style="margin:0">Güncel Kargo Dahil Fiyat Sıralaması</h2>
+          <a class="seo-cta" style="padding:9px 15px;font-size:13px" href="/sepet.html">🧺 Çoklu Alımda Kargoyu Sıfırla</a>
         </div>
-        ${plaUrunler.length
+        ${urunler.length
           ? `<div style="overflow-x:auto"><table class="seo-tablo"><thead><tr><th>Sıra</th><th>Ürün</th><th>En Ucuz Mağaza</th><th>Teklif</th><th>Toplam</th><th>Link</th></tr></thead><tbody>${satirlar}</tbody></table></div>`
-          : '<p>Henüz taraması tamamlanan PLA kaydı yok; ana sayfadan doğrudan aratarak canlı fiyat çekebilirsiniz.</p>'}
+          : `<p>${htmlKacis(bosMesaj)}</p>`}
+      </section>
+      ${sss.html}
+      ${altAraclarCubugu()}`,
+  });
+}
+
+function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
+  return canliSiralamaRehberiHtml(tumUrunler, tabanUrl, {
+    yol: '/rehber/en-ucuz-pla-filament',
+    breadcrumbAd: 'En Ucuz PLA Filamentler',
+    rozet: '🏷️ Canlı ₺/kg PLA Sıralaması',
+    h1Html: 'Türkiye\'nin <b>en ucuz PLA</b> filamentleri',
+    title: 'Kilogramı En Ucuz PLA Filamentler — Canlı Türkiye Sıralaması | Baskı Hesap',
+    description: 'Sunlu, Porima, Creality Ender PLA, eSun ve diğer 1.75mm PLA filamentlerin kargo dahil en ucuz güncel fiyat sıralaması.',
+    altMetin: '60+ mağazadan çekilen kargo dahil stoklu 1.75mm PLA ve PLA+ filament teklifleri en düşük fiyattan başlayarak otomatik sıralanır.',
+    bosMesaj: 'Henüz taraması tamamlanan PLA kaydı yok; ana sayfadan doğrudan aratarak canlı fiyat çekebilirsiniz.',
+    filtreFn: (u) => u.kategoriSlug === 'pla-filament',
+    sssListesi: [
+      { soru: 'Bu listedeki PLA fiyatlarına kargo dahil mi?', cevap: 'Evet. Kargo ücreti bilinen tüm mağazalarda kargo bedeli toplama eklenerek sıralama yapılır; sepette kargo hesaplayan mağazalar ise ürün sayfasında açıkça işaretlenir.' },
+      { soru: 'Çoklu PLA alırken kargodan nasıl tasarruf edilir?', cevap: 'Akıllı Sepet aracında istediğiniz filamentleri girerseniz, sistem mağazaların ücretsiz kargo eşiklerini hesaplayıp tek mağaza mı yoksa bölünmüş sepet mi daha ucuz olduğunu çıkarır.' },
+    ],
+  });
+}
+
+function enUcuzPetgTpuRehberiHtml(tumUrunler, tabanUrl) {
+  return canliSiralamaRehberiHtml(tumUrunler, tabanUrl, {
+    yol: '/rehber/en-ucuz-petg-ve-tpu-filamentler',
+    breadcrumbAd: 'En Ucuz PETG & TPU Filamentler',
+    rozet: '🦾 Canlı PETG, TPU & ABS Sıralaması',
+    h1Html: 'En ucuz <b>PETG &amp; TPU</b> teknik filamentler',
+    title: 'En Ucuz PETG, TPU & ABS Filamentler — Canlı Türkiye Sıralaması | Baskı Hesap',
+    description: 'Porima, eSun, Microzey, Creality PETG ve esnek TPU filamentlerin Türkiye mağazalarındaki kargo dahil en ucuz güncel fiyatları.',
+    altMetin: 'Dış mekan, sıcaklığa dayanıklı mekanik parça ve esnek baskılar için PETG / TPU filamentlerde 60+ mağazadaki kargo dahil en düşük teklifler.',
+    bosMesaj: 'Henüz taraması tamamlanan PETG/TPU kaydı yok; ana sayfadan aratarak anlık kontrol edebilirsiniz.',
+    filtreFn: (u) => u.kategoriSlug === 'petg-tpu-filament',
+    sssListesi: [
+      { soru: 'PETG ile esnek TPU arasında baskı hızı farkı var mı?', cevap: 'PETG standart 60–150 mm/s hızlarda rahat basılırken, 95A–98A TPU filamentler ekstrüderde bükülme olmaması için daha düşük hızlarda (20–45 mm/s) basılmalıdır.' },
+      { soru: 'PETG ve TPU filamentler nem çeker mi?', cevap: 'Evet, hem PETG hem TPU higroskopiktir; uzun süre açıkta kaldığında çıtırtı ve yüzey bozulması yapmaması için filament kurutucu veya nem alıcılı saklama önerilir.' },
+    ],
+  });
+}
+
+function filamentKurutucuRehberiHtml(tumUrunler, tabanUrl) {
+  const canonicalUrl = `${tabanUrl}/rehber/filament-kurutucu-gerekli-mi`;
+  const kurutucular = tumUrunler
+    .filter(u => /kurutucu|dryer|ebox|spacepi|filadryer/i.test(`${u.ad} ${u.sorgu}`))
+    .sort((a, b) => (a.enUcuzFiyat || 9e9) - (b.enUcuzFiyat || 9e9));
+  const enUcuz = kurutucular.find(k => k.enUcuzFiyat > 0);
+
+  const kartlar = kurutucular.map(u => `<a class="seo-urun-kart" href="${htmlKacis(u.yol)}">
+    <div class="seo-urun-ust">
+      ${u.gorsel ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" loading="lazy" />` : '<span class="seo-urun-ikon">🌡️</span>'}
+      <div class="seo-mini-ad">${htmlKacis(u.ad)}</div>
+    </div>
+    <div class="seo-urun-etiketler">
+      <span class="seo-urun-etiket">🏪 ${htmlKacis(u.enUcuzSite || 'Katalog')}</span>
+      ${u.stokluSayisi > 1 ? `<span class="seo-urun-etiket">${u.stokluSayisi} mağaza</span>` : ''}
+    </div>
+    <div class="seo-urun-alt">
+      <span class="seo-mini-fiyat">${u.enUcuzFiyat > 0 ? formatTL(u.enUcuzFiyat) : 'Canlı Tara'}</span>
+      <span class="seo-urun-ok">Teklifleri Gör →</span>
+    </div>
+  </a>`).join('');
+
+  const sss = sssBolumu([
+    { soru: 'Hangi filamentlerde kurutucu kesin gereklidir?', cevap: 'Naylon (PA), TPU, PETG ve PVA çok hızlı nem çeker. Kuru PLA bile birkaç ay açıkta beklediğinde kolay kırılmaya ve ipliklenmeye başlar.' },
+    { soru: 'Yazıcının ısıtmalı tablasıyla kurutma yapılabilir mi?', cevap: 'Acil durumda karton kutu + ısıtmalı tabla geçici çözüm sunar; ancak sıcaklık dağılımı ve enerji verimliliği açısından aktif fanlı bir kurutucu çok daha güvenlidir.' },
+  ]);
+
+  return sayfaIskeleti({
+    title: 'Filament Kurutucu Gerekli mi? Hangi Sıcaklıkta Kurutulur + Canlı Fiyatlar | Baskı Hesap',
+    description: 'PLA, PETG, TPU ve ABS kurutma sıcaklıkları/süreleri ve Türkiye mağazalarındaki eSun eBOX, Sunlu SP2, Creality SpacePi X4 canlı fiyatları.',
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    ogType: 'article',
+    aktifNav: 'rehber',
+    jsonLdList: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: `${tabanUrl}/` },
+          { '@type': 'ListItem', position: 2, name: 'Rehberler', item: `${tabanUrl}/rehber` },
+          { '@type': 'ListItem', position: 3, name: 'Filament Kurutucu Rehberi', item: canonicalUrl },
+        ],
+      },
+      ...(sss.jsonLd ? [sss.jsonLd] : []),
+    ],
+    govdeHtml: `
+      <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>Filament Kurutucu</span></nav>
+      ${heroAlani({
+        rozet: '🌡️ Baskı Kalitesi & Saklama Rehberi',
+        baslikHtml: 'Filament kurutucu <b>gerçekten gerekli mi?</b>',
+        altMetin: 'İpliklenme (stringing), nozul çıtırtısı ve kırılgan katmanların çoğu nemli filamentten kaynaklanır. Kurutma sıcaklıkları ve güncel cihaz fiyatları burada.',
+        istatistikler: [
+          enUcuz ? `🔥 En ucuz cihaz: <b>${formatTL(enUcuz.enUcuzFiyat)}</b>` : '🌡️ 45–70°C kurutma rehberi',
+          `📦 <b>${kurutucular.length}</b> canlı model`,
+          '💧 %15 altı bağıl nem hedefi',
+        ],
+      })}
+      <section class="seo-kart">
+        <h2 style="margin-top:0">Canlı Türkiye Filament Kurutucu Fiyatları</h2>
+        <div class="seo-izgara">${kartlar || '<p>Kurutucu modelleri için Reçine &amp; Sarf kategorisini inceleyebilirsiniz.</p>'}</div>
+      </section>
+      <section class="seo-kart">
+        <h2 style="margin-top:0">Filamentlere Göre Kurutma Sıcaklığı ve Süresi</h2>
+        <div style="overflow-x:auto">
+          <table class="seo-tablo">
+            <thead><tr><th>Malzeme</th><th>Sıcaklık</th><th>Önerilen Süre</th><th>Nem Hassasiyeti</th></tr></thead>
+            <tbody>
+              <tr><td><b>PLA / PLA+</b></td><td>45 – 50 °C</td><td>4 – 6 saat</td><td>Orta (kırılganlaşma yapar)</td></tr>
+              <tr><td><b>PETG</b></td><td>60 – 65 °C</td><td>4 – 6 saat</td><td>Yüksek (pürüz &amp; ipliklenme yapar)</td></tr>
+              <tr><td><b>TPU (Esnek)</b></td><td>50 – 55 °C</td><td>4 – 6 saat</td><td>Çok Yüksek (kabarcık/çıtırtı)</td></tr>
+              <tr><td><b>ABS / ASA</b></td><td>65 – 75 °C</td><td>4 – 6 saat</td><td>Orta-Yüksek</td></tr>
+              <tr><td><b>PA / Naylon</b></td><td>70 – 80 °C</td><td>8 – 12 saat</td><td>Aşırı Yüksek (kurutucusuz basılmaz)</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
       ${sss.html}
       ${altAraclarCubugu()}`,
@@ -545,6 +728,30 @@ export const REHBER_SAYFALARI = [
       return en ? `Şu an #1: ${en.ad} · ${formatTL(en.enUcuzFiyat)}` : 'Kargo dahil canlı ₺/kg PLA sıralaması';
     },
     olustur: enUcuzPlaRehberiHtml,
+  },
+  {
+    yol: '/rehber/en-ucuz-petg-ve-tpu-filamentler',
+    ikon: '🦾',
+    baslik: 'En Ucuz PETG, TPU & ABS Filamentler',
+    ozet: 'Dayanıklı dış mekan ve esnek baskılar için Türkiye mağazalarındaki en ucuz teklifler.',
+    tur: 'Canlı Sıralama',
+    canliOzet: (u) => {
+      const en = u.filter(x => x.kategoriSlug === 'petg-tpu-filament' && x.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat)[0];
+      return en ? `Şu an #1: ${en.ad} · ${formatTL(en.enUcuzFiyat)}` : 'Kargo dahil canlı PETG / TPU sıralaması';
+    },
+    olustur: enUcuzPetgTpuRehberiHtml,
+  },
+  {
+    yol: '/rehber/filament-kurutucu-gerekli-mi',
+    ikon: '🌡️',
+    baslik: 'Filament Kurutucu Gerekli mi? Sıcaklıklar & Fiyatlar',
+    ozet: 'İpliklenme ve kırılmayı önleyen kurutma süreleri ile eBOX / SP2 / SpacePi X4 canlı fiyatları.',
+    tur: 'Ekipman Rehberi',
+    canliOzet: (u) => {
+      const en = u.filter(x => /kurutucu|dryer|ebox|spacepi|filadryer/i.test(`${x.ad} ${x.sorgu}`) && x.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat)[0];
+      return en ? `En ucuz kurutucu: ${en.ad} · ${formatTL(en.enUcuzFiyat)}` : 'PLA/PETG/TPU kurutma sıcaklık tablosu';
+    },
+    olustur: filamentKurutucuRehberiHtml,
   },
   {
     yol: '/rehber/pla-vs-petg-filament',

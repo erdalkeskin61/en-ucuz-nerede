@@ -2315,7 +2315,7 @@ export function sonrakiTurMs(ayar = radarAyar(), simdi = Date.now()) {
  * Zamanlayıcıyı (yeniden) kurar. Her turda ayarlar yeniden okunur.
  * Kapanışta `radarZamanlayiciDurdur()` çağrılır.
  */
-export function startRadarScheduler() {
+export function startRadarScheduler({ onTurBitis } = {}) {
   radarZamanlayiciDurdur();
   const ayar = radarAyar();
   const gecikme = sonrakiTurMs(ayar);
@@ -2328,6 +2328,9 @@ export function startRadarScheduler() {
           console.log(`[radar] tur atlandı: ${r.neden}`);
         } else {
           console.log(`[radar] otonom tur: ${r.taranan} tarandı, ${r.gonderilen} bildirim`);
+          if (typeof onTurBitis === 'function') {
+            try { await onTurBitis(r); } catch { /* bildirim hatası radarı durdurmaz */ }
+          }
         }
       }
     } catch (e) {

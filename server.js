@@ -59,6 +59,7 @@ import {
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
 } from './src/rehberSayfalar.js';
+import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
   katalogSyncDurumu, katalogUrunleriAra,
@@ -536,6 +537,30 @@ app.get('/sitemap.xml', (req, res) => {
     res.send(xml);
   } catch (e) {
     res.status(500).type('text/plain').send('sitemap üretilemedi');
+  }
+});
+
+/* IndexNow sahiplik doğrulama dosyası (Bing + Yandex) */
+app.get('/:anahtar.txt', (req, res, next) => {
+  const beklenen = indexNowAnahtari();
+  if (req.params.anahtar !== beklenen) return next();
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(beklenen);
+});
+
+app.get('/api/admin/indexnow', adminGerekli, (req, res) => {
+  res.json(indexNowDurum(yayinKoku(req)));
+});
+
+app.post('/api/admin/indexnow', adminGerekli, async (req, res) => {
+  try {
+    const taban = yayinKoku(req);
+    const urller = [...sitemapKayitlari(), ...rehberSitemapKayitlari()].map(s => s.yol);
+    const sonuc = await indexNowBildir(urller, { tabanUrl: taban, zorla: true });
+    res.json({ ...sonuc, durum: indexNowDurum(taban) });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e?.message || e) });
   }
 });
 
@@ -3037,7 +3062,18 @@ app.listen(config.port, config.host, () => {
   // 🎯 Otonom fiyat radarı: katalogu her `radar.saatAraligi` saatte tarar.
   // Kapalıysa hiçbir şey yapmaz; "Şimdi çalıştır" butonu yine de çalışır.
   try {
-    startRadarScheduler();
+    startRadarScheduler({
+      onTurBitis: async (r) => {
+        if (!r || r.atlandi || !(r.taranan > 0)) return;
+        const taban = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+        if (!/^https:\/\//i.test(taban)) return;
+        const urller = [...sitemapKayitlari(), ...rehberSitemapKayitlari()].map(s => s.yol);
+        const res = await indexNowBildir(urller, { tabanUrl: taban });
+        if (res.ok && !res.atlandi) {
+          console.log(`[indexnow] Bing/Yandex bildirildi: ${res.gonderilenSayi} URL (HTTP ${res.status})`);
+        }
+      },
+    });
   } catch (e) {
     console.warn('[radar] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
   }
