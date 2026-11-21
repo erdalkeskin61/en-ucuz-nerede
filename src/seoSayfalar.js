@@ -380,6 +380,75 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .seo-kat-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
     .seo-kat-hap { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--cizgi); background: var(--kart); color: var(--metin); text-decoration: none; font-size: 13px; font-weight: 700; }
     .seo-kat-hap.etkin { background: var(--ana); color: #fff; border-color: var(--ana); }
+    .seo-hero { margin: 0 0 22px; }
+    .seo-hero .hero-ic { max-width: 860px; }
+    .rehber-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 18px; }
+    .rehber-kart {
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column; gap: 12px;
+      padding: 22px; border-radius: 20px;
+      background: var(--kart); border: 1px solid var(--cizgi);
+      box-shadow: var(--kart-golge); text-decoration: none; color: inherit;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    .rehber-kart::before {
+      content: ""; position: absolute; inset: 0 0 auto 0; height: 4px;
+      background: linear-gradient(90deg, #3450D1, #6366F1, #10B981);
+      opacity: .85;
+    }
+    .rehber-kart:hover { transform: translateY(-3px); border-color: var(--ana); box-shadow: var(--kart-golge-uzerinde); }
+    .rehber-kart-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .rehber-ikon {
+      width: 44px; height: 44px; border-radius: 13px;
+      display: grid; place-items: center; font-size: 21px;
+      background: var(--ana-acik); border: 1px solid color-mix(in srgb, var(--ana) 22%, transparent);
+      flex: none;
+    }
+    .rehber-rozet {
+      font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--zemin-2); color: var(--ana); border: 1px solid var(--cizgi);
+    }
+    html[data-theme="dark"] .rehber-rozet { color: var(--ana-parlak); }
+    .rehber-baslik { margin: 0; font-size: 18px; font-weight: 800; line-height: 1.3; color: var(--metin); }
+    .rehber-ozet { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--gri-metin); }
+    .rehber-canli-band {
+      margin-top: auto; padding: 10px 12px; border-radius: 12px;
+      background: var(--yesil-acik); border: 1px solid var(--yesil-cizgi);
+      font-size: 12.5px; font-weight: 700; color: var(--yesil);
+    }
+    .rehber-canli-band.notr { background: var(--zemin-2); border-color: var(--cizgi); color: var(--gri-metin); }
+    .rehber-cta { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 800; color: var(--ana); }
+    html[data-theme="dark"] .rehber-cta { color: var(--ana-parlak); }
+    .seo-vs-izgara { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; }
+    .seo-vs-orta { display: grid; place-items: center; }
+    .seo-vs-rozet {
+      width: 42px; height: 42px; border-radius: 999px; display: grid; place-items: center;
+      font-weight: 900; font-size: 13px; color: #fff; background: var(--ana-gradyan);
+      box-shadow: 0 8px 18px -6px rgba(67,56,202,.7);
+    }
+    .seo-vs-kart { position: relative; }
+    .seo-vs-kart.kazanan { border-color: var(--yesil-cizgi); background: linear-gradient(180deg, var(--yesil-acik) 0%, var(--kart) 55%); }
+    .seo-vs-etiket {
+      display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 800;
+      padding: 3px 9px; border-radius: 999px; background: var(--yesil-acik); color: var(--yesil);
+      border: 1px solid var(--yesil-cizgi);
+    }
+    .seo-vs-baslik { display: flex; gap: 12px; align-items: center; }
+    .seo-vs-img { width: 64px; height: 64px; border-radius: 12px; object-fit: contain; background: #fff; border: 1px solid var(--cizgi); padding: 4px; flex: none; }
+    .formul-izgara { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+    .formul-kart {
+      padding: 16px; border-radius: 16px; background: var(--zemin-2); border: 1px solid var(--cizgi);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .formul-kart code { font-size: 12.5px; padding: 6px 8px; border-radius: 8px; background: var(--kart); border: 1px solid var(--cizgi); color: var(--ana); font-weight: 700; }
+    html[data-theme="dark"] .formul-kart code { color: var(--ana-parlak); }
+    .sira-madalya { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
+    @media (max-width: 760px) {
+      .seo-vs-izgara { grid-template-columns: 1fr; }
+      .seo-vs-orta { margin: -4px 0; }
+      .rehber-izgara { grid-template-columns: 1fr; }
+    }
     @media (max-width: 640px) { .seo-ust { grid-template-columns: 1fr; } .seo-gorsel { width: 84px; height: 84px; } }
   </style>
   ${jsonScripts}${ga4Snip ? `\n  ${ga4Snip}` : ''}
@@ -399,6 +468,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <a href="/slicer.html">🧩 Eklenti</a>
         <a href="/ayarlar.html">🔔 Alarmlarım</a>
       </nav>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
     </div>
   </header>
 
@@ -415,6 +485,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       <p>Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.</p>
     </div>
   </footer>
+  <script src="/tema.js"></script>
 </body>
 </html>`;
 }

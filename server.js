@@ -583,9 +583,10 @@ app.get('/urun/:slug', (req, res) => {
 /* Karşılaştırma ve alım rehberleri (canlı fiyatlı SSR) */
 app.get('/rehber', (req, res) => {
   try {
+    const tumUrunler = seoUrunListesi();
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=120');
-    res.send(rehberDiziniHtml(yayinKoku(req)));
+    res.send(rehberDiziniHtml(yayinKoku(req), tumUrunler));
   } catch (e) {
     res.status(500).type('text/plain').send('Rehber dizini üretilemedi');
   }

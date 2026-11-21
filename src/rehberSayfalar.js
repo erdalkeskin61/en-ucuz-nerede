@@ -16,24 +16,44 @@
 import { htmlKacis, sayfaIskeleti } from './seoSayfalar.js';
 import { formatTL } from './util.js';
 
-/** Katalog listesinden ad/slug deseniyle en uygun canlı ürünü bulur. */
 function urunBul(tumUrunler, regex) {
   return tumUrunler.find(u => regex.test(`${u.ad} ${u.slug} ${u.sorgu}`)) || null;
 }
 
-/** İki canlı ürün kartını yan yana ve fiyat farkını özet kutusu olarak çizer. */
+function heroAlani({ rozet, baslikHtml, altMetin, istatistikler = [] }) {
+  const istHtml = istatistikler.length
+    ? `<div class="hero-istatistik">${istatistikler.map(s => `<span>${s}</span>`).join('')}</div>`
+    : '';
+  return `<section class="hero seo-hero">
+    <div class="hero-ic">
+      <span class="hero-rozet">${rozet}</span>
+      <h1>${baslikHtml}</h1>
+      <p>${htmlKacis(altMetin)}</p>
+      ${istHtml}
+    </div>
+  </section>`;
+}
+
+/** İki canlı ürün kartını VS rozetiyle yan yana ve fiyat farkı vurgusuyla çizer. */
 function canliKarsilastirmaKutusu(solUrun, sagUrun, solBaslik, sagBaslik, solSorgu, sagSorgu) {
-  const kart = (u, baslik, sorgu) => {
+  const solUcuz = solUrun?.enUcuzFiyat > 0 && sagUrun?.enUcuzFiyat > 0 && solUrun.enUcuzFiyat < sagUrun.enUcuzFiyat;
+  const sagUcuz = solUrun?.enUcuzFiyat > 0 && sagUrun?.enUcuzFiyat > 0 && sagUrun.enUcuzFiyat < solUrun.enUcuzFiyat;
+
+  const kart = (u, baslik, sorgu, kazananMi) => {
     const fiyatMetin = u?.enUcuzFiyat > 0 ? formatTL(u.enUcuzFiyat) : 'Canlı Tara';
     const altMetin = u?.enUcuzFiyat > 0
       ? `${htmlKacis(u.enUcuzSite || 'Mağaza')} · ${u.stokluSayisi || 1} stoklu mağaza`
       : 'Anlık fiyatları 60+ mağazada kontrol et';
     const detayHref = u ? u.yol : `/?url=${encodeURIComponent(sorgu)}`;
-    return `<div class="seo-mini-kart" style="gap:10px">
-      <div class="seo-mini-ad">${htmlKacis(u?.ad || baslik)}</div>
+    return `<div class="seo-mini-kart seo-vs-kart${kazananMi ? ' kazanan' : ''}" style="gap:10px">
+      ${kazananMi ? '<span class="seo-vs-etiket">🏷️ BUGÜN EN UCUZ</span>' : ''}
+      <div class="seo-vs-baslik">
+        ${u?.gorsel ? `<img class="seo-vs-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad || baslik)}" loading="lazy" />` : ''}
+        <div class="seo-mini-ad">${htmlKacis(u?.ad || baslik)}</div>
+      </div>
       <div class="seo-mini-fiyat">${fiyatMetin}</div>
       <div class="seo-mini-alt">${altMetin}</div>
-      <div class="seo-butonlar" style="margin-top:4px">
+      <div class="seo-butonlar" style="margin-top:auto">
         <a class="seo-cta" style="padding:8px 14px;font-size:13px" href="${htmlKacis(detayHref)}">${u ? 'Tüm Teklifleri Gör' : 'Canlı Tara ⚡'}</a>
         ${u?.enUcuzUrl ? `<a class="seo-cta ikincil" style="padding:8px 12px;font-size:13px" href="${htmlKacis(u.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">Mağaza ↗</a>` : ''}
       </div>
@@ -47,23 +67,23 @@ function canliKarsilastirmaKutusu(solUrun, sagUrun, solBaslik, sagBaslik, solSor
       farkNotu = '<div class="seo-fiyat-kutu">Bugün kargo dahil en ucuz tekliflerde iki model aynı fiyatta.</div>';
     } else {
       const ucuzAd = solUrun.enUcuzFiyat < sagUrun.enUcuzFiyat ? solBaslik : sagBaslik;
-      farkNotu = `<div class="seo-fiyat-kutu"><div><b>Canlı Fiyat Özeti:</b> Bugün kargo dahil en ucuz teklifte <b>${htmlKacis(ucuzAd)}</b> <b>${formatTL(fark)} daha uygun</b>.</div></div>`;
+      farkNotu = `<div class="seo-fiyat-kutu"><div>⚡ <b>Canlı Fiyat Özeti:</b> Bugün kargo dahil en ucuz teklifte <b>${htmlKacis(ucuzAd)}</b> <b>${formatTL(fark)} daha uygun</b>.</div></div>`;
     }
   }
 
-  return `${farkNotu}<div class="seo-izgara" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">${kart(solUrun, solBaslik, solSorgu)}${kart(sagUrun, sagBaslik, sagSorgu)}</div>`;
+  return `${farkNotu}<div class="seo-vs-izgara">${kart(solUrun, solBaslik, solSorgu, solUcuz)}<div class="seo-vs-orta"><span class="seo-vs-rozet">VS</span></div>${kart(sagUrun, sagBaslik, sagSorgu, sagUcuz)}</div>`;
 }
 
-/** FAQ HTML + FAQPage JSON-LD çifti üretir. */
+/** Etkileşimli akordeon FAQ + FAQPage JSON-LD çifti üretir. */
 function sssBolumu(sssListesi) {
   if (!sssListesi?.length) return { html: '', jsonLd: null };
   const html = `<section class="seo-kart">
-    <h2 style="margin-top:0">Sık Sorulan Sorular</h2>
-    <div style="display:grid;gap:12px">
-      ${sssListesi.map(s => `<div style="border-bottom:1px solid var(--cizgi);padding-bottom:10px">
-        <h3 style="margin:0 0 6px;font-size:16px">${htmlKacis(s.soru)}</h3>
-        <p style="margin:0;color:var(--gri-metin);font-size:14.5px;line-height:1.55">${htmlKacis(s.cevap)}</p>
-      </div>`).join('')}
+    <h2 style="margin-top:0">❓ Sık Sorulan Sorular</h2>
+    <div class="seo-sss">
+      ${sssListesi.map((s, idx) => `<details${idx === 0 ? ' open' : ''}>
+        <summary>${htmlKacis(s.soru)}</summary>
+        <p>${htmlKacis(s.cevap)}</p>
+      </details>`).join('')}
     </div>
   </section>`;
 
@@ -79,6 +99,26 @@ function sssBolumu(sssListesi) {
   return { html, jsonLd };
 }
 
+function altAraclarCubugu() {
+  return `<section class="seo-rehber-kart" aria-label="Hızlı Geçişler" style="margin-top:6px">
+    <div class="seo-rehber-ust">
+      <div>
+        <h2 class="bolum-baslik" style="margin:0 0 4px">Diğer Canlı Araçlar &amp; Sayfalar</h2>
+        <p class="ipucu" style="margin:0">Karşılaştırma sonrası kargo sıfırlamak veya parça maliyeti çıkarmak için:</p>
+      </div>
+      <a class="seo-tum-link" href="/urunler">Tüm Ürün Kataloğu →</a>
+    </div>
+    <div class="seo-rehber-baglar">
+      <a href="/rehber">📖 Tüm Rehberler</a>
+      <a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a>
+      <a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filamentler</a>
+      <a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS</a>
+      <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
+      <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
+    </div>
+  </section>`;
+}
+
 /** Yazıcı "vs" karşılaştırma sayfaları için veri tabanlı şablon. */
 function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
   const solUrun = urunBul(tumUrunler, tanim.solRegex);
@@ -92,14 +132,27 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
       <td>${htmlKacis(sagDeger)}</td>
     </tr>`).join('');
 
+  const farkBilgisi = (solUrun?.enUcuzFiyat > 0 && sagUrun?.enUcuzFiyat > 0)
+    ? `💰 Fark: <b>${formatTL(Math.abs(solUrun.enUcuzFiyat - sagUrun.enUcuzFiyat))}</b>`
+    : '⚡ 60+ mağazada canlı kıyas';
+
   const sss = sssBolumu(tanim.sss);
   const govdeHtml = `
     <nav class="seo-yol" aria-label="İçerik yolu">
       <a href="/">Ana Sayfa</a> › <a href="/rehber">Rehber &amp; Karşılaştırmalar</a> › <span>${htmlKacis(tanim.kisaBaslik)}</span>
     </nav>
+    ${heroAlani({
+      rozet: '⚖️ Canlı Yazıcı Karşılaştırması',
+      baslikHtml: `${htmlKacis(tanim.solAd)} <b>vs</b> ${htmlKacis(tanim.sagAd)}`,
+      altMetin: tanim.ozet,
+      istatistikler: [
+        farkBilgisi,
+        '🚚 Kargo dahil gerçek tutar',
+        '🔒 Stoklu mağaza kontrolü',
+      ],
+    })}
     <section class="seo-kart">
-      <h1 class="seo-baslik">${htmlKacis(tanim.h1)}</h1>
-      <p class="seo-alt">${htmlKacis(tanim.ozet)}</p>
+      <h2 style="margin-top:0">Canlı Fiyat ve Stok Kıyaslaması</h2>
       ${canliKarsilastirmaKutusu(solUrun, sagUrun, tanim.solAd, tanim.sagAd, tanim.solAd, tanim.sagAd)}
     </section>
     <section class="seo-kart">
@@ -115,20 +168,17 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
       <h2 style="margin-top:0">Hangisini Seçmelisiniz?</h2>
       <div class="seo-izgara" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
         <div class="seo-mini-kart">
-          <div class="seo-mini-ad">${htmlKacis(tanim.solAd)} kimler için?</div>
+          <div class="seo-mini-ad">✅ ${htmlKacis(tanim.solAd)} kimler için?</div>
           <p style="margin:0;font-size:14px;color:var(--gri-metin);line-height:1.55">${htmlKacis(tanim.solKimler)}</p>
         </div>
         <div class="seo-mini-kart">
-          <div class="seo-mini-ad">${htmlKacis(tanim.sagAd)} kimler için?</div>
+          <div class="seo-mini-ad">✅ ${htmlKacis(tanim.sagAd)} kimler için?</div>
           <p style="margin:0;font-size:14px;color:var(--gri-metin);line-height:1.55">${htmlKacis(tanim.sagKimler)}</p>
         </div>
       </div>
-      <div class="seo-butonlar">
-        <a class="seo-cta ikincil" href="/kategori/3d-yazici">Tüm 3D Yazıcı Fiyatları →</a>
-        <a class="seo-cta ikincil" href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Filament Sıralaması →</a>
-      </div>
     </section>
-    ${sss.html}`;
+    ${sss.html}
+    ${altAraclarCubugu()}`;
 
   const jsonLdList = [
     {
@@ -158,6 +208,7 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
 const YAZICI_KARSILASTIRMALARI = [
   {
     yol: '/karsilastir/bambu-lab-p1s-vs-creality-k1c',
+    ikon: '⚔️',
     kisaBaslik: 'Bambu Lab P1S vs Creality K1C',
     h1: 'Bambu Lab P1S vs Creality K1C — Hangisi Alınır?',
     title: 'Bambu Lab P1S vs Creality K1C Karşılaştırması + Canlı Fiyat | Baskı Hesap',
@@ -181,9 +232,16 @@ const YAZICI_KARSILASTIRMALARI = [
       { soru: 'Bambu Lab P1S mi Creality K1C mi daha büyük baskı alır?', cevap: 'Bambu Lab P1S 256×256×256 mm ile Creality K1C’nin 220×220×250 mm hacminden belirgin şekilde daha geniştir.' },
       { soru: 'Hangisi çok renkli baskıya daha uygundur?', cevap: 'Bambu Lab P1S doğrudan AMS ünitesi ile 4 renge kadar (çoklu AMS ile 16 renge kadar) kolay kurulum sunar.' },
     ],
+    canliOzet: (u) => {
+      const a = urunBul(u, /bambu\s*lab\s*p1s/i);
+      const b = urunBul(u, /creality\s*k1c|\bk1c\b/i);
+      if (a?.enUcuzFiyat > 0 && b?.enUcuzFiyat > 0) return `P1S: ${formatTL(a.enUcuzFiyat)} · K1C: ${formatTL(b.enUcuzFiyat)}`;
+      return 'CoreXY kapalı kasa canlı fiyat kıyaslaması';
+    },
   },
   {
     yol: '/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro',
+    ikon: '⚡',
     kisaBaslik: 'Ender 3 V3 KE vs Neptune 4 Pro',
     h1: 'Creality Ender 3 V3 KE vs Elegoo Neptune 4 Pro',
     title: 'Ender 3 V3 KE vs Elegoo Neptune 4 Pro Karşılaştırması + Canlı Fiyat | Baskı Hesap',
@@ -207,8 +265,21 @@ const YAZICI_KARSILASTIRMALARI = [
       { soru: 'Ender 3 V3 KE ile Neptune 4 Pro arasında kurulum kolaylığı farkı var mı?', cevap: 'Ender 3 V3 KE otomatik Z-offset sensörü ile ilk katman ayarını neredeyse tamamen otomatik yapar; Neptune 4 Pro ise klasik kağıt/kalibrasyon adımı sonrası 121 nokta mesh alır.' },
       { soru: 'İki modelde de PLA dışında PETG veya TPU basılabilir mi?', cevap: 'Evet, her iki model de 300°C Direct Drive ekstrüdere sahip olduğu için PLA, PETG ve TPU filamentleri rahatlıkla basabilir.' },
     ],
+    canliOzet: (u) => {
+      const a = urunBul(u, /ender\s*3\s*v3\s*ke/i);
+      const b = urunBul(u, /neptune\s*4\s*pro/i);
+      if (a?.enUcuzFiyat > 0 && b?.enUcuzFiyat > 0) return `Ender 3 V3 KE: ${formatTL(a.enUcuzFiyat)} · N4 Pro: ${formatTL(b.enUcuzFiyat)}`;
+      return '500 mm/s Klipper giriş-orta segment karşılaştırması';
+    },
   },
 ];
+
+function madalya(idx) {
+  if (idx === 0) return '🥇 #1';
+  if (idx === 1) return '🥈 #2';
+  if (idx === 2) return '🥉 #3';
+  return `#${idx + 1}`;
+}
 
 function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
   const canonicalUrl = `${tabanUrl}/rehber/en-ucuz-pla-filament`;
@@ -218,12 +289,12 @@ function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
 
   const satirlar = plaUrunler.map((u, idx) => `
     <tr>
-      <td><b>#${idx + 1}</b></td>
+      <td><span class="sira-madalya">${madalya(idx)}</span></td>
       <td><a href="${htmlKacis(u.yol)}" style="color:var(--ana);font-weight:700;text-decoration:none">${htmlKacis(u.ad)}</a></td>
       <td>${htmlKacis(u.enUcuzSite || '—')}</td>
       <td>${u.stokluSayisi || 1} mağaza</td>
-      <td><b>${formatTL(u.enUcuzFiyat)}</b></td>
-      <td>${u.enUcuzUrl ? `<a href="${htmlKacis(u.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">Mağaza ↗</a>` : `<a href="${htmlKacis(u.yol)}">İncele</a>`}</td>
+      <td><b style="color:var(--yesil)">${formatTL(u.enUcuzFiyat)}</b></td>
+      <td>${u.enUcuzUrl ? `<a class="seo-cta ikincil" style="padding:5px 10px;font-size:12px" href="${htmlKacis(u.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">Mağaza ↗</a>` : `<a href="${htmlKacis(u.yol)}">İncele</a>`}</td>
     </tr>`).join('');
 
   const sss = sssBolumu([
@@ -265,22 +336,27 @@ function enUcuzPlaRehberiHtml(tumUrunler, tabanUrl) {
     aktifNav: 'rehber',
     govdeHtml: `
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>En Ucuz PLA Filamentler</span></nav>
+      ${heroAlani({
+        rozet: '🏷️ Canlı ₺/kg PLA Sıralaması',
+        baslikHtml: 'Türkiye\'nin <b>en ucuz PLA</b> filamentleri',
+        altMetin: '60+ mağazadan çekilen kargo dahil stoklu 1.75mm PLA ve PLA+ filament teklifleri en düşük fiyattan başlayarak otomatik sıralanır.',
+        istatistikler: [
+          enUcuz ? `🥇 Lider: <b>${htmlKacis(enUcuz.ad)} · ${formatTL(enUcuz.enUcuzFiyat)}</b>` : '🔍 Canlı sıralama',
+          `📦 <b>${plaUrunler.length}</b> stoklu model`,
+          '🚚 Kargo dahil kıyas',
+        ],
+      })}
       <section class="seo-kart">
-        <h1 class="seo-baslik">En Ucuz PLA &amp; PLA+ Filamentler (Canlı Liste)</h1>
-        <p class="seo-alt">Türkiye mağazalarından çekilen kargo dahil stoklu PLA filament teklifleri en düşük fiyattan başlayarak otomatik sıralanır.</p>
-        ${enUcuz ? `<div class="seo-fiyat-kutu"><div><b>Şu An En Ucuz Stoklu PLA:</b> ${htmlKacis(enUcuz.ad)} — <b style="color:#059669">${formatTL(enUcuz.enUcuzFiyat)}</b> (${htmlKacis(enUcuz.enUcuzSite || '')})</div></div>` : ''}
-        <div class="seo-butonlar">
-          <a class="seo-cta" href="/sepet.html">🧺 Çoklu Filamentte Kargoyu Sıfırla (Akıllı Sepet)</a>
-          <a class="seo-cta ikincil" href="/kategori/pla-filament">PLA Kategorisi →</a>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+          <h2 style="margin:0">Güncel Kargo Dahil PLA Sıralaması</h2>
+          <a class="seo-cta" style="padding:9px 15px;font-size:13px" href="/sepet.html">🧺 Çoklu Filamentte Kargoyu Sıfırla</a>
         </div>
-      </section>
-      <section class="seo-kart">
-        <h2 style="margin-top:0">Güncel Kargo Dahil PLA Sıralaması</h2>
         ${plaUrunler.length
           ? `<div style="overflow-x:auto"><table class="seo-tablo"><thead><tr><th>Sıra</th><th>Ürün</th><th>En Ucuz Mağaza</th><th>Teklif</th><th>Toplam</th><th>Link</th></tr></thead><tbody>${satirlar}</tbody></table></div>`
           : '<p>Henüz taraması tamamlanan PLA kaydı yok; ana sayfadan doğrudan aratarak canlı fiyat çekebilirsiniz.</p>'}
       </section>
-      ${sss.html}`,
+      ${sss.html}
+      ${altAraclarCubugu()}`,
   });
 }
 
@@ -323,9 +399,18 @@ function plaVsPetgRehberiHtml(tumUrunler, tabanUrl) {
     ],
     govdeHtml: `
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>PLA vs PETG</span></nav>
+      ${heroAlani({
+        rozet: '🧵 Malzeme Seçim Rehberi',
+        baslikHtml: 'PLA <b>vs</b> PETG — Hangisini seçmeli?',
+        altMetin: 'Baskı sıcaklıkları, ısı/UV dayanımı, esneklik farkları ve bugünkü kargo dahil en ucuz makara teklifleri.',
+        istatistikler: [
+          plaTop[0] ? `🧵 PLA: <b>${formatTL(plaTop[0].enUcuzFiyat)}</b>'den` : '🧵 PLA',
+          petgTop[0] ? `🦾 PETG: <b>${formatTL(petgTop[0].enUcuzFiyat)}</b>'den` : '🦾 PETG',
+          '🌡️ 55°C vs 75°C ısı eşiği',
+        ],
+      })}
       <section class="seo-kart">
-        <h1 class="seo-baslik">PLA vs PETG Filament Farkları ve Canlı Fiyatlar</h1>
-        <p class="seo-alt">Hangi baskıda PLA, hangisinde PETG seçilmeli? Baskı sıcaklıkları, mekanik farklar ve bugünkü kargo dahil en ucuz makara teklifleri.</p>
+        <h2 style="margin-top:0">Mekanik &amp; Baskı Ayarı Karşılaştırması</h2>
         <div style="overflow-x:auto">
           <table class="seo-tablo">
             <thead><tr><th>Kriter</th><th>PLA / PLA+</th><th>PETG</th></tr></thead>
@@ -347,12 +432,9 @@ function plaVsPetgRehberiHtml(tumUrunler, tabanUrl) {
       <section class="seo-kart">
         <h2 style="margin-top:0">Bugünkü En Ucuz PETG Teklifleri</h2>
         ${kartListe(petgTop, 'PETG tekliflerini görmek için PETG/TPU kategorisine geçebilirsiniz.')}
-        <div class="seo-butonlar">
-          <a class="seo-cta ikincil" href="/kategori/pla-filament">Tüm PLA Modelleri →</a>
-          <a class="seo-cta ikincil" href="/kategori/petg-tpu-filament">Tüm PETG / TPU Modelleri →</a>
-        </div>
       </section>
-      ${sss.html}`,
+      ${sss.html}
+      ${altAraclarCubugu()}`,
   });
 }
 
@@ -393,11 +475,19 @@ function baskiMaliyetiRehberiHtml(tumUrunler, tabanUrl) {
     ],
     govdeHtml: `
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>3D Baskı Maliyeti</span></nav>
+      ${heroAlani({
+        rozet: '🧮 Fiyatlandırma & Maliyet Rehberi',
+        baslikHtml: '3D baskı maliyeti <b>nasıl hesaplanır?</b>',
+        altMetin: 'Satış veya teklif verirken yalnızca filament gramajına bakmak zarar ettirir. Doğru maliyet hesabı filament, fire, elektrik ve yıpranma payının toplamıdır.',
+        istatistikler: [
+          `⚖️ 100g örnek: <b>~${formatTL(toplamMaliyet)}</b>`,
+          '⚡ Ortalama güç: ~150 W',
+          '📐 STL ile saniyede hesapla',
+        ],
+      })}
       <section class="seo-kart">
-        <h1 class="seo-baslik">3D Baskı Maliyeti Nasıl Hesaplanır?</h1>
-        <p class="seo-alt">Satış veya teklif verirken yalnızca filament gramajına bakmak zarar ettirir. Doğru maliyet hesabı 4 kalemin toplamıdır.</p>
         <div class="seo-fiyat-kutu">
-          <div><b>Örnek 100 g / 8 saatlik baskı:</b> ${plaOrnek ? `Bugünkü en ucuz PLA (${htmlKacis(plaOrnek.ad)} ≈ ${formatTL(ornekKg)}/kg) bazında` : '600 TL/kg örnek PLA bazında'} %10 fireli ham madde (~${formatTL(hamMadde)}) + elektrik (~${formatTL(elektrik)}) ≈ <b>${formatTL(toplamMaliyet)}</b> temel maliyet (yıpranma ve işçilik hariç).</div>
+          <div>💡 <b>Canlı Örnek (100 g / 8 saatlik parça):</b> ${plaOrnek ? `Bugünkü en ucuz PLA (${htmlKacis(plaOrnek.ad)} ≈ ${formatTL(ornekKg)}/kg)` : '600 TL/kg örnek PLA'} bazında %10 fireli ham madde (~${formatTL(hamMadde)}) + elektrik (~${formatTL(elektrik)}) ≈ <b style="color:var(--yesil)">${formatTL(toplamMaliyet)}</b> temel maliyet.</div>
         </div>
         <div class="seo-butonlar">
           <a class="seo-cta" href="/maliyet.html">🧮 STL Yükle &amp; Maliyeti Hesapla →</a>
@@ -406,49 +496,77 @@ function baskiMaliyetiRehberiHtml(tumUrunler, tabanUrl) {
       </section>
       <section class="seo-kart">
         <h2 style="margin-top:0">4 Adımda Baskı Maliyet Formülü</h2>
-        <div style="overflow-x:auto">
-          <table class="seo-tablo">
-            <thead><tr><th>Kalem</th><th>Formül / Kural</th><th>Önemli İpucu</th></tr></thead>
-            <tbody>
-              <tr><td><b>1. Filament + Fire</b></td><td><code>(gram / 1000) × ₺/kg × 1.10</code></td><td>Destek (support), purge kulesi ve olası hatalı baskılar için %10–15 fire ekleyin.</td></tr>
-              <tr><td><b>2. Elektrik</b></td><td><code>saat × 0.15 kW × tarife</code></td><td>Kapalı kasa ve yüksek tabla sıcaklığı (PETG/ABS) tüketimi hafif artırır.</td></tr>
-              <tr><td><b>3. Makine Yıpranması</b></td><td><code>saat × (yazıcıFiyatı / 2000)</code></td><td>Nozul, PEI tabla, kayış ve fan ömrü her saat başına maliyete yazılmalıdır.</td></tr>
-              <tr><td><b>4. Emek &amp; Kâr Marjı</b></td><td><code>(temel + emek) × 2x–3x</code></td><td>Destek temizleme, paketleme ve pazaryeri komisyonu (varsa %15–22) unutulmamalıdır.</td></tr>
-            </tbody>
-          </table>
+        <div class="formul-izgara">
+          <div class="formul-kart">
+            <b>1️⃣ Filament + Fire</b>
+            <code>(gram / 1000) × ₺/kg × 1.10</code>
+            <span class="seo-mini-alt">Destek (support), purge kulesi ve hatalı baskılar için %10–15 fire ekleyin.</span>
+          </div>
+          <div class="formul-kart">
+            <b>2️⃣ Elektrik Tüketimi</b>
+            <code>saat × 0.15 kW × tarife</code>
+            <span class="seo-mini-alt">Yüksek tabla sıcaklığı (PETG/ABS) tüketimi hafif artırır.</span>
+          </div>
+          <div class="formul-kart">
+            <b>3️⃣ Makine Yıpranması</b>
+            <code>saat × (yazıcı / 2000)</code>
+            <span class="seo-mini-alt">Nozul, PEI tabla, kayış ve fan ömrü her saat başına maliyete yazılır.</span>
+          </div>
+          <div class="formul-kart">
+            <b>4️⃣ Emek &amp; Satış Fiyatı</b>
+            <code>(temel + emek) × 2x–3x</code>
+            <span class="seo-mini-alt">Destek temizleme, kutu/kargo ve varsa pazaryeri komisyonu eklenir.</span>
+          </div>
         </div>
       </section>
-      ${sss.html}`,
+      ${sss.html}
+      ${altAraclarCubugu()}`,
   });
 }
 
 export const REHBER_SAYFALARI = [
   ...YAZICI_KARSILASTIRMALARI.map(y => ({
     yol: y.yol,
+    ikon: y.ikon,
     baslik: y.h1,
     ozet: y.description,
     tur: 'Yazıcı Karşılaştırma',
+    canliOzet: y.canliOzet,
     olustur: (tumUrunler, tabanUrl) => yaziciKarsilastirmaOlustur(y, tumUrunler, tabanUrl),
   })),
   {
     yol: '/rehber/en-ucuz-pla-filament',
-    baslik: 'Kilogramı En Ucuz PLA & PLA+ Filamentler (Canlı Sıralama)',
-    ozet: 'Türkiye mağazalarında kargo dahil en ucuz stoklu PLA filament tekliflerini anlık karşılaştırın.',
+    ikon: '🏷️',
+    baslik: 'Kilogramı En Ucuz PLA & PLA+ Filamentler',
+    ozet: 'Türkiye mağazalarında kargo dahil en ucuz stoklu PLA filament tekliflerini anlık sıralayın.',
     tur: 'Canlı Sıralama',
+    canliOzet: (u) => {
+      const en = u.filter(x => x.kategoriSlug === 'pla-filament' && x.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat)[0];
+      return en ? `Şu an #1: ${en.ad} · ${formatTL(en.enUcuzFiyat)}` : 'Kargo dahil canlı ₺/kg PLA sıralaması';
+    },
     olustur: enUcuzPlaRehberiHtml,
   },
   {
     yol: '/rehber/pla-vs-petg-filament',
-    baslik: 'PLA vs PETG Filament Farkları, Ayarlar ve Canlı Fiyatlar',
+    ikon: '🧵',
+    baslik: 'PLA vs PETG Filament Farkları & Fiyatları',
     ozet: 'Isı dayanımı, esneklik, nozul sıcaklığı ve canlı Türkiye makara fiyatları tek sayfada.',
     tur: 'Malzeme Rehberi',
+    canliOzet: (u) => {
+      const pla = u.filter(x => x.kategoriSlug === 'pla-filament' && x.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat)[0];
+      const petg = u.filter(x => x.kategoriSlug === 'petg-tpu-filament' && /petg/i.test(x.ad) && x.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat)[0];
+      if (pla && petg) return `PLA: ${formatTL(pla.enUcuzFiyat)}'den · PETG: ${formatTL(petg.enUcuzFiyat)}'den`;
+      return '55°C vs 75°C ısı dayanımı & canlı fiyatlar';
+    },
     olustur: plaVsPetgRehberiHtml,
   },
   {
     yol: '/rehber/3d-baski-maliyeti-nasil-hesaplanir',
-    baslik: '3D Baskı Maliyeti Nasıl Hesaplanır? (Filament + Elektrik + Satış)',
+    ikon: '🧮',
+    baslik: '3D Baskı Maliyeti Nasıl Hesaplanır?',
     ozet: 'Adım adım baskı maliyet formülü, örnek hesaplama ve ücretsiz STL maliyet hesaplayıcı.',
     tur: 'Maliyet Rehberi',
+    canliOzet: () => '4 adımlı formül + canlı PLA maliyet örneği',
     olustur: baskiMaliyetiRehberiHtml,
   },
 ];
@@ -461,17 +579,24 @@ export function rehberSitemapKayitlari() {
   ];
 }
 
-export function rehberDiziniHtml(tabanUrl) {
+export function rehberDiziniHtml(tabanUrl, tumUrunler = []) {
   const canonicalUrl = `${tabanUrl}/rehber`;
   const title = '3D Yazıcı Karşılaştırma ve Filament Rehberleri | Baskı Hesap';
   const description = 'Bambu Lab, Creality, Elegoo 3D yazıcı karşılaştırmaları, canlı en ucuz PLA filament sıralaması ve 3D baskı maliyet rehberleri.';
 
-  const kartlar = REHBER_SAYFALARI.map(r => `
-    <a class="seo-mini-kart" href="${htmlKacis(r.yol)}">
-      <div style="font-size:11.5px;font-weight:700;color:var(--ana);text-transform:uppercase">${htmlKacis(r.tur)}</div>
-      <div class="seo-mini-ad">${htmlKacis(r.baslik)}</div>
-      <div class="seo-mini-alt">${htmlKacis(r.ozet)}</div>
-    </a>`).join('');
+  const kartlar = REHBER_SAYFALARI.map(r => {
+    const canliNot = typeof r.canliOzet === 'function' ? r.canliOzet(tumUrunler) : '';
+    return `<a class="rehber-kart" href="${htmlKacis(r.yol)}">
+      <div class="rehber-kart-ust">
+        <span class="rehber-ikon" aria-hidden="true">${r.ikon || '📖'}</span>
+        <span class="rehber-rozet">${htmlKacis(r.tur)}</span>
+      </div>
+      <h2 class="rehber-baslik">${htmlKacis(r.baslik)}</h2>
+      <p class="rehber-ozet">${htmlKacis(r.ozet)}</p>
+      ${canliNot ? `<div class="rehber-canli-band">⚡ ${htmlKacis(canliNot)}</div>` : ''}
+      <span class="rehber-cta">Rehberi İncele →</span>
+    </a>`;
+  }).join('');
 
   return sayfaIskeleti({
     title,
@@ -488,11 +613,18 @@ export function rehberDiziniHtml(tabanUrl) {
     }],
     govdeHtml: `
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <span>Rehber &amp; Karşılaştırmalar</span></nav>
-      <section class="seo-kart">
-        <h1 class="seo-baslik">3D Yazıcı Karşılaştırmaları &amp; Alım Rehberleri</h1>
-        <p class="seo-alt">Statik blog yazıları değil — her rehber sayfası veritabanımızdaki güncel, kargo dahil Türkiye mağaza fiyatlarını otomatik olarak içerir.</p>
-        <div class="seo-izgara">${kartlar}</div>
-      </section>`,
+      ${heroAlani({
+        rozet: '📖 Canlı Fiyatlı Karşılaştırmalar · 2026',
+        baslikHtml: 'Doğru 3D yazıcıyı <b>gerçek fiyatla</b> seç',
+        altMetin: 'Statik blog yazıları değil — her karşılaştırma ve alım rehberi veritabanımızdaki kargo dahil güncel Türkiye mağaza fiyatlarını otomatik çeker.',
+        istatistikler: [
+          `📚 <b>${REHBER_SAYFALARI.length}</b> canlı rehber`,
+          '⚖️ Yan yana VS kıyaslama',
+          '🔄 Fiyatlar radardan otomatik güncellenir',
+        ],
+      })}
+      <div class="rehber-izgara">${kartlar}</div>
+      ${altAraclarCubugu()}`,
   });
 }
 
