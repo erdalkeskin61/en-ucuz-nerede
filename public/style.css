@@ -182,7 +182,7 @@ html[data-theme="dark"] .logo-gorsel {
   transition: box-shadow .2s;
 }
 .giris-kart:hover { box-shadow: var(--kart-golge-uzerinde); }
-.giris-kart h1 { margin: 0 0 8px; font-size: 23px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+.giris-kart h1, .giris-kart .kart-ana-baslik { margin: 0 0 8px; font-size: 23px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
 .kart-ikon {
   font-size: 20px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
   background: var(--ana-acik); border-radius: 12px; flex: none;
