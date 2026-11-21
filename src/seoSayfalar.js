@@ -15,7 +15,7 @@
  */
 import { katalogGetir, radarDurumVerisi } from './otonomRadar.js';
 import { anlikAl, sorgudanAnlikAl, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
-import { formatTL } from './util.js';
+import { formatTL, parcaMi } from './util.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
@@ -84,51 +84,59 @@ function guvenliAfiliyeUrl(siteId, hamUrl, ayarlar) {
   }
 }
 
+function anaKategoriSlugBul(k) {
+  const metin = `${k.ad || ''} ${k.sorgu || ''}`;
+  if (parcaMi(metin) || /reçine|recine|resin|kurutucu|dryer|nozzle|tabla|hotend/i.test(metin)) {
+    return 'recine-ve-sarf';
+  }
+  if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa)\b/i.test(metin)) {
+    if (/\b(petg|e?tpu|abs|asa|cf|pa|nylon)\b/i.test(metin)) return 'petg-tpu-filament';
+    if (/\b(x?pla|epla|hyper)\b|pla\+/i.test(metin)) return 'pla-filament';
+    return 'filament';
+  }
+  if (k.kategori === 'yazici' || /yazıcı|printer|ender|kobra|neptune|bambu|k1|p1s|a1\s*mini|x1c/i.test(metin)) {
+    return '3d-yazici';
+  }
+  return k.kategori === 'genel' ? 'recine-ve-sarf' : 'filament';
+}
+
 export const SEO_KATEGORILER = Object.freeze([
   {
     slug: '3d-yazici',
     ad: '3D Yazıcı Fiyatları',
     kisaAd: '3D Yazıcılar',
     aciklama: 'Creality Ender 3 V3, K1 Max, Bambu Lab P1S, A1 Mini ve Anycubic 3D yazıcıların Türkiye mağazalarındaki kargo dahil en ucuz güncel fiyatları.',
-    eslesirMi: (k) => k.kategori === 'yazici' || /yazıcı|printer|ender|kobra|neptune|bambu|k1|p1s|a1\s*mini|x1c/i.test(`${k.ad} ${k.sorgu}`),
+    eslesirMi: (k) => (k.kategoriSlug || anaKategoriSlugBul(k)) === '3d-yazici',
   },
   {
     slug: 'pla-filament',
     ad: 'PLA & PLA+ Filament Fiyatları',
     kisaAd: 'PLA Filament',
     aciklama: 'eSun PLA+, Porima PLA, Creality Ender PLA, Sunlu ve Microzey 1.75mm PLA filamentlerde 60+ mağaza kargo dahil en düşük fiyatlar.',
-    eslesirMi: (k) => k.kategori === 'filament' && /\bpla\b|pla\+|epla|hyper/i.test(`${k.ad} ${k.sorgu}`),
+    eslesirMi: (k) => (k.kategoriSlug || anaKategoriSlugBul(k)) === 'pla-filament',
   },
   {
     slug: 'petg-tpu-filament',
     ad: 'PETG, TPU & ABS Filament Fiyatları',
     kisaAd: 'PETG / TPU / ABS',
     aciklama: 'Yüksek dayanımlı PETG, esnek TPU ve teknik ABS/ASA filamentlerin kargo dahil canlı karşılaştırması ve ₺/kg birim fiyatları.',
-    eslesirMi: (k) => k.kategori === 'filament' && /\b(petg|tpu|abs|asa|cf|pa|nylon)\b/i.test(`${k.ad} ${k.sorgu}`),
+    eslesirMi: (k) => (k.kategoriSlug || anaKategoriSlugBul(k)) === 'petg-tpu-filament',
   },
   {
     slug: 'filament',
     ad: 'Tüm 3D Filament Fiyatları',
     kisaAd: 'Tüm Filamentler',
     aciklama: 'Türkiye\'deki tüm 3D baskı mağazalarında PLA, PETG, TPU, ABS ve Hyper filamentlerin kilogram başı en ucuz kargo dahil fiyatları.',
-    eslesirMi: (k) => k.kategori === 'filament',
+    eslesirMi: (k) => k.kategori === 'filament' || ['pla-filament', 'petg-tpu-filament', 'filament'].includes(k.kategoriSlug || anaKategoriSlugBul(k)),
   },
   {
     slug: 'recine-ve-sarf',
     ad: '3D Reçine, Kurutucu & Yedek Parça',
     kisaAd: 'Reçine & Sarf',
     aciklama: 'UV 3D yazıcı reçineleri, filament kurutucular, sertleştirilmiş nozzle uçları ve 3D baskı sarf malzemelerinde en ucuz teklifler.',
-    eslesirMi: (k) => /reçine|recine|resin|kurutucu|dryer|nozzle|tabla|hotend/i.test(`${k.ad} ${k.sorgu}`) || (k.kategori === 'genel' && !/yazıcı|printer/i.test(k.ad)),
+    eslesirMi: (k) => (k.kategoriSlug || anaKategoriSlugBul(k)) === 'recine-ve-sarf',
   },
 ]);
-
-function anaKategoriSlugBul(k) {
-  if (k.kategori === 'yazici') return '3d-yazici';
-  if (/reçine|recine|resin|kurutucu|dryer|nozzle|tabla|hotend/i.test(`${k.ad} ${k.sorgu}`)) return 'recine-ve-sarf';
-  if (k.kategori === 'filament' && /\b(petg|tpu|abs|asa|cf|pa|nylon)\b/i.test(`${k.ad} ${k.sorgu}`)) return 'petg-tpu-filament';
-  if (k.kategori === 'filament') return 'pla-filament';
-  return 'filament';
-}
 
 function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
   const harita = new Map();
