@@ -6713,4 +6713,347 @@ html[data-theme="dark"] .telegram-test-hata {
   .hedef-mesafe-dolgu.tamamlandi { animation: none; }
 }
 
+/* ================= 🌙 Kapsamlı Karanlık Mod Kontrast & Yüzey Düzeltmeleri (2026-11-22) ================= */
+.kupon-uyari-notr {
+  border-left-color: #cfd6e4;
+  background: #f7f9fc;
+  color: #6b7280;
+}
+
+html[data-theme="dark"] .logo,
+html[data-theme="dark"] .kart-baslik a,
+html[data-theme="dark"] .gercek-fiyat,
+html[data-theme="dark"] .kaynak-bilgi b,
+html[data-theme="dark"] .kredi-alt b,
+html[data-theme="dark"] .afiliye-bildirim b,
+html[data-theme="dark"] .oneri-kismi-baslik,
+html[data-theme="dark"] .onerilen-kart .model-adi a,
+html[data-theme="dark"] .renk-notu b,
+html[data-theme="dark"] .barkod-urun,
+html[data-theme="dark"] .barkod-kutu-fiyat,
+html[data-theme="dark"] .barkod-kart-baslik,
+html[data-theme="dark"] .barkod-bos-baslik,
+html[data-theme="dark"] .sepet-senaryo-baslik,
+html[data-theme="dark"] .sepet-grup-urunler li span,
+html[data-theme="dark"] .sepet-kupon-baslik,
+html[data-theme="dark"] .kupon-metin,
+html[data-theme="dark"] .kupon-yeni,
+html[data-theme="dark"] .tarayici-sonuc-baslik,
+html[data-theme="dark"] .fiyat-gecmisi-baslik,
+html[data-theme="dark"] .muadil-baslik,
+html[data-theme="dark"] .muadil-satir-baslik,
+html[data-theme="dark"] .muadil-fiyat,
+html[data-theme="dark"] .birim-baslik,
+html[data-theme="dark"] .birim-tuzak-fiyat,
+html[data-theme="dark"] .birim-supheli-uyari b,
+html[data-theme="dark"] .baski-sonuc,
+html[data-theme="dark"] .birim-tablo td {
+  color: var(--metin);
+}
+
+html[data-theme="dark"] .birim-aciklama,
+html[data-theme="dark"] .muadil-altmetin,
+html[data-theme="dark"] .muadil-satir-site,
+html[data-theme="dark"] .muadil-yukleniyor,
+html[data-theme="dark"] .fiyat-trend-altmetin,
+html[data-theme="dark"] .birim-alt,
+html[data-theme="dark"] .birim-tuzak-not,
+html[data-theme="dark"] .kupon-liste,
+html[data-theme="dark"] .sepet-grup-urunler li,
+html[data-theme="dark"] .renk-notu,
+html[data-theme="dark"] .baski-birim,
+html[data-theme="dark"] .filtre-etiket,
+html[data-theme="dark"] .tarayici-sekme {
+  color: var(--gri-metin);
+}
+
+/* Kilogram başına fiyat tablosu: beyaz en-iyi/şüpheli satırlar & okunaksız indigo linkler */
+html[data-theme="dark"] .birim-tablo td {
+  border-bottom-color: var(--cizgi);
+}
+html[data-theme="dark"] .birim-tablo tr.birim-en-iyi td {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--metin);
+}
+html[data-theme="dark"] .birim-tablo tr.birim-supheli td {
+  background: var(--zemin-2);
+  color: var(--gri-metin-hafif);
+}
+html[data-theme="dark"] .birim-tablo .birim-kg-hucre,
+html[data-theme="dark"] .fiyat-birim .birim-kg,
+html[data-theme="dark"] .fiyat-birim .birim-l,
+html[data-theme="dark"] .neden-ucuz-baslik {
+  color: var(--ana-parlak);
+}
+html[data-theme="dark"] .birim-supheli-rozet,
+html[data-theme="dark"] .fiyat-birim .birim-miktar,
+html[data-theme="dark"] .rozet.notr {
+  background: var(--zemin-2);
+  color: var(--gri-metin);
+}
+html[data-theme="dark"] .birim-tuzak-miktar {
+  background: rgba(251, 191, 36, 0.18);
+  color: #FCD34D;
+}
+
+/* Fiyat trendi uyarı kutusu & muadil uyarısı (krem kutuları karanlık kehribara çevir) */
+html[data-theme="dark"] .fiyat-trend-notu,
+html[data-theme="dark"] .muadil-uyari,
+html[data-theme="dark"] .kupon-uyari,
+html[data-theme="dark"] .sepet-uyari,
+html[data-theme="dark"] .tamamlayici-alan,
+html[data-theme="dark"] .tamamlayici-btn,
+html[data-theme="dark"] .barkod-kutu.kotu {
+  background: rgba(251, 191, 36, 0.10) !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+  border-left-color: #FBBF24 !important;
+  color: #FDE68A !important;
+}
+html[data-theme="dark"] .kupon-uyari.kupon-uyari-notr {
+  background: var(--zemin-2) !important;
+  border-color: var(--cizgi) !important;
+  border-left-color: var(--cizgi-koyu) !important;
+  color: var(--gri-metin) !important;
+}
+
+/* Filtre barı ve çipler */
+html[data-theme="dark"] .filtre-bar {
+  background: var(--kart);
+  border-color: var(--cizgi);
+}
+html[data-theme="dark"] .filtre-chip {
+  background: var(--zemin-2);
+  border-color: var(--cizgi-koyu);
+  color: var(--metin);
+}
+html[data-theme="dark"] .filtre-chip:hover {
+  background: var(--kart-2);
+  border-color: var(--ana-parlak);
+}
+html[data-theme="dark"] .filtre-chip.aktif {
+  background: #2563EB;
+  border-color: #3B82F6;
+  color: #fff;
+}
+html[data-theme="dark"] .filtre-chip.cap-tehlike {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(251, 113, 133, 0.4);
+  color: #FDA4AF;
+}
+html[data-theme="dark"] .filtre-chip.birim-chip {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #FCD34D;
+}
+
+/* Bulunamayan / hata kartları (Ekran 4'teki beyaz kartlar) + genel kart yüzeyleri */
+html[data-theme="dark"] .bulunamadi-karti,
+html[data-theme="dark"] .giris-kart,
+html[data-theme="dark"] .sonuc-ust,
+html[data-theme="dark"] .takip-alani,
+html[data-theme="dark"] .ayar-kart,
+html[data-theme="dark"] .gecmis-liste li,
+html[data-theme="dark"] .oneri-kismi-kart,
+html[data-theme="dark"] .barkod-bos,
+html[data-theme="dark"] .sepet-senaryo-bos {
+  background: var(--kart);
+  border-color: var(--cizgi-koyu);
+  color: var(--metin);
+}
+html[data-theme="dark"] .bulunamadi-karti,
+html[data-theme="dark"] .bulunamadi-karti .site-adi {
+  color: var(--gri-metin);
+}
+
+/* Parça baskı rozetleri & "Sitene Ekle" butonu */
+html[data-theme="dark"] .embed-btn {
+  background: var(--zemin-2);
+  color: var(--ana-parlak);
+  border-color: var(--cizgi-koyu);
+}
+html[data-theme="dark"] .embed-btn:hover {
+  background: var(--ana-acik);
+  border-color: var(--ana-parlak);
+}
+html[data-theme="dark"] .baski-rozet.cap-ok {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+  border-color: rgba(52, 211, 153, 0.38);
+}
+html[data-theme="dark"] .baski-rozet.cap-uyari,
+html[data-theme="dark"] .baski-rozet.birim-uyari {
+  background: rgba(245, 158, 11, 0.16);
+  color: #FCD34D;
+  border-color: rgba(251, 191, 36, 0.38);
+}
+
+/* Durum rozetleri, stok rozetleri, çipler, formlar ve sepet bileşenleri */
+html[data-theme="dark"] .urun-karti.farkli-renk,
+html[data-theme="dark"] .urun-karti.stok-yok,
+html[data-theme="dark"] tr.stok-yok,
+html[data-theme="dark"] .sepet-urun-durum {
+  background: var(--zemin-2);
+}
+html[data-theme="dark"] .rozet.stok-yok,
+html[data-theme="dark"] .stok-fiyat-rozet,
+html[data-theme="dark"] .stok-hucre-yok,
+html[data-theme="dark"] .rozet.kotu {
+  background: rgba(244, 63, 94, 0.16) !important;
+  color: #FDA4AF !important;
+  border-color: rgba(251, 113, 133, 0.4) !important;
+}
+html[data-theme="dark"] .rozet.stok-var,
+html[data-theme="dark"] .stok-hucre-var,
+html[data-theme="dark"] .rozet.iyi,
+html[data-theme="dark"] .badge-yesil {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #6EE7B7 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+html[data-theme="dark"] .badge-turuncu {
+  background: rgba(245, 158, 11, 0.16);
+  color: #FCD34D;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+html[data-theme="dark"] .badge-kirmizi {
+  background: rgba(244, 63, 94, 0.16);
+  color: #FDA4AF;
+  border-color: rgba(251, 113, 133, 0.4);
+}
+html[data-theme="dark"] .cip {
+  background: var(--kart);
+  border-color: var(--cizgi);
+  color: var(--metin);
+}
+html[data-theme="dark"] .cip.calisiyor {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #FCD34D;
+}
+html[data-theme="dark"] .cip.bulunamadi,
+html[data-theme="dark"] .cip.iptal {
+  background: var(--zemin-2);
+  border-color: var(--cizgi);
+  color: var(--gri-secil);
+}
+html[data-theme="dark"] .cip.hata {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(251, 113, 133, 0.35);
+  color: #FDA4AF;
+}
+html[data-theme="dark"] .tarayici-sekme {
+  background: var(--zemin-2);
+  border-color: var(--cizgi);
+}
+html[data-theme="dark"] .tarayici-sekme.aktif {
+  background: var(--kart-2);
+  color: var(--ana-parlak);
+}
+html[data-theme="dark"] .arama-satiri input,
+html[data-theme="dark"] .oneri-form textarea,
+html[data-theme="dark"] .tablo-devami-btn,
+html[data-theme="dark"] .sifirdan-tara-btn,
+html[data-theme="dark"] .footer-siteler li {
+  background: var(--zemin-2);
+  border-color: var(--cizgi-koyu);
+  color: var(--metin);
+}
+html[data-theme="dark"] .sifirdan-tara-btn,
+html[data-theme="dark"] .tablo-devami-btn {
+  color: var(--ana-parlak);
+}
+html[data-theme="dark"] .neden-ucuz-kart {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(129, 140, 248, 0.35);
+}
+html[data-theme="dark"] .neden-ucuz-kart p { color: var(--metin); }
+html[data-theme="dark"] .kupon-ozet,
+html[data-theme="dark"] .kupon-rozet,
+html[data-theme="dark"] .kupon-otomatik,
+html[data-theme="dark"] .rozet-kucuk,
+html[data-theme="dark"] .tamamlayici-kazanc,
+html[data-theme="dark"] .stl-hizli-dosya,
+html[data-theme="dark"] .stl-hizli-metrikler small,
+html[data-theme="dark"] .tasarruf-metin,
+html[data-theme="dark"] .senaryo-kart.oneri .senaryo-harf {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+  border-color: rgba(52, 211, 153, 0.35);
+}
+html[data-theme="dark"] .stl-hizli-dosya,
+html[data-theme="dark"] .stl-hizli-metrikler small,
+html[data-theme="dark"] .tasarruf-metin {
+  background: transparent;
+}
+html[data-theme="dark"] .kupon-ozet-bos {
+  background: var(--zemin-2);
+  border-color: var(--cizgi);
+  color: var(--gri-metin);
+}
+html[data-theme="dark"] .barkod-kutu.iyi {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(147, 197, 253, 0.35);
+  color: #BFDBFE;
+}
+html[data-theme="dark"] .barkod-kutu.vurgulu .barkod-kutu-fiyat,
+html[data-theme="dark"] .muadil-yuzde,
+html[data-theme="dark"] .font-yesil {
+  color: #34D399 !important;
+}
+html[data-theme="dark"] .renk-notu.hata {
+  background: rgba(244, 63, 94, 0.14);
+  border-left-color: #FB7185;
+  color: #FDA4AF;
+}
+html[data-theme="dark"] .gorsel-analiz {
+  background: var(--zemin-2);
+  border-color: var(--cizgi-koyu);
+}
+html[data-theme="dark"] .gorsel-analiz-urun,
+html[data-theme="dark"] .gorsel-kart-baslik,
+html[data-theme="dark"] .fiyat-zeka-fark {
+  color: var(--metin);
+}
+html[data-theme="dark"] .rozet-kucuk.benzerlik {
+  background: var(--ana-acik);
+  color: var(--ana-parlak);
+}
+html[data-theme="dark"] .rozet-kucuk.guven-orta {
+  background: rgba(251, 191, 36, 0.16);
+  color: #FCD34D;
+}
+html[data-theme="dark"] .rozet-kucuk.guven-dusuk {
+  background: rgba(244, 63, 94, 0.16);
+  color: #FDA4AF;
+}
+html[data-theme="dark"] .oneri-asama .asama {
+  background: var(--zemin-2);
+  color: var(--gri-metin-hafif);
+}
+html[data-theme="dark"] .oneri-asama .asama.tamam {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+}
+html[data-theme="dark"] .iptal-btn,
+html[data-theme="dark"] .sepet-butonlar .iptal-btn,
+html[data-theme="dark"] .oneri-durdur-btn {
+  background: rgba(244, 63, 94, 0.14);
+  border-color: rgba(251, 113, 133, 0.4);
+  color: #FDA4AF;
+}
+html[data-theme="dark"] .tarama-bar,
+html[data-theme="dark"] .kredi-cubuk-dis {
+  background: var(--cizgi);
+}
+html[data-theme="dark"] .kupon-satir.uygulanabilir {
+  background: rgba(16, 185, 129, 0.10);
+}
+html[data-theme="dark"] .kupon-kod-btn.kopyalandi {
+  border-color: #34D399;
+  color: #6EE7B7;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+
+
 

@@ -5686,7 +5686,7 @@ function sepetKuponCiz(d, senaryo) {
       <button type="button" class="kupon-kod-btn kupon-hepsi" id="kuponHepsiBtn">Tümünü kopyala</button>
     </div>` : ''}
     ${(d.uyarilar || []).map(u => `<p class="kupon-uyari">⚠️ ${esc(u)}</p>`).join('')}
-    <p class="kupon-uyari" style="border-left-color:#cfd6e4;background:#f7f9fc;color:#6b7280">
+    <p class="kupon-uyari kupon-uyari-notr">
       İndirim tutarları mağazanın kampanya metninden hesaplanır. Kesin tutar ödeme adımında görünür.
     </p>`;
 
