@@ -41,6 +41,52 @@
   </script>
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="/ikon-192.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Baskı Hesap",
+    "alternateName": "baskihesap.tech",
+    "url": "https://baskihesap.tech/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://baskihesap.tech/?url={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Baskı Hesap fiyatları nasıl hesaplar?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "68 Türkiye mağazasından ürün fiyatı, herkesin yararlanabileceği indirimler ve mağazanın kargo ücreti ya da ücretsiz kargo eşiği canlı çekilerek kargo dahil gerçek ödenecek tutar hesaplanır."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "3D yazıcı ile yedek parçalar karışır mı?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Model seri, varyant (V3, KE, SE, Pro, Max) ve yedek parça (anakart, ekran, nozzle, hotend vb.) filtreleri ayrı tutulduğu için 3D yazıcı ararken yalnızca yazıcılar eşleştirilir."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Akıllı Sepet ile kargo ücretinden nasıl tasarruf edilir?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Birden fazla filament veya ürün alırken mağazaların ücretsiz kargo eşiklerini ve aktif kuponlarını birlikte hesaplar; tek mağaza, akıllı bölünmüş ve en ucuz senaryoları kıyaslar."
+        }
+      }
+    ]
+  }
+  </script>
   <script src="/vendor/chart.umd.min.js"></script>
 </head>
 <body>
@@ -701,6 +747,34 @@
     <section id="gecmisAlani" hidden>
       <h2 class="bolum-baslik">Son aramalar</h2>
       <ul id="gecmisListe" class="gecmis-liste"></ul>
+    </section>
+
+    <section class="seo-rehber-kart" aria-label="Kategoriler ve Sık Sorulan Sorular">
+      <div class="seo-rehber-ust">
+        <div>
+          <h2 class="bolum-baslik" style="margin:0 0 6px">3D Yazıcı &amp; Filament Kategorileri</h2>
+          <p class="ipucu" style="margin:0">Kargo dahil takip edilen tüm ürün ve kategori fiyat sayfalarına göz atın:</p>
+        </div>
+        <a class="seo-tum-link" href="/urunler">Tüm Ürün Kataloğu →</a>
+      </div>
+      <div class="seo-rehber-baglar">
+        <a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a>
+        <a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a>
+        <a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a>
+        <a href="/kategori/recine-ve-sarf">🧪 Reçine, Kurutucu &amp; Sarf</a>
+        <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
+        <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
+      </div>
+      <div class="seo-sss">
+        <details>
+          <summary>Gösterilen fiyatlara kargo dahil mi?</summary>
+          <p>Evet. Kargo ücreti bilinen tüm mağazalarda kargo tutarı veya ücretsiz kargo eşiği doğrudan toplama eklenir; kargo bilgisini yalnızca sepette açıklayan mağazalar ise açıkça "+Kargo sepette eklenir" şeklinde uyarılır.</p>
+        </details>
+        <details>
+          <summary>Filament birim fiyatı (₺/kg) nasıl karşılaştırılır?</summary>
+          <p>Ürün adındaki gramaj ve hacim bilgisi (500 g, 1 kg, 2.5 kg, 1 L) otomatik çıkarılarak ₺/kg ve ₺/L cinsinden sıralama yapılır; böylece düşük gramajlı makaralar yanıltıcı biçimde "ucuz" görünmez.</p>
+        </details>
+      </div>
     </section>
   </main>
 

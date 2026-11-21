@@ -3,6 +3,9 @@
 
 User-agent: *
 Allow: /
+Allow: /urunler
+Allow: /urun/
+Allow: /kategori/
 Allow: /maliyet.html
 Allow: /sepet.html
 Allow: /slicer.html

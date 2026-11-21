@@ -6487,6 +6487,28 @@ html[data-theme="dark"] .kargo-paket-etiket.belirsiz {
   border-color: rgba(253, 186, 116, 0.4);
 }
 html[data-theme="dark"] .kargo-paket-kupon { color: #6EE7B7; }
+
+/* 🔍 Ana sayfa SEO Kategori & SSS rehberi */
+.seo-rehber-kart {
+  margin: 26px 0 12px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+}
+.seo-rehber-ust { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.seo-tum-link { font-size: 13.5px; font-weight: 800; color: var(--ana); text-decoration: none; white-space: nowrap; }
+.seo-rehber-baglar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.seo-rehber-baglar a {
+  padding: 8px 14px; border-radius: 10px;
+  border: 1px solid var(--cizgi); background: var(--zemin-2);
+  color: var(--metin); text-decoration: none; font-size: 13px; font-weight: 700;
+  transition: border-color .14s ease, transform .14s ease;
+}
+.seo-rehber-baglar a:hover { border-color: var(--ana); transform: translateY(-1px); }
+.seo-sss details { border-top: 1px solid var(--cizgi); padding: 10px 0; }
+.seo-sss summary { cursor: pointer; font-weight: 700; font-size: 13.5px; }
+.seo-sss p { margin: 8px 0 2px; font-size: 13px; line-height: 1.55; color: var(--gri-metin); }
 html[data-theme="dark"] .kargo-paket-ipucu {
   color: #FCD34D;
   background: rgba(245, 158, 11, 0.12);

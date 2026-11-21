@@ -53,6 +53,10 @@ import { pushDurum, pushGonder } from './src/push.js';
 import { onerileriGetir } from './src/oneriler.js';
 import { hizliKaynakUrunBul, KIRILGAN_KAYNAK_SITELER } from './src/urunArama.js';
 import {
+  SEO_KATEGORILER, seoUrunListesi, seoUrunBul, sitemapKayitlari,
+  urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml,
+} from './src/seoSayfalar.js';
+import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
   katalogSyncDurumu, katalogUrunleriAra,
 } from './src/katalogSync.js';
@@ -497,21 +501,26 @@ function yayinKoku(req) {
  * Yalnızca GERÇEKTEN yayında olan herkese açık sayfalar listelenir;
  * /admin ve /api bilinçli olarak yer almaz (robots.txt de engeller).
  */
+app.get('/robots.txt', (req, res, next) => {
+  const dosya = path.join(__dirname, 'public', 'robots.txt');
+  fs.readFile(dosya, 'utf8', (err, icerik) => {
+    if (err) return next();
+    const taban = yayinKoku(req);
+    const cikti = icerik.replace(/^Sitemap:.*$/im, `Sitemap: ${taban}/sitemap.xml`);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(cikti);
+  });
+});
+
 app.get('/sitemap.xml', (req, res) => {
   try {
     const taban = yayinKoku(req);
-    const bugun = new Date().toISOString().slice(0, 10);
-    const sayfalar = [
-      { yol: '/', oncelik: '1.0', siklik: 'daily' },
-      { yol: '/maliyet.html', oncelik: '0.8', siklik: 'weekly' },
-      { yol: '/sepet.html', oncelik: '0.8', siklik: 'weekly' },
-      { yol: '/slicer.html', oncelik: '0.7', siklik: 'weekly' },
-      { yol: '/ayarlar.html', oncelik: '0.3', siklik: 'monthly' },
-    ];
+    const sayfalar = sitemapKayitlari();
     const govde = sayfalar.map(s => [
       '  <url>',
       `    <loc>${xmlKacis(taban + s.yol)}</loc>`,
-      `    <lastmod>${bugun}</lastmod>`,
+      `    <lastmod>${xmlKacis(s.lastmod)}</lastmod>`,
       `    <changefreq>${s.siklik}</changefreq>`,
       `    <priority>${s.oncelik}</priority>`,
       '  </url>',
@@ -520,10 +529,51 @@ app.get('/sitemap.xml', (req, res) => {
       + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
       + govde + '\n</urlset>\n';
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(xml);
   } catch (e) {
     res.status(500).type('text/plain').send('sitemap üretilemedi');
+  }
+});
+
+/* Programatik SEO: SSR ürün, kategori ve katalog sayfaları */
+app.get('/urunler', (req, res) => {
+  try {
+    const urunler = seoUrunListesi();
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(katalogDiziniHtml(urunler, yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Katalog sayfası üretilemedi');
+  }
+});
+
+app.get('/kategori/:slug', (req, res) => {
+  const kat = SEO_KATEGORILER.find(c => c.slug === String(req.params.slug || '').toLowerCase());
+  if (!kat) return res.status(404).type('text/plain').send('Kategori bulunamadı');
+  try {
+    const urunler = seoUrunListesi();
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(kategoriSayfasiHtml(kat, urunler, yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Kategori sayfası üretilemedi');
+  }
+});
+
+app.get('/urun/:slug', (req, res) => {
+  try {
+    const tumUrunler = seoUrunListesi();
+    const ham = String(req.params.slug || '').trim().toLowerCase();
+    const urun = tumUrunler.find(u => u.slug === ham)
+      || (/^\d+$/.test(ham) ? tumUrunler.find(u => u.id === Number(ham)) : null)
+      || seoUrunBul(ham);
+    if (!urun) return res.status(404).type('text/plain').send('Ürün sayfası bulunamadı');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(urunSayfasiHtml(urun, yayinKoku(req), tumUrunler));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Ürün sayfası üretilemedi');
   }
 });
 
@@ -549,6 +599,23 @@ app.get(['/', '/index.html'], (req, res, next) => {
         + `<link rel="canonical" href="${tamKok}/" />\n  `
         + '<meta property="og:image:alt"',
       );
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.send(cikti);
+  });
+});
+
+app.get(['/maliyet.html', '/sepet.html', '/slicer.html'], (req, res, next) => {
+  const acik = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  if (!acik) return next();
+  const yol = req.path;
+  const dosya = path.join(__dirname, 'public', path.basename(yol));
+  fs.readFile(dosya, 'utf8', (err, html) => {
+    if (err) return next();
+    const tamKok = yayinKoku(req);
+    const cikti = html
+      .replace(/content="\/og-gorsel\.png"/g, `content="${tamKok}/og-gorsel.png"`)
+      .replace('</head>', `  <link rel="canonical" href="${tamKok}${yol}" />\n  <meta property="og:url" content="${tamKok}${yol}" />\n</head>`);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=60');
     res.send(cikti);
