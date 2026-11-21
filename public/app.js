@@ -3704,6 +3704,7 @@ function kartHtml(r) {
     </div>` : ''}
     <div class="kart-alt">
       ${Number(pr.toplam ?? pr.araToplam ?? p.sellingPrice) > 0 ? `<button type="button" class="alarm-btn" data-alarm-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice))}" data-alarm-site="${esc(r.site || '')}" title="Hedef fiyatın altına düşünce bu cihaza bildirim al — e-posta/şifre gerekmez">🔔 Fiyat Alarmı</button>` : ''}
+      ${p.url ? `<button type="button" class="sepete-ekle-btn" data-sepet-url="${esc(p.url)}" data-sepet-ad="${esc(p.title || '')}" data-sepet-site="${esc(SITE_ADLARI[r.site] || r.siteName || '')}" data-sepet-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice ?? ''))}" title="Akıllı Sepete ekle — kargo ve kupon dahil en ucuz kombinasyonu bul">🧺 Sepete Ekle</button>` : ''}
       <button type="button" class="embed-btn" data-embed-q="${esc(p.title || '')}" title="Bu ürünün canlı fiyatını kendi sitene ekle">🔌 Sitene Ekle</button>
       <span class="istek-notu">${kac(r.requestsSpent)} istek${(r.queriesTried || []).length ? ' · sorgu: ' + esc((r.queriesTried || []).join(' / ')) : ''}${r.katalog ? ` · 🗂️ katalog (${Math.max(0, Math.round((Number(r.katalog.yasMs) || 0) / 60000))} dk önce)` : ''}</span>
       <a class="urun-link ${stoktaYok ? 'tukendi' : ''}" href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${stoktaYok ? 'Mağazada Gör (Tükendi)' : 'Mağazada Gör'}</a>
@@ -4673,9 +4674,10 @@ function sepetUrlListesi() {
   const gorulen = new Set();
   const urls = [];
   for (const s of satirlar) {
-    if (!/^https?:\/\//i.test(s)) continue;
-    if (gorulen.has(s)) continue;
-    gorulen.add(s);
+    if (s.length < 2) continue;
+    const anahtar = s.toLowerCase();
+    if (gorulen.has(anahtar)) continue;
+    gorulen.add(anahtar);
     urls.push(s);
   }
   return urls.slice(0, 10);
@@ -4713,7 +4715,7 @@ if ($('#sepetBtn')) {
     $('#sepetHata').hidden = true;
     $('#sepetSonuc').hidden = true;
 
-    if (urls.length < 2) return sepetHataGoster('Sepet için en az 2 ürün linki gerekli.');
+    if (urls.length < 2) return sepetHataGoster('Sepet için en az 2 ürün linki veya ürün adı gerekli.');
     if (urls.length > 10) return sepetHataGoster('Sepet en fazla 10 ürün alabilir.');
 
     $('#sepetBtn').disabled = true;
@@ -4726,9 +4728,21 @@ if ($('#sepetBtn')) {
     if (iptalBtn) iptalBtn.hidden = false;
 
     try {
+      let onbellekMap = {};
+      try { onbellekMap = JSON.parse(localStorage.getItem('eun_sepet_onbellek_v1') || '{}') || {}; } catch { onbellekMap = {}; }
+      const simdi = Date.now();
+      const urunlerGovde = urls.map(u => {
+        const kayit = onbellekMap[u.toLowerCase()];
+        const hazir = kayit && (simdi - (kayit.ts || 0) < 15 * 60 * 1000) && Array.isArray(kayit.teklifler) && kayit.teklifler.length
+          ? kayit.teklifler
+          : undefined;
+        return /^https?:\/\//i.test(u)
+          ? { url: u, ...(hazir ? { teklifler: hazir } : {}) }
+          : { url: u, ad: u, tur: 'ad', ...(hazir ? { teklifler: hazir } : {}) };
+      });
       const res = await fetch('/api/sepet', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urunler: urls.map(u => ({ url: u })), hizliMod: hizliModAcik() }),
+        body: JSON.stringify({ urunler: urunlerGovde, hizliMod: hizliModAcik() }),
       });
       const data = await guvenliJson(res);
       if (!res.ok) throw new Error(data.hata || 'Sepet isteği başarısız');
@@ -5007,7 +5021,9 @@ function sepetKargoPaketi(g, sira, toplamPaket) {
 
   const kargoEtiket = durum.bedava
     ? '<span class="kargo-paket-etiket bedava">✅ Kargo Bedava</span>'
-    : `<span class="kargo-paket-etiket ucretli">🚚 +${tl(durum.kargo)} Kargo</span>`;
+    : (durum.belirsiz
+      ? '<span class="kargo-paket-etiket belirsiz">⚠️ +Kargo sepette</span>'
+      : `<span class="kargo-paket-etiket ucretli">🚚 +${tl(durum.kargo)} Kargo</span>`);
 
   // 💡 Eşik ipucu (yalnızca eklenen tutar kargodan küçükse) veya nötr eşik notu.
   let ipucu = '';
@@ -5019,9 +5035,14 @@ function sepetKargoPaketi(g, sira, toplamPaket) {
       + `(<b>${tl(durum.esikFarki)}</b> uzakta)</div>`;
   }
 
+  const kuponSatir = Number(g.kuponIndirim) > 0
+    ? `<div class="kargo-paket-kupon">🎟️ Kupon: −${tl(g.kuponIndirim)}${g.uygulananKupon?.kodu ? ` (${esc(g.uygulananKupon.kodu)})` : ''}</div>`
+    : '';
+
   const urunler = (g.urunler || []).map(u => {
-    const ad = String(u.ad || '').slice(0, 62);
-    const link = u.url
+    const adHam = String(u.ad || '').slice(0, 62);
+    const ad = (Number(u.adet) > 1 ? `${Number(u.adet)}× ` : '') + adHam;
+    const link = u.url && /^https?:\/\//i.test(u.url)
       ? `<a href="${esc(u.afiliyeUrl || u.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(u.site || g.site || '')}" title="${esc(ad)}">${esc(ad)}</a>`
       : `<span title="${esc(ad)}">${esc(ad)}</span>`;
     return `<li>${link}<span class="kargo-paket-urun-fiyat">${tl(u.fiyat)}</span></li>`;
@@ -5035,12 +5056,13 @@ function sepetKargoPaketi(g, sira, toplamPaket) {
       </div>
       <span class="kargo-paket-tutar">${tl(g.toplam)}</span>
     </div>
-    <div class="kargo-paket-sayi">🏷️ ${urunSayisi} ürün</div>
+    <div class="kargo-paket-sayi">🏷️ ${(g.urunler || []).reduce((s, u) => s + Math.max(1, Number(u.adet) || 1), 0)} ürün</div>
     <ul class="kargo-paket-urunler">${urunler}</ul>
     <div class="kargo-paket-alt-satir">
       <span class="kargo-paket-ara">Ürünler ${tl(g.araToplam)}</span>
       ${kargoEtiket}
     </div>
+    ${kuponSatir}
     ${ipucu}
   </div>`;
 }
@@ -5068,7 +5090,7 @@ function sepetSenaryoKart(senaryo, enIyiMi) {
     ${enIyiMi ? '<div class="sepet-rozet">En düşük toplam</div>' : ''}
     ${senaryo.uyari ? `<div class="sepet-uyari">⚠️ ${esc(senaryo.uyari)}</div>` : ''}
     ${gruplar}
-    <div class="sepet-senaryo-alt">Ürünler ${tl(senaryo.araToplam)} + Kargo ${tl(senaryo.kargo)}</div>
+    <div class="sepet-senaryo-alt">Ürünler ${tl(senaryo.araToplam)}${Number(senaryo.kuponIndirim) > 0 ? ` − Kupon ${tl(senaryo.kuponIndirim)}` : ''} + ${senaryo.kargoBelirsiz && Number(senaryo.kargo) === 0 ? 'Kargo sepette' : 'Kargo ' + tl(senaryo.kargo)}</div>
   </div>`;
 }
 
@@ -5822,3 +5844,78 @@ function sepetIlerlemeCiz() {
       <span class="sepet-urun-bilgi">${esc(bilgi)}</span></div>`;
   }).join('');
 }
+
+// 🧺 Ana arama kartından tek tıkla "Akıllı Sepete Ekle" (2026-11-21)
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.sepete-ekle-btn');
+  if (!btn) return;
+  if (btn.classList.contains('eklendi')) {
+    window.location.href = '/sepet.html';
+    return;
+  }
+  const url = btn.dataset.sepetUrl || '';
+  const ad = btn.dataset.sepetAd || url;
+  if (!url) return;
+
+  const hesap = await sepetHesapModulunuYukle();
+  let mevcut = [];
+  try {
+    mevcut = hesap
+      ? hesap.sepetNormalize(localStorage.getItem('eun_sepet_v1'))
+      : JSON.parse(localStorage.getItem('eun_sepet_v1') || '[]');
+  } catch { mevcut = []; }
+  if (!Array.isArray(mevcut)) mevcut = [];
+
+  const ayni = mevcut.find(x => String(x.url || '').toLowerCase() === url.toLowerCase());
+  const fiyat = Number(btn.dataset.sepetFiyat);
+  if (ayni) {
+    ayni.adet = Math.min(9, (Number(ayni.adet) || 1) + 1);
+  } else if (mevcut.length < 10) {
+    mevcut.push({
+      id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      ad: ad.slice(0, 200),
+      url,
+      adet: 1,
+      site: btn.dataset.sepetSite || null,
+      fiyat: Number.isFinite(fiyat) && fiyat > 0 ? Math.round(fiyat * 100) / 100 : null,
+      kaynak: 'arama',
+    });
+  }
+  try { localStorage.setItem('eun_sepet_v1', JSON.stringify(mevcut)); } catch { }
+
+  // Bu aramanın hazır tekliflerini önbellekle → sepette yeniden tarama gerekmez
+  if (sonSonuc && Array.isArray(sonSonuc.sonuclar)) {
+    const teklifler = sonSonuc.sonuclar
+      .filter(s => s.status === 'found' && s.product && s.product.inStock !== false)
+      .map(s => ({
+        site: s.site,
+        siteName: s.siteName,
+        urunFiyati: s.product.pricing?.araToplam ?? s.product.sellingPrice ?? null,
+        kargo: s.product.shipping || s.product.pricing?.kargo || null,
+        url: s.product.url || null,
+        afiliyeUrl: s.product.afiliyeUrl || s.product.url || null,
+        renkAyni: s.renkAyni !== false,
+      }))
+      .filter(t => t.urunFiyati != null && t.urunFiyati > 0);
+    if (teklifler.length) {
+      try {
+        const depo = JSON.parse(localStorage.getItem('eun_sepet_onbellek_v1') || '{}') || {};
+        depo[url.toLowerCase()] = { ts: Date.now(), teklifler };
+        localStorage.setItem('eun_sepet_onbellek_v1', JSON.stringify(depo));
+      } catch { }
+    }
+  }
+
+  // Ana sayfadaki #sepetUrls alanını da güncelle
+  const ta = $('#sepetUrls');
+  if (ta) {
+    const satirlar = ta.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    if (!satirlar.some(s => s.toLowerCase() === url.toLowerCase()) && satirlar.length < 10) {
+      ta.value = [...satirlar, url].join('\n');
+      sepetSayacGuncelle();
+    }
+  }
+
+  btn.classList.add('eklendi');
+  btn.textContent = `✅ Sepette (${mevcut.length}) · Sepete Git →`;
+});

@@ -114,11 +114,11 @@ function sepetCiz() {
       <div class="sepet-satir-sol">
         <span class="sepet-satir-sira">${i + 1}</span>
         <div class="sepet-satir-metin">
-          ${x.url
+          ${x.tur !== 'ad' && /^https?:\/\//i.test(x.url || '')
             ? `<a class="sepet-satir-ad" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.ad)}</a>`
             : `<span class="sepet-satir-ad">${esc(x.ad)}</span>`}
           <span class="sepet-satir-alt">
-            ${x.site ? `🏪 ${esc(x.site)}` : '🔗 Link'}
+            ${x.tur === 'ad' ? '🔎 İsimle arama' : (x.site ? `🏪 ${esc(x.site)}` : '🔗 Link')}
             ${x.fiyat ? ` · ${para(x.fiyat)}` : ''}
             ${x.kaynak === 'paket' ? ' · 🎨 paketten' : ''}
           </span>
@@ -146,9 +146,12 @@ function kaplama(el, html) {
 }
 
 function sepeteEkle(urun) {
-  if (!urun?.url) return false;
-  if (!/^https?:\/\//i.test(urun.url)) return false;
-  const ayni = durum.sepet.find(x => x.url.toLowerCase() === urun.url.toLowerCase());
+  const isAdMod = urun?.tur === 'ad';
+  const anaDeger = String(urun?.url || urun?.ad || '').trim();
+  if (!anaDeger) return false;
+  if (!isAdMod && !/^https?:\/\//i.test(anaDeger)) return false;
+  if (isAdMod && anaDeger.length < 2) return false;
+  const ayni = durum.sepet.find(x => String(x.url || x.ad || '').toLowerCase() === anaDeger.toLowerCase());
   const toplam = durum.sepet.reduce((s, x) => s + Math.max(1, Number(x.adet) || 1), 0);
 
   if (ayni) {
@@ -158,8 +161,9 @@ function sepeteEkle(urun) {
     if (toplam >= MAKS_URUN) { toast(`Sepet en fazla ${MAKS_URUN} ürün alabilir.`, 'hata'); return false; }
     durum.sepet.push({
       id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      ad: String(urun.ad || urun.url).slice(0, 200),
-      url: urun.url,
+      ad: String(urun.ad || anaDeger).slice(0, 200),
+      url: anaDeger,
+      tur: isAdMod ? 'ad' : 'url',
       adet: Math.max(1, Number(urun.adet) || 1),
       site: urun.site || null,
       fiyat: Number.isFinite(Number(urun.fiyat)) ? Number(urun.fiyat) : null,
@@ -301,7 +305,7 @@ function onerileriCiz(liste, q) {
   }
   kaplama(kap, liste.map((o, i) => `
     <button type="button" class="sepet-oneri" role="option" data-url="${esc(o.url)}"
-      data-ad="${esc(o.metin || o.url)}" data-idx="${i}">
+      data-ad="${esc(o.metin || o.url)}" data-tur="${esc(o.tur || 'url')}" data-idx="${i}">
       <span class="sepet-oneri-metin">${esc(o.metin || o.url)}</span>
       <span class="sepet-oneri-etiket">${esc(o.etiket || 'Sonuç')}</span>
     </button>
@@ -325,13 +329,20 @@ async function aramaYap() {
     return;
   }
   const liste = await oneriGetir(q);
-  if (!liste.length) {
-    durumYaz('Bu arama için linkli ürün bulunamadı. Ürün adını daha belirgin yazın ya da link yapıştırın.', 'uyari');
+  const s = q.trim();
+  const isimSecenegi = s.length >= 3
+    ? [{ url: s, metin: s, tur: 'ad', etiket: 'İsimle ara ve sepete ekle' }]
+    : [];
+  const birlesik = [...liste, ...isimSecenegi];
+  if (!birlesik.length) {
+    durumYaz('En az 3 harfli ürün adı yazın ya da ürün linki yapıştırın.', 'uyari');
     onerileriCiz([], q);
     return;
   }
-  onerileriCiz(liste, q);
-  durumYaz(`${liste.length} ürün bulundu — seçmek için dokunun.`);
+  onerileriCiz(birlesik, q);
+  durumYaz(liste.length
+    ? `${liste.length} linkli ürün bulundu — seçebilir veya doğrudan isimle ekleyebilirsiniz.`
+    : 'Öneride doğrudan eşleşme çıkmadı — "İsimle ara ve sepete ekle" ile ekleyebilirsiniz.');
 }
 
 /* ------------------------------------------------------------------ */
@@ -436,6 +447,18 @@ async function hesapla() {
 
   try {
     const govde = sepetIstekGovdesi(durum.sepet);
+    let hazirTeklifler = {};
+    try {
+      hazirTeklifler = JSON.parse(localStorage.getItem('eun_sepet_onbellek_v1') || '{}') || {};
+    } catch { hazirTeklifler = {}; }
+    const simdi = Date.now();
+    govde.urunler = (govde.urunler || []).map(u => {
+      const kayit = hazirTeklifler[String(u.url || '').toLowerCase()];
+      if (kayit && (simdi - (kayit.ts || 0) < 15 * 60 * 1000) && Array.isArray(kayit.teklifler) && kayit.teklifler.length) {
+        return { ...u, teklifler: kayit.teklifler };
+      }
+      return u;
+    });
     const r = await fetch('/api/sepet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -498,7 +521,9 @@ function kargoPaketKutusu(g, sira, toplamPaket) {
 
   const kargoEtiket = durum.bedava
     ? '<span class="kargo-paket-etiket bedava">✅ Kargo Bedava</span>'
-    : `<span class="kargo-paket-etiket ucretli">🚚 +${para(durum.kargo)} Kargo</span>`;
+    : (durum.belirsiz
+      ? '<span class="kargo-paket-etiket belirsiz">⚠️ +Kargo sepette</span>'
+      : `<span class="kargo-paket-etiket ucretli">🚚 +${para(durum.kargo)} Kargo</span>`);
 
   let ipucu = '';
   if (durum.esikIpucu != null) {
@@ -509,9 +534,14 @@ function kargoPaketKutusu(g, sira, toplamPaket) {
       + `(<b>${para(durum.esikFarki)}</b> uzakta)</div>`;
   }
 
+  const kuponSatir = Number(g.kuponIndirim) > 0
+    ? `<div class="kargo-paket-kupon">🎟️ Kupon: −${para(g.kuponIndirim)}${g.uygulananKupon?.kodu ? ` (${esc(g.uygulananKupon.kodu)})` : ''}</div>`
+    : '';
+
   const satirlar = urunler.map(u => {
-    const ad = String(u.ad || '').slice(0, 70);
-    const link = u.url
+    const adHam = String(u.ad || '').slice(0, 70);
+    const ad = (Number(u.adet) > 1 ? `${Number(u.adet)}× ` : '') + adHam;
+    const link = u.url && /^https?:\/\//i.test(u.url)
       ? `<a href="${esc(u.afiliyeUrl || u.url)}" target="_blank" rel="noopener sponsored" `
         + `data-afiliye-site="${esc(u.site || g.site || '')}" title="${esc(ad)}">${esc(ad)}</a>`
       : `<span title="${esc(ad)}">${esc(ad)}</span>`;
@@ -526,12 +556,13 @@ function kargoPaketKutusu(g, sira, toplamPaket) {
       </div>
       <span class="kargo-paket-tutar">${para(g.toplam)}</span>
     </div>
-    <div class="kargo-paket-sayi">🏷️ ${urunler.length} ürün</div>
+    <div class="kargo-paket-sayi">🏷️ ${urunler.reduce((s, u) => s + Math.max(1, Number(u.adet) || 1), 0)} ürün</div>
     <ul class="kargo-paket-urunler">${satirlar}</ul>
     <div class="kargo-paket-alt-satir">
       <span class="kargo-paket-ara">Ürünler ${para(g.araToplam)}</span>
       ${kargoEtiket}
     </div>
+    ${kuponSatir}
     ${ipucu}
   </div>`;
 }
@@ -663,11 +694,12 @@ function senaryolariCiz(sonuc) {
 
       <dl class="senaryo-toplama">
         <div><dt>Ürünler</dt><dd>${para(s.araToplam)}</dd></div>
-        <div class="${Number(s.kargo) > 0 ? 'kargo-ucretli' : 'kargo-bedava'}">
+        ${Number(s.kuponIndirim) > 0 ? `<div><dt>Kupon</dt><dd>−${para(s.kuponIndirim)}</dd></div>` : ''}
+        <div class="${Number(s.kargo) > 0 || s.kargoBelirsiz ? 'kargo-ucretli' : 'kargo-bedava'}">
           <dt>Kargo</dt>
           <dd>${Number(s.kargo) > 0
             ? para(s.kargo) + ((s.gruplar || []).length > 1 ? ` (${(s.gruplar || []).length} gönderim)` : '')
-            : 'Bedava (eşik aşıldı)'}</dd>
+            : (s.kargoBelirsiz ? '⚠️ Sepette belli' : 'Bedava (eşik aşıldı)')}</dd>
         </div>
         <div class="senaryo-toplam-satir"><dt>TOPLAM</dt><dd>${para(s.toplam)}</dd></div>
       </dl>
@@ -921,6 +953,7 @@ function olaylariBagla() {
     const ok = sepeteEkle({
       ad: btn.dataset.ad,
       url: btn.dataset.url,
+      tur: btn.dataset.tur === 'ad' ? 'ad' : 'url',
       kaynak: 'arama',
     });
     if (ok) {

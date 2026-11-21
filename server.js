@@ -1550,14 +1550,16 @@ app.post('/api/compare/:id/iptal', (req, res) => {
  */
 app.post('/api/sepet', (req, res) => {
   const urunler = Array.isArray(req.body?.urunler) ? req.body.urunler : [];
-  if (urunler.length < 2) return res.status(400).json({ hata: 'Sepet için en az 2 ürün gerekli' });
-  if (urunler.length > 10) return res.status(400).json({ hata: 'Sepet en fazla 10 ürün alabilir' });
+  const toplamAdet = urunler.reduce((s, u) => s + Math.max(1, Math.min(9, Math.round(Number(u?.adet) || 1))), 0);
+  if (toplamAdet < 2 && urunler.length < 2) return res.status(400).json({ hata: 'Sepet için en az 2 ürün gerekli' });
+  if (toplamAdet > 10 || urunler.length > 10) return res.status(400).json({ hata: 'Sepet en fazla 10 ürün alabilir' });
 
   const problems = secretProblems();
   if (problems.length) return res.status(500).json({ hata: problems.join(' ') });
 
   const job = yeniJob('sepet', {
     urunSayisi: urunler.length,
+    toplamAdet,
     progress: {},
     hizliMod: req.body?.hizliMod !== false,
     iptalKontrolu: new AbortController(),

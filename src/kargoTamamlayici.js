@@ -21,6 +21,17 @@ import { afiliyeLink } from './afiliye.js';
 /** Tamamlayıcı olarak aranacak ürün türleri (pazaryerlerinde neredeyse hep var). */
 export const VARSAYILAN_ANAHTARLAR = ['pil', 'kalem', 'ıslak mendil', 'etiket'];
 
+/** 3D baskı mağazaları için gerçekçi sarf malzeme anahtarları. */
+export const UC_BOYUTLU_ANAHTARLAR = ['nozzle', 'silikon çorap', 'ptfe', 'termistör', 'baskı yapıştırıcı', 'spatula'];
+
+export const UC_BOYUTLU_SITELER = new Set([
+  '3dcim', '3dmarketim', '3dprinterankara', '3dultra', 'deneystore',
+  'filamentdepom', 'filamentmarketim', 'filamentsan', 'filamentvakti',
+  'fixx3d', 'makerfabrika', 'porima3d', 'print3d', 'pusula3d',
+  'robitshop', 'robomer', 'robolinkmarket', 'robotistan', 'samm',
+  'teknikfilament3d', 'tou3d', 'ventatek',
+]);
+
 const ONBELLEK_OMRU_MS = 30 * 60 * 1000;
 const aramaOnbellegi = new Map(); // `${site}:${keyword}` -> { ts, urunler }
 
@@ -91,7 +102,9 @@ export async function tamamlayiciBul(siteId, opts = {}) {
   const limit = Math.max(1, Math.min(opts.limit || 4, 8));
   const anahtarlar = Array.isArray(opts.anahtarlar) && opts.anahtarlar.length
     ? opts.anahtarlar
-    : VARSAYILAN_ANAHTARLAR;
+    : (UC_BOYUTLU_SITELER.has(siteId) || opts.kategori === '3d'
+      ? UC_BOYUTLU_ANAHTARLAR
+      : VARSAYILAN_ANAHTARLAR);
   const ctx = opts.ctx || { spend: 0 };
 
   const kurusa = (x) => Math.round(Number(x) * 100);

@@ -18,9 +18,10 @@
  *
  * Para: tüm ara hesaplar KURUŞ tam sayı (proje standardı — float hatası olmaz).
  */
-import { runComparison } from './pipeline.js';
-import { adapterById } from './sites/index.js';
+import { runComparison, runComparisonByQuery } from './pipeline.js';
+import { adapterById, detectSite } from './sites/index.js';
 import { formatTL } from './util.js';
+import { grupKuponlari } from './kuponSepeti.js';
 
 /* ----------------------------- para yardımcıları ----------------------------- */
 
@@ -66,6 +67,8 @@ export const SEPET_SITELERI = [
   // 2026-11-03: porima3d.com (üreticinin kendi Shopify mağazası; 36 varyantlı
   // filamentler). Ücretsiz kargo eşiği 1.500 TL (siteden doğrulandı).
   'porima3d',
+  // 2026-11-21: filamentdepom.com (Ticimax; 120 TL / 2.000 TL ücretsiz kargo tarifesi tanımlı).
+  'filamentdepom',
 ];
 
 /** Sepette tek siteye ayrılan en fazla süre — yavaş site tüm sepeti kilitlemesin. */
@@ -92,21 +95,51 @@ export function kargoKurus(araToplamKurus, kural) {
   return gecti ? 0 : ucret;
 }
 
+/**
+ * Kargo hesabı + belirsizlik bayrağı.
+ * Kural var ama fee=null ve eşik aşılmamışsa kargo "ücretsiz" değil "belirsiz"dir.
+ */
+function kargoDurumu(araToplamKurus, kural) {
+  if (!kural) return { ucret: 0, belirsiz: false };
+  if (kural.applies === false) return { ucret: 0, belirsiz: false };
+  const esik = kural.freeOver != null ? kurusa(kural.freeOver) : null;
+  if (esik != null) {
+    const gecti = kural.freeOverExclusive === true
+      ? araToplamKurus > esik
+      : araToplamKurus >= esik;
+    if (gecti) return { ucret: 0, belirsiz: false };
+  }
+  if (kural.fee == null) return { ucret: 0, belirsiz: true };
+  return { ucret: kurusa(kural.fee), belirsiz: false };
+}
+
+/** Renk uyumlu teklifleri önceliklendirir (yalnız farklı renk varsa yine düşmez). */
+function uygunTeklifler(urun) {
+  const tum = (urun?.teklifler || []).filter(t => t && t.urunFiyati != null);
+  const ayniRenk = tum.filter(t => t.renkAyni !== false);
+  return ayniRenk.length ? ayniRenk : tum;
+}
+
 /* ------------------------------- gruplama ----------------------------------- */
 
 /**
  * Ürün→mağaza atamasını mağaza gruplarına çevirir.
- * @param {Array} sepet [{id, ad, teklifler:[{site, siteName, urunFiyati, kargo, url, renkAyni}]}]
+ * @param {Array} sepet [{id, ad, adet?, teklifler:[{site, siteName, urunFiyati, kargo, url, renkAyni}]}]
  * @param {Object} atama { [urunId]: siteId }
+ * @param {{kuponUygula?:boolean, kampanyalarBySite?:Record<string,Array>}} [opts]
  * @returns {{gruplar:Array, magazaSayisi:number, araToplam:number, kargo:number, toplam:number}|null}
  */
-export function gruplariOlustur(sepet, atama) {
+export function gruplariOlustur(sepet, atama, opts = {}) {
   const harita = new Map();
   for (const urun of sepet) {
     const site = atama[urun.id];
     if (!site) return null;
-    const teklif = urun.teklifler.find(t => t.site === site);
+    const uygun = uygunTeklifler(urun);
+    const teklif = uygun.find(t => t.site === site) || urun.teklifler.find(t => t.site === site);
     if (!teklif || teklif.urunFiyati == null) return null;
+    const adet = Math.max(1, Math.min(99, Math.round(Number(urun.adet) || 1)));
+    const birimKurus = kurusa(teklif.urunFiyati);
+    const satirKurus = birimKurus * adet;
     if (!harita.has(site)) {
       harita.set(site, {
         site,
@@ -118,7 +151,9 @@ export function gruplariOlustur(sepet, atama) {
     harita.get(site).urunler.push({
       id: urun.id,
       ad: urun.ad,
-      fiyat: tlYap(kurusa(teklif.urunFiyati)),
+      adet,
+      birimFiyat: tlYap(birimKurus),
+      fiyat: tlYap(satirKurus),
       url: teklif.url || null,
       // Satış ortaklığı: yalnızca bağlantıda kullanılır, fiyatı etkilemez.
       afiliyeUrl: teklif.afiliyeUrl || teklif.url || null,
@@ -129,19 +164,46 @@ export function gruplariOlustur(sepet, atama) {
 
   let toplamAra = 0;
   let toplamKargo = 0;
+  let toplamKupon = 0;
+  let kargoBelirsizSayisi = 0;
+  const kuponEtkin = opts.kuponUygula === true || !!opts.kampanyalarBySite;
   const gruplar = [];
   for (const g of harita.values()) {
     const ara = g.urunler.reduce((s, u) => s + kurusa(u.fiyat), 0);
-    const kargo = kargoKurus(ara, g.kargoKurali);
+    const { ucret: kargo, belirsiz: kargoBelirsiz } = kargoDurumu(ara, g.kargoKurali);
+    let kuponIndirim = 0;
+    let uygulananKupon = null;
+    if (kuponEtkin) {
+      try {
+        const enj = opts.kampanyalarBySite?.[g.site];
+        const kg = grupKuponlari(
+          { site: g.site, siteName: g.siteName, araToplam: tlYap(ara), urunler: g.urunler },
+          enj ? { kampanyalar: enj } : {},
+        );
+        if (kg?.enIyi?.indirim > 0) {
+          kuponIndirim = Math.min(ara, kurusa(kg.enIyi.indirim));
+          uygulananKupon = {
+            metin: kg.enIyi.metin,
+            kodu: kg.enIyi.kodu || null,
+            indirim: tlYap(kuponIndirim),
+          };
+        }
+      } catch { /* kupon analizi başarısızsa indirimsiz devam */ }
+    }
     toplamAra += ara;
     toplamKargo += kargo;
+    toplamKupon += kuponIndirim;
+    if (kargoBelirsiz) kargoBelirsizSayisi++;
     gruplar.push({
       site: g.site,
       siteName: g.siteName,
       urunler: g.urunler,
       araToplam: tlYap(ara),
+      kuponIndirim: tlYap(kuponIndirim),
+      uygulananKupon,
       kargo: tlYap(kargo),
-      toplam: tlYap(ara + kargo),
+      kargoBelirsiz,
+      toplam: tlYap(ara - kuponIndirim + kargo),
       kargoKurali: g.kargoKurali,
       kargoBilgisi: g.kargoKurali?.note || null,
     });
@@ -153,27 +215,87 @@ export function gruplariOlustur(sepet, atama) {
     gruplar,
     magazaSayisi: gruplar.length,
     araToplam: tlYap(toplamAra),
+    kuponIndirim: tlYap(toplamKupon),
     kargo: tlYap(toplamKargo),
-    toplam: tlYap(toplamAra + toplamKargo),
+    kargoBelirsiz: kargoBelirsizSayisi > 0,
+    kargoBelirsizSayisi,
+    toplam: tlYap(toplamAra - toplamKupon + toplamKargo),
   };
 }
 
 /* ------------------------- küme → en iyi atama ------------------------------ */
 
-/** Bir mağaza kümesi için her ürünü o kümedeki en ucuz mağazaya atar. */
-function kumeAtamasi(sepet, siteKumesi) {
+function dahaIyiSonuc(yeni, mevcut) {
+  if (!yeni) return false;
+  if (!mevcut) return true;
+  const yf = kurusa(yeni.toplam);
+  const mf = kurusa(mevcut.toplam);
+  if (yf !== mf) return yf < mf;
+  const yb = yeni.kargoBelirsizSayisi || 0;
+  const mb = mevcut.kargoBelirsizSayisi || 0;
+  if (yb !== mb) return yb < mb;
+  return yeni.magazaSayisi < mevcut.magazaSayisi;
+}
+
+/**
+ * Bir mağaza kümesi için önce en ucuz birim fiyatla atar, ardından kargo/kupon
+ * eşiğini aşmanın net toplamı düşürdüğü ürün kaydırmalarını uygular.
+ */
+function kumeAtamasiOptimize(sepet, siteKumesi, opts = {}) {
   const kume = new Set(siteKumesi);
   const atama = {};
+  const adaylarHarita = new Map();
   for (const urun of sepet) {
-    let enIyi = null;
-    for (const t of urun.teklifler) {
-      if (!kume.has(t.site) || t.urunFiyati == null) continue;
-      if (!enIyi || kurusa(t.urunFiyati) < kurusa(enIyi.urunFiyati)) enIyi = t;
-    }
-    if (!enIyi) return null; // bu küme tüm ürünleri karşılamıyor
-    atama[urun.id] = enIyi.site;
+    const uygun = uygunTeklifler(urun).filter(t => kume.has(t.site));
+    if (!uygun.length) return null; // bu küme tüm ürünleri karşılamıyor
+    uygun.sort((a, b) => kurusa(a.urunFiyati) - kurusa(b.urunFiyati));
+    adaylarHarita.set(urun.id, uygun);
+    atama[urun.id] = uygun[0].site;
   }
-  return atama;
+
+  let enIyiAtama = { ...atama };
+  let enIyiSonuc = gruplariOlustur(sepet, enIyiAtama, opts);
+  if (!enIyiSonuc || siteKumesi.length < 2) return enIyiSonuc;
+
+  // 1) Tek ürün kaydırma + iki ürün eşzamanlı eşik itme (en fazla 6 tur)
+  for (let tur = 0; tur < 6; tur++) {
+    let gelisti = false;
+    for (const urun of sepet) {
+      const adaylar = adaylarHarita.get(urun.id) || [];
+      for (const aday of adaylar) {
+        if (aday.site === enIyiAtama[urun.id]) continue;
+        const deneme = { ...enIyiAtama, [urun.id]: aday.site };
+        const sonuc = gruplariOlustur(sepet, deneme, opts);
+        if (dahaIyiSonuc(sonuc, enIyiSonuc)) {
+          enIyiAtama = deneme;
+          enIyiSonuc = sonuc;
+          gelisti = true;
+        }
+      }
+    }
+    // Eşik itme: kargo ödeyen bir gruba başka siteden 2 ürünü birlikte kaydırmayı dene
+    if (!gelisti && sepet.length >= 2) {
+      const ucretliSiteler = enIyiSonuc.gruplar.filter(g => kurusa(g.kargo) > 0).map(g => g.site);
+      for (const hedefSite of ucretliSiteler) {
+        const tasinabilir = sepet.filter(u =>
+          enIyiAtama[u.id] !== hedefSite && (adaylarHarita.get(u.id) || []).some(t => t.site === hedefSite));
+        for (let a = 0; a < tasinabilir.length; a++) {
+          for (let b = a + 1; b < tasinabilir.length; b++) {
+            const deneme = { ...enIyiAtama, [tasinabilir[a].id]: hedefSite, [tasinabilir[b].id]: hedefSite };
+            const sonuc = gruplariOlustur(sepet, deneme, opts);
+            if (dahaIyiSonuc(sonuc, enIyiSonuc)) {
+              enIyiAtama = deneme;
+              enIyiSonuc = sonuc;
+              gelisti = true;
+            }
+          }
+        }
+      }
+    }
+    if (!gelisti) break;
+  }
+
+  return enIyiSonuc;
 }
 
 /** 0/1 kombinasyon üretici (küçük n için). */
@@ -212,11 +334,15 @@ export function senaryolariHesapla(sepet, opts = {}) {
     }
   }
 
+  const grupOpts = {
+    kuponUygula: opts.kuponUygula === true,
+    kampanyalarBySite: opts.kampanyalarBySite || null,
+  };
+
   // Aday mağazalar: her ürünü kaç mağaza kapsıyor + fiyat sıralaması
   const siteBilgi = new Map();
   for (const urun of sepet) {
-    const sirali = [...urun.teklifler]
-      .filter(t => t.urunFiyati != null)
+    const sirali = [...uygunTeklifler(urun)]
       .sort((a, b) => kurusa(a.urunFiyati) - kurusa(b.urunFiyati));
     sirali.forEach((t, idx) => {
       const kayit = siteBilgi.get(t.site) || { site: t.site, siteName: t.siteName, kapsama: 0, siralar: [] };
@@ -236,13 +362,9 @@ export function senaryolariHesapla(sepet, opts = {}) {
     let enIyi = null;
     for (let k = minBoy; k <= Math.min(maxBoy, adaySiteler.length); k++) {
       for (const kume of kombinasyonlar(adaySiteler, k)) {
-        const atama = kumeAtamasi(sepet, kume);
-        if (!atama) continue;
-        const sonuc = gruplariOlustur(sepet, atama);
+        const sonuc = kumeAtamasiOptimize(sepet, kume, grupOpts);
         if (!sonuc) continue;
-        // Daha ucuz, eşitse daha az mağaza tercih edilir
-        if (!enIyi || sonuc.toplam < enIyi.toplam ||
-            (sonuc.toplam === enIyi.toplam && sonuc.magazaSayisi < enIyi.magazaSayisi)) {
+        if (dahaIyiSonuc(sonuc, enIyi)) {
           enIyi = sonuc;
         }
       }
@@ -253,8 +375,10 @@ export function senaryolariHesapla(sepet, opts = {}) {
   // 1) Tek mağaza: tüm ürünleri bulunduran mağazalar
   const tekMagaza = enIyiKume(1, 1);
 
-  // 2) Akıllı bölünmüş: 2-3 mağaza
-  const akilliBolunmus = enIyiKume(2, Math.min(3, enFazlaKume));
+  // 2) Akıllı bölünmüş: 2-3 mağaza (tek ürünün çoklu adedinde 1 mağaza yeterli olur)
+  const akilliBolunmus = sepet.length >= 2
+    ? enIyiKume(2, Math.min(3, enFazlaKume))
+    : null;
 
   // 3) Maksimum tasarruf: her ürün kendi en ucuzundan (sınırsız mağaza)
   let maksimumTasarruf = null;
@@ -262,13 +386,12 @@ export function senaryolariHesapla(sepet, opts = {}) {
     const atama = {};
     for (const urun of sepet) {
       let enIyi = null;
-      for (const t of urun.teklifler) {
-        if (t.urunFiyati == null) continue;
+      for (const t of uygunTeklifler(urun)) {
         if (!enIyi || kurusa(t.urunFiyati) < kurusa(enIyi.urunFiyati)) enIyi = t;
       }
       if (enIyi) atama[urun.id] = enIyi.site;
     }
-    if (Object.keys(atama).length === sepet.length) maksimumTasarruf = gruplariOlustur(sepet, atama);
+    if (Object.keys(atama).length === sepet.length) maksimumTasarruf = gruplariOlustur(sepet, atama, grupOpts);
   }
 
   const senaryolar = {
@@ -294,8 +417,11 @@ export function senaryolariHesapla(sepet, opts = {}) {
   // En iyi senaryo (toplam en düşük)
   const adaylar = Object.values(senaryolar).filter(Boolean);
   const enIyi = adaylar.length
-    ? adaylar.reduce((a, b) => (b.toplam < a.toplam ? b : a))
+    ? adaylar.reduce((a, b) => (dahaIyiSonuc(b, a) ? b : a))
     : null;
+  if (enIyi?.kargoBelirsiz) {
+    uyarilar.push('Bazı mağazalarda eşik altı kargo ücreti yalnızca sepette belli oluyor; ödeme adımında ekstra kargo çıkabilir.');
+  }
 
   // Kazanç: tek mağazaya göre
   const kazanc = enIyi && tekMagaza ? tlYap(kurusa(tekMagaza.toplam) - kurusa(enIyi.toplam)) : null;
@@ -381,32 +507,54 @@ export async function sepetOptimize(urunler, opts = {}) {
   const siteZamanAsimi = Math.max(5000, Number(opts.siteTimeoutMs) || SITE_ZAMAN_ASIMI_MS);
   const basladi = Date.now();
 
-  if (!Array.isArray(urunler) || urunler.length < 2) {
+  if (!Array.isArray(urunler) || !urunler.length) {
     throw new Error('Sepet için en az 2 ürün gerekli.');
   }
-  if (urunler.length > 10) {
-    throw new Error('Sepet en fazla 10 ürün alabilir.');
-  }
 
-  const normal = urunler.map((u, i) => ({
-    id: 'u' + (i + 1),
-    url: String(u.url || '').trim(),
-    ad: u.ad || null,
-  }));
-  const gecersiz = normal.find(u => !u.url);
-  if (gecersiz) throw new Error('Tüm ürünler için ürün linki gerekli.');
+  // Aynı linki/sorguyu tekilleştir + adet birleştir (örn. 3× ürün yalnız 1 kez taranır)
+  const birlesik = new Map();
+  let toplamAdet = 0;
+  for (const u of urunler) {
+    const hedef = String(u?.url || u?.ad || '').trim();
+    const adet = Math.max(1, Math.min(9, Math.round(Number(u?.adet) || 1)));
+    toplamAdet += adet;
+    if (!hedef || hedef.length < 2) {
+      throw new Error('Tüm ürünler için ürün linki veya ürün adı gerekli.');
+    }
+    const anahtar = hedef.toLowerCase();
+    const mevcut = birlesik.get(anahtar);
+    if (mevcut) {
+      mevcut.adet = Math.min(10, mevcut.adet + adet);
+      if (!mevcut.teklifler && Array.isArray(u?.teklifler) && u.teklifler.length) {
+        mevcut.teklifler = u.teklifler;
+      }
+    } else {
+      birlesik.set(anahtar, {
+        id: 'u' + (birlesik.size + 1),
+        url: hedef,
+        ad: u?.ad ? String(u.ad).trim() : null,
+        adet,
+        teklifler: Array.isArray(u?.teklifler) && u.teklifler.length ? u.teklifler : null,
+      });
+    }
+  }
+  if (toplamAdet < 2) throw new Error('Sepet için en az 2 ürün gerekli.');
+  if (toplamAdet > 10) throw new Error('Sepet en fazla 10 ürün alabilir.');
+
+  const normal = [...birlesik.values()];
+  const karsilastirUrun = (hedef, kOpts) => {
+    const isUrl = /^https?:\/\//i.test(hedef) && detectSite(hedef);
+    return isUrl ? runComparison(hedef, kOpts) : runComparisonByQuery(hedef, kOpts);
+  };
 
   onProgress({ faz: 'basladi', toplam: normal.length, not: 'Ürünler sitelerde aranıyor…' });
 
   const sonuclar = new Array(normal.length).fill(null);
   let biten = 0;
 
-  // Her ürün için kalıcı durum dizisi. ÖNEMLİ (2026-10-28): önceden ilerlemede yalnızca
-  // "şu an işlenen ürün" (index) gönderiliyordu; eşzamanlılık 2 olduğu için arayüz
-  // ilk ürünü hiç görmüyor, satır listesinde boşluk oluşuyordu. Artık tam dizi gider.
   const urunDurumlari = normal.map((u, i) => ({
     index: i,
-    ad: u.ad || u.url,
+    ad: (u.adet > 1 ? `${u.adet}× ` : '') + (u.ad || u.url),
     durum: 'bekliyor',
     siteSayisi: null,
     enUcuz: null,
@@ -438,12 +586,13 @@ export async function sepetOptimize(urunler, opts = {}) {
         const i = onImlec++;
         if (i >= normal.length) return;
         const u = normal[i];
-        const site = (await import('./sites/index.js')).detectSite(u.url);
-        if (!site) return;
+        if (u.teklifler || !/^https?:\/\//i.test(u.url)) continue;
+        const site = detectSite(u.url);
+        if (!site) continue;
         try {
           const p = await site.getProduct(u.url, { spend: 0 });
           if (p?.title) {
-            urunDurumlari[i].ad = p.title;
+            urunDurumlari[i].ad = (u.adet > 1 ? `${u.adet}× ` : '') + p.title;
             urunDurumlari[i].not = `${p.title.slice(0, 60)} okundu`;
             durumYayinla({ index: i, urun: p.title, site: null, not: 'Kaynak ürün okundu' });
           }
@@ -467,11 +616,32 @@ export async function sepetOptimize(urunler, opts = {}) {
       urunDurumlari[i].not = `Ürün ${i + 1}/${normal.length} taranıyor…`;
       durumYayinla({ index: i, urun: u.ad || u.url, site: null, not: `Ürün ${i + 1}/${normal.length} taranıyor…` });
 
+      if (u.teklifler) {
+        sonuclar[i] = {
+          id: u.id,
+          ad: u.ad || u.url,
+          adet: u.adet,
+          url: u.url,
+          kaynakSite: null,
+          teklifler: u.teklifler,
+          onbellekten: true,
+        };
+        biten++;
+        const enUcuzH = u.teklifler.reduce((a, b) => (a.urunFiyati <= b.urunFiyati ? a : b));
+        urunDurumlari[i].ad = (u.adet > 1 ? `${u.adet}× ` : '') + sonuclar[i].ad;
+        urunDurumlari[i].durum = 'ok';
+        urunDurumlari[i].siteSayisi = u.teklifler.length;
+        urunDurumlari[i].enUcuz = { site: enUcuzH.siteName, fiyat: enUcuzH.urunFiyati };
+        urunDurumlari[i].not = `${u.teklifler.length} siteden hazır aktarıldı`;
+        durumYayinla({ index: i, urun: sonuclar[i].ad, site: null, not: urunDurumlari[i].not });
+        continue;
+      }
+
       let sonuc = onbellektenAl(u.url);
       const onbellekten = !!sonuc;
       if (!sonuc) {
         try {
-          sonuc = await runComparison(u.url, {
+          sonuc = await karsilastirUrun(u.url, {
             maxCandidates: 1,
             maxQueries: 2, // sepet: 2 sorgu yeter (süreyi ~yarıya indirir)
             // Semantik YZ eşleştirmesi KAPALI: çağrı başına 120 sn'ye kadar sürebiliyor
@@ -506,6 +676,7 @@ export async function sepetOptimize(urunler, opts = {}) {
       sonuclar[i] = {
         id: u.id,
         ad: u.ad || sonuc?.kaynak?.urun || u.url,
+        adet: u.adet,
         url: u.url,
         kaynakSite: sonuc?.kaynak?.siteName || null,
         teklifler,
@@ -515,7 +686,7 @@ export async function sepetOptimize(urunler, opts = {}) {
       const enUcuz = teklifler.length
         ? teklifler.reduce((a, b) => (a.urunFiyati <= b.urunFiyati ? a : b))
         : null;
-      urunDurumlari[i].ad = sonuclar[i].ad;
+      urunDurumlari[i].ad = (u.adet > 1 ? `${u.adet}× ` : '') + sonuclar[i].ad;
       urunDurumlari[i].durum = teklifler.length ? 'ok' : 'bulunamadi';
       urunDurumlari[i].siteSayisi = teklifler.length;
       urunDurumlari[i].enUcuz = enUcuz ? { site: enUcuz.siteName, fiyat: enUcuz.urunFiyati } : null;
@@ -555,7 +726,7 @@ export async function sepetOptimize(urunler, opts = {}) {
         urunDurumlari[i].not = 'Yeniden deneniyor…';
         durumYayinla({ index: i, urun: u.ad || u.url, site: null, not: 'Yeniden deneniyor…' });
         try {
-          const sonuc = await runComparison(u.url, {
+          const sonuc = await karsilastirUrun(u.url, {
             maxCandidates: 1,
             maxQueries: 2,
             siniflandir: false,
@@ -570,13 +741,14 @@ export async function sepetOptimize(urunler, opts = {}) {
           sonuclar[i] = {
             id: u.id,
             ad: u.ad || sonuc?.kaynak?.urun || u.url,
+            adet: u.adet,
             url: u.url,
             kaynakSite: sonuc?.kaynak?.siteName || null,
             teklifler,
             onbellekten: false,
           };
           const enUcuz = teklifler.reduce((a, b) => (a.urunFiyati <= b.urunFiyati ? a : b));
-          urunDurumlari[i].ad = sonuclar[i].ad;
+          urunDurumlari[i].ad = (u.adet > 1 ? `${u.adet}× ` : '') + sonuclar[i].ad;
           urunDurumlari[i].durum = 'ok';
           urunDurumlari[i].siteSayisi = teklifler.length;
           urunDurumlari[i].enUcuz = { site: enUcuz.siteName, fiyat: enUcuz.urunFiyati };
@@ -604,12 +776,13 @@ export async function sepetOptimize(urunler, opts = {}) {
   // Bulunamayan ürünler: tüm sepeti düşürmek yerine o ürünü çıkarıp devam et,
   // kullanıcıya hangi ürünün bulunamadığını açıkça söyle (en az 2 ürün kalmalı).
   const basarili = sonuclar.filter(s => s && !s.hata && Array.isArray(s.teklifler) && s.teklifler.length);
+  const basariliAdet = basarili.reduce((s, x) => s + Math.max(1, Number(x.adet) || 1), 0);
   const bulunamayanlar = sonuclar
     .map((s, i) => ({ s, i }))
     .filter(({ s }) => !s || s.hata || !Array.isArray(s.teklifler) || !s.teklifler.length)
     .map(({ s, i }) => s?.ad || normal[i]?.ad || normal[i]?.url);
 
-  if (basarili.length < 2) {
+  if (basariliAdet < 2) {
     throw new Error(
       bulunamayanlar.length
         ? `Sepetteki ürünlerin çoğu hiçbir sitede bulunamadı: ${bulunamayanlar.join(', ')}. En az 2 ürün bulunmalı.`
@@ -618,7 +791,10 @@ export async function sepetOptimize(urunler, opts = {}) {
   }
 
   onProgress({ faz: 'optimizasyon', toplam: normal.length, biten, urunler: urunDurumlari, not: 'Senaryolar hesaplanıyor…' });
-  const hesap = senaryolariHesapla(basarili, { enFazlaKume: Math.min(4, basarili.length) });
+  const hesap = senaryolariHesapla(basarili, {
+    enFazlaKume: Math.min(4, basarili.length),
+    kuponUygula: opts.kuponUygula !== false,
+  });
 
   const uyarilar = [...(hesap.uyarilar || [])];
   if (bulunamayanlar.length) {

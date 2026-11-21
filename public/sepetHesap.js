@@ -398,8 +398,11 @@ export function sepetNormalize(ham) {
   const out = [];
   for (const x of liste) {
     if (!x || typeof x !== 'object') continue;
-    const url = String(x.url || '').trim();
-    if (!/^https?:\/\//i.test(url)) continue;
+    const isAdMod = x.tur === 'ad';
+    const url = String(x.url || x.ad || '').trim();
+    if (!url) continue;
+    if (!isAdMod && !/^https?:\/\//i.test(url)) continue;
+    if (isAdMod && url.length < 2) continue;
     const adet = Math.max(1, Math.min(9, Math.round(Number(x.adet) || 1)));
     const ad = String(x.ad || '').trim().slice(0, 200) || url;
     const anahtar = url.toLowerCase();
@@ -409,6 +412,7 @@ export function sepetNormalize(ham) {
       id: String(x.id || ('p' + (out.length + 1))),
       ad,
       url,
+      tur: isAdMod ? 'ad' : 'url',
       adet,
       site: x.site ? String(x.site) : null,
       fiyat: Number.isFinite(Number(x.fiyat)) ? Math.round(Number(x.fiyat) * 100) / 100 : null,
@@ -432,8 +436,11 @@ export function sepetDogrula(sepet) {
   if (adet > MAKS_URUN) {
     return { ok: false, hata: `Sepet en fazla ${MAKS_URUN} ürün alabilir.`, adet };
   }
-  const urlsuz = liste.find(x => !/^https?:\/\//i.test(String(x?.url || '')));
-  if (urlsuz) return { ok: false, hata: 'Tüm ürünler için geçerli bir ürün linki gerekli.', adet };
+  const gecersiz = liste.find(x => {
+    if (x?.tur === 'ad') return String(x.ad || x.url || '').trim().length < 2;
+    return !/^https?:\/\//i.test(String(x?.url || ''));
+  });
+  if (gecersiz) return { ok: false, hata: 'Tüm ürünler için geçerli bir ürün linki veya adı gerekli.', adet };
   return { ok: true, hata: null, adet };
 }
 
@@ -526,12 +533,15 @@ export function kiyasVerisi(sonuc) {
  */
 export function paketKargoDurumu(grup) {
   const kargo = Number(grup?.kargo) || 0;
-  const durum = { bedava: kargo <= 0, kargo, esikIpucu: null, esikFarki: null, esik: null };
-  if (durum.bedava) return durum;
-
   const kural = grup?.kargoKurali || null;
   const esik = kural?.freeOver != null ? Number(kural.freeOver) : null;
   const ara = Number(grup?.araToplam);
+  const gecti = Number.isFinite(esik) && esik > 0 && Number.isFinite(ara)
+    && (kural?.freeOverExclusive === true ? ara > esik : ara >= esik);
+  const belirsiz = grup?.kargoBelirsiz === true
+    || (kargo <= 0 && kural != null && kural.applies !== false && kural.fee == null && !gecti);
+  const durum = { bedava: !belirsiz && kargo <= 0, belirsiz, kargo, esikIpucu: null, esikFarki: null, esik: null };
+  if (durum.bedava) return durum;
   if (Number.isFinite(esik) && esik > 0 && Number.isFinite(ara) && ara < esik) {
     durum.esik = esik;
     durum.esikFarki = tl(kurus(esik) - kurus(ara) + (kural.freeOverExclusive === true ? 1 : 0));
