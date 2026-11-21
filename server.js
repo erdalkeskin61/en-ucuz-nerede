@@ -57,6 +57,9 @@ import {
   urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
 } from './src/seoSayfalar.js';
 import {
+  rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
+} from './src/rehberSayfalar.js';
+import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
   katalogSyncDurumu, katalogUrunleriAra,
 } from './src/katalogSync.js';
@@ -516,7 +519,7 @@ app.get('/robots.txt', (req, res, next) => {
 app.get('/sitemap.xml', (req, res) => {
   try {
     const taban = yayinKoku(req);
-    const sayfalar = sitemapKayitlari();
+    const sayfalar = [...sitemapKayitlari(), ...rehberSitemapKayitlari()];
     const govde = sayfalar.map(s => [
       '  <url>',
       `    <loc>${xmlKacis(taban + s.yol)}</loc>`,
@@ -574,6 +577,30 @@ app.get('/urun/:slug', (req, res) => {
     res.send(urunSayfasiHtml(urun, yayinKoku(req), tumUrunler));
   } catch (e) {
     res.status(500).type('text/plain').send('Ürün sayfası üretilemedi');
+  }
+});
+
+/* Karşılaştırma ve alım rehberleri (canlı fiyatlı SSR) */
+app.get('/rehber', (req, res) => {
+  try {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(rehberDiziniHtml(yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Rehber dizini üretilemedi');
+  }
+});
+
+app.get(['/rehber/:slug', '/karsilastir/:slug'], (req, res) => {
+  const sayfa = rehberSayfasiBul(req.path);
+  if (!sayfa) return res.status(404).type('text/plain').send('Rehber sayfası bulunamadı');
+  try {
+    const tumUrunler = seoUrunListesi();
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(sayfa.olustur(tumUrunler, yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Rehber sayfası üretilemedi');
   }
 });
 

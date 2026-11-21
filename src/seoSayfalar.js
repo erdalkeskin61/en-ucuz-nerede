@@ -299,7 +299,7 @@ export function sitemapKayitlari() {
 /* HTML Şablon Çerçevesi                                               */
 /* ------------------------------------------------------------------ */
 
-function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml }) {
+export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog' }) {
   const safeTitle = htmlKacis(title);
   const safeDesc = htmlKacis(description);
   const safeUrl = htmlKacis(canonicalUrl);
@@ -384,7 +384,8 @@ function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'we
       </a>
       <nav class="menu">
         <a href="/">Karşılaştır</a>
-        <a href="/urunler" class="etkin">🗂️ Katalog</a>
+        <a href="/urunler"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ Katalog</a>
+        <a href="/rehber"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 Rehberler</a>
         <a href="/maliyet.html">🧮 Maliyet</a>
         <a href="/sepet.html">🧺 Akıllı Sepet</a>
         <a href="/slicer.html">🧩 Eklenti</a>
@@ -666,6 +667,9 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
       <section class="seo-kart">
         <h1 class="seo-baslik">3D Yazıcı &amp; Filament Fiyat Kataloğu</h1>
         <p class="seo-alt">${htmlKacis(description)}</p>
+        <div class="seo-butonlar">
+          <a class="seo-cta ikincil" href="/rehber">📖 Karşılaştırma &amp; Alım Rehberleri →</a>
+        </div>
       </section>
       ${bolumler}
     `,
