@@ -42,20 +42,21 @@ export function htmlKacis(metin) {
 }
 
 /**
- * 📊 Google Analytics 4 (GA4) ölçüm kimliği — `.env` içinde `GA_MEASUREMENT_ID=G-...`.
- * Yalnızca geçerli `G-...` biçimi kabul edilir (XSS / enjeksiyon koruması).
+ * 📊 Google Analytics 4 / Google Etiketi kimliği — `.env` içinde `GA_MEASUREMENT_ID`.
+ * `G-...`, `GT-...` ve `GTM-...` biçimleri kabul edilir (XSS / enjeksiyon koruması).
  */
 export function ga4OlcumId() {
   const raw = String(process.env.GA_MEASUREMENT_ID || '').trim().toUpperCase();
-  return /^G-[A-Z0-9]{4,20}$/.test(raw) ? raw : '';
+  return /^(G|GT|GTM)-[A-Z0-9]{4,20}$/.test(raw) ? raw : '';
 }
 
-/** Tüm kamuya açık sayfalara eklenen hafif GA4 + giden mağaza tıklama parçası. */
+/** Tüm kamuya açık sayfalara eklenen hafif GA4 / Google Tag + giden mağaza tıklama parçası. */
 export function ga4HeadSnip() {
   const id = ga4OlcumId();
   if (!id) return '';
+  const scriptPath = id.startsWith('GTM-') ? 'gtm.js' : 'gtag/js';
   return [
-    `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>`,
+    `<script async src="https://www.googletagmanager.com/${scriptPath}?id=${id}"></script>`,
     '<script>',
     '  window.dataLayer = window.dataLayer || [];',
     '  function gtag(){dataLayer.push(arguments);}',
