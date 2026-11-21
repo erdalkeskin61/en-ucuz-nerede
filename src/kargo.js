@@ -144,6 +144,24 @@ export const SITE_KARGO_VARSAYILANLARI = {
     applies: true,
     note: 'Kargo 120 TL · 2.000 TL ve üzeri ücretsiz',
   },
+  'sermenkreatif': {
+    fee: 190,
+    freeOver: 2000,
+    applies: true,
+    note: 'Kargo 190 TL · 2.000 TL ve üzeri ücretsiz',
+  },
+  'pttavm': {
+    fee: 85,
+    freeOver: 300,
+    applies: true,
+    note: 'Kargo 85 TL · 300 TL ve üzeri ücretsiz',
+  },
+  'print3d': {
+    fee: 120,
+    freeOver: 2000,
+    applies: true,
+    note: 'Kargo 120 TL · 2.000 TL ve üzeri ücretsiz',
+  },
   // ---- 2026-10-26 (2. grup, kullanıcı bildirimi) ----
   // NOT: fixx3d kendi sayfalarında "2000 TL ve üzeri ücretsiz kargo" yazıyor
   // (ürün + ana sayfa + footer). Kullanıcı 3.000 TL / 99,90 TL bildirdi; kullanıcı
