@@ -17,8 +17,14 @@ import { katalogGetir, radarDurumVerisi } from './otonomRadar.js';
 import { anlikAl, sorgudanAnlikAl, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
 import { formatTL, parcaMi } from './util.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { dbBaglantisi } from './store.js';
+import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
+import { siteNames } from './sites/index.js';
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
+const SEO_CACHE_TTL_MS = 60 * 1000;
+const BESLEME_MAKS_URUN = 400;
+let _seoListeOnbellek = { ts: 0, liste: [] };
 
 /** Türkçe karakterleri temizleyerek kararlı URL slug'ı üretir. */
 export function slugYap(metin) {
@@ -84,17 +90,19 @@ function guvenliAfiliyeUrl(siteId, hamUrl, ayarlar) {
   }
 }
 
+const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|lubricant|grease|glue|extruder|board|toolhead|baffle|wiper|thermistor|heater|sock|silikon\s*çorap)\b/i;
+
 function anaKategoriSlugBul(k) {
   const metin = `${k.ad || ''} ${k.sorgu || ''}`;
-  if (parcaMi(metin) || /reçine|recine|resin|kurutucu|dryer|nozzle|tabla|hotend/i.test(metin)) {
+  if (parcaMi(metin) || EK_PARCA_RE.test(metin) || /reçine|recine|resin|kurutucu|dryer|nozzle|tabla|hotend|yedek\s*parça/i.test(metin)) {
     return 'recine-ve-sarf';
   }
-  if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa)\b/i.test(metin)) {
+  if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa|hips|bvoh|pva)\b/i.test(metin)) {
     if (/\b(petg|e?tpu|abs|asa|cf|pa|nylon)\b/i.test(metin)) return 'petg-tpu-filament';
     if (/\b(x?pla|epla|hyper)\b|pla\+/i.test(metin)) return 'pla-filament';
     return 'filament';
   }
-  if (k.kategori === 'yazici' || /yazıcı|printer|ender|kobra|neptune|bambu|k1|p1s|a1\s*mini|x1c/i.test(metin)) {
+  if (k.kategori === 'yazici' || /3d\s*yazıcı|3d\s*printer|yazıcı|printer|\b(p1s|p1p|p2s|x1c|x1e|x1\s*carbon|a1\s*mini|k1c|k1\s*max|k2\s*plus|ender\s*3|kobra\s*3|saturn\s*4|mars\s*5|photon|neptune\s*4|centauri\s*carbon|creator\s*5|adventurer\s*5|halot)\b/i.test(metin)) {
     return '3d-yazici';
   }
   return k.kategori === 'genel' ? 'recine-ve-sarf' : 'filament';
@@ -214,11 +222,151 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
   });
 }
 
+function kargoHesaplaTeklif(siteId, urunFiyati) {
+  const kural = SITE_KARGO_VARSAYILANLARI[siteId] || null;
+  if (!kural) {
+    return { fiyat: urunFiyati, kargo: 'Kargo sepette' };
+  }
+  if (Number(kural.freeOver) > 0 && urunFiyati >= Number(kural.freeOver)) {
+    return { fiyat: urunFiyati, kargo: 'Ücretsiz Kargo' };
+  }
+  if (Number(kural.fee) > 0) {
+    return {
+      fiyat: Math.round((urunFiyati + Number(kural.fee)) * 100) / 100,
+      kargo: `+${formatTL(Number(kural.fee))} kargo dahil`,
+    };
+  }
+  if (Number(kural.freeOver) > 0) {
+    return { fiyat: urunFiyati, kargo: `${formatTL(Number(kural.freeOver))} üzeri ücretsiz · Sepette` };
+  }
+  return { fiyat: urunFiyati, kargo: 'Kargo sepette' };
+}
+
 /**
- * Aktif katalog ürünlerini SEO/SSR sayfası için hazırlar.
+ * Mağaza beslemelerinden (`katalog_urunleri`) gelen stoklu ve gerçek fiyatlı ürünleri
+ * temizleyip tekilleştirerek programa dayalı uzun kuyruk (long-tail) SEO sayfaları üretir.
+ */
+function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar) {
+  let rows = [];
+  try {
+    const db = dbBaglantisi();
+    rows = db.prepare(`
+      SELECT siteId, urunUrl, baslik, marka, fiyat, stokta, gorselUrl, guncellemeTs
+      FROM katalog_urunleri
+      WHERE fiyat >= 40 AND stokta = 1 AND length(baslik) >= 8
+      ORDER BY guncellemeTs DESC
+    `).all();
+  } catch {
+    return [];
+  }
+
+  const gruplar = new Map();
+  for (const r of rows) {
+    const ad = String(r.baslik || '').trim();
+    if (/hediye\s*çeki|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo/i.test(ad)) continue;
+    const slug = slugYap(ad);
+    if (slug.length < 6 || kullanilanSluglar.has(slug)) continue;
+
+    const katSlug = anaKategoriSlugBul({ ad, sorgu: ad, kategori: 'genel' });
+    // Yalnızca gerçek 3D baskı ürünlerini kapsa
+    const alakali = katSlug === '3d-yazici'
+      || katSlug === 'pla-filament'
+      || katSlug === 'petg-tpu-filament'
+      || /filament|\bpla\b|petg|tpu|\babs\b|\basa\b|reçine|recine|resin|kurutucu|dryer|nozzle|hotend|pei|tabla|extruder|\bams\b/i.test(ad);
+    if (!alakali) continue;
+    // 4500 TL altı ve adında 3D yazıcı geçmeyen kalemleri yazıcıya koyma
+    const duzeltilmisKat = (katSlug === '3d-yazici' && Number(r.fiyat) < 4500 && !/3d\s*yazıcı|3d\s*printer/i.test(ad))
+      ? 'recine-ve-sarf'
+      : katSlug;
+
+    if (!gruplar.has(slug)) {
+      gruplar.set(slug, {
+        slug,
+        ad,
+        marka: r.marka ? String(r.marka).trim() : null,
+        kategoriSlug: duzeltilmisKat,
+        gorsel: r.gorselUrl && /^https?:\/\//i.test(r.gorselUrl) ? r.gorselUrl : null,
+        sonTs: Number(r.guncellemeTs) || Date.now(),
+        teklifMap: new Map(),
+      });
+    }
+    const g = gruplar.get(slug);
+    if (!g.gorsel && r.gorselUrl && /^https?:\/\//i.test(r.gorselUrl)) g.gorsel = r.gorselUrl;
+    if (Number(r.guncellemeTs) > g.sonTs) g.sonTs = Number(r.guncellemeTs);
+
+    const urunFiyati = Math.round(Number(r.fiyat) * 100) / 100;
+    const { fiyat, kargo } = kargoHesaplaTeklif(r.siteId, urunFiyati);
+    const mevcut = g.teklifMap.get(r.siteId);
+    if (!mevcut || fiyat < mevcut.fiyat) {
+      g.teklifMap.set(r.siteId, {
+        siteId: r.siteId,
+        site: siteNames[r.siteId] || r.siteId,
+        baslik: ad,
+        fiyat,
+        urunFiyati,
+        stokta: true,
+        kargo,
+        url: guvenliAfiliyeUrl(r.siteId, r.urunUrl, afiliyeAyar),
+      });
+    }
+  }
+
+  const katOncelik = { '3d-yazici': 4, 'pla-filament': 3, 'petg-tpu-filament': 3, filament: 2, 'recine-ve-sarf': 1 };
+  const adaylar = [...gruplar.values()].sort((a, b) => {
+    if (b.teklifMap.size !== a.teklifMap.size) return b.teklifMap.size - a.teklifMap.size;
+    const pDiff = (katOncelik[b.kategoriSlug] || 0) - (katOncelik[a.kategoriSlug] || 0);
+    if (pDiff !== 0) return pDiff;
+    return b.sonTs - a.sonTs;
+  });
+
+  const cikti = [];
+  for (const g of adaylar.slice(0, BESLEME_MAKS_URUN)) {
+    kullanilanSluglar.add(g.slug);
+    const teklifler = [...g.teklifMap.values()].sort((a, b) => a.fiyat - b.fiyat);
+    const enIyi = teklifler[0];
+    const enPahali = teklifler[teklifler.length - 1];
+    const anaKategori = g.kategoriSlug === '3d-yazici'
+      ? 'yazici'
+      : (g.kategoriSlug === 'recine-ve-sarf' ? 'genel' : 'filament');
+
+    cikti.push({
+      id: `feed-${g.slug}`,
+      kaynakTip: 'besleme',
+      ad: g.ad,
+      sorgu: g.ad,
+      kaynakUrl: enIyi?.url || null,
+      kategori: anaKategori,
+      kategoriSlug: g.kategoriSlug,
+      slug: g.slug,
+      yol: `/urun/${g.slug}`,
+      teklifler,
+      enUcuzFiyat: enIyi ? enIyi.fiyat : null,
+      enUcuzSite: enIyi ? enIyi.site : null,
+      enUcuzUrl: enIyi ? enIyi.url : null,
+      enPahaliFiyat: enPahali ? enPahali.fiyat : null,
+      stokluSayisi: teklifler.length,
+      gorsel: g.gorsel,
+      marka: g.marka,
+      modelKodu: null,
+      barkod: null,
+      birimMetni: null,
+      sonTs: g.sonTs,
+      lastmod: new Date(g.sonTs).toISOString().slice(0, 10),
+    });
+  }
+  return cikti;
+}
+
+/**
+ * Aktif katalog + besleme ürünlerini SEO/SSR sayfaları için hazırlar (60 sn bellek önbellekli).
  * @returns {Array<object>}
  */
-export function seoUrunListesi() {
+export function seoUrunListesi({ taze = false } = {}) {
+  const simdi = Date.now();
+  if (!taze && _seoListeOnbellek.liste.length && (simdi - _seoListeOnbellek.ts) < SEO_CACHE_TTL_MS) {
+    return _seoListeOnbellek.liste;
+  }
+
   let kayitlar = [];
   try {
     kayitlar = katalogGetir({ sadeceAktif: true });
@@ -229,7 +377,7 @@ export function seoUrunListesi() {
   const afiliyeAyar = afiliyeAyarlari();
   const kullanilanSluglar = new Set();
 
-  return kayitlar.map((k) => {
+  const radarUrunler = kayitlar.map((k) => {
     let slug = slugYap(k.ad);
     if (kullanilanSluglar.has(slug)) slug = `${slug}-${k.id}`;
     kullanilanSluglar.add(slug);
@@ -252,6 +400,7 @@ export function seoUrunListesi() {
 
     return {
       id: k.id,
+      kaynakTip: 'radar',
       ad: k.ad,
       sorgu: k.sorgu || k.ad,
       kaynakUrl: k.url || null,
@@ -274,6 +423,11 @@ export function seoUrunListesi() {
       lastmod: sonTs ? new Date(sonTs).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
     };
   });
+
+  const beslemeUrunler = beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar);
+  const birlesik = [...radarUrunler, ...beslemeUrunler];
+  _seoListeOnbellek = { ts: simdi, liste: birlesik };
+  return birlesik;
 }
 
 export function seoUrunBul(slugOrId) {
@@ -723,6 +877,28 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
   });
 }
 
+function katalogFiltreScriptHtml() {
+  return `<script>
+    (function() {
+      var inp = document.getElementById('katalogAraInput');
+      if (!inp) return;
+      inp.addEventListener('input', function() {
+        var q = (inp.value || '').trim().toLowerCase();
+        document.querySelectorAll('.katalog-bolum').forEach(function(sec) {
+          var gosterilen = 0;
+          sec.querySelectorAll('.seo-urun-kart').forEach(function(kart) {
+            var metin = kart.getAttribute('data-urun-ad') || '';
+            var goster = !q || metin.indexOf(q) !== -1;
+            kart.style.display = goster ? '' : 'none';
+            if (goster) gosterilen++;
+          });
+          sec.style.display = gosterilen > 0 ? '' : 'none';
+        });
+      });
+    })();
+  </script>`;
+}
+
 export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
   const eslesen = tumUrunler.filter(kat.eslesirMi);
   const stoklular = eslesen.filter(u => u.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat);
@@ -781,10 +957,17 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
         </div>
       </div>
     </section>
-    <div class="seo-kat-bar">${katBar}</div>
-    <section class="seo-kart">
+    <div class="katalog-kontrol">
+      <div class="seo-kat-bar" style="margin:0">${katBar}</div>
+      <div class="katalog-ara-sar">
+        <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+        <input type="search" id="katalogAraInput" placeholder="Bu kategoride filtrele…" aria-label="Kategoride ürün filtrele" />
+      </div>
+    </div>
+    <section class="seo-kart katalog-bolum">
       <div class="seo-izgara">${kartlar || '<p>Bu kategoride aktif ürün henüz eklenmedi.</p>'}</div>
     </section>
+    ${katalogFiltreScriptHtml()}
   `;
 
   return sayfaIskeleti({
@@ -827,7 +1010,7 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
         </div>
       </div>
       <div class="seo-izgara">
-        ${urunler.slice(0, 12).map(seoUrunKartiHtml).join('')}
+        ${urunler.slice(0, 16).map(seoUrunKartiHtml).join('')}
       </div>
     </section>`;
   }).join('');
@@ -882,25 +1065,7 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
           <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
         </div>
       </section>
-      <script>
-        (function() {
-          var inp = document.getElementById('katalogAraInput');
-          if (!inp) return;
-          inp.addEventListener('input', function() {
-            var q = (inp.value || '').trim().toLowerCase();
-            document.querySelectorAll('.katalog-bolum').forEach(function(sec) {
-              var gosterilen = 0;
-              sec.querySelectorAll('.seo-urun-kart').forEach(function(kart) {
-                var metin = kart.getAttribute('data-urun-ad') || '';
-                var goster = !q || metin.indexOf(q) !== -1;
-                kart.style.display = goster ? '' : 'none';
-                if (goster) gosterilen++;
-              });
-              sec.style.display = gosterilen > 0 ? '' : 'none';
-            });
-          });
-        })();
-      </script>
+      ${katalogFiltreScriptHtml()}
     `,
   });
 }
