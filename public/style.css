@@ -1870,10 +1870,11 @@ main.kap { padding-top: 8px; }
   display: grid; place-items: center;
   box-shadow: 0 6px 16px -4px rgba(67, 56, 202, 0.5);
 }
-.menu { margin-left: auto; display: flex; gap: 4px; }
+.menu { margin-left: auto; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+.menu::-webkit-scrollbar { display: none; }
 .menu a {
   font-size: 13.5px; font-weight: 600; color: var(--gri-metin);
-  padding: 8px 14px; border-radius: 999px;
+  padding: 8px 12px; border-radius: 999px; white-space: nowrap; flex: none;
   transition: background .18s ease, color .18s ease;
 }
 .menu a:hover { background: var(--zemin-2); color: var(--metin); }

@@ -389,6 +389,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <a href="/maliyet.html">🧮 Maliyet</a>
         <a href="/sepet.html">🧺 Akıllı Sepet</a>
         <a href="/slicer.html">🧩 Eklenti</a>
+        <a href="/ayarlar.html">🔔 Alarmlarım</a>
       </nav>
     </div>
   </header>
