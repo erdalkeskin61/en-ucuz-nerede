@@ -444,6 +444,55 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .formul-kart code { font-size: 12.5px; padding: 6px 8px; border-radius: 8px; background: var(--kart); border: 1px solid var(--cizgi); color: var(--ana); font-weight: 700; }
     html[data-theme="dark"] .formul-kart code { color: var(--ana-parlak); }
     .sira-madalya { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
+    .katalog-kontrol {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 18px;
+    }
+    .katalog-ara-sar { position: relative; flex: 1 1 260px; max-width: 360px; }
+    .katalog-ara-sar input {
+      width: 100%; padding: 10px 14px 10px 36px; border-radius: 12px;
+      border: 1.5px solid var(--cizgi); background: var(--kart); color: var(--metin);
+      font: inherit; font-size: 13.5px; outline: none;
+    }
+    .katalog-ara-sar input:focus { border-color: var(--ana); box-shadow: var(--halka); }
+    .katalog-ara-ikon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: .65; pointer-events: none; }
+    .kat-baslik-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .kat-baslik-sol { display: flex; align-items: center; gap: 11px; }
+    .kat-ikon {
+      width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+      font-size: 19px; background: var(--ana-acik); flex: none;
+    }
+    .kat-sayac {
+      display: inline-flex; align-items: center; font-size: 12px; font-weight: 700;
+      padding: 4px 10px; border-radius: 999px; background: var(--zemin-2);
+      border: 1px solid var(--cizgi); color: var(--gri-metin);
+    }
+    .seo-urun-kart {
+      display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 16px;
+      background: var(--kart); border: 1px solid var(--cizgi); text-decoration: none; color: inherit;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .seo-urun-kart:hover { transform: translateY(-3px); border-color: var(--ana); box-shadow: var(--kart-golge-uzerinde); }
+    .seo-urun-ust { display: flex; gap: 12px; align-items: flex-start; }
+    .seo-urun-img {
+      width: 56px; height: 56px; border-radius: 11px; object-fit: contain;
+      background: #fff; border: 1px solid var(--cizgi); padding: 4px; flex: none;
+    }
+    .seo-urun-ikon {
+      width: 56px; height: 56px; border-radius: 11px; display: grid; place-items: center;
+      font-size: 24px; background: var(--zemin-2); border: 1px solid var(--cizgi); flex: none;
+    }
+    .seo-urun-etiketler { display: flex; flex-wrap: wrap; gap: 6px; }
+    .seo-urun-etiket {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+      background: var(--zemin-2); color: var(--gri-metin); border: 1px solid var(--cizgi);
+    }
+    .seo-urun-alt {
+      margin-top: auto; padding-top: 10px; border-top: 1px solid var(--cizgi);
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    }
+    .seo-urun-ok { font-size: 12px; font-weight: 700; color: var(--ana); }
+    html[data-theme="dark"] .seo-urun-ok { color: var(--ana-parlak); }
     @media (max-width: 760px) {
       .seo-vs-izgara { grid-template-columns: 1fr; }
       .seo-vs-orta { margin: -4px 0; }
@@ -488,6 +537,43 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   <script src="/tema.js"></script>
 </body>
 </html>`;
+}
+
+function kategoriIkonu(slug) {
+  if (slug === '3d-yazici') return '🖨️';
+  if (slug === 'pla-filament') return '🧵';
+  if (slug === 'petg-tpu-filament') return '🦾';
+  if (slug === 'recine-ve-sarf') return '🧪';
+  return '🎨';
+}
+
+function seoUrunKartiHtml(u) {
+  const gorselHtml = u.gorsel
+    ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" loading="lazy" />`
+    : `<span class="seo-urun-ikon" aria-hidden="true">${kategoriIkonu(u.kategoriSlug)}</span>`;
+  const fiyatHtml = u.enUcuzFiyat > 0
+    ? `<span class="seo-mini-fiyat">${formatTL(u.enUcuzFiyat)}</span>`
+    : `<span class="seo-mini-fiyat" style="color:var(--ana);font-size:14.5px">⚡ Canlı Tara</span>`;
+  const magazaRozet = u.enUcuzSite
+    ? `<span class="seo-urun-etiket">🏪 ${htmlKacis(u.enUcuzSite)}</span>`
+    : '<span class="seo-urun-etiket">⏳ Taranmayı bekliyor</span>';
+  const teklifRozet = u.stokluSayisi > 1
+    ? `<span class="seo-urun-etiket">${u.stokluSayisi} mağaza</span>`
+    : '';
+  const birimRozet = u.birimMetni
+    ? `<span class="seo-urun-etiket">${htmlKacis(u.birimMetni)}</span>`
+    : '';
+  return `<a class="seo-urun-kart" href="${htmlKacis(u.yol)}" data-urun-ad="${htmlKacis(`${u.ad} ${u.enUcuzSite || ''}`.toLowerCase())}">
+    <div class="seo-urun-ust">
+      ${gorselHtml}
+      <div class="seo-mini-ad">${htmlKacis(u.ad)}</div>
+    </div>
+    <div class="seo-urun-etiketler">${magazaRozet}${teklifRozet}${birimRozet}</div>
+    <div class="seo-urun-alt">
+      ${fiyatHtml}
+      <span class="seo-urun-ok">${u.enUcuzFiyat > 0 ? 'Kargo dahil →' : 'Fiyat Bul →'}</span>
+    </div>
+  </a>`;
 }
 
 export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
@@ -616,11 +702,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     ${benzerler.length ? `<section class="seo-kart">
       <h2 style="margin-top:0">Aynı Kategorideki Diğer Ürünler</h2>
       <div class="seo-izgara">
-        ${benzerler.map(b => `<a class="seo-mini-kart" href="${htmlKacis(b.yol)}">
-          <div class="seo-mini-ad">${htmlKacis(b.ad)}</div>
-          <div class="seo-mini-fiyat">${b.enUcuzFiyat > 0 ? formatTL(b.enUcuzFiyat) : 'Canlı Tara'}</div>
-          <div class="seo-mini-alt">${b.enUcuzSite ? htmlKacis(b.enUcuzSite) + ' · Kargo dahil' : 'Anlık fiyat karşılaştırma'}</div>
-        </a>`).join('')}
+        ${benzerler.map(seoUrunKartiHtml).join('')}
       </div>
     </section>` : ''}
   `;
@@ -643,19 +725,16 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
 
 export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
   const eslesen = tumUrunler.filter(kat.eslesirMi);
+  const stoklular = eslesen.filter(u => u.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat);
+  const enUcuzUrun = stoklular[0] || null;
   const title = `${kat.ad} — En Ucuz Karşılaştırma | Baskı Hesap`;
   const canonicalUrl = `${tabanUrl}/kategori/${kat.slug}`;
 
   const katBar = SEO_KATEGORILER.map(c =>
-    `<a class="seo-kat-hap ${c.slug === kat.slug ? 'etkin' : ''}" href="/kategori/${htmlKacis(c.slug)}">${htmlKacis(c.kisaAd)}</a>`
+    `<a class="seo-kat-hap ${c.slug === kat.slug ? 'etkin' : ''}" href="/kategori/${htmlKacis(c.slug)}">${kategoriIkonu(c.slug)} ${htmlKacis(c.kisaAd)}</a>`
   ).join('');
 
-  const kartlar = eslesen.map(u => `
-    <a class="seo-mini-kart" href="${htmlKacis(u.yol)}">
-      <div class="seo-mini-ad">${htmlKacis(u.ad)}</div>
-      <div class="seo-mini-fiyat">${u.enUcuzFiyat > 0 ? formatTL(u.enUcuzFiyat) : 'Canlı Tara →'}</div>
-      <div class="seo-mini-alt">${u.enUcuzSite ? `${htmlKacis(u.enUcuzSite)} · ${u.stokluSayisi || 1} mağaza` : '68 mağazada anlık karşılaştır'}</div>
-    </a>`).join('');
+  const kartlar = eslesen.map(seoUrunKartiHtml).join('');
 
   const jsonLdList = [
     {
@@ -670,7 +749,8 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: `${tabanUrl}/` },
-        { '@type': 'ListItem', position: 2, name: kat.ad, item: canonicalUrl },
+        { '@type': 'ListItem', position: 2, name: 'Ürün Kataloğu', item: `${tabanUrl}/urunler` },
+        { '@type': 'ListItem', position: 3, name: kat.ad, item: canonicalUrl },
       ],
     },
     ...(eslesen.length ? [{
@@ -689,10 +769,20 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
     <nav class="seo-yol" aria-label="İçerik yolu">
       <a href="/">Ana Sayfa</a> › <a href="/urunler">Ürün Kataloğu</a> › <span>${htmlKacis(kat.ad)}</span>
     </nav>
+    <section class="hero seo-hero">
+      <div class="hero-ic">
+        <span class="hero-rozet">${kategoriIkonu(kat.slug)} Kargo Dahil Kategori Vitrini</span>
+        <h1>${htmlKacis(kat.ad)}</h1>
+        <p>${htmlKacis(kat.aciklama)}</p>
+        <div class="hero-istatistik">
+          <span>📦 <b>${eslesen.length}</b> ürün</span>
+          ${enUcuzUrun ? `<span>🏷️ En düşük: <b>${formatTL(enUcuzUrun.enUcuzFiyat)}</b></span>` : ''}
+          <span>🚚 Kargo dahil gerçek toplam</span>
+        </div>
+      </div>
+    </section>
     <div class="seo-kat-bar">${katBar}</div>
     <section class="seo-kart">
-      <h1 class="seo-baslik">${htmlKacis(kat.ad)}</h1>
-      <p class="seo-alt">${htmlKacis(kat.aciklama)}</p>
       <div class="seo-izgara">${kartlar || '<p>Bu kategoride aktif ürün henüz eklenmedi.</p>'}</div>
     </section>
   `;
@@ -711,21 +801,33 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
   const title = '3D Yazıcı, Filament & Reçine Kataloğu — En Ucuz Fiyatlar | Baskı Hesap';
   const description = 'Türkiye 3D baskı mağazalarında takip edilen tüm popüler 3D yazıcı, PLA/PETG/TPU filament, reçine ve kurutucu modellerinin kargo dahil en ucuz fiyat dizini.';
   const canonicalUrl = `${tabanUrl}/urunler`;
+  const stokluSayi = tumUrunler.filter(u => u.enUcuzFiyat > 0).length;
+
+  const katBar = SEO_KATEGORILER.map(c => {
+    const adet = tumUrunler.filter(c.eslesirMi).length;
+    if (!adet) return '';
+    return `<a class="seo-kat-hap" href="#kat-${htmlKacis(c.slug)}">${kategoriIkonu(c.slug)} ${htmlKacis(c.kisaAd)} (${adet})</a>`;
+  }).join('');
 
   const bolumler = SEO_KATEGORILER.map(kat => {
     const urunler = tumUrunler.filter(kat.eslesirMi);
     if (!urunler.length) return '';
-    return `<section class="seo-kart">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-        <h2 style="margin:0">${htmlKacis(kat.ad)}</h2>
-        <a href="/kategori/${htmlKacis(kat.slug)}" style="font-weight:700;color:var(--ana);text-decoration:none">Tümünü gör (${urunler.length}) →</a>
+    return `<section class="seo-kart katalog-bolum" id="kat-${htmlKacis(kat.slug)}">
+      <div class="kat-baslik-ust">
+        <div class="kat-baslik-sol">
+          <span class="kat-ikon" aria-hidden="true">${kategoriIkonu(kat.slug)}</span>
+          <div>
+            <h2 style="margin:0 0 2px">${htmlKacis(kat.ad)}</h2>
+            <div style="font-size:13px;color:var(--gri-metin)">${htmlKacis(kat.aciklama)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="kat-sayac">${urunler.length} ürün</span>
+          <a class="seo-cta ikincil" style="padding:7px 13px;font-size:12.5px" href="/kategori/${htmlKacis(kat.slug)}">Tümünü gör →</a>
+        </div>
       </div>
       <div class="seo-izgara">
-        ${urunler.slice(0, 12).map(u => `<a class="seo-mini-kart" href="${htmlKacis(u.yol)}">
-          <div class="seo-mini-ad">${htmlKacis(u.ad)}</div>
-          <div class="seo-mini-fiyat">${u.enUcuzFiyat > 0 ? formatTL(u.enUcuzFiyat) : 'Canlı Tara →'}</div>
-          <div class="seo-mini-alt">${u.enUcuzSite ? htmlKacis(u.enUcuzSite) : 'Anlık fiyat karşılaştır'}</div>
-        </a>`).join('')}
+        ${urunler.slice(0, 12).map(seoUrunKartiHtml).join('')}
       </div>
     </section>`;
   }).join('');
@@ -744,14 +846,61 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
     }],
     govdeHtml: `
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <span>Ürün Kataloğu</span></nav>
-      <section class="seo-kart">
-        <h1 class="seo-baslik">3D Yazıcı &amp; Filament Fiyat Kataloğu</h1>
-        <p class="seo-alt">${htmlKacis(description)}</p>
-        <div class="seo-butonlar">
-          <a class="seo-cta ikincil" href="/rehber">📖 Karşılaştırma &amp; Alım Rehberleri →</a>
+      <section class="hero seo-hero">
+        <div class="hero-ic">
+          <span class="hero-rozet">🗂️ 60+ Türkiye Mağazası · Canlı Katalog</span>
+          <h1>3D Yazıcı &amp; Filament <b>Fiyat Kataloğu</b></h1>
+          <p>${htmlKacis(description)}</p>
+          <div class="hero-istatistik">
+            <span>📦 <b>${tumUrunler.length}</b> takip edilen ürün</span>
+            <span>✅ <b>${stokluSayi}</b> güncel stoklu fiyat</span>
+            <span>⚖️ Birim ₺/kg &amp; kargo dahil</span>
+          </div>
         </div>
       </section>
+      <div class="katalog-kontrol">
+        <div class="seo-kat-bar" style="margin:0">${katBar}</div>
+        <div class="katalog-ara-sar">
+          <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+          <input type="search" id="katalogAraInput" placeholder="Katalogda hızlı filtrele (ör. Bambu, PLA, PETG)…" aria-label="Katalogda ürün filtrele" />
+        </div>
+      </div>
       ${bolumler}
+      <section class="seo-rehber-kart" aria-label="Hızlı Geçişler">
+        <div class="seo-rehber-ust">
+          <div>
+            <h2 class="bolum-baslik" style="margin:0 0 4px">Karşılaştırma Rehberleri &amp; Araçlar</h2>
+            <p class="ipucu" style="margin:0">Model seçimi yapmak, kargoyu sıfırlamak veya parça maliyeti çıkarmak için:</p>
+          </div>
+          <a class="seo-tum-link" href="/rehber">Tüm Rehberler →</a>
+        </div>
+        <div class="seo-rehber-baglar">
+          <a href="/rehber">📖 Karşılaştırma &amp; Alım Rehberleri</a>
+          <a href="/rehber/en-ucuz-pla-filament">🏷️ En Ucuz PLA Sıralaması</a>
+          <a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚔️ P1S vs K1C</a>
+          <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
+          <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
+        </div>
+      </section>
+      <script>
+        (function() {
+          var inp = document.getElementById('katalogAraInput');
+          if (!inp) return;
+          inp.addEventListener('input', function() {
+            var q = (inp.value || '').trim().toLowerCase();
+            document.querySelectorAll('.katalog-bolum').forEach(function(sec) {
+              var gosterilen = 0;
+              sec.querySelectorAll('.seo-urun-kart').forEach(function(kart) {
+                var metin = kart.getAttribute('data-urun-ad') || '';
+                var goster = !q || metin.indexOf(q) !== -1;
+                kart.style.display = goster ? '' : 'none';
+                if (goster) gosterilen++;
+              });
+              sec.style.display = gosterilen > 0 ? '' : 'none';
+            });
+          });
+        })();
+      </script>
     `,
   });
 }
