@@ -229,6 +229,8 @@ export function seoUrunListesi() {
       stokluSayisi: stoklu.length || Number(durum?.stokluSayisi || 0),
       gorsel: snapshot?.payload?.kaynak?.image || null,
       marka: snapshot?.payload?.kaynak?.brand || null,
+      modelKodu: snapshot?.payload?.kaynak?.modelKodu || null,
+      barkod: snapshot?.payload?.kaynak?.barkod || null,
       birimMetni: durum?.birimMetni || null,
       sonTs,
       lastmod: sonTs ? new Date(sonTs).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
@@ -267,11 +269,12 @@ export function sitemapKayitlari() {
 /* HTML Şablon Çerçevesi                                               */
 /* ------------------------------------------------------------------ */
 
-function sayfaIskeleti({ title, description, canonicalUrl, ogImage, jsonLdList = [], govdeHtml }) {
+function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml }) {
   const safeTitle = htmlKacis(title);
   const safeDesc = htmlKacis(description);
   const safeUrl = htmlKacis(canonicalUrl);
   const safeImg = htmlKacis(ogImage);
+  const safeOgType = htmlKacis(ogType);
   const jsonScripts = jsonLdList
     .map(o => `<script type="application/ld+json">${jsonLdMetni(o)}</script>`)
     .join('\n  ');
@@ -285,13 +288,13 @@ function sayfaIskeleti({ title, description, canonicalUrl, ogImage, jsonLdList =
   <meta name="description" content="${safeDesc}" />
   <link rel="canonical" href="${safeUrl}" />
   <meta name="theme-color" content="#4338CA" />
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content="${safeOgType}" />
   <meta property="og:site_name" content="Baskı Hesap" />
   <meta property="og:locale" content="tr_TR" />
   <meta property="og:title" content="${safeTitle}" />
   <meta property="og:description" content="${safeDesc}" />
   <meta property="og:url" content="${safeUrl}" />
-  <meta property="og:image" content="${safeImg}" />
+  <meta property="og:image" content="${safeImg}" />${extraMeta ? '\n  ' + extraMeta : ''}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${safeTitle}" />
   <meta name="twitter:description" content="${safeDesc}" />
@@ -411,22 +414,42 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
   ];
 
   if (urun.enUcuzFiyat > 0) {
+    const gecerlilikTarihi = new Date((urun.sonTs || Date.now()) + 7 * 86400000).toISOString().slice(0, 10);
+    const stokluTeklifler = (urun.teklifler || []).filter(t => t.stokta && Number(t.fiyat) > 0);
+    const altTeklifler = stokluTeklifler.slice(0, 12).map(t => ({
+      '@type': 'Offer',
+      priceCurrency: 'TRY',
+      price: Number(t.fiyat).toFixed(2),
+      priceValidUntil: gecerlilikTarihi,
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: { '@type': 'Organization', name: t.site },
+      url: t.url || `${tabanUrl}${urun.yol}`,
+    }));
+    const barkodTemiz = /^\d{8,14}$/.test(String(urun.barkod || '').trim())
+      ? String(urun.barkod).trim()
+      : null;
+
     const productSchema = {
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: urun.ad,
       description,
+      category: kat.ad,
       url: `${tabanUrl}${urun.yol}`,
-      ...(urun.gorsel ? { image: [urun.gorsel] } : {}),
+      image: [urun.gorsel || `${tabanUrl}/og-gorsel.png`],
       ...(urun.marka ? { brand: { '@type': 'Brand', name: urun.marka } } : {}),
+      ...(urun.modelKodu ? { sku: String(urun.modelKodu), mpn: String(urun.modelKodu) } : {}),
+      ...(barkodTemiz ? { gtin: barkodTemiz } : {}),
       offers: {
         '@type': 'AggregateOffer',
         priceCurrency: 'TRY',
         lowPrice: Number(urun.enUcuzFiyat).toFixed(2),
         ...(urun.enPahaliFiyat > 0 ? { highPrice: Number(urun.enPahaliFiyat).toFixed(2) } : {}),
-        offerCount: Math.max(1, urun.stokluSayisi || urun.teklifler.length),
+        offerCount: Math.max(1, urun.stokluSayisi || stokluTeklifler.length),
         availability: 'https://schema.org/InStock',
         url: `${tabanUrl}${urun.yol}`,
+        ...(altTeklifler.length ? { offers: altTeklifler } : {}),
       },
     };
     jsonLdList.push(productSchema);
@@ -490,11 +513,17 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     </section>` : ''}
   `;
 
+  const extraMeta = urun.enUcuzFiyat > 0
+    ? `<meta property="product:price:amount" content="${Number(urun.enUcuzFiyat).toFixed(2)}" />\n  <meta property="product:price:currency" content="TRY" />`
+    : '';
+
   return sayfaIskeleti({
     title,
     description,
     canonicalUrl: `${tabanUrl}${urun.yol}`,
     ogImage: urun.gorsel || `${tabanUrl}/og-gorsel.png`,
+    ogType: urun.enUcuzFiyat > 0 ? 'product' : 'website',
+    extraMeta,
     jsonLdList,
     govdeHtml,
   });
