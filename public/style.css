@@ -2970,9 +2970,10 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
   .hero-istatistik { gap: 6px; }
   .hero-istatistik span { font-size: 11.5px; padding: 6px 10px; }
   .hibrit-kart { transform: translateY(-20px); margin-bottom: -10px; padding: 11px 11px 9px; border-radius: 20px; }
-  .hibrit-form { flex-wrap: wrap; padding: 9px 9px 9px 13px; border-radius: 15px; }
-  .hibrit-form input { flex: 1 1 100%; font-size: 16px; padding: 8px 2px 10px; }
-  .hibrit-form button { width: 100%; justify-content: center; }
+  .hibrit-form { flex-wrap: wrap; align-items: center; padding: 9px 9px 9px 13px; border-radius: 15px; }
+  .hibrit-form .hibrit-ikon { flex: 0 0 auto; font-size: 16px; }
+  .hibrit-form input { flex: 1 1 0%; min-width: 0; font-size: 16px; padding: 8px 4px; }
+  .hibrit-form button { flex: 1 0 100%; width: 100%; justify-content: center; }
   .hizli-arama { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; scrollbar-width: none; }
   .hizli-arama::-webkit-scrollbar { display: none; }
   .hizli-cip, .hizli-etiket { flex: none; }
@@ -5576,28 +5577,21 @@ html[data-theme="dark"] .vitrin-filtre-cip.aktif { background: var(--ana-gradyan
   /* Sarmalayıcı: klavye açıkken buton sıkışmasın, alt boşluk dursun. */
   .hibrit-form { gap: 8px; }
 
-  /* --- 2) Kategori filtre çipleri: kaydırmalı + 44px hedef --- */
+  /* --- 2) Kategori filtre çipleri: tüm çipler mobilde net ve kesilmeden sarılır --- */
   .vitrin-filtre {
-    gap: 8px;
-    padding: 6px 16px 12px;
-    margin: 0 -14px 12px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    scroll-padding: 0 16px;
-    overscroll-behavior-x: contain;
+    gap: 6px;
+    padding: 4px 0 10px;
+    margin: 2px 0 10px;
+    overflow: visible;
+    flex-wrap: wrap;
   }
-  .vitrin-filtre::-webkit-scrollbar { display: none; }
   .vitrin-filtre-cip {
     flex: 0 0 auto;
-    min-height: 44px;
-    padding: 10px 16px;
-    font-size: 13px;
+    min-height: 38px;
+    padding: 7px 12px;
+    font-size: 12px;
     font-weight: 700;
     border-radius: 999px;
-    scroll-snap-align: start;
     display: inline-flex;
     align-items: center;
     gap: 6px;

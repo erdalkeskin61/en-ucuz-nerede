@@ -346,7 +346,8 @@ export function slicerOneriOnbellekli(girdi = {}) {
   const renk = String(girdi.renk || '').trim() || '';
   const kaynak = String(girdi.kaynak || '').trim().toLowerCase();
   const sureDk = Number(girdi.sureDk) > 0 ? Math.round(Number(girdi.sureDk)) : '';
-  const anahtar = `${malzeme}|${gramaj ?? ''}|${katla(renk)}|${kaynak}|${sureDk}`;
+  const tabanKey = String(girdi.tabanUrl || '').trim().replace(/\/+$/, '');
+  const anahtar = `${malzeme}|${gramaj ?? ''}|${katla(renk)}|${kaynak}|${sureDk}|${tabanKey}`;
   const simdi = Number.isFinite(girdi.simdi) ? girdi.simdi : Date.now();
 
   const kayit = ONERI_CACHE.get(anahtar);
@@ -391,13 +392,17 @@ export function slicerApiBagla(app) {
   app.get('/api/embed/oner', (req, res) => {
     try {
       corsBasliklari(res);
+      const envPublic = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+      const istekHost = req.get('host');
+      const istekProto = (req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+      const tabanUrl = envPublic || (istekHost ? `${istekProto}://${istekHost}` : config.publicUrl);
       const veri = slicerOneriOnbellekli({
         malzeme: req.query.malzeme,
         gramaj: req.query.gramaj,
         renk: req.query.renk,
         kaynak: req.query.kaynak,
         sureDk: req.query.sureDk,
-        tabanUrl: config.publicUrl,
+        tabanUrl,
       });
       // 60 sn tarayıcı önbelleği (spec) + biraz bayat kullanım payı.
       res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');

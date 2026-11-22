@@ -672,9 +672,10 @@ export function seoUrunYedekCoz(slugOrId, tumUrunler = null) {
     }
   } catch { /* katalog yoksay */ }
 
-  // 4) Hiçbir kayıt yoksa ana sayfada canlı karşılaştırma aramasına yönlendir (sıfır 404)
+  // 4) Hiçbir kayıt yoksa ana sayfada kutuyu doldurup kullanıcı tıklamasını bekle
+  // (bot / rastgele URL isteklerinde otomatik 69 mağaza taraması tetiklenmez).
   if (sorgu.length >= 3) {
-    return { tip: 'yonlendir', hedef: `/?q=${encodeURIComponent(sorgu)}` };
+    return { tip: 'yonlendir', hedef: `/?q=${encodeURIComponent(sorgu)}&otomatik=0` };
   }
   return { tip: 'yonlendir', hedef: '/urunler' };
 }
@@ -764,6 +765,8 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .seo-tablo { width: 100%; border-collapse: collapse; margin-top: 10px; }
     .seo-tablo th, .seo-tablo td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--cizgi); font-size: 14px; }
     .seo-tablo th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--gri-metin); }
+    .seo-tablo th:nth-child(5), .seo-tablo td:nth-child(5),
+    .seo-tablo th:nth-child(6), .seo-tablo td:nth-child(6) { white-space: nowrap; }
     .seo-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
     .seo-mini-kart { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 16px; background: var(--kart); border: 1px solid var(--cizgi); text-decoration: none; color: inherit; transition: transform .14s ease, border-color .14s ease; }
     .seo-mini-kart:hover { transform: translateY(-2px); border-color: var(--ana); }
@@ -944,7 +947,7 @@ function kategoriIkonu(slug) {
 
 function seoUrunKartiHtml(u, gizli = false) {
   const gorselHtml = u.gorsel
-    ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" loading="lazy" />`
+    ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" width="56" height="56" loading="lazy" decoding="async" />`
     : `<span class="seo-urun-ikon" aria-hidden="true">${kategoriIkonu(u.kategoriSlug)}</span>`;
   const fiyatHtml = u.enUcuzFiyat > 0
     ? `<span class="seo-mini-fiyat">${formatTL(u.enUcuzFiyat)}</span>`

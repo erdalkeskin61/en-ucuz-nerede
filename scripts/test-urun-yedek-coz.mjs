@@ -69,12 +69,12 @@ kontrol('kısmi önek slug → kanonik yönlendirme',
 
 const cTekKelime = seoUrunYedekCoz('creality', sahteListe);
 kontrol('tek kelime çakışmada rastgele yönlendirme yok',
-  cTekKelime?.tip === 'yonlendir' && cTekKelime.hedef === '/?q=creality', JSON.stringify(cTekKelime));
+  cTekKelime?.tip === 'yonlendir' && cTekKelime.hedef === '/?q=creality&otomatik=0', JSON.stringify(cTekKelime));
 
 console.log('\n3) 🔎 Akıllı arama & katalog yedek yönlendirmesi (sıfır 404)');
 const cArama = seoUrunYedekCoz('bambu-olmayan-filament-x99', sahteListe);
-kontrol('olmayan ürün → /?q= canlı arama yönlendirmesi',
-  cArama?.tip === 'yonlendir' && cArama.hedef === '/?q=bambu%20olmayan%20filament%20x99', JSON.stringify(cArama));
+kontrol('olmayan ürün → /?q=...&otomatik=0 arama yönlendirmesi',
+  cArama?.tip === 'yonlendir' && cArama.hedef === '/?q=bambu%20olmayan%20filament%20x99&otomatik=0', JSON.stringify(cArama));
 
 const cBos = seoUrunYedekCoz('x', sahteListe);
 kontrol('çok kısa/anlamsız slug → /urunler',

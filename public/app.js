@@ -972,6 +972,12 @@ $('#urunUrl')?.addEventListener('focus', () => {
   if (metin.length >= 2) onerileriYukle(metin);
 });
 
+$('#urunUrl')?.addEventListener('blur', () => {
+  setTimeout(() => {
+    if (!document.activeElement?.closest?.('.hibrit-sarmal')) onerileriKapat();
+  }, 160);
+});
+
 $('#urunUrl')?.addEventListener('keydown', (e) => {
   const kutu = oneriKutusu();
   const acik = kutu && !kutu.hidden;
@@ -1256,6 +1262,9 @@ document.addEventListener('click', (e) => {
 
 $('#karsilastirForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  clearTimeout(oneriTimer);
+  oneriIstegeSayaci++;
+  onerileriKapat();
   let url = $('#urunUrl').value.trim();
   $('#hata').hidden = true;
   $('#sonAramaNotu').hidden = true;
@@ -3886,9 +3895,14 @@ gecmisiYukle();
 (async () => {
   const aramaParams = new URLSearchParams(window.location.search);
   const urlParam = aramaParams.get('url') || aramaParams.get('q');
+  const otomatikHayir = aramaParams.get('otomatik') === '0';
   if (urlParam) {
     const input = document.getElementById('urunUrl');
     if (input) input.value = urlParam;
+    if (otomatikHayir) {
+      if (!linkGibiMi(urlParam)) modAyarla('ad');
+      return;
+    }
     setTimeout(() => {
       const form = document.getElementById('karsilastirForm');
       if (form) {
