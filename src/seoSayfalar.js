@@ -701,7 +701,7 @@ function kategoriIkonu(slug) {
   return '🎨';
 }
 
-function seoUrunKartiHtml(u) {
+function seoUrunKartiHtml(u, gizli = false) {
   const gorselHtml = u.gorsel
     ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" loading="lazy" />`
     : `<span class="seo-urun-ikon" aria-hidden="true">${kategoriIkonu(u.kategoriSlug)}</span>`;
@@ -717,7 +717,7 @@ function seoUrunKartiHtml(u) {
   const birimRozet = u.birimMetni
     ? `<span class="seo-urun-etiket">${htmlKacis(u.birimMetni)}</span>`
     : '';
-  return `<a class="seo-urun-kart" href="${htmlKacis(u.yol)}" data-urun-ad="${htmlKacis(`${u.ad} ${u.enUcuzSite || ''}`.toLowerCase())}">
+  return `<a class="seo-urun-kart${gizli ? ' gizli-katalog-kart' : ''}"${gizli ? ' hidden' : ''} href="${htmlKacis(u.yol)}" data-urun-ad="${htmlKacis(`${u.ad} ${u.enUcuzSite || ''}`.toLowerCase())}">
     <div class="seo-urun-ust">
       ${gorselHtml}
       <div class="seo-mini-ad">${htmlKacis(u.ad)}</div>
@@ -856,7 +856,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     ${benzerler.length ? `<section class="seo-kart">
       <h2 style="margin-top:0">Aynı Kategorideki Diğer Ürünler</h2>
       <div class="seo-izgara">
-        ${benzerler.map(seoUrunKartiHtml).join('')}
+        ${benzerler.map(b => seoUrunKartiHtml(b)).join('')}
       </div>
     </section>` : ''}
   `;
@@ -887,8 +887,14 @@ function katalogFiltreScriptHtml() {
         document.querySelectorAll('.katalog-bolum').forEach(function(sec) {
           var gosterilen = 0;
           sec.querySelectorAll('.seo-urun-kart').forEach(function(kart) {
+            if (!q && kart.classList.contains('gizli-katalog-kart')) {
+              kart.hidden = true;
+              kart.style.display = 'none';
+              return;
+            }
             var metin = kart.getAttribute('data-urun-ad') || '';
             var goster = !q || metin.indexOf(q) !== -1;
+            kart.hidden = !goster;
             kart.style.display = goster ? '' : 'none';
             if (goster) gosterilen++;
           });
@@ -910,7 +916,7 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
     `<a class="seo-kat-hap ${c.slug === kat.slug ? 'etkin' : ''}" href="/kategori/${htmlKacis(c.slug)}">${kategoriIkonu(c.slug)} ${htmlKacis(c.kisaAd)}</a>`
   ).join('');
 
-  const kartlar = eslesen.map(seoUrunKartiHtml).join('');
+  const kartlar = eslesen.map(u => seoUrunKartiHtml(u)).join('');
 
   const jsonLdList = [
     {
@@ -1010,7 +1016,7 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
         </div>
       </div>
       <div class="seo-izgara">
-        ${urunler.slice(0, 16).map(seoUrunKartiHtml).join('')}
+        ${urunler.map((u, idx) => seoUrunKartiHtml(u, idx >= 16)).join('')}
       </div>
     </section>`;
   }).join('');
