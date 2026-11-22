@@ -23,7 +23,7 @@ import { siteNames } from './sites/index.js';
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
 const SEO_CACHE_TTL_MS = 60 * 1000;
-const BESLEME_MAKS_URUN = 400;
+const BESLEME_MAKS_URUN = 550;
 let _seoListeOnbellek = { ts: 0, liste: [] };
 
 /** Türkçe karakterleri temizleyerek kararlı URL slug'ı üretir. */
@@ -90,12 +90,15 @@ function guvenliAfiliyeUrl(siteId, hamUrl, ayarlar) {
   }
 }
 
-const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|lubricant|grease|glue|extruder|board|toolhead|baffle|wiper|thermistor|heater|sock|silikon\s*çorap)\b/i;
+const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|lubricant|grease|glue|extruder|board|motherboard|anakart|toolhead|baffle|wiper|thermistor|termistör|heater|sock|silikon\s*çorap|stepper|motor)\b/i;
 
 function anaKategoriSlugBul(k) {
   const metin = `${k.ad || ''} ${k.sorgu || ''}`;
-  if (parcaMi(metin) || EK_PARCA_RE.test(metin) || /reçine|recine|resin|kurutucu|dryer|nozzle|tabla|hotend|yedek\s*parça/i.test(metin)) {
+  if (/reçine|recine|resin|kurutucu|dryer|spacepi|filadryer|ebox/i.test(metin) && !/cable|screen|protector|board|motherboard/i.test(metin)) {
     return 'recine-ve-sarf';
+  }
+  if (parcaMi(metin) || EK_PARCA_RE.test(metin) || /nozzle|tabla|hotend|yedek\s*parça|\bpei\b/i.test(metin)) {
+    return '3d-yazici-yedek-parca';
   }
   if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa|hips|bvoh|pva)\b/i.test(metin)) {
     if (/\b(petg|e?tpu|abs|asa|cf|pa|nylon)\b/i.test(metin)) return 'petg-tpu-filament';
@@ -138,10 +141,17 @@ export const SEO_KATEGORILER = Object.freeze([
     eslesirMi: (k) => k.kategori === 'filament' || ['pla-filament', 'petg-tpu-filament', 'filament'].includes(k.kategoriSlug || anaKategoriSlugBul(k)),
   },
   {
+    slug: '3d-yazici-yedek-parca',
+    ad: '3D Yazıcı Yedek Parça Fiyatları',
+    kisaAd: 'Yedek Parça',
+    aciklama: 'Bambu Lab, Creality, Elegoo ve Anycubic yazıcılar için sertleştirilmiş çelik nozzle, seramik hotend, anakart, PEI baskı tablası ve ekstrüder parçaları.',
+    eslesirMi: (k) => (k.kategoriSlug || anaKategoriSlugBul(k)) === '3d-yazici-yedek-parca',
+  },
+  {
     slug: 'recine-ve-sarf',
-    ad: '3D Reçine, Kurutucu & Yedek Parça',
-    kisaAd: 'Reçine & Sarf',
-    aciklama: 'UV 3D yazıcı reçineleri, filament kurutucular, sertleştirilmiş nozzle uçları ve 3D baskı sarf malzemelerinde en ucuz teklifler.',
+    ad: '3D Reçine & Filament Kurutucular',
+    kisaAd: 'Reçine & Kurutucu',
+    aciklama: 'UV 3D yazıcı reçineleri (standart, suyla yıkanabilir, ABS-like) ve filament kurutucu cihazlarda 60+ mağaza kargo dahil en ucuz teklifler.',
     eslesirMi: (k) => (k.kategoriSlug || anaKategoriSlugBul(k)) === 'recine-ve-sarf',
   },
 ]);
@@ -272,11 +282,12 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar) {
     const alakali = katSlug === '3d-yazici'
       || katSlug === 'pla-filament'
       || katSlug === 'petg-tpu-filament'
-      || /filament|\bpla\b|petg|tpu|\babs\b|\basa\b|reçine|recine|resin|kurutucu|dryer|nozzle|hotend|pei|tabla|extruder|\bams\b/i.test(ad);
+      || katSlug === '3d-yazici-yedek-parca'
+      || /filament|\bpla\b|petg|tpu|\babs\b|\basa\b|reçine|recine|resin|kurutucu|dryer|nozzle|hotend|pei|tabla|extruder|anakart|motherboard|\bams\b/i.test(ad);
     if (!alakali) continue;
     // 4500 TL altı ve adında 3D yazıcı geçmeyen kalemleri yazıcıya koyma
     const duzeltilmisKat = (katSlug === '3d-yazici' && Number(r.fiyat) < 4500 && !/3d\s*yazıcı|3d\s*printer/i.test(ad))
-      ? 'recine-ve-sarf'
+      ? '3d-yazici-yedek-parca'
       : katSlug;
 
     if (!gruplar.has(slug)) {
@@ -311,11 +322,15 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar) {
     }
   }
 
-  const katOncelik = { '3d-yazici': 4, 'pla-filament': 3, 'petg-tpu-filament': 3, filament: 2, 'recine-ve-sarf': 1 };
+  const katOncelik = { '3d-yazici': 5, 'pla-filament': 4, 'petg-tpu-filament': 4, 'recine-ve-sarf': 4, '3d-yazici-yedek-parca': 3, filament: 2 };
+  const onemliParcaRe = /\b(nozzle|hotend|pei|plate|tabla|anakart|motherboard|extruder|heater|thermistor|heatbed|ams)\b/i;
   const adaylar = [...gruplar.values()].sort((a, b) => {
     if (b.teklifMap.size !== a.teklifMap.size) return b.teklifMap.size - a.teklifMap.size;
     const pDiff = (katOncelik[b.kategoriSlug] || 0) - (katOncelik[a.kategoriSlug] || 0);
     if (pDiff !== 0) return pDiff;
+    const parcaA = a.kategoriSlug === '3d-yazici-yedek-parca' && onemliParcaRe.test(a.ad) ? 1 : 0;
+    const parcaB = b.kategoriSlug === '3d-yazici-yedek-parca' && onemliParcaRe.test(b.ad) ? 1 : 0;
+    if (parcaB !== parcaA) return parcaB - parcaA;
     return b.sonTs - a.sonTs;
   });
 
@@ -327,7 +342,7 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar) {
     const enPahali = teklifler[teklifler.length - 1];
     const anaKategori = g.kategoriSlug === '3d-yazici'
       ? 'yazici'
-      : (g.kategoriSlug === 'recine-ve-sarf' ? 'genel' : 'filament');
+      : (['recine-ve-sarf', '3d-yazici-yedek-parca'].includes(g.kategoriSlug) ? 'genel' : 'filament');
 
     cikti.push({
       id: `feed-${g.slug}`,
@@ -697,6 +712,7 @@ function kategoriIkonu(slug) {
   if (slug === '3d-yazici') return '🖨️';
   if (slug === 'pla-filament') return '🧵';
   if (slug === 'petg-tpu-filament') return '🦾';
+  if (slug === '3d-yazici-yedek-parca') return '⚙️';
   if (slug === 'recine-ve-sarf') return '🧪';
   return '🎨';
 }

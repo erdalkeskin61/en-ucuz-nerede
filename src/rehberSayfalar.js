@@ -113,6 +113,7 @@ function altAraclarCubugu() {
       <a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a>
       <a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filamentler</a>
       <a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS</a>
+      <a href="/kategori/3d-yazici-yedek-parca">⚙️ Yedek Parça</a>
       <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
       <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
     </div>
