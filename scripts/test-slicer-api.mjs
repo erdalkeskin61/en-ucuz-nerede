@@ -293,8 +293,10 @@ kontrol('Cura: extension .py var', fs.existsSync(path.join(curaDizin, 'BaskiHesa
 const pj = JSON.parse(fs.readFileSync(path.join(curaDizin, 'plugin.json'), 'utf8'));
 kontrol('Cura: id/name dolu', !!pj.name && !!pj.version, JSON.stringify({ n: pj.name, v: pj.version }));
 kontrol('Cura: supported_sdk_versions', Array.isArray(pj.supported_sdk_versions)
-  && pj.supported_sdk_versions.includes('7.0.0')
-  && pj.supported_sdk_versions.includes('8.0.0'),
+  && pj.supported_sdk_versions.includes('7.7.0')
+  && pj.supported_sdk_versions.includes('7.9.0')
+  && pj.supported_sdk_versions.includes('8.0.0')
+  && pj.supported_sdk_versions.includes('8.13.0'),
   JSON.stringify(pj.supported_sdk_versions));
 
 const ext = fs.readFileSync(path.join(curaDizin, 'BaskiHesapExtension.py'), 'utf8');
