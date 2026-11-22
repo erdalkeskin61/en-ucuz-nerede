@@ -967,6 +967,18 @@
     olaylariBagla();
     stlOlaylariBagla();
     teklifFisiniBagla();
+
+    // Slicer sayfasından/eklentiden gelen ?gramaj=...&sure=...&tlKg=... ön doldurması
+    try {
+      const qs = new URLSearchParams(location.search);
+      const qg = Number(qs.get('gramaj'));
+      const qSure = Number(qs.get('sure'));
+      const qTlKg = Number(qs.get('tlKg'));
+      if (Number.isFinite(qg) && qg >= 1 && qg <= 50000) durum.gramaj = Math.round(qg * 10) / 10;
+      if (Number.isFinite(qSure) && qSure > 0 && qSure <= 500) durum.sureSaat = Math.round(qSure * 100) / 100;
+      if (Number.isFinite(qTlKg) && qTlKg >= 50 && qTlKg <= 20000) durum.manuelTlKg = Math.round(qTlKg * 100) / 100;
+    } catch { /* yoksay */ }
+
     // İlk boyama: JS yüklenmeden önce de anlamlı görünsün
     $('gramaj').value = String(durum.gramaj);
     $('gramajKaydirici').value = String(durum.gramaj);

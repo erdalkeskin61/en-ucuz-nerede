@@ -113,21 +113,53 @@ def _renk_adi(hex_kod):
     return en_yakin if en_mesafe <= 3 * (40 ** 2) else None
 
 
+def _coklu_sayi_topla(metin):
+    """'120.5, 45.2' ya da '340.5' satırındaki tüm pozitif sayıları toplar."""
+    parcalar = re.findall(r"[\d]+(?:[.,][\d]+)?", str(metin or ""))
+    degerler = [_sayi(p) for p in parcalar]
+    degerler = [v for v in degerler if v and v > 0]
+    return round(sum(degerler), 2) if degerler else None
+
+
+def _baski_suresi_dk(metin):
+    """'estimated printing time ... = 2h 15m 10s' veya '1d 3h 20m' satırını dakikaya çevirir."""
+    m = re.search(
+        r";\s*estimated printing time[^:=\r\n]*[:=]\s*([^\r\n]+)",
+        metin,
+        re.IGNORECASE,
+    )
+    if not m:
+        return None
+    s = m.group(1)
+    gun = re.search(r"(\d+)\s*(?:d|g)", s, re.IGNORECASE)
+    saat = re.search(r"(\d+)\s*(?:h|s\b)", s, re.IGNORECASE)
+    dk = re.search(r"(\d+)\s*m\b", s, re.IGNORECASE)
+    sn = re.search(r"(\d+)\s*s\b", s, re.IGNORECASE)
+    toplam = (
+        (int(gun.group(1)) * 1440 if gun else 0)
+        + (int(saat.group(1)) * 60 if saat else 0)
+        + (int(dk.group(1)) if dk else 0)
+        + (round(int(sn.group(1)) / 60.0) if sn else 0)
+    )
+    return toplam if toplam > 0 else None
+
+
 def gcode_meta_ayikla(dosya_yolu):
     """
     G-Code dosyasının son 200 satırından filament meta verisini çıkarır.
 
     Desteklenen biçimler:
-      ; filament used [g] = 340.5      (Prusa/Bambu/Orca)
+      ; filament used [g] = 340.5         (Prusa/Bambu/Orca tek veya AMS virgüllü)
       ; total filament used [g] = 340
-      ; filament used [mm] = 1025.5    (gram yoksa mm → g)
-      ; filament_type = PLA
+      ; total filament weight [g] : 185.4
+      ; filament used [mm] = 1025.5       (gram yoksa mm → g)
+      ; filament_type = PLA               (veya PLA;PETG)
       ; filament_colour = #000000
-      ; filament_settings_id = "Generic PLA"
+      ; estimated printing time ... = 2h 15m
 
-    @returns {{gramaj:float|None, malzeme:str, renk:str|None, kaynak:str}}
+    @returns {{gramaj:float|None, malzeme:str, renk:str|None, sureDk:int|None, kaynak:str}}
     """
-    sonuc = {"gramaj": None, "malzeme": "PLA", "renk": None, "kaynak": "prusa"}
+    sonuc = {"gramaj": None, "malzeme": "PLA", "renk": None, "sureDk": None, "kaynak": "prusa"}
 
     try:
         with open(dosya_yolu, "r", encoding="utf-8", errors="replace") as f:
@@ -137,37 +169,42 @@ def gcode_meta_ayikla(dosya_yolu):
 
     metin = "".join(satirlar)
 
-    # --- Gramaj (gram) ---
+    # --- Gramaj (gram) — AMS / çok renkli virgüllü listeleri de destekler ---
     for desen in (
-        r";\s*filament used \[g\]\s*=\s*([\d.,]+)",
-        r";\s*total filament used \[g\]\s*=\s*([\d.,]+)",
-        r";\s*filament_used_g\s*[:=]\s*([\d.,]+)",
+        r";\s*total filament (?:used|weight) \[g\]\s*[:=]\s*([^\r\n]+)",
+        r";\s*filament used \[g\]\s*[:=]\s*([^\r\n]+)",
+        r";\s*filament_used_g\s*[:=]\s*([^\r\n]+)",
     ):
         for m in re.finditer(desen, metin, re.IGNORECASE):
-            deger = _sayi(m.group(1))
+            deger = _coklu_sayi_topla(m.group(1))
             if deger and deger > 0:
-                # Çok filamentli baskıda en büyük değeri al (ana filament)
                 if sonuc["gramaj"] is None or deger > sonuc["gramaj"]:
                     sonuc["gramaj"] = deger
 
     # --- Gramaj (mm) → gram (1,75 mm PLA ≈ 2,98 g/m) ---
     if sonuc["gramaj"] is None:
-        for m in re.finditer(r";\s*filament used \[mm\]\s*=\s*([\d.,]+)", metin, re.IGNORECASE):
-            mm = _sayi(m.group(1))
+        for m in re.finditer(r";\s*filament used \[mm\]\s*[:=]\s*([^\r\n]+)", metin, re.IGNORECASE):
+            mm = _coklu_sayi_topla(m.group(1))
             if mm and mm > 0:
                 g = mm / 1000.0 * 2.98
                 if sonuc["gramaj"] is None or g > sonuc["gramaj"]:
                     sonuc["gramaj"] = round(g, 2)
 
-    # --- Malzeme ---
-    m = re.search(r";\s*filament_type\s*=\s*([A-Za-z0-9+\-]+)", metin, re.IGNORECASE)
+    # --- Malzeme (AMS çoklu "PLA;PETG" → ilk geçerli malzeme) ---
+    m = re.search(r";\s*filament_type\s*=\s*([^\r\n]+)", metin, re.IGNORECASE)
     if m:
-        sonuc["malzeme"] = m.group(1).strip().upper()
+        ilk = re.split(r"[;,\s]+", m.group(1).strip())[0]
+        temiz = re.sub(r"[^A-Za-z0-9+\-]", "", ilk).upper()
+        if temiz:
+            sonuc["malzeme"] = temiz
 
     # --- Renk ---
     m = re.search(r";\s*filament_colou?r\s*=\s*(#[0-9A-Fa-f]{6})", metin, re.IGNORECASE)
     if m:
         sonuc["renk"] = _renk_adi(m.group(1))
+
+    # --- Tahmini baskı süresi (dakika) ---
+    sonuc["sureDk"] = _baski_suresi_dk(metin)
 
     # --- Kaynak tahmini (yalnızca etiket için; davranışı değiştirmez) ---
     alt = metin.lower()
@@ -185,7 +222,7 @@ def gcode_meta_ayikla(dosya_yolu):
 # Bildirim (ayrı süreçte çalışır)
 # ----------------------------------------------------------------------
 def _windows_toast(baslik, govde, link):
-    """Windows: PowerShell toast (Windows 10/11) → yoksa MessageBox."""
+    """Windows: tıklanınca tarayıcıyı açabilen PowerShell toast bildirimi."""
     if link:
         script = (
             "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, "
@@ -195,12 +232,16 @@ def _windows_toast(baslik, govde, link):
             "$Metinler = $Sablon.GetElementsByTagName('text');"
             "$Metinler.Item(0).AppendChild($Sablon.CreateTextNode($env:ENU_TITLE)) > $null;"
             "$Metinler.Item(1).AppendChild($Sablon.CreateTextNode($env:ENU_BODY)) > $null;"
+            "if ($env:ENU_LINK) { "
+            "$Sablon.DocumentElement.SetAttribute('activationType', 'protocol'); "
+            "$Sablon.DocumentElement.SetAttribute('launch', $env:ENU_LINK); "
+            "}"
             "$toast = [Windows.UI.Notifications.ToastNotification]::new($Sablon);"
             "$toast.Tag = 'BaskiHesap';"
             "[Windows.UI.Notifications.ToastNotificationManager]::"
             "CreateToastNotifier('Baskı Hesap').Show($toast);"
         )
-        ortam = dict(os.environ, ENU_TITLE=baslik, ENU_BODY=govde)
+        ortam = dict(os.environ, ENU_TITLE=baslik, ENU_BODY=govde, ENU_LINK=str(link))
         try:
             subprocess.run(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
@@ -273,7 +314,7 @@ def bildirim_goster(baslik, govde, link=None):
 # ----------------------------------------------------------------------
 # API sorgusu
 # ----------------------------------------------------------------------
-def api_sorgula(malzeme, gramaj, renk=None, kaynak="orca", taban=None):
+def api_sorgula(malzeme, gramaj, renk=None, kaynak="orca", taban=None, sure_dk=None):
     """API'yi sorgular. Hata/zaman aşımında None döner."""
     taban = (taban or API_TABAN_DEFAULT).rstrip("/")
     parametreler = "malzeme=%s&gramaj=%s&kaynak=%s" % (
@@ -281,6 +322,8 @@ def api_sorgula(malzeme, gramaj, renk=None, kaynak="orca", taban=None):
     )
     if renk:
         parametreler += "&renk=" + _url_kodla(renk)
+    if sure_dk:
+        parametreler += "&sureDk=" + _url_kodla(sure_dk)
     url = "%s%s?%s" % (taban, API_YOL, parametreler)
 
     try:
@@ -316,6 +359,7 @@ def bildirimi_ayri_baslat(meta, taban):
         "malzeme": meta.get("malzeme"),
         "gramaj": meta.get("gramaj"),
         "renk": meta.get("renk"),
+        "sureDk": meta.get("sureDk"),
         "kaynak": meta.get("kaynak"),
         "taban": taban,
     }, ensure_ascii=False)
@@ -365,7 +409,7 @@ def ana(argv):
         if not gramaj:
             return 0
         veri = api_sorgula(malzeme, gramaj, istek.get("renk"),
-                           istek.get("kaynak") or "orca", istek.get("taban"))
+                           istek.get("kaynak") or "orca", istek.get("taban"), istek.get("sureDk"))
         if not veri or veri.get("status") != "success" or not veri.get("enUcuz"):
             return 0
         en_ucuz = veri["enUcuz"]

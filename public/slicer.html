@@ -59,7 +59,7 @@
         <span class="hero-rozet">🧩 Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>
         <h1>Dilimleme bittiği anda<br><b>en ucuz filamenti</b> göster</h1>
         <p>Web sitesine gitmeye gerek yok. Slice tuşuna bastığında harcanacak gramajı
-          okur, 61 mağazadaki stoklu en ucuz makarayı bulur ve tek tıkla satın alma
+          okur, 68 mağazadaki stoklu en ucuz makarayı bulur ve tek tıkla satın alma
           bağlantısı verir.</p>
         <div class="hero-istatistik">
           <span>⚡ &lt; 50 ms API</span>
@@ -69,17 +69,29 @@
       </div>
     </section>
 
-    <!-- Canlı API örneği (gerçek veri) -->
+    <!-- Canlı API örneği & G-Code sürükle-bırak (gerçek veri) -->
     <section class="sl-canli" aria-labelledby="slCanliBaslik">
       <div class="sl-canli-ust">
-        <h2 id="slCanliBaslik">🔎 Canlı örnek — şu an ne diyor?</h2>
-        <span class="sl-canli-etiket">gerçek veri</span>
+        <h2 id="slCanliBaslik">🔎 Canlı örnek &amp; anında G-Code analizi</h2>
+        <span class="sl-canli-etiket">68 mağaza · gerçek veri</span>
       </div>
+
+      <div class="sl-drop" id="slDropAlani" tabindex="0" role="button" aria-label="G-Code dosyasını sürükleyip bırakın veya seçin">
+        <input type="file" id="slGcodeInput" accept=".gcode,.gco,.g,.txt" hidden />
+        <span class="sl-drop-ikon" aria-hidden="true">📂</span>
+        <div class="sl-drop-metin">
+          <b>İsterseniz bir <code>.gcode</code> dosyasını buraya bırakın (veya tıklayın)</b>
+          <span>Bambu Studio, OrcaSlicer, PrusaSlicer, Cura meta verisi tarayıcıda okunur; dosya sunucuya yüklenmez.</span>
+        </div>
+      </div>
+      <div class="sl-gcode-ozet" id="slGcodeOzet" hidden></div>
+
       <div class="sl-canli-form">
         <label>
           Malzeme
           <select id="slMalzeme">
             <option value="PLA" selected>PLA</option>
+            <option value="PLA-CF">PLA-CF</option>
             <option value="PETG">PETG</option>
             <option value="ABS">ABS</option>
             <option value="TPU">TPU</option>
@@ -97,6 +109,9 @@
       </div>
       <div class="sl-canli-sonuc" id="slSonuc" aria-live="polite">
         <span class="sl-bekle">⏳ Sorgulanıyor…</span>
+      </div>
+      <div class="sl-json-bar" id="slJsonBar" hidden>
+        <button type="button" class="sl-mini-btn" id="slJsonToggle">{"{ }"} API JSON çıktısını göster</button>
       </div>
       <pre class="sl-json" id="slJson" hidden></pre>
     </section>
@@ -186,7 +201,7 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
         <div class="sl-akis-adim">
           <span class="sl-akis-no">3</span>
           <b>API sorgular</b>
-          <span>61 mağazadaki stoklu en ucuz makara, 1,5 sn zaman aşımıyla.</span>
+          <span>68 mağazadaki stoklu en ucuz makara, 1,5 sn zaman aşımıyla.</span>
         </div>
         <div class="sl-akis-adim">
           <span class="sl-akis-no">4</span>

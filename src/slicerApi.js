@@ -20,6 +20,7 @@
 import { dbBaglantisi } from './store.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { config } from './config.js';
+import { slugYap } from './widget.js';
 
 /* ------------------------------------------------------------------ */
 /* Yardımcılar                                                         */
@@ -143,17 +144,22 @@ export function slicerFilamentBul(opts = {}) {
       || malzemeAilesi(d.malzeme || '');
     if (!aile || aile !== istenenAile) continue;
 
-    // ₺/kg: kartın birim fiyatı; yoksa başlıktaki gramajdan türetilir.
-    let tlKg = sayi(d.birimFiyat);
-    if (!tlKg) {
+    // ₺/kg ve gerçek makara gramajı: karttan ya da başlıktaki gramajdan türetilir.
+    let makaraGram = sayi(d.makaraGram);
+    if (!makaraGram) {
       const m = /(\d+(?:[.,]\d+)?)\s*(kg|gr|g)\b/i.exec(String(d.urun || ad));
       if (m) {
         const miktar = parseFloat(String(m[1]).replace(',', '.'));
         const gram = m[2].toLowerCase() === 'kg' ? miktar * 1000 : miktar;
-        if (gram >= 100) tlKg = fiyat / (gram / 1000);
+        if (gram >= 100) makaraGram = gram;
       }
     }
+    let tlKg = sayi(d.birimFiyat);
+    if (!tlKg && makaraGram >= 100) {
+      tlKg = fiyat / (makaraGram / 1000);
+    }
     if (!tlKg || tlKg <= 0) continue;
+    if (!makaraGram || makaraGram < 100) makaraGram = 1000;
 
     // Tekil ürün adı (aynı ürün farklı mağazalarda olabilir → en ucuz zaten ilk).
     const anahtar = katla(ad);
@@ -175,8 +181,9 @@ export function slicerFilamentBul(opts = {}) {
       ilan: d.urun || null,
       site: d.site || null,
       siteId: d.site_id || d.siteId || null,
-      fiyat: yuvarla(fiyat, 2),      // makara (1 kg) fiyatı
+      fiyat: yuvarla(fiyat, 2),      // gerçek makara fiyatı
       tlKg: yuvarla(tlKg, 2),
+      makaraGram: Math.round(makaraGram),
       stok: true,
       url,
       aile,
@@ -207,6 +214,7 @@ export function slicerFilamentBul(opts = {}) {
   return {
     ok: true,
     urun: enIyi,
+    adaylar: adaylar.slice(0, 4),
     alternatifler: adaylar.length - 1,
     renkBulundu: renkler ? enIyi.renkUyum === true : null,
   };
@@ -262,47 +270,67 @@ export function slicerOneri(girdi = {}) {
     };
   }
 
-  const u = bulunan.urun;
-  // Parça başı maliyet: makara fiyatı üzerinden gramaj oranı.
-  const parcaBasiMaliyet = yuvarla((gramaj / 1000) * u.fiyat, 2);
-  const makaradanCikanAdet = Math.max(1, Math.floor(1000 / gramaj));
-  const kalanGramaj = yuvarla(1000 - (gramaj % 1000), 1);
+  const sureDkHam = Number(girdi.sureDk);
+  const sureDk = Number.isFinite(sureDkHam) && sureDkHam > 0 ? Math.round(sureDkHam) : null;
 
-  // Yönlendirme: tıklama kaydı + ref atfı için kendi ucumuzdan geçir.
-  const parametreler = new URLSearchParams();
-  parametreler.set('urunId', String(u.katalogId));
-  if (kaynak) parametreler.set('kaynak', kaynak);
-  if (renk) parametreler.set('renk', renk);
-  const yonlendirmeLinki = taban
-    ? `${taban}/yonlendir?${parametreler.toString()}`
-    : (u.url || null);
+  const adayNesnesi = (item) => {
+    const makaraGram = Number(item.makaraGram) >= 100 ? Number(item.makaraGram) : 1000;
+    const parcaBasiMaliyet = yuvarla((gramaj / 1000) * item.tlKg, 2);
+    const makaradanCikanAdet = Math.max(1, Math.floor(makaraGram / gramaj));
+    const kalanGramaj = yuvarla(makaraGram - (gramaj % makaraGram), 1);
+
+    const parametreler = new URLSearchParams();
+    parametreler.set('urunId', String(item.katalogId));
+    if (kaynak) parametreler.set('kaynak', kaynak);
+    if (renk) parametreler.set('renk', renk);
+    const yonlendirmeLinki = taban
+      ? `${taban}/yonlendir?${parametreler.toString()}`
+      : (item.url || null);
+    const slug = slugYap(item.ad);
+    const karsilastirmaUrl = slug
+      ? (taban ? `${taban}/urun/${slug}` : `/urun/${slug}`)
+      : null;
+
+    return {
+      urunAdi: item.ad,
+      ilan: item.ilan,
+      magaza: item.site,
+      siteId: item.siteId,
+      fiyat: item.fiyat,
+      tlKg: item.tlKg,
+      makaraGram,
+      parcaBasiMaliyet,
+      makaradanCikanAdet,
+      kalanGramaj,
+      stok: true,
+      renkUyum: renk ? item.renkUyum === true : null,
+      yonlendirmeLinki,
+      karsilastirmaUrl,
+      hamLink: item.url,
+      guncelleme: item.ts,
+    };
+  };
+
+  const u = bulunan.urun;
+  const enUcuz = adayNesnesi(u);
+  const enIyiAlternatifler = (bulunan.adaylar || [u]).map(adayNesnesi);
+  const maliyetParam = new URLSearchParams({ gramaj: String(gramaj), tlKg: String(u.tlKg) });
+  if (sureDk) maliyetParam.set('sure', String(yuvarla(sureDk / 60, 2)));
+  const maliyetUrl = `${taban || ''}/maliyet.html?${maliyetParam.toString()}`;
 
   const renkNotu = renk
     ? (bulunan.renkBulundu ? `${renk} ` : `${renk} (muadil renk) `)
     : '';
   const bildirimMetni = `Bu baskı ${gramaj} g ${renkNotu}${malzeme} gerektiriyor. `
     + `En ucuz alternatif ₺${u.fiyat.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} `
-    + `ile ${u.site} mağazasında! (Parça maliyeti: ₺${parcaBasiMaliyet.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+    + `ile ${u.site} mağazasında! (Parça maliyeti: ₺${enUcuz.parcaBasiMaliyet.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
 
   return {
     status: 'success',
     ...temel,
-    enUcuz: {
-      urunAdi: u.ad,
-      ilan: u.ilan,
-      magaza: u.site,
-      siteId: u.siteId,
-      fiyat: u.fiyat,
-      tlKg: u.tlKg,
-      parcaBasiMaliyet,
-      makaradanCikanAdet,
-      kalanGramaj,
-      stok: true,
-      renkUyum: renk ? u.renkUyum === true : null,
-      yonlendirmeLinki,
-      hamLink: u.url,
-      guncelleme: u.ts,
-    },
+    enUcuz,
+    enIyiAlternatifler,
+    maliyetUrl,
     alternatifSayisi: bulunan.alternatifler || 0,
     bildirimMetni,
   };
@@ -317,7 +345,8 @@ export function slicerOneriOnbellekli(girdi = {}) {
   const gramaj = Number(girdi.gramaj) > 0 ? Number(girdi.gramaj) : null;
   const renk = String(girdi.renk || '').trim() || '';
   const kaynak = String(girdi.kaynak || '').trim().toLowerCase();
-  const anahtar = `${malzeme}|${gramaj ?? ''}|${katla(renk)}|${kaynak}`;
+  const sureDk = Number(girdi.sureDk) > 0 ? Math.round(Number(girdi.sureDk)) : '';
+  const anahtar = `${malzeme}|${gramaj ?? ''}|${katla(renk)}|${kaynak}|${sureDk}`;
   const simdi = Number.isFinite(girdi.simdi) ? girdi.simdi : Date.now();
 
   const kayit = ONERI_CACHE.get(anahtar);
@@ -367,6 +396,7 @@ export function slicerApiBagla(app) {
         gramaj: req.query.gramaj,
         renk: req.query.renk,
         kaynak: req.query.kaynak,
+        sureDk: req.query.sureDk,
         tabanUrl: config.publicUrl,
       });
       // 60 sn tarayıcı önbelleği (spec) + biraz bayat kullanım payı.
