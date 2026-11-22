@@ -91,7 +91,16 @@ export function ideasoftKlasikSite(cfg) {
         }
       }
 
-      const stokYok = /class="[^"]*out-of-stock|tükendi|stokta yok/i.test(html);
+      const htmlTemiz = html
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ');
+      const anaBlok = htmlTemiz.split(/<div[^>]+class=['"][^'"]*\b(?:showcase-products|similar-products|related-products)\b/i)[0] || htmlTemiz;
+      const semadakiDurum = htmlTemiz.match(/itemprop=['"]availability['"][^>]+href=['"][^'"]*\/(OutOfStock|InStock)['"]/i)?.[1]
+        || htmlTemiz.match(/href=['"][^'"]*\/(OutOfStock|InStock)['"][^>]+itemprop=['"]availability['"]/i)?.[1]
+        || null;
+      const stokYok = semadakiDurum
+        ? semadakiDurum.toLowerCase() === 'outofstock'
+        : /class="[^"]*out-of-stock|remind-me-button|data-selector=['"]stock-warning['"]|gelince haber ver|tükendi|stokta yok/i.test(anaBlok);
 
       // Marka: temaya göre farklı yerlerde (2026-10-25: robitshop "product-brands"
       // satırını kullanıyor — yalnız product-brand arandığı için marka null kalıyordu).
