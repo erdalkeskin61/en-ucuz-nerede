@@ -13,11 +13,12 @@
  * ve `anlikOnbellek` kayıtlarından okunur; kayıt yoksa uydurma fiyat basılmaz,
  * doğrudan canlı tarama butonuna yönlendirilir.
  */
-import { katalogGetir, radarDurumVerisi } from './otonomRadar.js';
+import { katalogGetir, radarDurumVerisi, teklifKategoriyeUygunMu } from './otonomRadar.js';
 import { anlikAl, sorgudanAnlikAl, snapshotAra, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
 import { katalogUrunleriAra } from './katalogSync.js';
 import { formatTL, parcaMi, slugYap } from './util.js';
 export { slugYap };
+import { birimFiyatHesapla } from './birimFiyat.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
@@ -158,6 +159,7 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
   for (const r of sonuclar) {
     if (r?.status !== 'found' || !r?.product) continue;
     if (r.renkAyni === false) continue;
+    if (!teklifKategoriyeUygunMu(r, kayit)) continue;
     const pr = r.product.pricing || {};
     const toplam = Number(pr.toplam ?? pr.araToplam ?? r.product.sellingPrice);
     if (!Number.isFinite(toplam) || toplam <= 0) continue;
@@ -407,6 +409,11 @@ export function seoUrunListesi({ taze = false } = {}) {
     const sonTs = Math.max(snapshotTs, durumTs) || null;
     const katSlug = anaKategoriSlugBul(k);
 
+    const enIyiBirim = enIyi ? (birimFiyatHesapla(enIyi.baslik || k.ad, enIyi.fiyat) || birimFiyatHesapla(k.ad, enIyi.fiyat)) : null;
+    const birimMetni = enIyiBirim
+      ? `₺${formatTL(enIyiBirim.birimFiyat).replace(/\s*TL$/, '')} / ${enIyiBirim.birim === 'L' ? 'L' : 'kg'}`
+      : (durum?.birimMetni || null);
+
     return {
       id: k.id,
       kaynakTip: 'radar',
@@ -427,7 +434,7 @@ export function seoUrunListesi({ taze = false } = {}) {
       marka: snapshot?.payload?.kaynak?.brand || null,
       modelKodu: snapshot?.payload?.kaynak?.modelKodu || null,
       barkod: snapshot?.payload?.kaynak?.barkod || null,
-      birimMetni: durum?.birimMetni || null,
+      birimMetni,
       sonTs,
       lastmod: sonTs ? new Date(sonTs).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
     };

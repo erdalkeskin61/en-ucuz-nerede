@@ -88,8 +88,8 @@ kontrol('Kobra X = Kobra X (aynı ürün)',
   !!matchProducts(mk('Anycubic Kobra X'), mk('Anycubic Kobra x 3D Yazıcı')));
 kontrol('Ender 3 V3 KE = Ender-3 V3 KE', !!matchProducts(
   mk('Creality Ender 3 V3 KE'), mk('Creality Ender-3 V3 KE 3D Yazıcı')));
-kontrol('P1S = P1S Combo', !!matchProducts(
-  mk('Bambu Lab P1S'), mk('Bambu Lab P1S Combo 3D Yazıcı')));
+// 2026-11-22: Combo paket (AMS dahil) ile tek gövde yazıcı ayrı üründür.
+kontrol('P1S ≠ P1S Combo', kobRet('Bambu Lab P1S', 'Bambu Lab P1S Combo 3D Yazıcı'));
 
 // Kaynak arama puanı: yanlış model adayı hiç puan almamalı.
 const { sorguPuanla } = await import('../src/urunArama.js');
@@ -202,6 +202,16 @@ kontrol('anlamsız marka alanı ("PLA") kanıt sayılmaz', !!matchProducts(
 kontrol('RAL renk kodu model serisi sayılmaz', !!matchProducts(
   mk('Porima PLA Filament - Siyah / 1.75mm / 1kg'),
   mk('Porima PLA Filament - Siyah RAL9005 / 1.75mm / 1kg')));
+
+// 2026-11-22: Veri hijyeni regresyonları
+kontrol('başlangıç markası farklıysa hatalı brand metadata kandıramaz (Porima ≠ Robo90)', !matchProducts(
+  { title: 'Porima Eco PLA Filament Gri 1kg', brand: 'Porima', modelCode: null, barcode: null },
+  { title: 'Robo90 Gri Eco PLA Filament', brand: 'Porima', modelCode: null, barcode: null }));
+kontrol('teklif filtresi Creality Ender PLA Gri için Siyah/Rainbow ilanı eler',
+  !teklifKategoriyeUygunMu(teklif('Creality Ender PLA+ Siyah Filament 1.75mm 1kg', 569), { id: 1, ad: 'Creality Ender PLA Gri 1kg', kategori: 'filament' })
+  && !teklifKategoriyeUygunMu(teklif('Creality Ender PLA+ Filament Rainbow 1.75mm 1kg', 650), { id: 1, ad: 'Creality Ender PLA Gri 1kg', kategori: 'filament' }));
+kontrol('teklif filtresi Bambu Lab P1S tek gövde için P1S Combo eler',
+  !teklifKategoriyeUygunMu(teklif('Bambu Lab P1S Combo 3D Yazıcı', 32900), { id: 7, ad: 'Bambu Lab P1S 3D Yazıcı', kategori: 'yazici' }));
 
 console.log(`SORGU-ESLESME ${gecen}/${toplam}`);
 process.exit(gecen === toplam ? 0 : 1);

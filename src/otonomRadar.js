@@ -28,7 +28,10 @@ import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { birimFiyatHesapla } from './birimFiyat.js';
 import { anlikYaz } from './anlikOnbellek.js';
 import { esc, botPara as para, kargoMetni } from './telegramBot.js';
-import { modelSerisiCakismasi, titleSimilarity, parcaMi, kanonikUrunUrl, slugYap } from './util.js';
+import {
+  modelSerisiCakismasi, titleSimilarity, parcaMi, kanonikUrunUrl, slugYap,
+  extractColorIntent, adayRenkDurumu, kritikVaryantCakismasi, muhtemelMarka, brandAyni, sadelestir,
+} from './util.js';
 import { fiyatSerisi } from './grafik.js';
 import { fiyatGrafigiUret } from './fiyatGrafik.js';
 import { whatsappKartOlustur, whatsappKanalGonder } from './whatsappKanal.js';
@@ -1000,12 +1003,17 @@ export function teklifKategoriyeUygunMu(r, kayit = null) {
   const kat = String(kayit?.kategori || '').toLowerCase();
   const kayitAd = String(kayit?.ad || '').toLowerCase();
 
-  // 0) MODEL SERİSİ KİMLİĞİ (2026-11-04) — en son güvenlik ağı.
-  // Katalog "Anycubic Kobra 2 Neo" iken teklif "Anycubic Kobra 4" ise bu teklif
-  // KESİNLİKLE o ürün değildir; fiyat en ucuz olsa bile gösterilmez/linkle
-  // yönlendirilmez. Kaynak hatalı çözülmüş olsa bile yanlış ürün satın
-  // aldırılmaz: ürün "stokta teklif yok" olarak dürüstçe raporlanır.
+  // 0) MODEL SERİSİ, KRİTİK VARYANT (Combo/Pro/Max) VE BAŞLIK MARKASI (2026-11-22)
   if (kayit?.ad && modelSerisiCakismasi(kayit.ad, baslik)) return false;
+  if (kayit?.ad && kritikVaryantCakismasi(kayit.ad, baslik)) return false;
+  if (kayit?.ad) {
+    const kMarka = muhtemelMarka(kayit.ad);
+    const bMarka = muhtemelMarka(baslik);
+    const bTemiz = sadelestir(baslik);
+    if (kMarka && bMarka && !brandAyni(kMarka, bMarka) && !bTemiz.includes(kMarka)) {
+      return false;
+    }
+  }
 
   // 1) 3D Yazıcı Kategorisi Kontrolü
   if (kat === 'yazici' || /yazıcı|yazici|printer/i.test(kayitAd)) {
@@ -1025,16 +1033,17 @@ export function teklifKategoriyeUygunMu(r, kayit = null) {
     if (SATILAMAZ_PARCA_METIN.test(baslik) && !SATILAMAZ_PARCA_METIN.test(kayitAd)) {
       return false;
     }
-    // Renk Uyuşmazlığı: Eğer kayıt açıkça belirli bir renk istiyorsa (ör. "Gri"),
-    // adayın başlığında bu renk yoksa ve başka estetik renk (ör. "mermer", "siyah") geçiyorsa elenir
-    if (/gri/i.test(kayitAd) && !/gri|grey|gray/i.test(baslik) && /mermer|marble|siyah|black|beyaz|white|kırmızı|red/i.test(baslik)) {
-      return false;
-    }
-    if (/siyah/i.test(kayitAd) && !/siyah|black/i.test(baslik) && /beyaz|white|gri|grey|kırmızı|red/i.test(baslik)) {
-      return false;
-    }
-    if (/beyaz/i.test(kayitAd) && !/beyaz|white/i.test(baslik) && /siyah|black|gri|grey|kırmızı|red/i.test(baslik)) {
-      return false;
+    // Genel Renk Uyuşmazlığı: kayıt açıkça bir renk belirtiyorsa (Gri, Siyah, Beyaz,
+    // Kırmızı, Mavi vb.) farklı renkteki veya Rainbow/Çok Renkli ilanlar elenir.
+    const cokRenkliRe = /\b(rainbow|gökkuşağı|gokkusagi|multicolor|çok\s*renkli|cok\s*renkli)\b/i;
+    if (cokRenkliRe.test(baslik) && !cokRenkliRe.test(kayitAd)) return false;
+    const kayitRenk = extractColorIntent(kayit?.ad || '');
+    if (kayitRenk) {
+      const baslikDurum = adayRenkDurumu(baslik, kayitRenk);
+      if (baslikDurum.durum === 'farkli') return false;
+      if (baslikDurum.durum === 'bilinmiyor' && p.color) {
+        if (adayRenkDurumu(String(p.color), kayitRenk).durum === 'farkli') return false;
+      }
     }
   }
 

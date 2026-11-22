@@ -2646,15 +2646,29 @@ function tasarrufBandiCiz(sonuc, opts = {}) {
   bant.hidden = false;
 
   // 🕒 Güvenilirlik mührü: önbellekten gelen aramada "X dk önce", canlıda "az önce".
+  // İptal/kısmi taramada "69 mağazadan canlı doğrulandı" yerine gerçek taranan sayıyı göster.
   if (dogrulamaMetin) {
     if (opts.yasMetni) muhurYasi = opts.yasMetni;
     else if (opts.taze === true) muhurYasi = null;
-    const siteSayisi = (Array.isArray(SITE_SIRASI) && SITE_SIRASI.length) ? SITE_SIRASI.length : 62;
+    const ozet = sonuc?.ozet || {};
+    const toplamSite = Math.max(
+      (Array.isArray(SITE_SIRASI) && SITE_SIRASI.length) ? SITE_SIRASI.length : 0,
+      Array.isArray(sonuc?.sonuclar) ? sonuc.sonuclar.length : 0,
+    ) || 62;
+    const taranmayan = Number(ozet.taranmayanSiteSayisi) || 0;
+    const kismi = ozet.iptalEdildi === true || taranmayan > 0;
+    const taranan = Math.max(0, toplamSite - taranmayan);
     const yas = muhurYasi
       || (Number.isFinite(Number(sonuc?.ts)) ? vitrinYas(new Date(Number(sonuc.ts)).toISOString()) : null);
-    dogrulamaMetin.textContent = yas
-      ? `🕒 ${yas} ${siteSayisi} mağazadan doğrulandı`
-      : `🕒 Az önce ${siteSayisi} mağazadan canlı doğrulandı`;
+    if (kismi) {
+      dogrulamaMetin.textContent = yas
+        ? `⚠️ ${yas} Kısmi tarama (${taranan}/${toplamSite} mağaza)`
+        : `⚠️ Kısmi tarama (${taranan}/${toplamSite} mağaza)`;
+    } else {
+      dogrulamaMetin.textContent = yas
+        ? `🕒 ${yas} ${toplamSite} mağazadan doğrulandı`
+        : `🕒 Az önce ${toplamSite} mağazadan canlı doğrulandı`;
+    }
   }
 }
 

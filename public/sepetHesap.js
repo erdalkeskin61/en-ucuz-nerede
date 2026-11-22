@@ -359,7 +359,16 @@ export function paketCoz(paket, teklifler) {
         });
       }
     }
-    parcalar.push({ etiket: parca.etiket, adet: parca.adet || 1, teklif: secili });
+    const eklenenAdet = parca.adet || 1;
+    const teklifAnahtari = String(secili.url || secili.ad || '').trim().toLowerCase();
+    const mevcut = parcalar.find(
+      p => String(p.teklif?.url || p.teklif?.ad || '').trim().toLowerCase() === teklifAnahtari,
+    );
+    if (mevcut) {
+      mevcut.adet = (mevcut.adet || 1) + eklenenAdet;
+    } else {
+      parcalar.push({ etiket: parca.etiket, adet: eklenenAdet, teklif: secili });
+    }
   }
 
   // Paket toplamı: adet × gerçek fiyat (kargo hariç; kargo sepet motorunda).

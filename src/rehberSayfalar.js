@@ -14,10 +14,19 @@
  * `seoUrunListesi()` sonuçları gösterilir, kayıt yoksa "Canlı Tara" sunulur.
  */
 import { htmlKacis, sayfaIskeleti } from './seoSayfalar.js';
-import { formatTL } from './util.js';
+import { formatTL, parcaMi } from './util.js';
 
 function urunBul(tumUrunler, regex) {
-  return tumUrunler.find(u => regex.test(`${u.ad} ${u.slug} ${u.sorgu}`)) || null;
+  const comboIstendi = /combo/i.test(regex.source);
+  const adaylar = tumUrunler.filter((u) => {
+    if (!regex.test(`${u.ad} ${u.slug} ${u.sorgu}`)) return false;
+    if (parcaMi(u.ad)) return false;
+    if (u.kategori !== 'yazici' && u.kategoriSlug !== '3d-yazici') return false;
+    if (u.enUcuzFiyat > 0 && u.enUcuzFiyat < 4500) return false;
+    if (!comboIstendi && /\bcombo\b/i.test(u.ad)) return false;
+    return true;
+  });
+  return adaylar.find(u => u.stokluSayisi > 0 && u.enUcuzFiyat > 0) || adaylar[0] || null;
 }
 
 function heroAlani({ rozet, baslikHtml, altMetin, istatistikler = [] }) {

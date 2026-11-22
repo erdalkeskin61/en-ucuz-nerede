@@ -260,6 +260,10 @@ kontrol('hızlı paket: değişim gerçek ürünü gösterir',
   /Hyper/.test(hizliCozum.degisimler[0].eklenen), hizliCozum.degisimler[0].eklenen);
 kontrol('hızlı paket toplamı 2×929 + 588,52',
   hizliCozum.tahminiToplam === 2446.52, String(hizliCozum.tahminiToplam));
+const tekHizliCozum = paketCoz(hizli, [TEKLIFLER[5]]);
+kontrol('ikamede aynı ürün tek satırda 3× birleştirilir',
+  tekHizliCozum.parcalar.length === 1 && tekHizliCozum.parcalar[0].adet === 3 && tekHizliCozum.tahminiToplam === 2787,
+  JSON.stringify(tekHizliCozum.parcalar.map(p => p.adet)));
 
 const dayanikli = PAKETLER.find(p => p.id === 'dayanikli');
 const dayanikliCozum = paketCoz(dayanikli, TEKLIFLER);

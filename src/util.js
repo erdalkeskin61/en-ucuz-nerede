@@ -18,7 +18,7 @@ const TR_COLORS = [
   'ten', 'naturel', 'natural',
   // 2026-11-03: Porima/xPLA ürün hatlarında geçen ton adları
   'latte', 'mokka', 'mocha', 'taupe', 'kum', 'buz', 'fıstık yeşili', 'fistik yesili',
-  'yavruağzı', 'yavruagzi', 'beyazımsı', 'kum rengi', 'taş rengi', 'tas rengi',
+  'yavruağzı', 'yavruagzi', 'beyazımsı', 'kum rengi', 'taş rengi', 'tas rengi', 'yeşim', 'yesim', 'jade',
   // 3D Filament estetik varyantları
   'mermer', 'marble', 'ahşap', 'ahsap', 'wood', 'ipek', 'silk', 'glow', 'simli', 'glitter',
 ];
@@ -32,7 +32,7 @@ const EN_TO_TR = {
   cyan: 'mavi', teal: 'mavi', indigo: 'mavi', violet: 'mor', lilac: 'mor', lavender: 'mor',
   magenta: 'pembe', fuchsia: 'pembe', maroon: 'kırmızı', crimson: 'kırmızı', scarlet: 'kırmızı',
   charcoal: 'gri', graphite: 'gri', anthracite: 'antrasit',
-  mint: 'yeşil', lime: 'yeşil', olive: 'yeşil',
+  mint: 'yeşil', lime: 'yeşil', olive: 'yeşil', jade: 'yeşil',
   coral: 'turuncu', peach: 'turuncu',
   bronze: 'kahverengi', cocoa: 'kahverengi', chocolate: 'kahverengi', coffee: 'kahverengi',
   ivory: 'beyaz', bone: 'beyaz', clear: 'şeffaf', transparent: 'şeffaf',
@@ -40,7 +40,7 @@ const EN_TO_TR = {
 };
 
 const COLOR_CANON = {
-  kirmizi: 'kırmızı', gumus: 'gümüş', altin: 'altın', yesil: 'yeşil', sari: 'sarı',
+  kirmizi: 'kırmızı', gumus: 'gümüş', altin: 'altın', yesil: 'yeşil', yesim: 'yeşil', 'yeşim': 'yeşil', sari: 'sarı',
   seffaf: 'şeffaf', 'gok mavisi': 'mavi', 'acik gri': 'gri', 'koyu gri': 'gri',
   'rose gold': 'altın', black: 'siyah', white: 'beyaz', red: 'kırmızı', blue: 'mavi',
   navy: 'lacivert', gray: 'gri', grey: 'gri', silver: 'gümüş', gold: 'altın', pink: 'pembe',
@@ -49,7 +49,7 @@ const COLOR_CANON = {
   cyan: 'mavi', teal: 'mavi', indigo: 'mavi', violet: 'mor', lilac: 'mor', lavender: 'mor',
   magenta: 'pembe', fuchsia: 'pembe', maroon: 'kırmızı', crimson: 'kırmızı', scarlet: 'kırmızı',
   charcoal: 'gri', graphite: 'gri', anthracite: 'antrasit',
-  mint: 'yeşil', lime: 'yeşil', olive: 'yeşil',
+  mint: 'yeşil', lime: 'yeşil', olive: 'yeşil', jade: 'yeşil',
   coral: 'turuncu', peach: 'turuncu',
   bronze: 'kahverengi', cocoa: 'kahverengi', chocolate: 'kahverengi', coffee: 'kahverengi',
   ivory: 'beyaz', bone: 'beyaz', clear: 'şeffaf', transparent: 'şeffaf',
@@ -261,7 +261,7 @@ const TITLE_STOPWORDS_TR = new Set([
 ]);
 
 /** Karşılaştırma için Türkçe diakritikleri sadeleştirir (tuş=tus, aydınlatma=aydinlatma). */
-function sadelestir(s) {
+export function sadelestir(s) {
   return toLowerTr(s).replace(/[ıİ]/g, 'i').replace(/[şŞ]/g, 's').replace(/[ğĞ]/g, 'g')
     .replace(/[üÜ]/g, 'u').replace(/[öÖ]/g, 'o').replace(/[çÇ]/g, 'c');
 }
@@ -813,7 +813,7 @@ export function gercekMarkaBul(rawBrand, rawTitle, siteId = null, siteName = nul
  * takÄ±lar baÅŸlÄ±kta uyuÅŸmuyorsa (biri Pro, diÄŸeri dÃ¼z) kesinlikle farklÄ± modeldir.
  */
 const KRITIK_VARYANTLAR = [
-  'pro max', 'pro', 'plus', 'ultra', 'mini', 'ti', 'super', 'max', 'fe', 'lite', 'se', 'ke', 'fold', 'flip'
+  'pro max', 'pro', 'plus', 'ultra', 'mini', 'ti', 'super', 'max', 'fe', 'lite', 'se', 'ke', 'fold', 'flip', 'combo'
 ];
 
 export function varyantBul(baslik) {
@@ -938,6 +938,26 @@ export function matchProducts(src, cand) {
   // anlamsızsa (ör. Amazon'da "PLA") eskisi gibi kanıt üretmez: başlıktan marka
   // tahmini yalnızca alan gerçekten boşken yapılır (yanlış "basic" tahminini önler).
   const markaAlaniBos = (m) => m == null || String(m).trim() === '';
+  // Başlığın İLK sözcüğü açıkça bir marka adıysa (jenerik "PLA", "3D", renk, ölçü değil)
+  // ve iki ürünün başlangıç markaları FARKLI olup aday kaynak markasını hiç taşımıyorsa
+  // satıcının hatalı brand/vendor alanına güvenilmez (ör. "Porima Eco PLA" ↔ "Robo90 Gri Eco PLA").
+  const ilkMarkaKelimesi = (metin) => {
+    const ilk = sadelestir(metin || '').replace(/[^a-z0-9\s+]/g, ' ').trim().split(/\s+/)[0] || '';
+    if (ilk.length < 3 || /^\d/.test(ilk)) return null;
+    if (ilk.startsWith('plaplus') || ilk.startsWith('petg') || MARKA_GENEL_SOZCUKLERI.has(ilk)) return null;
+    if (extractColors(ilk).length) return null;
+    return ilk;
+  };
+  const sIlkMarka = ilkMarkaKelimesi(src.title);
+  const cIlkMarka = ilkMarkaKelimesi(cand.title);
+  if (sIlkMarka && cIlkMarka && !brandAyni(sIlkMarka, cIlkMarka)) {
+    const basC = markaKanitMetni(cand.title);
+    const basS = markaKanitMetni(src.title);
+    const karsilikliGeciyor = basC.includes(sIlkMarka) || basS.includes(cIlkMarka);
+    if (!karsilikliGeciyor && !(normalizeBarcode(src.barcode) && normalizeBarcode(cand.barcode) && normalizeBarcode(src.barcode) === normalizeBarcode(cand.barcode))) {
+      return null;
+    }
+  }
   const sMarka = markaGecerliMi(src.brand)
     ? src.brand
     : (markaAlaniBos(src.brand) ? muhtemelMarka(src.title) : null);

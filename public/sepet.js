@@ -314,6 +314,13 @@ function onerileriCiz(liste, q) {
   girdi?.setAttribute('aria-expanded', 'true');
 }
 
+function onerileriKapat() {
+  const kap = $('#sepetOneriler');
+  const girdi = $('#sepetArama');
+  if (kap) kap.hidden = true;
+  girdi?.setAttribute('aria-expanded', 'false');
+}
+
 async function aramaYap() {
   const girdi = $('#sepetArama');
   const q = girdi?.value || '';
@@ -322,7 +329,7 @@ async function aramaYap() {
     if (ok) {
       durumYaz('✅ Link sepete eklendi.', 'basarili');
       girdi.value = '';
-      $('#sepetOneriler').hidden = true;
+      onerileriKapat();
     } else {
       durumYaz('⚠️ Geçerli bir ürün linki yapıştırın.', 'hata');
     }
@@ -343,6 +350,32 @@ async function aramaYap() {
   durumYaz(liste.length
     ? `${liste.length} linkli ürün bulundu — seçebilir veya doğrudan isimle ekleyebilirsiniz.`
     : 'Öneride doğrudan eşleşme çıkmadı — "İsimle ara ve sepete ekle" ile ekleyebilirsiniz.');
+}
+
+/** "Ekle" butonuna basıldığında öneri listesinde takılmadan yazılan ürünü doğrudan sepete ekler. */
+async function metinleSepeteEkle() {
+  const girdi = $('#sepetArama');
+  const s = (girdi?.value || '').trim();
+  onerileriKapat();
+  if (!s) {
+    durumYaz('Ürün adı yazın ya da ürün linki yapıştırın.', 'uyari');
+    girdi?.focus();
+    return;
+  }
+  if (/^https?:\/\//i.test(s)) {
+    return aramaYap();
+  }
+  if (s.length < 2) {
+    durumYaz('En az 2 harfli ürün adı yazın ya da ürün linki yapıştırın.', 'uyari');
+    girdi?.focus();
+    return;
+  }
+  const ok = sepeteEkle({ ad: s, url: s, tur: 'ad', kaynak: 'arama' });
+  if (ok) {
+    durumYaz(`✅ "${s}" sepete eklendi.`, 'basarili');
+    toast(`🛒 "${s}" sepete eklendi`, 'basarili');
+    girdi.value = '';
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -943,12 +976,19 @@ function olaylariBagla() {
   girdi?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      aramaYap();
+      metinleSepeteEkle();
     } else if (e.key === 'Escape') {
-      $('#sepetOneriler').hidden = true;
+      onerileriKapat();
     }
   });
-  $('#sepetEkleBtn')?.addEventListener('click', aramaYap);
+  $('#sepetEkleBtn')?.addEventListener('click', metinleSepeteEkle);
+
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t?.closest('#sepetArama') && !t?.closest('#sepetOneriler') && !t?.closest('#sepetEkleBtn')) {
+      onerileriKapat();
+    }
+  });
 
   $('#sepetOneriler')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.sepet-oneri');
