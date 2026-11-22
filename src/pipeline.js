@@ -75,7 +75,7 @@ export function buildQueries(src) {
     const markaKelimeleri = new Set(toLowerTr(brand).split(/\s+/).filter(Boolean));
     // "filament"/"yazıcı" gibi tür kelimeleri ayırt edici değildir; yeterli başka kelime
     // varsa sorguya girmez (aksi halde "esun filament" gibi zayıf sorgular oluşur).
-    const TUR_KELIMELERI = new Set(['filament', 'yazici', 'printer', 'baski', 'urun']);
+    const TUR_KELIMELERI = new Set(['filament', 'yazici', 'printer', 'baski', 'urun', 'fiyati', 'resmi']);
     const kelimeler = toLowerTr(src.title || '').replace(/[^\p{L}\p{N}+\s-]/gu, ' ').split(/[\s-]+/)
       .filter(w => w.length >= 3 && !/^\d/.test(w) && !markaKelimeleri.has(w) && extractColors(w).length === 0)
       // Arama motorları "+" gibi karakterlerde farklı davranır (bazı T-Soft aramaları
@@ -83,8 +83,8 @@ export function buildQueries(src) {
       .map(w => w.replace(/[^a-z0-9çğıöşü]/gi, ''))
       .filter(w => w.length >= 3 && !RENK_TONLARI.has(sadeKucuk(w)));
 
-    const ayirtEdici = [...new Set(kelimeler.filter(w => !TUR_KELIMELERI.has(w)))];
-    const havuz = ayirtEdici.length >= 2 ? ayirtEdici : [...new Set(kelimeler)];
+    const ayirtEdici = [...new Set(kelimeler.filter(w => !TUR_KELIMELERI.has(sadeKucuk(w))))];
+    const havuz = ayirtEdici.length >= 1 ? ayirtEdici : [...new Set(kelimeler)];
     const secilen = havuz.slice(0, 3);
 
     if (brand && secilen.length) qs.push([brand, ...secilen.slice(0, 2)].join(' '));

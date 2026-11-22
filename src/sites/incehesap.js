@@ -14,25 +14,32 @@ import { parseNum, dominantColor, stripTags, decodeEntities } from '../util.js';
 
 const RENDER_DENEME = 5;
 
-function parseAllDataProducts(html) {
-  // Herhangi bir etiketteki data-product JSON'u (ürün sayfasındaki ana ürün dahil)
+function parseJsonAttr(html, attrName) {
   const out = [];
-  const re = /data-product="(\{[^\n]*?\})"/g;
+  const re = new RegExp(`${attrName}=(?:'([^'\\n]+)'|"([^"\\n]+)")`, 'g');
   let m;
   while ((m = re.exec(html))) {
-    try { out.push(JSON.parse(m[1].replace(/&quot;/g, '"'))); } catch { /* bozuk, atla */ }
+    const raw = m[1] ?? m[2];
+    if (!raw) continue;
+    try { out.push(JSON.parse(decodeEntities(raw))); } catch { /* bozuk, atla */ }
   }
   return out;
 }
 
+function parseAllDataProducts(html) {
+  return parseJsonAttr(html, 'data-product');
+}
+
 function parseLinkedDataProducts(html) {
-  // Arama sonuçlarındaki kartlar: <a href="..." ... data-product="{...}">
+  // Arama sonuçlarındaki kartlar: <a href="..." ... data-product='...' (tek veya çift tırnak)
   const out = [];
-  const re = /<a [^>]*href="(\/[^"]+)"[^>]*data-product="(\{[^\n]*?\})"/g;
+  const re = /<a\b[^>]*href="(\/[^"]+)"[^>]*data-product=(?:'([^'\n]+)'|"([^"\n]+)")[^>]*>/g;
   let m;
   while ((m = re.exec(html))) {
+    const raw = m[2] ?? m[3];
+    if (!raw) continue;
     try {
-      out.push({ href: m[1], data: JSON.parse(m[2].replace(/&quot;/g, '"')) });
+      out.push({ href: m[1], data: JSON.parse(decodeEntities(raw)) });
     } catch { /* bozuk kart, atla */ }
   }
   return out;
@@ -77,9 +84,11 @@ export default {
 
     // Ana ürün: "Ürün Detay" listesine ait data-product (öneri ürünleri değil)
     const tumu = parseAllDataProducts(html);
+    const gaitem = parseJsonAttr(html, 'data-gaitem')[0] || null;
     const ana = tumu.find(d => d?.item_list_name === 'Ürün Detay' || d?.event === 'product_view' || d?.id) || null;
+    const anaData = ana?.data || ana || null;
 
-    let title = ana?.data?.name || null;
+    let title = anaData?.name || gaitem?.item_name || null;
     if (!title) {
       const t = html.match(/<title>([^<]{10,300})<\/title>/i);
       title = t ? decodeEntities(t[1]).replace(/\s*-\s*incehesap\.com.*$/i, '').trim() : null;
@@ -87,13 +96,14 @@ export default {
     if (!title) throw new Error('İncehesap ürün verisi okunamadı.');
 
     // Fiyat
-    let selling = ana?.data?.price > 0 ? ana.data.price : null;
+    let selling = anaData?.price > 0 ? anaData.price : (gaitem?.price > 0 ? gaitem.price : null);
     if (selling == null) {
       const meta = html.match(/itemprop="price"[^>]*content="([\d.,]+)"/i) || html.match(/content="([\d.,]+)"[^>]*itemprop="price"/i);
       selling = meta ? parseNum(meta[1]) : null;
     }
 
-    const brand = ana?.data?.brand || String(title).split(/\s+/)[0];
+    const brand = anaData?.brand || gaitem?.item_brand || String(title).split(/\s+/)[0];
+    const image = gaitem?.image || null;
     // Parça numarası: isim sonundaki " - 910-005823" gibi ek
     const mpn = title.match(/[-–]\s*([A-Z0-9][A-Z0-9-]{3,24})\s*$/);
     const modelCode = mpn ? mpn[1] : null;
@@ -135,7 +145,7 @@ export default {
       currency: 'TRY',
       inStock: selling != null && selling > 0,
       seller: 'İncehesap',
-      image: null,
+      image,
       campaigns,
       shipping,
     };
