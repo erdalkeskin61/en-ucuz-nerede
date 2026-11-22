@@ -119,6 +119,31 @@ kontrol('FAQPage JSON-LD şeması geçerli', (() => {
   return Array.isArray(faq?.mainEntity) && faq.mainEntity.length >= 3;
 })());
 
+console.log('\n6) 🔗 Footer Hub & /urun <-> /karsilastir çapraz bağlantıları');
+const p1sHtml = urunSayfasiHtml({
+  id: 'sentetik-p1s',
+  ad: 'Bambu Lab P1S 3D Yazıcı',
+  sorgu: 'Bambu Lab P1S 3D Yazıcı',
+  kategoriSlug: '3d-yazici',
+  slug: 'bambu-lab-p1s-3d-yazici',
+  yol: '/urun/bambu-lab-p1s-3d-yazici',
+  enUcuzFiyat: 24261.65,
+  enUcuzSite: 'FilamentMarketim',
+  enUcuzUrl: 'https://filamentmarketim.com/x',
+  stokluSayisi: 4,
+  teklifler: [],
+  lastmod: '2026-11-22',
+}, 'https://baskihesap.tech', []);
+kontrol('P1S sayfasında ilgili VS rehber kartları var',
+  p1sHtml.includes('İlgili Karşılaştırma ve Alım Rehberleri')
+  && p1sHtml.includes('/karsilastir/bambu-lab-p1s-vs-creality-k1c')
+  && p1sHtml.includes('/karsilastir/creality-k1-max-vs-bambu-lab-p1s'));
+kontrol('SSR footer-hub içerir', p1sHtml.includes('class="footer-hub"') && p1sHtml.includes('/kategori/3d-yazici-yedek-parca'));
+for (const dosya of ['public/index.html', 'public/maliyet.html', 'public/slicer.html', 'public/sepet.html', 'public/ayarlar.html']) {
+  const h = fs.readFileSync(dosya, 'utf8');
+  kontrol(`${dosya} footer-hub içerir`, h.includes('class="footer-hub"') && h.includes('/kategori/3d-yazici') && h.includes('/rehber/en-ucuz-pla-filament'));
+}
+
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);

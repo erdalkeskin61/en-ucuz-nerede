@@ -703,6 +703,43 @@ export function sitemapKayitlari() {
 /* HTML Şablon Çerçevesi                                               */
 /* ------------------------------------------------------------------ */
 
+/** Ortak Footer İç Link Ağı (tüm SSR sayfalar için tek kaynak). */
+export const FOOTER_HUB_HTML = `
+      <nav class="footer-hub" aria-label="Hızlı site dizini">
+        <div>
+          <h3 class="footer-hub-baslik">Kategoriler</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a></li>
+            <li><a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a></li>
+            <li><a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a></li>
+            <li><a href="/kategori/3d-yazici-yedek-parca">⚙️ 3D Yazıcı Yedek Parça</a></li>
+            <li><a href="/kategori/recine-ve-sarf">🧪 UV Reçine &amp; Kurutucu</a></li>
+            <li><a href="/urunler">🗂️ Tüm Ürün Kataloğu</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer-hub-baslik">Rehber &amp; Kıyaslama</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚖️ Bambu Lab P1S vs Creality K1C</a></li>
+            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">🚀 A1 Mini vs Ender 3 V3 KE</a></li>
+            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">⚡ Ender 3 V3 KE vs Neptune 4 Pro</a></li>
+            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">🏗️ Creality K1 Max vs P1S</a></li>
+            <li><a href="/rehber/en-ucuz-pla-filament">🥇 En Ucuz PLA Filamentler</a></li>
+            <li><a href="/rehber">📖 Tüm 3D Rehberler</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer-hub-baslik">Araçlar</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="/">🔍 Canlı Fiyat Karşılaştırma</a></li>
+            <li><a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a></li>
+            <li><a href="/sepet.html">🧺 Akıllı Sepet &amp; Kargo</a></li>
+            <li><a href="/slicer.html">🧩 Cura &amp; Slicer Eklentisi</a></li>
+            <li><a href="/ayarlar.html">🔔 Fiyat Alarmlarım</a></li>
+          </ul>
+        </div>
+      </nav>`;
+
 export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog' }) {
   const safeTitle = htmlKacis(title);
   const safeDesc = htmlKacis(description);
@@ -938,6 +975,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <img class="footer-marka-logo" src="/logo.png" alt="Baskı Hesap" width="34" height="29" decoding="async" />
         <a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>
       </div>
+      ${FOOTER_HUB_HTML}
       <p>Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.</p>
     </div>
   </footer>
@@ -985,13 +1023,91 @@ function seoUrunKartiHtml(u, gizli = false) {
 }
 
 const ILGILI_REHBER_ESLEME = [
-  { re: /bambu\s*lab\s*p1s|creality\s*k1c|\bk1c\b/i, yol: '/karsilastir/bambu-lab-p1s-vs-creality-k1c', etiket: 'P1S vs Creality K1C Karşılaştırması' },
-  { re: /ender\s*3\s*v3\s*ke|neptune\s*4\s*pro/i, yol: '/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro', etiket: 'Ender 3 V3 KE vs Neptune 4 Pro' },
-  { re: /bambu\s*lab\s*a1\s*mini/i, yol: '/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke', etiket: 'Bambu Lab A1 Mini vs Ender 3 V3 KE' },
-  { re: /creality\s*k1\s*max|\bk1\s*max\b/i, yol: '/karsilastir/creality-k1-max-vs-bambu-lab-p1s', etiket: 'Creality K1 Max vs Bambu Lab P1S' },
-  { re: /\bpla\b|\bpetg\b/i, yol: '/rehber/pla-vs-petg-filament', etiket: 'PLA vs PETG Filament Rehberi' },
-  { re: /kurutucu|dryer|space\s*pi|ebox/i, yol: '/rehber/filament-kurutucu-gerekli-mi', etiket: 'Filament Kurutucu Gerekli Mi?' },
+  {
+    re: /bambu\s*lab\s*p1s|creality\s*k1c|\bk1c\b/i,
+    yol: '/karsilastir/bambu-lab-p1s-vs-creality-k1c',
+    ikon: '⚖️',
+    rozet: 'VS Karşılaştırma',
+    etiket: 'Bambu Lab P1S vs Creality K1C',
+    aciklama: '256mm vs 220mm baskı hacmi, AMS çok renk desteği ve bugünkü kargo dahil Türkiye fiyat farkı.',
+  },
+  {
+    re: /creality\s*k1\s*max|\bk1\s*max\b|bambu\s*lab\s*p1s/i,
+    yol: '/karsilastir/creality-k1-max-vs-bambu-lab-p1s',
+    ikon: '🏗️',
+    rozet: 'VS Karşılaştırma',
+    etiket: 'Creality K1 Max vs Bambu Lab P1S',
+    aciklama: '300 mm dev baskı alanı ile kapalı kasa Bambu AMS ekosisteminin canlı fiyatlı kıyaslaması.',
+  },
+  {
+    re: /ender\s*3\s*v3\s*ke|neptune\s*4\s*pro/i,
+    yol: '/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro',
+    ikon: '⚡',
+    rozet: 'VS Karşılaştırma',
+    etiket: 'Ender 3 V3 KE vs Elegoo Neptune 4 Pro',
+    aciklama: '500 mm/s Klipper hızı, otomatik Z-offset vs çift bölgeli tabla ve canlı Türkiye fiyatları.',
+  },
+  {
+    re: /bambu\s*lab\s*a1\s*mini|ender\s*3\s*v3\s*ke/i,
+    yol: '/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke',
+    ikon: '🚀',
+    rozet: 'VS Karşılaştırma',
+    etiket: 'Bambu Lab A1 Mini vs Ender 3 V3 KE',
+    aciklama: 'Başlangıç segmentinde AMS Lite sessizliği ile 220 mm geniş tabla arasında hangisi daha mantıklı?',
+  },
+  {
+    re: /\bpla\b/i,
+    yol: '/rehber/en-ucuz-pla-filament',
+    ikon: '🥇',
+    rozet: 'Canlı Sıralama',
+    etiket: 'En Ucuz PLA Filamentler',
+    aciklama: 'Türkiye mağazalarında stokta olan 1 kg PLA makaraların kargo dahil güncel sıralaması.',
+  },
+  {
+    re: /\bpetg\b|\btpu\b/i,
+    yol: '/rehber/en-ucuz-petg-ve-tpu-filamentler',
+    ikon: '🦾',
+    rozet: 'Canlı Sıralama',
+    etiket: 'En Ucuz PETG & TPU Filamentler',
+    aciklama: 'Dayanıklı PETG ve esnek TPU makaralar için 60+ mağazada stoklu en düşük kargo dahil teklifler.',
+  },
+  {
+    re: /\bpla\b|\bpetg\b/i,
+    yol: '/rehber/pla-vs-petg-filament',
+    ikon: '🧵',
+    rozet: 'Teknik Rehber',
+    etiket: 'PLA vs PETG Filament Rehberi',
+    aciklama: 'Dayanım, sıcaklık direnci, baskı kolaylığı ve parça başına maliyet karşılaştırması.',
+  },
+  {
+    re: /kurutucu|dryer|space\s*pi|ebox/i,
+    yol: '/rehber/filament-kurutucu-gerekli-mi',
+    ikon: '♨️',
+    rozet: 'Teknik Rehber',
+    etiket: 'Filament Kurutucu Gerekli Mi?',
+    aciklama: 'PLA, PETG ve TPU nemlenme belirtileri ve aktif filament kurutucuların canlı fiyatları.',
+  },
+  {
+    re: /filament|\bpla\b|\bpetg\b|\btpu\b|\babs\b|\basa\b/i,
+    yol: '/rehber/3d-baski-maliyeti-nasil-hesaplanir',
+    ikon: '🧮',
+    rozet: 'Hesaplama Rehberi',
+    etiket: '3D Baskı Maliyeti Nasıl Hesaplanır?',
+    aciklama: 'Gramaj, elektrik tüketimi, fire payı ve satış fiyatı hesaplama formülü.',
+  },
 ];
+
+function ilgiliRehberKartlari(urun) {
+  const metin = `${urun.ad || ''} ${urun.sorgu || ''}`;
+  const eslesen = [];
+  for (const r of ILGILI_REHBER_ESLEME) {
+    if (r.re.test(metin) && !eslesen.some(x => x.yol === r.yol)) {
+      eslesen.push(r);
+      if (eslesen.length >= 3) break;
+    }
+  }
+  return eslesen;
+}
 
 /**
  * Ürün sayfası için yalnızca GERÇEK veritabanı teklif/geçmiş kayıtlarından
@@ -1096,11 +1212,10 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     icLinkler.push({ yol: '/maliyet.html', metin: '🧮 Baskı Maliyeti Hesapla' });
   }
   icLinkler.push({ yol: '/sepet.html', metin: '🧺 Akıllı Sepet ile Kargo Birleştir' });
-  for (const r of ILGILI_REHBER_ESLEME) {
+  const ilgiliRehberler = ilgiliRehberKartlari(urun);
+  for (const r of ilgiliRehberler) {
     if (icLinkler.length >= 5) break;
-    if (r.re.test(`${urun.ad} ${urun.sorgu || ''}`)) {
-      icLinkler.push({ yol: r.yol, metin: `📖 ${r.etiket}` });
-    }
+    icLinkler.push({ yol: r.yol, metin: `📖 ${r.etiket}` });
   }
 
   // Dinamik 3–4 SSS + FAQPage JSON-LD
@@ -1198,7 +1313,25 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     })),
   };
 
-  return { analizHtml, sssHtml, faqSchema };
+  const rehberKartlarHtml = ilgiliRehberler.length
+    ? `<section class="seo-kart">
+        <h2 style="margin-top:0">📖 İlgili Karşılaştırma ve Alım Rehberleri</h2>
+        <div class="rehber-izgara">
+          ${ilgiliRehberler.map(r => `
+            <a class="rehber-kart" href="${htmlKacis(r.yol)}">
+              <div class="rehber-kart-ust">
+                <span class="rehber-ikon" aria-hidden="true">${r.ikon}</span>
+                <span class="rehber-rozet">${htmlKacis(r.rozet)}</span>
+              </div>
+              <h3 class="rehber-baslik">${htmlKacis(r.etiket)}</h3>
+              <p class="rehber-ozet">${htmlKacis(r.aciklama)}</p>
+              <span class="rehber-cta">Rehberi İncele →</span>
+            </a>`).join('')}
+        </div>
+      </section>`
+    : '';
+
+  return { analizHtml, sssHtml, rehberKartlarHtml, faqSchema };
 }
 
 export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
@@ -1278,7 +1411,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     jsonLdList.push(productSchema);
   }
 
-  const { analizHtml, sssHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl);
+  const { analizHtml, sssHtml, rehberKartlarHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl);
   jsonLdList.push(faqSchema);
 
   const ozetHtml = urun.enUcuzFiyat > 0
@@ -1330,6 +1463,8 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     ${analizHtml}
 
     ${sssHtml}
+
+    ${rehberKartlarHtml}
 
     ${benzerler.length ? `<section class="seo-kart">
       <h2 style="margin-top:0">Aynı Kategorideki Diğer Ürünler</h2>

@@ -720,6 +720,48 @@ html[data-theme="dark"] .footer-marka-logo { box-shadow: 0 0 0 1px rgba(148, 163
   .footer-marka-alan { margin-left: 0; }
   .footer-marka { flex-wrap: wrap; }
 }
+/* 🔗 2026-11-22: Footer Hub — kategoriler, rehberler ve araçlar iç link ağı */
+.footer-hub {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 24px;
+  margin: 4px 0 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--cizgi);
+}
+.footer-hub-baslik {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--metin);
+}
+.footer-hub-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.footer-hub-liste a {
+  display: inline-block;
+  color: var(--gri-metin);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: color .14s ease;
+}
+.footer-hub-liste a:hover { color: var(--ana); text-decoration: underline; }
+html[data-theme="dark"] .footer-hub-liste a:hover { color: var(--ana-parlak); }
+@media (max-width: 720px) {
+  .footer-hub { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+}
+@media (max-width: 460px) {
+  .footer-hub { grid-template-columns: 1fr; gap: 14px; }
+}
 /* Satış ortaklığı şeffaflık notu (2026-10-28) */
 .afiliye-bildirim { max-width: 780px; padding: 10px 12px; border-left: 3px solid var(--mavi, #3450D1); background: #f5f7ff; border-radius: 6px; color: #5b6472; font-size: 12.5px; }
 .afiliye-bildirim b { color: #3b4453; }
