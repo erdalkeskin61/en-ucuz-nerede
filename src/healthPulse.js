@@ -264,6 +264,7 @@ export async function adaptorKontrol(adapter) {
 let calisiyor = false;
 let sonCalisma = null;
 let sonSonuc = null;
+let aktifIlerleme = null;
 
 /** Telegram mesajı için HTML kaçışı (parse_mode=HTML). */
 function tgKac(s) {
@@ -363,6 +364,7 @@ export async function saglikKontrolu(opts = {}) {
   const sonuclar = [];
   let imlec = 0;
   let biten = 0;
+  aktifIlerleme = { toplam: liste.length, biten: 0, aktif: 0, sorunlu: 0, bos: 0, sonSite: null, basladiTs: new Date(basladi).toISOString() };
 
   try {
     onProgress({ faz: 'baslangic', toplam: liste.length, not: 'Adaptörler yoklanıyor…' });
@@ -406,6 +408,13 @@ export async function saglikKontrolu(opts = {}) {
         sonuclar.push(sonuc);
         if (kaydet) addAdapterHealth(sonuc);
         biten++;
+        if (aktifIlerleme) {
+          aktifIlerleme.biten = biten;
+          aktifIlerleme.sonSite = adapter.name;
+          if (sonuc.durum === 'ok') aktifIlerleme.aktif++;
+          else if (sonuc.durum === 'bos_sonuc') aktifIlerleme.bos++;
+          else aktifIlerleme.sorunlu++;
+        }
         onProgress({
           faz: 'kontrol', biten, toplam: liste.length,
           site: adapter.id, durum: sonuc.durum, not: `${adapter.name}: ${DURUM_ETIKET[sonuc.durum] || sonuc.durum}`,
@@ -493,6 +502,7 @@ export async function saglikKontrolu(opts = {}) {
     };
   } finally {
     calisiyor = false;
+    aktifIlerleme = null;
   }
 }
 
@@ -685,14 +695,18 @@ export function saglikDurumu() {
   }
 
   const aktif = son.filter(s => s.durum === 'ok').length;
+  const sonucsuz = son.filter(s => s.durum === 'bos_sonuc').length;
   const bekleyen = son.filter(s => s.durum !== 'ok' && s.durum !== 'bos_sonuc');
+  const enYeniKontrol = son.reduce((max, s) => (!max || (s.kontrolTs && s.kontrolTs > max)) ? s.kontrolTs : max, null);
 
   return {
-    sonKontrol: sonCalisma,
+    sonKontrol: sonCalisma || enYeniKontrol || null,
     kontrolSaati: KONTROL_SAATI + ':00',
     calisiyor,
+    ilerleme: aktifIlerleme ? { ...aktifIlerleme } : null,
     kayitliSite: son.length,
     aktif,
+    sonucsuz,
     incelenecek: bekleyen.length,
     siteDurumlari: harita,
     bekleyen: bekleyen.map(s => ({

@@ -372,9 +372,9 @@ app.get('/api/admin/ozet', adminGerekli, (req, res) => {
     const durumlar = Object.values(saglik.siteDurumlari || {});
     const saglikOzet = {
       toplam: adapters.length,
-      ok: durumlar.filter(x => x?.status === 'ok').length,
-      hata: durumlar.filter(x => x?.status && x.status !== 'ok' && x.status !== 'empty').length,
-      bos: durumlar.filter(x => x?.status === 'empty').length,
+      ok: durumlar.filter(x => x?.durum === 'ok').length,
+      hata: durumlar.filter(x => x?.durum && x.durum !== 'ok' && x.durum !== 'bos_sonuc').length,
+      bos: durumlar.filter(x => x?.durum === 'bos_sonuc').length,
       sonKontrol: saglik.sonKontrol || null,
     };
     const sponsorlar = store.sponsorRapor();
@@ -2768,9 +2768,10 @@ app.get('/api/durum', (req, res) => {
  * GET /api/health/:site      → tek adaptörün geçmişi
  */
 app.post('/api/health/check', adminGerekli, async (req, res) => {
-  if (healthCalisiyor) return res.status(429).json({ hata: 'Sağlık kontrolü zaten çalışıyor' });
+  if (healthCalisiyor || saglikDurumu().calisiyor) return res.status(429).json({ hata: 'Sağlık kontrolü zaten çalışıyor' });
   const siteIds = Array.isArray(req.body?.siteIds) ? req.body.siteIds.filter(s => typeof s === 'string') : null;
   const bildir = req.body?.bildir === true;
+  const arkaplan = req.body?.arkaplan === true;
 
   if (siteIds && !siteIds.length) return res.status(400).json({ hata: 'siteIds boş olamaz' });
   if (siteIds) {
@@ -2779,6 +2780,18 @@ app.post('/api/health/check', adminGerekli, async (req, res) => {
   }
 
   healthCalisiyor = true;
+  if (arkaplan) {
+    (async () => {
+      try {
+        await saglikKontrolu({ siteIds, bildir });
+      } catch (e) {
+        console.error('[health] arka plan kontrol hatası:', String(e?.message || e));
+      } finally {
+        healthCalisiyor = false;
+      }
+    })();
+    return res.status(202).json({ ok: true, baslatildi: true, calisiyor: true });
+  }
   try {
     const r = await saglikKontrolu({ siteIds, bildir });
     res.json(r);
@@ -2790,6 +2803,7 @@ app.post('/api/health/check', adminGerekli, async (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.json(saglikDurumu());
 });
 

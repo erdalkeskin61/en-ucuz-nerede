@@ -373,6 +373,20 @@ $('#dmEkleBtn')?.addEventListener('click', async () => {
 
 let saglikVeri = null;
 let saglikSadeceHatali = false;
+let saglikPollTimer = null;
+
+function saglikDurumKodu(d) {
+  return d?.durum || d?.status || 'bilinmiyor';
+}
+
+function saglikSureMetni(d) {
+  const arama = Number.isFinite(d?.aramaMs) ? d.aramaMs : null;
+  const urun = Number.isFinite(d?.urunMs) ? d.urunMs : null;
+  if (arama != null && urun != null) return `${arama + urun} ms`;
+  if (arama != null) return `${arama} ms`;
+  if (d?.durationMs != null) return `${d.durationMs} ms`;
+  return '—';
+}
 
 function saglikCiz() {
   const izgara = $('#saglikIzgara');
@@ -382,42 +396,117 @@ function saglikCiz() {
   const liste = tumSiteler.length
     ? tumSiteler.map(s => ({ id: s.id, ad: s.ad, d: durumlar[s.id] || null }))
     : Object.entries(durumlar).map(([id, d]) => ({ id, ad: id, d }));
-  const okSay = liste.filter(x => x.d?.status === 'ok').length;
-  const hataSay = liste.filter(x => x.d?.status && x.d.status !== 'ok' && x.d.status !== 'empty').length;
-  const bosSay = liste.filter(x => x.d?.status === 'empty').length;
+
+  const okSay = liste.filter(x => saglikDurumKodu(x.d) === 'ok').length;
+  const bosSay = liste.filter(x => {
+    const st = saglikDurumKodu(x.d);
+    return st === 'bos_sonuc' || st === 'empty';
+  }).length;
+  const hataSay = liste.filter(x => {
+    const st = saglikDurumKodu(x.d);
+    return st !== 'ok' && st !== 'bos_sonuc' && st !== 'empty' && st !== 'bilinmiyor';
+  }).length;
+  const bilinmeyenSay = liste.length - okSay - bosSay - hataSay;
+
   if (ozetEl) {
     ozetEl.innerHTML =
       `Toplam <b>${liste.length}</b> mağaza · ` +
       `<span style="color:#047857;font-weight:700">🟢 ${okSay} sağlıklı</span> · ` +
       `<span style="color:#be123c;font-weight:700">🔴 ${hataSay} hatalı</span> · ` +
-      `⚪ ${bosSay} boş` +
+      `⚪ ${bosSay} sonuçsuz` +
+      (bilinmeyenSay ? ` · ❓ ${bilinmeyenSay} taranmamış` : '') +
       (saglikVeri.sonKontrol ? ` · Son kontrol: <b>${tarih(saglikVeri.sonKontrol)}</b>` : '');
   }
+
+  // Hatalı mağazalar her zaman en üstte görünsün
+  const siraOncelik = (d) => {
+    const st = saglikDurumKodu(d);
+    if (st !== 'ok' && st !== 'bos_sonuc' && st !== 'empty' && st !== 'bilinmiyor') return 0;
+    if (st === 'bos_sonuc' || st === 'empty') return 1;
+    if (st === 'bilinmiyor') return 2;
+    return 3;
+  };
+  const sirali = [...liste].sort((a, b) => (siraOncelik(a.d) - siraOncelik(b.d)) || a.ad.localeCompare(b.ad, 'tr'));
+
   const gosterilen = saglikSadeceHatali
-    ? liste.filter(x => !x.d || x.d.status !== 'ok')
-    : liste;
+    ? sirali.filter(x => saglikDurumKodu(x.d) !== 'ok')
+    : sirali;
   if (!gosterilen.length) {
     izgara.innerHTML = '<p class="alt-not">Gösterilecek hatalı mağaza yok — tümü sağlıklı!</p>';
     return;
   }
   izgara.innerHTML = gosterilen.map(({ id, ad, d }) => {
-    const st = d?.status || 'bilinmiyor';
-    const sinif = st === 'ok' ? 'yesil' : (st === 'empty' || st === 'bilinmiyor' ? 'gri' : 'kirmizi');
-    const ms = d?.durationMs != null ? `${d.durationMs} ms` : '—';
-    return `<div class="admin-saglik-oge" title="${esc(d?.error || d?.reason || st)}">
-      <span><b>${esc(ad)}</b><br><small>${esc(id)} · ${ms}</small></span>
-      <span class="admin-durum-hap ${sinif}">${esc(st)}</span>
+    const st = saglikDurumKodu(d);
+    const etiket = d?.etiket || (st === 'ok' ? 'aktif' : st);
+    const sinif = st === 'ok' ? 'yesil' : (st === 'bos_sonuc' || st === 'empty' || st === 'bilinmiyor' ? 'gri' : 'kirmizi');
+    const ms = saglikSureMetni(d);
+    const hataMetni = d?.hata || d?.error || d?.reason || '';
+    const fiyatNot = st === 'ok' && d?.ornekFiyat != null ? ` · ${tl(d.ornekFiyat)}` : '';
+    const zamanNot = d?.kontrolTs ? ` · ${tarih(d.kontrolTs)}` : '';
+    return `<div class="admin-saglik-oge${sinif === 'kirmizi' ? ' hatali' : ''}" title="${esc(hataMetni || etiket)}">
+      <div class="admin-saglik-ust">
+        <span><b>${esc(ad)}</b><br><small>${esc(id)} · ${ms}${fiyatNot}${zamanNot}</small></span>
+        <span class="admin-durum-hap ${sinif}">${esc(etiket)}</span>
+      </div>
+      ${hataMetni ? `<div class="admin-saglik-hata">${esc(hataMetni)}</div>` : ''}
+      ${sinif !== 'yesil' ? `<div class="admin-saglik-aksiyon"><button type="button" class="admin-mini-btn" data-saglik-tek="${esc(id)}">🔄 Tekrar yokla</button></div>` : ''}
     </div>`;
   }).join('');
 }
 
-async function saglikYukle() {
+function saglikIlerlemeYaz(veri) {
+  const el = $('#saglikMesaj');
+  if (!el || !veri?.calisiyor) return;
+  const il = veri.ilerleme;
+  el.className = 'durum-mesaji';
+  el.textContent = il
+    ? `🩺 Kontrol sürüyor: ${il.biten}/${il.toplam} mağaza (🟢 ${il.aktif} · 🔴 ${il.sorunlu}${il.sonSite ? ' · son: ' + il.sonSite : ''})…`
+    : '🩺 Sağlık kontrolü arka planda çalışıyor…';
+}
+
+function saglikIzleBaslat(kullaniciBaslatti = false) {
+  if (saglikPollTimer) return;
+  const btn = $('#saglikKontrolBtn');
+  if (btn) btn.disabled = true;
+  saglikPollTimer = setInterval(async () => {
+    const ok = await saglikYukle(false);
+    if (!ok) return;
+    if (saglikVeri?.calisiyor) {
+      saglikIlerlemeYaz(saglikVeri);
+      return;
+    }
+    clearInterval(saglikPollTimer);
+    saglikPollTimer = null;
+    if (btn) btn.disabled = false;
+    await ozetYukle();
+    const el = $('#saglikMesaj');
+    if (el) {
+      const son = saglikVeri?.sonSonuc;
+      const oz = son?.ozet || {};
+      const sureSn = son?.sureMs != null ? Math.round(son.sureMs / 1000) : null;
+      const aktif = oz.aktif ?? saglikVeri?.aktif ?? 0;
+      const sorunlu = oz.sorunlu ?? saglikVeri?.incelenecek ?? 0;
+      const sonucsuz = oz.sonucsuz ?? saglikVeri?.sonucsuz ?? 0;
+      el.className = 'durum-mesaji ' + (sorunlu > 0 ? 'hata' : 'ok');
+      el.textContent = (kullaniciBaslatti ? '✅ Kontrol tamamlandı' : 'ℹ️ Son sağlık kontrolü tamamlandı')
+        + (sureSn != null ? ` (${sureSn} sn)` : '')
+        + `: 🟢 ${aktif} sağlıklı · 🔴 ${sorunlu} hatalı · ⚪ ${sonucsuz} sonuçsuz.`;
+    }
+  }, 2500);
+}
+
+async function saglikYukle(izlemeyiBaslat = true) {
   try {
-    const res = await fetch('/api/health');
-    if (!res.ok) return;
+    const res = await fetch('/api/health', { cache: 'no-store' });
+    if (!res.ok) return false;
     saglikVeri = await res.json();
     saglikCiz();
-  } catch { /* yoksay */ }
+    if (izlemeyiBaslat && saglikVeri?.calisiyor) {
+      saglikIlerlemeYaz(saglikVeri);
+      saglikIzleBaslat(false);
+    }
+    return true;
+  } catch { return false; }
 }
 
 $('#saglikHataFiltreBtn')?.addEventListener('click', () => {
@@ -427,27 +516,58 @@ $('#saglikHataFiltreBtn')?.addEventListener('click', () => {
   saglikCiz();
 });
 
-$('#saglikKontrolBtn')?.addEventListener('click', async () => {
-  const btn = $('#saglikKontrolBtn');
+$('#saglikIzgara')?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-saglik-tek]');
+  if (!btn) return;
+  const siteId = btn.dataset.saglikTek;
   const el = $('#saglikMesaj');
-  if (btn) btn.disabled = true;
-  if (el) { el.className = 'durum-mesaji'; el.textContent = 'Sağlık kontrolü çalışıyor (1-2 dk sürebilir)…'; }
+  btn.disabled = true;
+  btn.textContent = 'Yoklanıyor…';
+  if (el) { el.className = 'durum-mesaji'; el.textContent = `🩺 ${siteId} tekil sağlık kontrolü yapılıyor…`; }
   try {
     const res = await fetch('/api/health/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bildir: false }),
+      body: JSON.stringify({ siteIds: [siteId], bildir: false }),
     });
     const d = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(d.hata || 'Sağlık kontrolü başarısız');
+    if (!res.ok) throw new Error(d.hata || 'Kontrol başarısız');
+    const r = (d.sonuclar || [])[0];
     if (el) {
-      el.className = 'durum-mesaji ok';
-      el.textContent = `✅ Kontrol tamamlandı (${Math.round((d.sureMs || 0) / 1000)} sn).`;
+      el.className = 'durum-mesaji ' + (r?.durum === 'ok' ? 'ok' : 'hata');
+      el.textContent = r?.durum === 'ok'
+        ? `✅ ${r.siteName || siteId} sağlıklı (${r.aramaMs ?? '?'} ms).`
+        : `⚠️ ${r?.siteName || siteId}: ${r?.hata || r?.durum || 'hata'}`;
     }
-    await Promise.all([saglikYukle(), ozetYukle()]);
+    await Promise.all([saglikYukle(false), ozetYukle()]);
   } catch (err) {
     if (el) { el.className = 'durum-mesaji hata'; el.textContent = '❌ ' + err.message; }
-  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Tekrar yokla';
+  }
+});
+
+$('#saglikKontrolBtn')?.addEventListener('click', async () => {
+  const btn = $('#saglikKontrolBtn');
+  const el = $('#saglikMesaj');
+  if (btn) btn.disabled = true;
+  if (el) { el.className = 'durum-mesaji'; el.textContent = '🩺 Sağlık kontrolü başlatılıyor…'; }
+  try {
+    const res = await fetch('/api/health/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bildir: false, arkaplan: true }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.status === 429) {
+      if (el) { el.className = 'durum-mesaji'; el.textContent = '🩺 Sağlık kontrolü zaten çalışıyor — canlı ilerleme izleniyor…'; }
+      saglikIzleBaslat(true);
+      return;
+    }
+    if (!res.ok) throw new Error(d.hata || 'Sağlık kontrolü başlatılamadı');
+    saglikIzleBaslat(true);
+  } catch (err) {
+    if (el) { el.className = 'durum-mesaji hata'; el.textContent = '❌ ' + err.message; }
     if (btn) btn.disabled = false;
   }
 });
