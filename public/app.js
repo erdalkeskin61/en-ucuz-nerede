@@ -1393,8 +1393,8 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
         });
       }
     } catch { }
-    // Son aramayı yerelde sakla: Ayarlar'a gidip dönünce input ve sonuç geri yüklensin.
-    try { localStorage.setItem('son_arama', JSON.stringify({ url, isId: data.isId, ts: Date.now() })); } catch { }
+    // F5 / sayfa yenilemede eski aramaya otomatik dönülmez (geçmiş listesi ayrıca tutulur).
+    try { localStorage.removeItem('son_arama'); } catch { }
 
     // ⚡ SWR / ANLIK SONUÇ (2026-10-29, 24 saate çıkarıldı 2026-10-30): ürün önbellekte
     // varsa sonuç POST yanıtıyla HEMEN gelir (≈0,2 sn) → poll beklemeden çizilir.
@@ -3889,69 +3889,34 @@ document.addEventListener('click', (e) => {
 
 gecmisiYukle();
 
-// ---- Sayfa tekrar açıldığında son aramayı geri yükle ----
-// Ayarlar'a gidip Karşılaştır'a dönünce sayfa tam yeniden yüklenir; son aramanın
-// URL'si ve (sunucu hafızasında hâlâ duruyorsa) sonuçları ücretsiz geri getirilir.
-(async () => {
+// ---- Sayfa yenilendiğinde (F5) temiz başla; çalışan tarama varsa sunucuda iptal et ----
+window.addEventListener('pagehide', () => {
+  try { tumAkislariKapat(); } catch { }
+  if (aktifIs && $('#araBtn')?.disabled && typeof navigator.sendBeacon === 'function') {
+    try { navigator.sendBeacon('/api/compare/' + encodeURIComponent(aktifIs) + '/iptal'); } catch { }
+  }
+});
+
+(() => {
+  try { localStorage.removeItem('son_arama'); } catch { }
   const aramaParams = new URLSearchParams(window.location.search);
   const urlParam = aramaParams.get('url') || aramaParams.get('q');
   const otomatikHayir = aramaParams.get('otomatik') === '0';
-  if (urlParam) {
-    const input = document.getElementById('urunUrl');
-    if (input) input.value = urlParam;
-    if (otomatikHayir) {
-      if (!linkGibiMi(urlParam)) modAyarla('ad');
-      return;
-    }
-    setTimeout(() => {
-      const form = document.getElementById('karsilastirForm');
-      if (form) {
-        if (form.requestSubmit) form.requestSubmit();
-        else document.getElementById('araBtn')?.click();
-      }
-    }, 150);
+  if (!urlParam) return;
+
+  const input = document.getElementById('urunUrl');
+  if (input) input.value = urlParam;
+  if (otomatikHayir) {
+    if (!linkGibiMi(urlParam)) modAyarla('ad');
     return;
   }
-
-  let kayit = null;
-  try { kayit = JSON.parse(localStorage.getItem('son_arama') || 'null'); } catch { /* bozuk kayıt */ }
-  if (!kayit || !kayit.url) return;
-  $('#urunUrl').value = kayit.url;
-  if (!kayit.isId) return;
-  try {
-    const res = await fetch('/api/compare/' + kayit.isId);
-    if (!res.ok) return; // iş artık yok (sunucu yeniden başlamış olabilir) — sessiz geç
-    // Kullanıcı bu arada yeni bir arama başlattıysa eski işe dönme.
-    if (aktifIs && aktifIs !== kayit.isId) return;
-    const job = await guvenliJson(res);
-    if (job.status === 'done' && job.result) {
-      cipleriGuncelle(isProgressFromResult(job.result));
-      // Geçmiş aramadan geri yükleme: mühür "X dk önce" demeli (bayat veri
-      // olduğu açıkça belirtiliyor ki kullanıcı yanılmasın — 2026-11-12).
-      const gecmisYas = Number.isFinite(Number(kayit.ts))
-        ? vitrinYas(new Date(Number(kayit.ts)).toISOString())
-        : null;
-      sonucGoster(job.result, { kaydir: true, yasMetni: gecmisYas });
-      sonSonuc = job.result;
-      const saat = new Date(kayit.ts || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-      const not = $('#sonAramaNotu');
-      if (not) {
-        not.hidden = false;
-        notMetniHtmlAyarla(`↩️ Bu, ${saat} tarihli son aramanın sonucu. Güncel fiyatlar için <b>Karşılaştır</b>'a tekrar bas.`);
-        sifirdanTaraButonunuGoster(true);
-      }
-    } else if (job.status === 'running') {
-      // Arama hâlâ sürüyor — kaldığı yerden izlemeye devam et
-      $('#araBtn').disabled = true;
-      $('#araBtn').textContent = 'Aranıyor…';
-      $('#sonucAlani').hidden = true;
-      $('#durumAlani').hidden = false;
-      await sitelerHazir; // çipler tam site listesiyle çizilsin (2026-10-29)
-      $('#siteCipleri').innerHTML = SITE_SIRASI.map(s =>
-        `<span class="cip" id="cip-${s}"><span class="nokta"></span>${SITE_ADLARI[s]}</span>`).join('');
-      karsilastirmaIzle(kayit.isId);
+  setTimeout(() => {
+    const form = document.getElementById('karsilastirForm');
+    if (form) {
+      if (form.requestSubmit) form.requestSubmit();
+      else document.getElementById('araBtn')?.click();
     }
-  } catch { /* sessizce geç */ }
+  }, 150);
 })();
 
 // ================== "Ne almak istiyorsun?" öneri akışı ==================
