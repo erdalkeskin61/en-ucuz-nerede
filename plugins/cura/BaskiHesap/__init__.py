@@ -29,9 +29,9 @@ def getMetaData():
 def register(app):
     """Eklentiyi Cura'ya kaydeder (tamamen korumalı)."""
     try:
-        from . import EnUcuzNeredeExtension
+        from . import BaskiHesapExtension
 
-        uzanti = EnUcuzNeredeExtension.EnUcuzNeredeExtension()
+        uzanti = BaskiHesapExtension.BaskiHesapExtension()
         # CuraApplication geç hazır olabiliyor → eklenti kendi içinde
         # gecikmeli/tembel bağlanır (bkz. _cerceve_bagla ve QTimer tekrarı).
         uzanti.baglanmayi_planla()
@@ -39,7 +39,7 @@ def register(app):
     except Exception as hata:  # noqa: BLE001 — Cura'yı korumak için geniş yakalama
         try:
             from UM.Logger import Logger
-            Logger.log("e", "[EnUcuzNerede] Eklenti yüklenemedi: %s", hata)
+            Logger.log("e", "[BaskiHesap] Eklenti yüklenemedi: %s", hata)
         except Exception:
             pass
         return {}

@@ -285,10 +285,10 @@ console.log(`  ℹ️  post-processor dönüş: ${gecenSure} ms (bildirim ayrı 
 bolum('8) 📦 Eklenti paketleri');
 
 // Cura
-const curaDizin = 'plugins/cura/EnUcuzNerede';
+const curaDizin = 'plugins/cura/BaskiHesap';
 kontrol('Cura: plugin.json var', fs.existsSync(path.join(curaDizin, 'plugin.json')));
 kontrol('Cura: __init__.py var', fs.existsSync(path.join(curaDizin, '__init__.py')));
-kontrol('Cura: extension .py var', fs.existsSync(path.join(curaDizin, 'EnUcuzNeredeExtension.py')));
+kontrol('Cura: extension .py var', fs.existsSync(path.join(curaDizin, 'BaskiHesapExtension.py')));
 
 const pj = JSON.parse(fs.readFileSync(path.join(curaDizin, 'plugin.json'), 'utf8'));
 kontrol('Cura: id/name dolu', !!pj.name && !!pj.version, JSON.stringify({ n: pj.name, v: pj.version }));
@@ -297,7 +297,7 @@ kontrol('Cura: supported_sdk_versions', Array.isArray(pj.supported_sdk_versions)
   && pj.supported_sdk_versions.includes('8.0.0'),
   JSON.stringify(pj.supported_sdk_versions));
 
-const ext = fs.readFileSync(path.join(curaDizin, 'EnUcuzNeredeExtension.py'), 'utf8');
+const ext = fs.readFileSync(path.join(curaDizin, 'BaskiHesapExtension.py'), 'utf8');
 kontrol('Cura: UM.Message kullanılıyor', /from UM\.Message import Message/.test(ext));
 kontrol('Cura: threading (non-blocking)', /threading\.Thread/.test(ext));
 kontrol('Cura: urllib (harici bağımlılık yok)', /urllib\.request/.test(ext));
@@ -320,19 +320,19 @@ kontrol('Hook: 1.5 sn zaman aşımı', /ZAMAN_ASIMI = 1\.5/.test(hook));
 
 // İndirme dosyaları
 kontrol('indir/en_ucuz_slicer.py var', fs.existsSync('public/indir/en_ucuz_slicer.py'));
-kontrol('indir/.curapackage var', fs.existsSync('public/indir/EnUcuzNerede.curapackage'));
-const pkg = fs.readFileSync('public/indir/EnUcuzNerede.curapackage');
+kontrol('indir/.curapackage var', fs.existsSync('public/indir/BaskiHesap.curapackage'));
+const pkg = fs.readFileSync('public/indir/BaskiHesap.curapackage');
 kontrol('.curapackage ZIP imzası', pkg.readUInt32LE(0) === 0x04034B50);
 
 // ZIP içeriği (Python zipfile)
 try {
   const zipListe = execFileSync(PY, ['-c',
-    `import zipfile,sys;z=zipfile.ZipFile(r"public/indir/EnUcuzNerede.curapackage");`
+    `import zipfile,sys;z=zipfile.ZipFile(r"public/indir/BaskiHesap.curapackage");`
     + `print("BOZUK" if z.testzip() else "SAGLAM");print(",".join(z.namelist()))`,
   ], { encoding: 'utf8', timeout: 20000 }).trim().split(/\r?\n/).map(x => x.trim());
   kontrol('.curapackage bozuk değil', zipListe[0] === 'SAGLAM', zipListe[0]);
-  kontrol('.curapackage: EnUcuzNerede/plugin.json içerir',
-    (zipListe[1] || '').includes('EnUcuzNerede/plugin.json'), zipListe[1]);
+  kontrol('.curapackage: BaskiHesap/plugin.json içerir',
+    (zipListe[1] || '').includes('BaskiHesap/plugin.json'), zipListe[1]);
 } catch (e) {
   kontrol('.curapackage doğrulandı', false, String(e?.message || e).slice(0, 120));
 }
@@ -341,7 +341,7 @@ try {
 const html = fs.readFileSync('public/slicer.html', 'utf8');
 const js = fs.readFileSync('public/slicer.js', 'utf8');
 const css = fs.readFileSync('public/slicer.css', 'utf8');
-kontrol('slicer.html: Cura indirme linki', /EnUcuzNerede\.curapackage/.test(html));
+kontrol('slicer.html: Cura indirme linki', /BaskiHesap\.curapackage/.test(html));
 kontrol('slicer.html: post-processor indirme linki', /en_ucuz_slicer\.py/.test(html));
 kontrol('slicer.html: post-processing scripts rehberi', /Post-processing scripts/i.test(html));
 kontrol('slicer.html: canlı örnek kutusu', /id="slSonuc"/.test(html));

@@ -134,14 +134,14 @@ def api_sorgula(malzeme, gramaj, kaynak="cura"):
         with urllib.request.urlopen(istek, timeout=ZAMAN_ASIMI) as yanit:
             return json.loads(yanit.read().decode("utf-8"))
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError, ValueError) as hata:
-        Logger.log("d", "[EnUcuzNerede] Sorgu başarısız (sessiz): %s", hata)
+        Logger.log("d", "[BaskiHesap] Sorgu başarısız (sessiz): %s", hata)
         return None
     except Exception as hata:  # noqa: BLE001
-        Logger.log("w", "[EnUcuzNerede] Beklenmeyen hata: %s", hata)
+        Logger.log("w", "[BaskiHesap] Beklenmeyen hata: %s", hata)
         return None
 
 
-class EnUcuzNeredeExtension(Extension):
+class BaskiHesapExtension(Extension):
     """Cura eklenti girişi."""
 
     def __init__(self):
@@ -195,7 +195,7 @@ class EnUcuzNeredeExtension(Extension):
                 if sinyal is not None and hasattr(sinyal, "connect"):
                     sinyal.connect(self._dilimleme_bitti)
                     self._bagli = True
-                    Logger.log("i", "[EnUcuzNerede] Bağlandı: %s", sinyal_adi)
+                    Logger.log("i", "[BaskiHesap] Bağlandı: %s", sinyal_adi)
                     return True
 
             # 2) Yedek: materialAmountsChanged
@@ -205,13 +205,13 @@ class EnUcuzNeredeExtension(Extension):
                 if sinyal is not None and hasattr(sinyal, "connect"):
                     sinyal.connect(self._dilimleme_bitti)
                     self._bagli = True
-                    Logger.log("i", "[EnUcuzNerede] Bağlandı: materialAmountsChanged")
+                    Logger.log("i", "[BaskiHesap] Bağlandı: materialAmountsChanged")
                     return True
             except Exception:
                 pass
             return False
         except Exception as hata:  # Cura sürümü farklı olabilir — çökme yok
-            Logger.log("w", "[EnUcuzNerede] Sinyal bağlanamadı: %s", hata)
+            Logger.log("w", "[BaskiHesap] Sinyal bağlanamadı: %s", hata)
             return False
 
     # -- olay -----------------------------------------------------------
@@ -229,7 +229,7 @@ class EnUcuzNeredeExtension(Extension):
             adlar = malzeme_listesi(bilgi)
             malzeme = malzeme_adi(adlar[0] if adlar else "PLA")
         except Exception as hata:
-            Logger.log("w", "[EnUcuzNerede] Dilimleme verisi okunamadı: %s", hata)
+            Logger.log("w", "[BaskiHesap] Dilimleme verisi okunamadı: %s", hata)
             return
 
         # Ağ isteği AYRI thread'de — Cura arayüzü donmaz.
@@ -272,4 +272,4 @@ class EnUcuzNeredeExtension(Extension):
                     pass  # metinde link zaten var
             mesaj.show()
         except Exception as hata:
-            Logger.log("w", "[EnUcuzNerede] Bildirim gösterilemedi: %s", hata)
+            Logger.log("w", "[BaskiHesap] Bildirim gösterilemedi: %s", hata)
