@@ -1862,23 +1862,45 @@ main.kap { padding-top: 8px; }
   border-bottom: 1px solid color-mix(in srgb, var(--cizgi) 70%, transparent);
   position: sticky; top: 0; z-index: 40;
 }
-.ustbar .kap { height: 68px; gap: 18px; }
-.logo { font-size: 18px; font-weight: 700; color: var(--metin); letter-spacing: -0.03em; }
+.ustbar .kap { max-width: 1180px; height: 68px; gap: 14px; }
+.logo { flex: 0 0 auto; font-size: 18px; font-weight: 700; color: var(--metin); letter-spacing: -0.03em; }
 .logo-isaret {
   width: 38px; height: 38px; border-radius: 12px; font-size: 19px;
   background: var(--ana-gradyan); color: #fff;
   display: grid; place-items: center;
   box-shadow: 0 6px 16px -4px rgba(67, 56, 202, 0.5);
 }
-.menu { margin-left: auto; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+.menu { margin-left: auto; display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 .menu::-webkit-scrollbar { display: none; }
 .menu a {
   font-size: 13.5px; font-weight: 600; color: var(--gri-metin);
-  padding: 8px 12px; border-radius: 999px; white-space: nowrap; flex: none;
+  padding: 8px 11px; border-radius: 999px; margin-left: 0; white-space: nowrap; flex: none;
   transition: background .18s ease, color .18s ease;
 }
 .menu a:hover { background: var(--zemin-2); color: var(--metin); }
 .menu a.etkin { background: var(--ana-acik); color: var(--ana); }
+
+@media (max-width: 1120px) {
+  .ustbar .kap { gap: 10px; }
+  .menu { gap: 2px; }
+  .menu a { padding: 7px 9px; font-size: 13px; }
+}
+@media (max-width: 860px) {
+  .ustbar .kap { height: auto; flex-wrap: wrap; padding: 8px 14px; gap: 8px; }
+  .logo-gorsel { width: 48px; height: 40px; border-radius: 9px; padding: 3px; }
+  .ustbar .tema-degistir { margin-left: auto; order: 2; }
+  .ustbar .menu {
+    order: 3;
+    flex: 1 0 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 4px;
+    overflow: visible;
+    padding-top: 2px;
+  }
+  .ustbar .menu a { padding: 5px 9px; font-size: 12px; margin-left: 0; }
+}
 
 .tema-degistir {
   width: 38px; height: 38px; flex: none; cursor: pointer;
@@ -2937,11 +2959,10 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
 }
 @media (max-width: 720px) {
   .kap { padding: 0 16px; }
-  .ustbar .kap { height: 60px; gap: 10px; }
+  .ustbar .kap { padding: 8px 14px; gap: 8px; }
   .logo { font-size: 16px; }
-  .logo-gorsel { width: 50px; height: 41px; border-radius: 9px; padding: 3px; }
   .logo-isaret { width: 34px; height: 34px; border-radius: 10px; font-size: 17px; }
-  .menu a { padding: 7px 10px; font-size: 12.5px; }
+  .ustbar .menu a { padding: 5px 9px; font-size: 12px; }
   .hero { border-radius: 22px; margin-top: 18px; }
   .hero-ic { padding: 34px 20px 30px; }
   .hero h1 { font-size: clamp(26px, 7.4vw, 34px); }

@@ -545,54 +545,8 @@ html[data-theme="dark"] .mz-cta {
   input[type="range"]::-webkit-slider-thumb { transition: none; }
 }
 
-/* ---------- Başlık çubuğu: dar ekranda taşma koruması ---------- */
-/* Paylaşılan `.ustbar` / `.menu` stilinde logo + 3 bağlantı + tema butonu
-   375px altında sığmıyordu (ölçüm: 320px'de scrollWidth 401px).
-   Yalnızca bu sayfada sıkıştırılır. */
-.sayfa-maliyet .ustbar .kap { gap: 8px; }
-.sayfa-maliyet .menu { flex-wrap: nowrap; min-width: 0; }
-.sayfa-maliyet .menu a { white-space: nowrap; }
-
-@media (max-width: 700px) {
-  .sayfa-maliyet .ustbar .kap { height: 56px; padding: 0 14px; }
-  .sayfa-maliyet .logo { font-size: 16px; gap: 7px; min-width: 0; }
-  .sayfa-maliyet .logo-yazi { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sayfa-maliyet .menu { gap: 2px; }
-  .sayfa-maliyet .menu a {
-    padding: 6px 9px;
-    font-size: 12.5px;
-    border-radius: 8px;
-  }
-  .sayfa-maliyet .tema-degistir { flex: 0 0 auto; margin-left: 2px; }
-}
-
-@media (max-width: 480px) {
-  .sayfa-maliyet .ustbar .kap { padding: 0 11px; gap: 5px; }
-  .sayfa-maliyet .logo { font-size: 14.5px; gap: 5px; }
-  .sayfa-maliyet .logo-yazi { max-width: 96px; }
-  .sayfa-maliyet .menu a { padding: 5px 7px; font-size: 12px; }
-  /* Menüde yalnızca ikon kalsın: "Karşılaştır" → "Karşılaştır" sığmıyor */
-  .sayfa-maliyet .menu a[href="/"] { font-size: 0; }
-  .sayfa-maliyet .menu a[href="/"]::before {
-    content: '🔍';
-    font-size: 15px;
-    line-height: 1;
-  }
-  .sayfa-maliyet .menu a[href="/maliyet.html"] { font-size: 0; }
-  .sayfa-maliyet .menu a[href="/maliyet.html"]::before {
-    content: '🧮';
-    font-size: 15px;
-    line-height: 1;
-  }
-  .sayfa-maliyet .menu a[href="/ayarlar.html"] { font-size: 0; }
-  .sayfa-maliyet .menu a[href="/ayarlar.html"]::before {
-    content: '⚙️';
-    font-size: 15px;
-    line-height: 1;
-  }
-  .sayfa-maliyet .menu a { padding: 7px 9px; }
-  .sayfa-maliyet .tema-degistir { padding: 6px 8px; }
-}
+/* ---------- Başlık çubuğu ---------- */
+/* Üst bar ve menü responsive kuralları ortak `style.css` üzerinden yönetilir. */
 
 /* ---------- Mobil dokunma hedefleri (≥ 40px) ---------- */
 /* Spec: "Mobilde responsive ve kolay kullanılabilir". Küçük hap butonlar

@@ -3,34 +3,7 @@
  * Mevcut tasarım sistemini kullanır; yalnızca bu sayfaya özgü bileşenler.
  */
 
-.sayfa-slicer .ustbar .kap { gap: 8px; }
-.sayfa-slicer .menu a { white-space: nowrap; }
-
-@media (max-width: 700px) {
-  .sayfa-slicer .ustbar .kap { height: 56px; padding: 0 14px; }
-  .sayfa-slicer .logo { font-size: 16px; gap: 7px; }
-  .sayfa-slicer .menu a { padding: 6px 9px; font-size: 12.5px; }
-}
-/* Başlık taşma koruması (ölçüm: 375px'de menü 421px'e taşıyordu) */
-.sayfa-slicer .ustbar .kap { gap: 8px; }
-.sayfa-slicer .menu { min-width: 0; }
-.sayfa-slicer .logo { min-width: 0; }
-
-@media (max-width: 480px) {
-  .sayfa-slicer .ustbar .kap { padding: 0 11px; gap: 4px; }
-  .sayfa-slicer .logo { font-size: 14.5px; gap: 5px; }
-  .sayfa-slicer .logo-yazi { max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sayfa-slicer .menu { gap: 1px; }
-  .sayfa-slicer .menu a { padding: 7px 8px; font-size: 12px; }
-  /* Menüde yalnızca ikon kalsın: 3 yazılı öğe 375px'e sığmıyor */
-  .sayfa-slicer .menu a[href="/"] { font-size: 0; }
-  .sayfa-slicer .menu a[href="/"]::before { content: '🔍'; font-size: 15px; line-height: 1; }
-  .sayfa-slicer .menu a[href="/maliyet.html"] { font-size: 0; }
-  .sayfa-slicer .menu a[href="/maliyet.html"]::before { content: '🧮'; font-size: 15px; line-height: 1; }
-  .sayfa-slicer .menu a[href="/slicer.html"] { font-size: 0; }
-  .sayfa-slicer .menu a[href="/slicer.html"]::before { content: '🧩'; font-size: 15px; line-height: 1; }
-  .sayfa-slicer .tema-degistir { flex: 0 0 auto; padding: 6px 8px; }
-}
+/* Üst bar düzeni ortak `style.css` üzerinden yönetilir (çift kural yok). */
 
 .sl-hero .hero-ic { padding: 38px 22px 32px; }
 
