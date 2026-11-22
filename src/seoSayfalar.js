@@ -614,17 +614,17 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     html[data-theme="dark"] .formul-kart code { color: var(--ana-parlak); }
     .sira-madalya { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
     .katalog-kontrol {
-      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      display: flex; flex-direction: column; align-items: stretch;
       gap: 12px; margin-bottom: 18px;
     }
-    .katalog-ara-sar { position: relative; flex: 1 1 260px; max-width: 360px; }
-    .katalog-ara-sar input {
-      width: 100%; padding: 10px 14px 10px 36px; border-radius: 12px;
+    .katalog-ara-sar { position: relative; width: 100%; max-width: 440px; }
+    .seo-kapsam .katalog-ara-sar input[type="search"] {
+      width: 100%; padding: 11px 14px 11px 42px; border-radius: 12px;
       border: 1.5px solid var(--cizgi); background: var(--kart); color: var(--metin);
-      font: inherit; font-size: 13.5px; outline: none;
+      font: inherit; font-size: 13.5px; outline: none; box-shadow: var(--golge-yumusak);
     }
-    .katalog-ara-sar input:focus { border-color: var(--ana); box-shadow: var(--halka); }
-    .katalog-ara-ikon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: .65; pointer-events: none; }
+    .seo-kapsam .katalog-ara-sar input[type="search"]:focus { border-color: var(--ana); box-shadow: var(--halka); }
+    .katalog-ara-ikon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: .7; pointer-events: none; line-height: 1; }
     .kat-baslik-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
     .kat-baslik-sol { display: flex; align-items: center; gap: 11px; }
     .kat-ikon {
