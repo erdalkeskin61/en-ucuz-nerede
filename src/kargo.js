@@ -267,6 +267,37 @@ export const SITE_KARGO_VARSAYILANLARI = {
     applies: true,
     note: 'Kargo 199,99 TL · 3.000 TL ve üzeri ücretsiz',
   },
+  // ---- 2026-11-22 (kullanıcı bildirimi) ----
+  'zzrobot3d': {
+    fee: 150,
+    freeOver: 2600,
+    applies: true,
+    note: 'Kargo 150 TL · 2.600 TL ve üzeri ücretsiz',
+  },
+  'kirpilab': {
+    fee: 150,
+    freeOver: 1500,
+    applies: true,
+    note: 'Kargo 150 TL · 1.500 TL ve üzeri ücretsiz',
+  },
+  'teknobilsem': {
+    fee: 150,
+    freeOver: 2500,
+    applies: true,
+    note: 'Kargo 150 TL · 2.500 TL ve üzeri ücretsiz',
+  },
+  'makerfabrika': {
+    fee: 150,
+    freeOver: 2000,
+    applies: true,
+    note: 'Kargo 150 TL · 2.000 TL ve üzeri ücretsiz',
+  },
+  'samm': {
+    fee: 99,
+    freeOver: 1500,
+    applies: true,
+    note: 'Kargo 99 TL · 1.500 TL ve üzeri ücretsiz',
+  },
 };
 
 /**
