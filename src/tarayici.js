@@ -16,7 +16,12 @@ import { circuitBreaker, BotProtectionError } from './circuitBreaker.js';
 // Stealth plugin'i modül seviyesinde bir kez ekle
 chromium.use(StealthPlugin());
 
-const MAX_SAYFA = 5;
+// Eşzamanlı sekme sınırı: 2 GB Azure konteynerinde + tek çıkış proxy'sinde CPU/CF sıkışmasını
+// önlemek için varsayılan 3 (`TARAYICI_MAKS_SAYFA` ile ayarlanabilir).
+const MAX_SAYFA = (() => {
+  const n = Number(process.env.TARAYICI_MAKS_SAYFA);
+  return Number.isFinite(n) && n >= 1 && n <= 10 ? Math.floor(n) : 3;
+})();
 /** Boşta kalma süresi (ms). `TARAYICI_BOS_KALMA_MS` ile ayarlanabilir (2026-11-17). */
 const BOS_KALMA_MS = (() => {
   const n = Number(process.env.TARAYICI_BOS_KALMA_MS);
@@ -492,21 +497,38 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     const bitisMs = Date.now() + Math.max(8000, Math.min(timeoutMs || ZAMAN_ASIMI_MS, 32000));
     const kalanMs = () => Math.max(1000, bitisMs - Date.now());
     sayfa = await ctx.newPage();
+
+    // CF JS challenge çözüldüğünde sayfa JS ile yeniden yüklenir → ilk goto yanıtındaki
+    // bayat `403` yerine her zaman en güncel ana-çerçeve HTTP durumunu koru.
+    let sonAnaDurum = 200;
+    sayfa.on('response', (resp) => {
+      try {
+        const req = resp.request();
+        if (req.isNavigationRequest() && resp.frame() === sayfa.mainFrame()) {
+          sonAnaDurum = resp.status();
+        }
+      } catch { /* yoksay */ }
+    });
+
     let response = await sayfa.goto(url, {
       waitUntil: 'domcontentloaded',
       timeout: Math.min(kalanMs(), ZAMAN_ASIMI_MS),
     });
 
-    let status = response?.status() ?? 200;
+    let status = response?.status() ?? sonAnaDurum;
 
     // CF / Bot koruması kontrolü: gerekirse aşması için süre bütçesi dahilinde bekle
     let challenge = await isBotChallenge(sayfa);
     if (challenge) {
-      for (let i = 0; i < 4 && kalanMs() > 3500; i++) {
-        await sayfa.waitForTimeout(1800);
+      for (let i = 0; i < 6 && kalanMs() > 3500; i++) {
+        await sayfa.waitForTimeout(1500);
         challenge = await isBotChallenge(sayfa);
-        if (!challenge) break;
+        if (!challenge) {
+          await sayfa.waitForLoadState('domcontentloaded', { timeout: 2500 }).catch(() => {});
+          break;
+        }
       }
+      status = sonAnaDurum;
     }
 
     // Doğrudan alt sayfa/arama URL'sine gidildiğinde 403 veren WAF/oturum duvarlarında
@@ -514,31 +536,50 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     if ((challenge || status === 403) && kalanMs() > 6000 && (() => { try { return new URL(url).pathname.length > 1; } catch { return false; } })()) {
       try {
         const anaSayfa = new URL(url).origin + '/';
-        await sayfa.goto(anaSayfa, { waitUntil: 'domcontentloaded', timeout: Math.min(6000, kalanMs()) });
-        await sayfa.waitForTimeout(900);
+        await sayfa.goto(anaSayfa, { waitUntil: 'domcontentloaded', timeout: Math.min(7000, kalanMs()) });
+        for (let i = 0; i < 3 && kalanMs() > 4500; i++) {
+          await sayfa.waitForTimeout(1200);
+          if (!(await isBotChallenge(sayfa))) break;
+        }
         response = await sayfa.goto(url, {
           waitUntil: 'domcontentloaded',
           timeout: Math.min(kalanMs(), ZAMAN_ASIMI_MS),
         });
-        status = response?.status() ?? 200;
+        status = response?.status() ?? sonAnaDurum;
         challenge = await isBotChallenge(sayfa);
         if (challenge) {
-          for (let i = 0; i < 2 && kalanMs() > 2000; i++) {
-            await sayfa.waitForTimeout(1200);
+          for (let i = 0; i < 5 && kalanMs() > 2000; i++) {
+            await sayfa.waitForTimeout(1500);
             challenge = await isBotChallenge(sayfa);
-            if (!challenge) break;
+            if (!challenge) {
+              await sayfa.waitForLoadState('domcontentloaded', { timeout: 2500 }).catch(() => {});
+              break;
+            }
           }
+          status = sonAnaDurum;
         }
       } catch { /* ana sayfa ısıtması başarısızsa mevcut durumla devam */ }
     }
 
-    if (challenge || status === 403 || status === 429) {
+    // Challenge geçildiyse ancak sunucu son navigasyonu hâlâ 403 raporladıysa bile dolu sayfayı kontrol et
+    if (challenge || ((status === 403 || status === 429) && await isBotChallenge(sayfa))) {
       DOMEN_CEREZLERI.delete(domain);
       const opened = circuitBreaker.recordFailure(domain);
       return {
         networkError: `tarayıcı: bot koruması/challenge takıldı (status=${status}${opened ? ' - devre açıldı/cooldown başladı' : ''})`,
         saglayici: 'tarayici',
       };
+    }
+    if (status === 403 || status === 429) {
+      const ham = await sayfa.content().catch(() => '');
+      if (!ham || ham.length < 4000) {
+        DOMEN_CEREZLERI.delete(domain);
+        const opened = circuitBreaker.recordFailure(domain);
+        return {
+          networkError: `tarayıcı: bot koruması/challenge takıldı (status=${status}${opened ? ' - devre açıldı/cooldown başladı' : ''})`,
+          saglayici: 'tarayici',
+        };
+      }
     }
 
     // Kısa bekleme (gereksiz 6s ağ beklemesi kaldırıldı)

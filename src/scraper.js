@@ -944,7 +944,7 @@ async function fetchPageInner(targetUrl, opts = {}) {
       if (r?.networkError) sonHata = r.networkError;
       else if (r?.timedOut) sonHata = 'zaman aşımı';
       else if (r?.status && r.status !== 200) sonHata = 'HTTP ' + r.status;
-      if (/cooldown|bot koruması/i.test(r?.networkError || '') && !hariciSaglayiciVar()) break;
+      if (/cooldown/i.test(r?.networkError || '') && !hariciSaglayiciVar()) break;
     }
     if (ok) {
       const basarili = attempts.filter(a => a.durum === 200).length;
