@@ -26,6 +26,10 @@ const SEO_CACHE_TTL_MS = 60 * 1000;
 const BESLEME_MAKS_URUN = 550;
 let _seoListeOnbellek = { ts: 0, liste: [] };
 
+export function seoOnbelleginiTemizle() {
+  _seoListeOnbellek = { ts: 0, liste: [] };
+}
+
 /** Türkçe karakterleri temizleyerek kararlı URL slug'ı üretir. */
 export function slugYap(metin) {
   const trMap = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', Ç: 'c', Ğ: 'g', İ: 'i', Ö: 'o', Ş: 's', Ü: 'u' };

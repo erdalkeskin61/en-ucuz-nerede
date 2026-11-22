@@ -1463,6 +1463,7 @@ async function radarDurumuYukle() {
     radarKatalog = Array.isArray(d.katalog) ? d.katalog : [];
     radarKatalogCiz();
     radarDurumCiz(d);
+    seoTerfiAdaylariYukle();
     return d;
   } catch (e) {
     const el = $('#radarDurum');
@@ -1714,6 +1715,113 @@ $('#radarCalistirBtn')?.addEventListener('click', async () => {
   } catch (e) {
     if (btn) btn.disabled = false;
     radarMesaj('#radarCalistirMesaj', '❌ ' + e.message, 'hata');
+  }
+});
+
+/* ======================================================================
+   ✨ Kullanıcı aramalarından SEO / Radar kataloğu terfisi
+   ====================================================================== */
+let seoTerfiAdaylar = [];
+
+function seoTerfiListeCiz() {
+  const ul = $('#seoTerfiListe');
+  const sayi = $('#seoTerfiSayisi');
+  if (!ul) return;
+  if (sayi) sayi.textContent = `(${seoTerfiAdaylar.length} aday)`;
+  if (!seoTerfiAdaylar.length) {
+    ul.innerHTML = '<li><span class="radar-urun-sorgu">Şu an eşiği (≥3 stoklu mağaza) geçen yeni terfi adayı yok.</span></li>';
+    return;
+  }
+  ul.innerHTML = seoTerfiAdaylar.map((a, idx) => `
+    <li>
+      <span>
+        <span class="radar-urun-ad">${esc(a.ad)}</span>
+        <span class="radar-kategori-rozet">${radarKategoriEtiket(a.kategori)}</span>
+        <span class="radar-urun-sorgu">
+          🟢 <b>${a.stokluSayi}</b> mağazada stoklu · En ucuz: <b>${tl(a.enUcuzFiyat)}</b> (${esc(a.enUcuzSite || '—')})
+          · <a href="${esc(a.url)}" target="_blank" rel="noopener">Kaynak ↗</a>
+        </span>
+      </span>
+      <span style="display:flex; gap:6px; flex-wrap:wrap">
+        <button type="button" class="ikincil-btn" data-terfi-onayla="${idx}">➕ Kataloğa Terfi Et</button>
+        <button type="button" data-terfi-reddet="${idx}">Gizle</button>
+      </span>
+    </li>
+  `).join('');
+}
+
+async function seoTerfiAdaylariYukle() {
+  const ul = $('#seoTerfiListe');
+  if (!ul) return;
+  try {
+    const res = await fetch('/api/admin/seo-adaylar');
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    seoTerfiAdaylar = Array.isArray(d.adaylar) ? d.adaylar : [];
+    seoTerfiListeCiz();
+  } catch { /* sessiz geç */ }
+}
+
+$('#seoTerfiYenileBtn')?.addEventListener('click', () => { seoTerfiAdaylariYukle(); });
+
+$('#seoTerfiListe')?.addEventListener('click', async (e) => {
+  const terfiBtn = e.target.closest('[data-terfi-onayla]');
+  const redBtn = e.target.closest('[data-terfi-reddet]');
+  if (!terfiBtn && !redBtn) return;
+
+  const idx = Number((terfiBtn || redBtn).dataset[terfiBtn ? 'terfiOnayla' : 'terfiReddet']);
+  const aday = seoTerfiAdaylar[idx];
+  if (!aday) return;
+
+  const mesajEl = $('#seoTerfiMesaj');
+  if (terfiBtn) terfiBtn.disabled = true;
+  if (redBtn) redBtn.disabled = true;
+
+  try {
+    if (terfiBtn) {
+      const res = await fetch('/api/admin/seo-adaylar/terfi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ad: aday.ad,
+          sorgu: aday.sorgu,
+          url: aday.url,
+          kategori: aday.kategori,
+          anahtar: aday.anahtar,
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.hata || 'Terfi başarısız');
+      seoTerfiAdaylar.splice(idx, 1);
+      seoTerfiListeCiz();
+      if (mesajEl) {
+        mesajEl.className = 'durum-mesaji ok';
+        mesajEl.innerHTML = `✅ "<b>${esc(aday.ad)}</b>" kataloğa terfi ettirildi → <a href="${esc(d.urunYolu)}" target="_blank" rel="noopener">${esc(d.urunYolu)} ↗</a>`;
+      }
+      radarDurumuYukle();
+      ozetYukle();
+    } else {
+      const res = await fetch('/api/admin/seo-adaylar/reddet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ad: aday.ad, anahtar: aday.anahtar }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.hata || 'Gizlenemedi');
+      seoTerfiAdaylar.splice(idx, 1);
+      seoTerfiListeCiz();
+      if (mesajEl) {
+        mesajEl.className = 'durum-mesaji';
+        mesajEl.textContent = `ℹ️ "${aday.ad}" listeden gizlendi.`;
+      }
+    }
+  } catch (err) {
+    if (mesajEl) {
+      mesajEl.className = 'durum-mesaji hata';
+      mesajEl.textContent = '❌ ' + err.message;
+    }
+    if (terfiBtn) terfiBtn.disabled = false;
+    if (redBtn) redBtn.disabled = false;
   }
 });
 

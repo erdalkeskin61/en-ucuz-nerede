@@ -40,6 +40,7 @@ import {
 import {
   startRadarScheduler, radarDurum, radarBaslat, radarTara,
   radarZamanlayiciDurdur, radarKapat, katalogGetir, katalogEkle, katalogSil, katalogSifirla,
+  terfiAdaylariGetir, terfiAdayiReddet,
   radarDurumVerisi,
   vitrinVerisi,
   RADAR_VARSAYILAN,
@@ -55,6 +56,7 @@ import { hizliKaynakUrunBul, KIRILGAN_KAYNAK_SITELER } from './src/urunArama.js'
 import {
   SEO_KATEGORILER, seoUrunListesi, seoUrunBul, sitemapKayitlari,
   urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
+  seoOnbelleginiTemizle, slugYap,
 } from './src/seoSayfalar.js';
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
@@ -2503,7 +2505,9 @@ app.get('/api/radar/katalog', (req, res) => {
 app.post('/api/radar/katalog', adminGerekli, (req, res) => {
   try {
     const { ad, sorgu, url, kategori } = req.body || {};
-    res.json(katalogEkle({ ad, sorgu, url, kategori }));
+    const kayit = katalogEkle({ ad, sorgu, url, kategori });
+    seoOnbelleginiTemizle();
+    res.json(kayit);
   } catch (e) {
     res.status(400).json({ hata: String(e.message || e) });
   }
@@ -2513,6 +2517,7 @@ app.delete('/api/radar/katalog/:id', adminGerekli, (req, res) => {
   try {
     const silindi = katalogSil(req.params.id);
     if (!silindi) return res.status(404).json({ hata: 'Katalog kaydı bulunamadı' });
+    seoOnbelleginiTemizle();
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ hata: String(e.message || e) });
@@ -2521,9 +2526,49 @@ app.delete('/api/radar/katalog/:id', adminGerekli, (req, res) => {
 
 app.post('/api/radar/katalog/sifirla', adminGerekli, (req, res) => {
   try {
-    res.json({ katalog: katalogSifirla() });
+    const katalog = katalogSifirla();
+    seoOnbelleginiTemizle();
+    res.json({ katalog });
   } catch (e) {
     res.status(500).json({ hata: String(e.message || e) });
+  }
+});
+
+/* ✨ Kullanıcı aramalarından SEO/Katalog terfi akışı */
+app.get('/api/admin/seo-adaylar', adminGerekli, (req, res) => {
+  try {
+    const minStok = Math.max(1, Math.min(20, Number(req.query.minStok) || 3));
+    res.json({ ok: true, adaylar: terfiAdaylariGetir({ minStok, limit: 40 }) });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+app.post('/api/admin/seo-adaylar/terfi', adminGerekli, async (req, res) => {
+  try {
+    const { ad, sorgu, url, kategori } = req.body || {};
+    if (!url) return res.status(400).json({ ok: false, hata: 'Kanonik URL gerekli' });
+    const kayit = katalogEkle({ ad, sorgu: sorgu || ad, url, kategori: kategori || 'genel' });
+    seoOnbelleginiTemizle();
+    const urunYolu = `/urun/${slugYap(kayit.ad)}`;
+    const taban = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+    if (/^https:\/\//i.test(taban) && kayit.aktif) {
+      indexNowBildir(['/urunler', urunYolu], { tabanUrl: taban, zorla: false }).catch(() => {});
+    }
+    res.json({ ok: true, kayit, urunYolu });
+  } catch (e) {
+    res.status(400).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+app.post('/api/admin/seo-adaylar/reddet', adminGerekli, (req, res) => {
+  try {
+    const { anahtar, ad } = req.body || {};
+    const ok = terfiAdayiReddet(ad || anahtar);
+    if (!ok) return res.status(400).json({ ok: false, hata: 'Geçersiz aday' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
   }
 });
 

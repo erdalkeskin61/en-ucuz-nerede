@@ -28,7 +28,7 @@ import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { birimFiyatHesapla } from './birimFiyat.js';
 import { anlikYaz } from './anlikOnbellek.js';
 import { esc, botPara as para, kargoMetni } from './telegramBot.js';
-import { modelSerisiCakismasi } from './util.js';
+import { modelSerisiCakismasi, titleSimilarity, parcaMi } from './util.js';
 import { fiyatSerisi } from './grafik.js';
 import { fiyatGrafigiUret } from './fiyatGrafik.js';
 import { whatsappKartOlustur, whatsappKanalGonder } from './whatsappKanal.js';
@@ -851,6 +851,137 @@ export function katalogSifirla() {
   `);
   VARSAYILAN_KATALOG.forEach((k, i) => ekle.run(k.ad, k.sorgu, k.kategori, i, Date.now()));
   return katalogGetir();
+}
+
+function terfiUrlAnahtari(ham) {
+  try {
+    const u = new URL(String(ham || '').trim());
+    return `${u.hostname.replace(/^www\./, '').toLowerCase()}${u.pathname.replace(/\/+$/, '')}`;
+  } catch {
+    return String(ham || '').trim().toLowerCase();
+  }
+}
+
+function reddedilenTerfiSeti() {
+  try {
+    const s = veritabani();
+    const row = s.prepare("SELECT value FROM settings WHERE key = 'seo_terfi_reddedilenler'").get();
+    if (!row?.value) return new Set();
+    const arr = JSON.parse(row.value);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function terfiKategoriTahmini(ad) {
+  const metin = String(ad || '');
+  if (parcaMi(metin) || /\b(nozzle|hotend|pei|tabla|anakart|motherboard|extruder|kurutucu|dryer|reçine|recine|resin)\b/i.test(metin)) {
+    return 'genel';
+  }
+  if (/filament|\b(x?pla|pla\+|epla|petg|e?tpu|abs|asa)\b/i.test(metin)) return 'filament';
+  if (/3d\s*yazıcı|3d\s*printer|yazıcı|printer/i.test(metin)) return 'yazici';
+  return 'genel';
+}
+
+/**
+ * Kullanıcı aramalarından (`snapshot` tablosu) oluşan gerçek ve en az `minStok`
+ * mağazada stoklu sonuçları, zaten `radar_katalog`'da olmayanları ayıklayarak
+ * yönetici onayı için terfi adayı olarak listeler.
+ */
+export function terfiAdaylariGetir({ minStok = 3, limit = 40 } = {}) {
+  const s = veritabani();
+  let mevcutlar = [];
+  try {
+    mevcutlar = katalogGetir();
+  } catch { mevcutlar = []; }
+
+  const mevcutAdSet = new Set(mevcutlar.map(k => adAnahtari(k.ad)));
+  const mevcutUrlSet = new Set(mevcutlar.map(k => terfiUrlAnahtari(k.url)).filter(Boolean));
+  const mevcutAdlar = mevcutlar.map(k => k.ad);
+  const reddedilen = reddedilenTerfiSeti();
+
+  let satirlar = [];
+  try {
+    satirlar = s.prepare(`
+      SELECT anahtar, ts, urun, en_ucuz, en_ucuz_site, payload
+      FROM snapshot
+      ORDER BY ts DESC
+      LIMIT 250
+    `).all();
+  } catch {
+    return [];
+  }
+
+  const cikti = [];
+  const gorulenSlug = new Set();
+
+  for (const r of satirlar) {
+    let payload = null;
+    try { payload = JSON.parse(r.payload); } catch { continue; }
+    const ad = String(r.urun || payload?.kaynak?.urun || '').replace(/\s+/g, ' ').trim();
+    if (ad.length < 8 || ad.length > 140) continue;
+
+    const url = String(payload?.kaynak?.url || '').trim();
+    if (!/^https?:\/\/[^\s]+$/i.test(url)) continue;
+
+    const adKey = adAnahtari(ad);
+    const urlKey = terfiUrlAnahtari(url);
+    if (reddedilen.has(adKey) || reddedilen.has(String(r.anahtar))) continue;
+    if (mevcutAdSet.has(adKey) || mevcutUrlSet.has(urlKey) || gorulenSlug.has(adKey)) continue;
+    if (mevcutAdlar.some(m => titleSimilarity(m, ad) >= 0.85)) continue;
+
+    const sonuclar = Array.isArray(payload?.sonuclar) ? payload.sonuclar : [];
+    const stoklu = sonuclar.filter(x => (
+      x?.status === 'found'
+      && x?.product
+      && x.product.inStock !== false
+      && x.renkAyni !== false
+      && Number(x.product.pricing?.toplam ?? x.product.sellingPrice) > 0
+    ));
+    if (stoklu.length < minStok) continue;
+
+    stoklu.sort((a, b) => (
+      Number(a.product.pricing?.toplam ?? a.product.sellingPrice)
+      - Number(b.product.pricing?.toplam ?? b.product.sellingPrice)
+    ));
+    const enIyi = stoklu[0];
+    const enUcuzFiyat = Number(enIyi.product.pricing?.toplam ?? enIyi.product.sellingPrice);
+    if (!(enUcuzFiyat > 0)) continue;
+
+    gorulenSlug.add(adKey);
+    cikti.push({
+      anahtar: r.anahtar,
+      ad,
+      sorgu: ad,
+      url,
+      kategori: terfiKategoriTahmini(ad),
+      stokluSayi: stoklu.length,
+      toplamMagaza: sonuclar.filter(x => x?.status === 'found').length,
+      enUcuzFiyat: Math.round(enUcuzFiyat * 100) / 100,
+      enUcuzSite: enIyi.siteName || enIyi.site || r.en_ucuz_site || '',
+      gorsel: payload?.kaynak?.image || enIyi.product?.image || null,
+      ts: Number(r.ts) || Date.now(),
+    });
+  }
+
+  cikti.sort((a, b) => (b.stokluSayi - a.stokluSayi) || (b.ts - a.ts));
+  return cikti.slice(0, limit);
+}
+
+/** İstenmeyen terfi adayını kalıcı olarak listeden gizler. */
+export function terfiAdayiReddet(anahtarVeyaAd) {
+  const temiz = adAnahtari(anahtarVeyaAd) || String(anahtarVeyaAd || '').trim();
+  if (!temiz) return false;
+  const s = veritabani();
+  const mevcut = [...reddedilenTerfiSeti()];
+  if (!mevcut.includes(temiz)) mevcut.push(temiz);
+  const sinirli = mevcut.slice(-300);
+  s.prepare(`
+    INSERT INTO settings (key, value) VALUES ('seo_terfi_reddedilenler', ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run(JSON.stringify(sinirli));
+  return true;
 }
 
 /* ------------------------------------------------------------------ */
