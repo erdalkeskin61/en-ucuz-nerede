@@ -14,7 +14,8 @@
  * doğrudan canlı tarama butonuna yönlendirilir.
  */
 import { katalogGetir, radarDurumVerisi } from './otonomRadar.js';
-import { anlikAl, sorgudanAnlikAl, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
+import { anlikAl, sorgudanAnlikAl, snapshotAra, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
+import { katalogUrunleriAra } from './katalogSync.js';
 import { formatTL, parcaMi, slugYap } from './util.js';
 export { slugYap };
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
@@ -445,6 +446,230 @@ export function seoUrunBul(slugOrId) {
   return liste.find(u => u.slug === ham)
     || (/^\d+$/.test(ham) ? liste.find(u => u.id === Number(ham)) : null)
     || null;
+}
+
+/** Slug metnini anlık önbellek ve katalog aramaları için sorguya çevirir. */
+function slugdanSorguya(slug) {
+  return String(slug || '')
+    .trim()
+    .toLowerCase()
+    .replace(/-plus\b/g, '+')
+    .replace(/[^a-z0-9+]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function slugTokenleri(slug) {
+  return String(slug || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(t => t.length >= 2 && t !== 'plus');
+}
+
+function yedekUrunNesnesi({
+  idOnEk, ad, teklifler, kaynakUrl = null, gorsel = null, marka = null,
+  modelKodu = null, barkod = null, ts = Date.now(), istenenSlug = 'urun',
+}) {
+  const stoklu = teklifler.filter(t => t.stokta && t.fiyat > 0);
+  const enIyi = stoklu[0] || null;
+  const enPahali = stoklu.length ? stoklu[stoklu.length - 1] : null;
+  const slug = slugYap(ad) || istenenSlug;
+  const zaman = Number(ts) || Date.now();
+  return {
+    id: `${idOnEk}-${slug}`,
+    kaynakTip: idOnEk,
+    ad,
+    sorgu: ad,
+    kaynakUrl: kaynakUrl || enIyi?.url || null,
+    kategori: 'genel',
+    kategoriSlug: anaKategoriSlugBul({ ad, sorgu: ad, kategori: 'genel' }),
+    slug,
+    yol: `/urun/${slug}`,
+    teklifler,
+    enUcuzFiyat: enIyi ? enIyi.fiyat : null,
+    enUcuzSite: enIyi ? enIyi.site : null,
+    enUcuzUrl: enIyi ? enIyi.url : null,
+    enPahaliFiyat: enPahali ? enPahali.fiyat : null,
+    stokluSayisi: stoklu.length,
+    gorsel,
+    marka,
+    modelKodu,
+    barkod,
+    birimMetni: null,
+    sonTs: zaman,
+    lastmod: new Date(zaman).toISOString().slice(0, 10),
+  };
+}
+
+function snapshottanSeoUrun(s, istenenSlug, afiliyeAyar) {
+  const ad = String(s?.urun || s?.payload?.kaynak?.urun || '').trim();
+  if (!ad) return null;
+  const teklifler = teklifListesiTopla({ ad, sorgu: ad, kategori: 'genel' }, null, s, afiliyeAyar);
+  return yedekUrunNesnesi({
+    idOnEk: 'snap',
+    ad,
+    teklifler,
+    kaynakUrl: s.payload?.kaynak?.url || null,
+    gorsel: s.payload?.kaynak?.image || s.payload?.kaynak?.resim || null,
+    marka: s.payload?.kaynak?.brand || null,
+    modelKodu: s.payload?.kaynak?.modelKodu || null,
+    barkod: s.payload?.kaynak?.barkod || null,
+    ts: s.ts,
+    istenenSlug,
+  });
+}
+
+function katalogSatirlarindanSeoUrun(satirlar, istenenSlug, afiliyeAyar) {
+  if (!Array.isArray(satirlar) || !satirlar.length) return null;
+  const ilk = satirlar[0];
+  const ad = String(ilk.baslik || '').trim();
+  if (!ad) return null;
+  const teklifMap = new Map();
+  let gorsel = null;
+  let marka = null;
+  let sonTs = 0;
+
+  for (const r of satirlar) {
+    if (!gorsel && r.gorselUrl && /^https?:\/\//i.test(r.gorselUrl)) gorsel = r.gorselUrl;
+    if (!marka && r.marka) marka = String(r.marka).trim();
+    if (Number(r.guncellemeTs) > sonTs) sonTs = Number(r.guncellemeTs);
+    const hamFiyat = Number(r.fiyat);
+    if (!Number.isFinite(hamFiyat) || hamFiyat <= 0) continue;
+    const { fiyat, kargo } = kargoHesaplaTeklif(r.siteId, Math.round(hamFiyat * 100) / 100);
+    const anahtar = r.siteId || r.urunUrl;
+    const mevcut = teklifMap.get(anahtar);
+    if (!mevcut || (r.stokta !== 0 && !mevcut.stokta) || fiyat < mevcut.fiyat) {
+      teklifMap.set(anahtar, {
+        siteId: r.siteId,
+        site: siteNames[r.siteId] || r.siteId,
+        baslik: String(r.baslik || ad).trim(),
+        fiyat,
+        urunFiyati: Math.round(hamFiyat * 100) / 100,
+        stokta: r.stokta !== 0,
+        kargo,
+        url: guvenliAfiliyeUrl(r.siteId, r.urunUrl, afiliyeAyar),
+      });
+    }
+  }
+
+  const teklifler = [...teklifMap.values()].sort((a, b) => {
+    if (a.stokta !== b.stokta) return a.stokta ? -1 : 1;
+    return a.fiyat - b.fiyat;
+  });
+  return yedekUrunNesnesi({
+    idOnEk: 'kat',
+    ad,
+    teklifler,
+    kaynakUrl: ilk.urunUrl || null,
+    gorsel,
+    marka,
+    ts: sonTs,
+    istenenSlug,
+  });
+}
+
+/**
+ * `/urun/:slug` isteği ana listede bulunamadığında 404 yerine akıllı çözümleme:
+ *   1) Anlık önbellekten (`snapshot`) doğrudan SSR ürün sayfası üretir
+ *   2) Mevcut SEO kataloğunda yüksek benzerlikli kanonik `/urun/...` bulursa yönlendirir
+ *   3) Uzun kuyruk mağaza kataloğundan (`katalog_urunleri`) SSR sayfası üretir
+ *   4) Hiçbiri yoksa okunabilir arama sorgusuyla `/?q=...` (veya `/urunler`) yönlendirir
+ *
+ * @param {string} slugOrId
+ * @param {Array<object>} [tumUrunler]
+ * @returns {{tip:'sayfa', urun:object}|{tip:'yonlendir', hedef:string}}
+ */
+export function seoUrunYedekCoz(slugOrId, tumUrunler = null) {
+  const ham = String(slugOrId || '').trim().toLowerCase();
+  const sorgu = slugdanSorguya(ham);
+  if (!ham || sorgu.length < 2) {
+    return { tip: 'yonlendir', hedef: '/urunler' };
+  }
+
+  const liste = Array.isArray(tumUrunler) ? tumUrunler : seoUrunListesi();
+  const afiliyeAyar = afiliyeAyarlari();
+  const toks = slugTokenleri(ham);
+
+  // 1) Anlık önbellekte (snapshot) BİREBİR slug eşleşmesi → doğrudan SSR sayfası
+  let snapler = [];
+  try {
+    snapler = snapshotAra(sorgu, { limit: 8, maxYasMs: SNAPSHOT_MAX_YAS_MS });
+    const tamSnap = snapler.find(s => slugYap(s.urun) === ham);
+    if (tamSnap) {
+      const urun = snapshottanSeoUrun(tamSnap, ham, afiliyeAyar);
+      if (urun) return { tip: 'sayfa', urun };
+    }
+  } catch { /* snapshot yoksay */ }
+
+  // 2) Katalog içinde yüksek benzerlikli slug eşleşmesi → kanonik /urun/:slug
+  if (toks.length >= 2 && liste.length) {
+    let enIyi = null;
+    let enPuan = 0;
+    for (const u of liste) {
+      const uSlug = String(u?.slug || '').toLowerCase();
+      if (!uSlug) continue;
+      const uToks = slugTokenleri(uSlug);
+      if (!uToks.length) continue;
+      const uSet = new Set(uToks);
+      let eslesen = 0;
+      for (const t of toks) if (uSet.has(t)) eslesen++;
+      const kapsamaGirdi = eslesen / toks.length;
+      const kapsamaHedef = eslesen / uToks.length;
+      const onekEslesme = uSlug.startsWith(`${ham}-`) || ham.startsWith(`${uSlug}-`);
+      if (!(onekEslesme && eslesen >= 2) && !(eslesen >= 2 && kapsamaGirdi >= 0.75 && kapsamaHedef >= 0.55)) {
+        continue;
+      }
+      const puan = (onekEslesme ? 1 : 0) + kapsamaGirdi + kapsamaHedef + (u.enUcuzFiyat > 0 ? 0.1 : 0);
+      if (puan > enPuan) {
+        enPuan = puan;
+        enIyi = u;
+      }
+    }
+    if (enIyi?.yol) {
+      return { tip: 'yonlendir', hedef: enIyi.yol };
+    }
+  }
+
+  // 3) Katalogda yoksa anlık önbellekteki yaklaşık eşleşmeyi SSR sayfası yap
+  if (snapler.length && toks.length >= 2) {
+    for (const s of snapler) {
+      const sToks = new Set(slugTokenleri(slugYap(s.urun)));
+      let eslesen = 0;
+      for (const t of toks) if (sToks.has(t)) eslesen++;
+      if (eslesen >= 2 && (eslesen / toks.length) >= 0.75) {
+        const urun = snapshottanSeoUrun(s, ham, afiliyeAyar);
+        if (urun) return { tip: 'sayfa', urun };
+      }
+    }
+  }
+
+  // 3) Uzun kuyruk mağaza kataloğu (ilk 550 dışında kalanlar)
+  try {
+    const katAdaylar = katalogUrunleriAra(sorgu, { limit: 15 });
+    const tamKat = katAdaylar.filter(r => slugYap(r.baslik) === ham);
+    if (tamKat.length) {
+      const urun = katalogSatirlarindanSeoUrun(tamKat, ham, afiliyeAyar);
+      if (urun) return { tip: 'sayfa', urun };
+    }
+    if (katAdaylar.length && toks.length >= 2) {
+      const benzerKat = katAdaylar.filter((r) => {
+        const kSet = new Set(slugTokenleri(slugYap(r.baslik)));
+        let eslesen = 0;
+        for (const t of toks) if (kSet.has(t)) eslesen++;
+        return eslesen >= 2 && (eslesen / toks.length) >= 0.8;
+      });
+      if (benzerKat.length) {
+        const urun = katalogSatirlarindanSeoUrun(benzerKat, ham, afiliyeAyar);
+        if (urun) return { tip: 'sayfa', urun };
+      }
+    }
+  } catch { /* katalog yoksay */ }
+
+  // 4) Hiçbir kayıt yoksa ana sayfada canlı karşılaştırma aramasına yönlendir (sıfır 404)
+  if (sorgu.length >= 3) {
+    return { tip: 'yonlendir', hedef: `/?q=${encodeURIComponent(sorgu)}` };
+  }
+  return { tip: 'yonlendir', hedef: '/urunler' };
 }
 
 export function sitemapKayitlari() {

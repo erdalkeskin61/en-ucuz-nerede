@@ -54,7 +54,7 @@ import { pushDurum, pushGonder } from './src/push.js';
 import { onerileriGetir } from './src/oneriler.js';
 import { hizliKaynakUrunBul, KIRILGAN_KAYNAK_SITELER } from './src/urunArama.js';
 import {
-  SEO_KATEGORILER, seoUrunListesi, seoUrunBul, sitemapKayitlari,
+  SEO_KATEGORILER, seoUrunListesi, seoUrunBul, seoUrunYedekCoz, sitemapKayitlari,
   urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
   seoOnbelleginiTemizle, slugYap,
 } from './src/seoSayfalar.js';
@@ -595,10 +595,19 @@ app.get('/urun/:slug', (req, res) => {
   try {
     const tumUrunler = seoUrunListesi();
     const ham = String(req.params.slug || '').trim().toLowerCase();
-    const urun = tumUrunler.find(u => u.slug === ham)
+    let urun = tumUrunler.find(u => u.slug === ham)
       || (/^\d+$/.test(ham) ? tumUrunler.find(u => u.id === Number(ham)) : null)
       || seoUrunBul(ham);
-    if (!urun) return res.status(404).type('text/plain').send('Ürün sayfası bulunamadı');
+    if (!urun) {
+      const yedek = seoUrunYedekCoz(ham, tumUrunler);
+      if (yedek?.tip === 'sayfa' && yedek.urun) {
+        urun = yedek.urun;
+      } else {
+        const hedef = yedek?.hedef || '/urunler';
+        res.setHeader('Cache-Control', 'no-store');
+        return res.redirect(302, hedef);
+      }
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=120');
     res.send(urunSayfasiHtml(urun, yayinKoku(req), tumUrunler));

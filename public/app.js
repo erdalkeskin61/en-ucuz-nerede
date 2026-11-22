@@ -3870,7 +3870,8 @@ gecmisiYukle();
 // Ayarlar'a gidip Karşılaştır'a dönünce sayfa tam yeniden yüklenir; son aramanın
 // URL'si ve (sunucu hafızasında hâlâ duruyorsa) sonuçları ücretsiz geri getirilir.
 (async () => {
-  const urlParam = new URLSearchParams(window.location.search).get('url');
+  const aramaParams = new URLSearchParams(window.location.search);
+  const urlParam = aramaParams.get('url') || aramaParams.get('q');
   if (urlParam) {
     const input = document.getElementById('urunUrl');
     if (input) input.value = urlParam;
