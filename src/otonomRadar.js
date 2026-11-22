@@ -28,7 +28,7 @@ import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { birimFiyatHesapla } from './birimFiyat.js';
 import { anlikYaz } from './anlikOnbellek.js';
 import { esc, botPara as para, kargoMetni } from './telegramBot.js';
-import { modelSerisiCakismasi, titleSimilarity, parcaMi } from './util.js';
+import { modelSerisiCakismasi, titleSimilarity, parcaMi, kanonikUrunUrl, slugYap } from './util.js';
 import { fiyatSerisi } from './grafik.js';
 import { fiyatGrafigiUret } from './fiyatGrafik.js';
 import { whatsappKartOlustur, whatsappKanalGonder } from './whatsappKanal.js';
@@ -1210,6 +1210,7 @@ export function radarDurumuHesapla(kayit, sonuc, url) {
   return {
     anahtar: `katalog:${kayit?.id ?? 'x'}`,
     katalogId: kayit?.id ?? null,
+    slug: slugYap(kayit?.ad || baslik),
     ad: kayit?.ad || baslik,
     kategori: kayit?.kategori || 'genel',
     urun: baslik,
@@ -1493,6 +1494,10 @@ export function radarKartOlustur(d) {
   }
   if (d.kismi) {
     satirlar.push(`ℹ️ <i>Kısmi tarama: ${Number(d.taranmayan) || 0} site yanıt vermedi.</i>`);
+  }
+  const karsilastirUrl = kanonikUrunUrl(d);
+  if (karsilastirUrl) {
+    satirlar.push(`📊 Tüm mağazaları karşılaştır: ${esc(karsilastirUrl)}`);
   }
   satirlar.push('', '⚡ @BaskiHesap | Otonom Fiyat Radarı');
   return satirlar.join('\n');

@@ -158,6 +158,8 @@ kontrol('mesajda eski fiyat <s> ile', mesaj.includes('<s>22.000,00 TL</s>'));
 kontrol('mesajda güncel fiyat kalın', mesaj.includes('<b>17.000,00 TL</b>'));
 kontrol('mesajda indirim yüzdesi', mesaj.includes('%22,7'));
 kontrol('mesajda afiliye linki', mesaj.includes(dip.url));
+kontrol('mesajda kanonik karşılaştırma linki',
+  mesaj.includes('Tüm mağazaları karşılaştır:') && /https?:\/\/[^/\s]+\/urun\/[a-z0-9-]+/.test(mesaj));
 
 const istekMesaj = telegramIstegiOlustur({ ...dip, image: null }, { chatId: '-100123' });
 kontrol('görsel yoksa sendMessage', istekMesaj.yontem === 'sendMessage', istekMesaj.yontem);

@@ -15,7 +15,8 @@
  */
 import { katalogGetir, radarDurumVerisi } from './otonomRadar.js';
 import { anlikAl, sorgudanAnlikAl, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
-import { formatTL, parcaMi } from './util.js';
+import { formatTL, parcaMi, slugYap } from './util.js';
+export { slugYap };
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
@@ -28,18 +29,6 @@ let _seoListeOnbellek = { ts: 0, liste: [] };
 
 export function seoOnbelleginiTemizle() {
   _seoListeOnbellek = { ts: 0, liste: [] };
-}
-
-/** Türkçe karakterleri temizleyerek kararlı URL slug'ı üretir. */
-export function slugYap(metin) {
-  const trMap = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', Ç: 'c', Ğ: 'g', İ: 'i', Ö: 'o', Ş: 's', Ü: 'u' };
-  return String(metin || '')
-    .replace(/[çğıöşüÇĞİÖŞÜ]/g, ch => trMap[ch] || ch)
-    .toLowerCase()
-    .replace(/\+/g, '-plus')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 90) || 'urun';
 }
 
 export function htmlKacis(metin) {

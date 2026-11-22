@@ -1240,3 +1240,37 @@ export function findJsonLdProduct(html) {
 export function absUrl(base, href) {
   try { return new URL(href, base).href; } catch { return href; }
 }
+
+/** Türkçe karakterleri temizleyerek kararlı URL slug'ı üretir. */
+export function slugYap(metin) {
+  const trMap = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', Ç: 'c', Ğ: 'g', İ: 'i', Ö: 'o', Ş: 's', Ü: 'u' };
+  return String(metin || '')
+    .replace(/[çğıöşüÇĞİÖŞÜ]/g, ch => trMap[ch] || ch)
+    .toLowerCase()
+    .replace(/\+/g, '-plus')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 90) || 'urun';
+}
+
+/**
+ * Fırsat ve radar kartları için sitedeki kanonik `/urun/<slug>` URL'sini üretir.
+ * Yerel IP / localhost değerlerini dış kanallara sızdırmaz (baskihesap.tech kullanır).
+ */
+export function kanonikUrunUrl(bilgi, opts = {}) {
+  if (!bilgi || typeof bilgi !== 'object') return null;
+  if (typeof bilgi.karsilastirmaUrl === 'string' && /^https?:\/\//i.test(bilgi.karsilastirmaUrl)) {
+    return bilgi.karsilastirmaUrl;
+  }
+  const hamTaban = String(opts.siteTaban || bilgi.siteTaban || process.env.PUBLIC_URL || '')
+    .trim()
+    .replace(/\/+$/, '');
+  const taban = (/^https?:\/\//i.test(hamTaban)
+    && !/localhost|127\.0\.0\.1|192\.168\.|10\.|172\./i.test(hamTaban))
+    ? hamTaban
+    : 'https://baskihesap.tech';
+  const slug = String(bilgi.slug || '').trim()
+    || ((bilgi.ad || bilgi.urun) ? slugYap(bilgi.ad || bilgi.urun) : '');
+  if (!slug) return null;
+  return `${taban}/urun/${slug}`;
+}

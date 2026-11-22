@@ -109,6 +109,8 @@ kontrol('diğer mağazalar listelenir',
 kontrol('tasarruf satırı', kart.includes('₺120,35'));
 kontrol('afiliye link kartta', kart.includes(d.afiliyeUrl));
 kontrol('satın alma başlığı kalın', kart.includes('*Satın Alma Linki:*'));
+kontrol('kanonik ürün karşılaştırma linki kartta',
+  kart.includes('Tüm mağazaları karşılaştır:') && kart.includes('/urun/creality-ender-pla-filament-gri-1kg'));
 kontrol('alt marka', kart.includes('Baskı Hesap'));
 kontrol('mesaj sınırı içinde', kart.length <= MESAJ_LIMIT, String(kart.length));
 kontrol('HTML etiketi YOK', !/<\/?[a-z][^>]*>/i.test(kart));
@@ -147,6 +149,8 @@ kontrol('yeni fiyat kalın', fk.includes('*₺758,65*'));
 kontrol('indirim oranı', fk.includes('%15,7'));
 kontrol('tasarruf tutarı', fk.includes('₺141,34'));
 kontrol('url var', fk.includes(f.url));
+kontrol('fırsat kartında kanonik karşılaştırma linki',
+  fk.includes('Tüm mağazaları karşılaştır:') && fk.includes('/urun/creality-ender-pla-gri-1kg'));
 kontrol('HTML yok', !/<\/?[a-z][^>]*>/i.test(fk));
 kontrol('boş girdi boş döner', whatsappFirsatKartOlustur(null) === '');
 

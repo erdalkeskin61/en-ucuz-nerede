@@ -19,7 +19,7 @@ import { config } from './config.js';
 import { getSettings, getTracked } from './store.js';
 import { runComparison } from './pipeline.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
-import { formatTL } from './util.js';
+import { formatTL, kanonikUrunUrl, slugYap } from './util.js';
 import { anahtarCikar } from './anlikOnbellek.js';
 import { whatsappFirsatKartOlustur, whatsappKanalGonder } from './whatsappKanal.js';
 
@@ -208,6 +208,7 @@ export function firsatAdayiBul(sonuc, opts = {}) {
   return {
     uygun: true,
     anahtar: urunId,
+    slug: slugYap(urun),
     urun,
     site: secili.siteName || secili.site,
     siteId: secili.site,
@@ -260,6 +261,7 @@ export function telegramIstegiOlustur(firsat, opts = {}) {
 export function firsatMesajiOlustur(f) {
   const baslik = esc(f.urun);
   const site = esc(f.site);
+  const karsilastirUrl = kanonikUrunUrl(f);
   const satirlar = [
     `🔥 <b>GÜNÜN FIRSATI: ${baslik}</b>`,
     `🏪 Mağaza: ${site} (En Ucuz)`,
@@ -269,6 +271,7 @@ export function firsatMesajiOlustur(f) {
     `🏷️ Durum: ${esc(f.durum)}`,
     '👉 Fırsatı İncele ve Satın Al:',
     esc(f.url),
+    ...(karsilastirUrl ? [`📊 Tüm mağazaları karşılaştır: ${esc(karsilastirUrl)}`] : []),
     '⚡ @BaskiHesap | Gerçek Fiyat Takipçisi',
   ];
   return satirlar.join('\n');

@@ -19,6 +19,7 @@
 /* ------------------------------------------------------------------ */
 /* Biçimlendirme                                                       */
 /* ------------------------------------------------------------------ */
+import { kanonikUrunUrl } from './util.js';
 
 /**
  * HTML/Markdown'dan bağımsız "saf metin" üretir.
@@ -162,6 +163,11 @@ export function whatsappKartOlustur(d) {
     satirlar.push(CIZGI, '🛒 *Satın Alma Linki:*', String(link));
   }
 
+  const karsilastirUrl = kanonikUrunUrl(d);
+  if (karsilastirUrl) {
+    satirlar.push(`📊 *Tüm mağazaları karşılaştır:* ${karsilastirUrl}`);
+  }
+
   if (d.kismi) {
     satirlar.push(italik(`Kısmi tarama: ${Number(d.taranmayan) || 0} site yanıt vermedi.`));
   }
@@ -193,6 +199,10 @@ export function whatsappFirsatKartOlustur(f) {
   ];
   if (f.url) {
     satirlar.push(CIZGI, '🛒 *Fırsatı İncele ve Satın Al:*', String(f.url));
+  }
+  const karsilastirUrl = kanonikUrunUrl(f);
+  if (karsilastirUrl) {
+    satirlar.push(`📊 *Tüm mağazaları karşılaştır:* ${karsilastirUrl}`);
   }
   satirlar.push(CIZGI, '⚡ *Baskı Hesap* | Gerçek Fiyat Takipçisi');
   return kirp(satirlar.join('\n'), MESAJ_LIMIT);

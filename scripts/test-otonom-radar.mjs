@@ -251,6 +251,8 @@ kontrol('kartta Robitshop 415', kart.includes('Robitshop: ₺415,00'));
 kontrol('kartta Trendyol 445', kart.includes('Trendyol: ₺445,00'));
 kontrol('kartta 💡 tasarruf', kart.includes('💡 Diğer mağazalara göre <b>₺56,00</b> tasarruf!'));
 kontrol('kartta ayırıcı çizgi', kart.includes('━━━━━━━━━━━━━━━━━━━━'));
+kontrol('kartta kanonik ürün linki',
+  kart.includes('Tüm mağazaları karşılaştır:') && kart.includes('/urun/esun-epla-hs-pla-siyah-1kg'));
 kontrol('kartta imza', kart.includes('@BaskiHesap'));
 
 const yaziciKart = radarKartOlustur(yaziciDurum);
