@@ -254,6 +254,14 @@ db.exec(`
  */
 function sponsorTohumla() {
   try {
+    // 2026-11-22: Örnek sponsor vitrin şimdilik rafa kaldırıldı (mevcut DB'de pasif yap).
+    const rafa = db.prepare('SELECT value FROM settings WHERE key = ?').get('sponsor_demo_rafa_v1');
+    if (!rafa) {
+      db.prepare("UPDATE sponsorlu_vitrin SET aktif = 0 WHERE id = 'vitrin_demo_porima'").run();
+      db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+        .run('sponsor_demo_rafa_v1', JSON.stringify(new Date().toISOString()));
+    }
+
     const surum = db.prepare('SELECT value FROM settings WHERE key = ?').get('sponsor_seed_v1');
     if (surum) return;
 
@@ -267,7 +275,7 @@ function sponsorTohumla() {
     magazaEkle.run('porima3d', 'Resmi Üretici · Aynı Gün Kargo', 'uretici', bitis, Date.now());
     magazaEkle.run('robotistan', 'Resmi Distribütör · Aynı Gün Kargo', 'resmi_partner', bitis, Date.now());
 
-    // Örnek sponsorlu vitrin: 7 günlük demo kampanya (gerçek ürün sayfası).
+    // Örnek sponsorlu vitrin: şimdilik pasif (aktif=0); istendiğinde panelden yayına alınabilir.
     const varMi = db.prepare('SELECT COUNT(*) c FROM sponsorlu_vitrin').get()?.c || 0;
     if (!varMi) {
       const bugun = new Date();
@@ -278,7 +286,7 @@ function sponsorTohumla() {
           id, marka, baslik, aciklama, gorselUrl, eskiFiyat, kampanyaFiyat,
           yonlendirmeUrl, rozetMetni, baslangicTarihi, bitisTarihi,
           aktif, gosterimSayisi, tiklamaSayisi, olusturma
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?)
       `).run(
         'vitrin_demo_porima',
         'Porima3D',

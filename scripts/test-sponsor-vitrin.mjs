@@ -56,17 +56,15 @@ const demoTiklama = demoBaslangic?.tiklamaSayisi ?? 0;
 /* ------------------------------------------------------------------ */
 bolum('1) 🗄️ Şema, tohum verisi ve vitrin seçimi');
 
-const seed = sponsorVitrinGetir({ id: 'vitrin_demo_porima' });
-kontrol('yayında tohum vitrin var (id ile)', !!seed, 'seed yok');
-if (seed) {
-  kontrol('tohum markası Porima3D', seed.marka === 'Porima3D', String(seed.marka));
-  kontrol('kampanya fiyatı 489', seed.kampanyaFiyat === 489, String(seed.kampanyaFiyat));
-  kontrol('eski fiyat 612', seed.eskiFiyat === 612, String(seed.eskiFiyat));
-  kontrol('indirim tutarı 123', seed.indirimTL === 123, String(seed.indirimTL));
-  kontrol('indirim yüzdesi %20,1', seed.indirimYuzde === 20.1, String(seed.indirimYuzde));
-  kontrol('yönlendirme https', /^https:\/\//.test(seed.yonlendirmeUrl), seed.yonlendirmeUrl);
-  kontrol('rozet metni dolu', !!seed.rozetMetni, String(seed.rozetMetni));
-  kontrol('sayaçlar sayı', Number.isInteger(seed.gosterimSayisi) && Number.isInteger(seed.tiklamaSayisi));
+const seedRapor = sponsorRaporTek('vitrin_demo_porima');
+kontrol('tohum vitrin kaydı DB\'de mevcut (pasif/rafa kaldırılmış)', !!seedRapor, 'seed yok');
+kontrol('tohum vitrin yayında değil (rafa kaldırıldı)',
+  sponsorVitrinGetir({ id: 'vitrin_demo_porima' }) === null);
+if (seedRapor) {
+  kontrol('tohum markası Porima3D', seedRapor.marka === 'Porima3D', String(seedRapor.marka));
+  kontrol('tohum başlık dolu', !!seedRapor.baslik, String(seedRapor.baslik));
+  kontrol('tohum yayinda=false', seedRapor.yayinda === false, String(seedRapor.yayinda));
+  kontrol('sayaçlar sayı', Number.isInteger(seedRapor.gosterimSayisi) && Number.isInteger(seedRapor.tiklamaSayisi));
 }
 
 /* --- süre sonu: geçmiş tarihli kayıt ASLA dönmez --- */
@@ -336,7 +334,7 @@ kontrol('index.html: banner görseli eager',
   /id="sponsorGorsel"[^>]*loading="eager"/.test(html));
 kontrol('yerel sponsor görseli mevcut', fs.existsSync(path.join(KOK, 'public/sponsor-ornek.svg')));
 kontrol('tohum kampanya görseli yerel yola işaret eder',
-  seed?.gorselUrl === '/sponsor-ornek.svg', String(seed?.gorselUrl));
+  oku('src/store.js').includes("'/sponsor-ornek.svg'"));
 kontrol('app.js: eski fiyat yoksa üstü çizili basılmaz',
   /eski && v\.eskiFiyat > v\.kampanyaFiyat/.test(appJs));
 
@@ -481,8 +479,8 @@ for (const id of [GECMIS_ID, GELECEK_ID, AKTIF_ID, '__test_sponsor_pasif__',
 try { dogrulanmisMagazaSil('__test_suresi_dolmus__'); } catch { /* yoksay */ }
 
 kontrol('test vitrin kayıtları temizlendi', sponsorVitrinGetir({ id: AKTIF_ID }) === null);
-kontrol('yayındaki banner tohum kampanyasıdır',
-  sponsorVitrinGetir()?.id === DEMO_ID, String(sponsorVitrinGetir()?.id));
+kontrol('yayında aktif banner yok (demo rafa kaldırıldı)',
+  sponsorVitrinGetir() === null, String(sponsorVitrinGetir()?.id));
 kontrol('tohum mağazaları korunuyor',
   dogrulanmisMagazalariGetir().some(m => m.siteId === 'robotistan'));
 
