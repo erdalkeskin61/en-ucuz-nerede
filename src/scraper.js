@@ -552,7 +552,13 @@ export function anlamliIcerikMi(r) {
 async function impitHafifDene(targetUrl, opts = {}) {
   if ((opts.method || 'GET') !== 'GET') return null;
   try {
-    const r = await rawFetchDirect(targetUrl, { ...opts, timeoutMs: Math.min(opts.timeoutMs || 10000, 12000) });
+    // Ön kontrol olduğu için CF/403 aldığında circuitBreaker'ı şişirmemelidir;
+    // aksi halde tarayıcı katmanının kendisi bile cooldown yüzünden çalışamaz.
+    const r = await rawFetchDirect(targetUrl, {
+      ...opts,
+      timeoutMs: Math.min(opts.timeoutMs || 10000, 12000),
+      skipBreaker: true,
+    });
     if (anlamliIcerikMi(r)) return { ...r, impitHafif: true };
     return null;
   } catch {
@@ -560,7 +566,7 @@ async function impitHafifDene(targetUrl, opts = {}) {
   }
 }
 
-async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null, profil = null, proxyUrl = null }) {
+async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = null, body = null, site = null, profil = null, proxyUrl = null, skipBreaker = false }) {
   let domain = 'default';
   try { domain = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch {}
   if (circuitBreaker.isOpen(domain)) {
@@ -625,7 +631,7 @@ async function rawFetchDirect(targetUrl, { timeoutMs, method = 'GET', headers = 
     const textBody = kodlamaCoz(buf);
     if (res.status === 403 || res.status === 429 || BOT_CHALLENGE_RE.test(textBody.slice(0, 2000))) {
       if (waf) WAF_CEREZ_ONBELLEK.delete(domain);
-      circuitBreaker.recordFailure(domain);
+      if (!skipBreaker) circuitBreaker.recordFailure(domain);
     } else if (res.status === 200 && !isEmptyBody(textBody)) {
       circuitBreaker.recordSuccess(domain);
     }
@@ -891,24 +897,54 @@ async function fetchPageInner(targetUrl, opts = {}) {
   const attempts = [];
   let render = !!opts.render;
 
-  // 0) Korumalı alan adları (ör. incehesap.com): ScraperAPI yalnızca render=true ile ve
-  //    ara sıra başarıyla yanıt verir. Başarısız denemeler ücretlendirilmediği için
-  //    opts.renderRetry kadar ek deneme yapılır (premium KULLANILMAZ).
+  // Dış kazıma sağlayıcısı (kredisi bitmemiş ScraperAPI / Crawlbase / ZenRows) aktif mi?
+  const hariciSaglayiciVar = () => !!(
+    (config.scraperApiKey && !scraperApiTukendi.bitti)
+    || config.crawlbaseToken
+    || config.zenrowsApiKey
+  );
+
+  // 0) Korumalı alan adları (ör. incehesap.com, pttavm.com, teknosa.com):
+  //    Ücretli sağlayıcı varken renderRetry kadar, yerel moda (impit + Chromium) düşüldüyse
+  //    en fazla 2 kontrollü deneme (2.sinde farklı TLS profili + jitter) yapılır;
+  //    böylece Cloudflare 5x üst üste dövülmez ve bitmiş ScraperAPI kredisi yüzünden
+  //    cooldown döngüye girilmez.
   if (opts.renderRetry > 0) {
     render = true;
     let domain = 'default';
     try { domain = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch {}
+    const hariciVar = hariciSaglayiciVar();
+    const maksDeneme = hariciVar ? opts.renderRetry : Math.min(opts.renderRetry, 2);
     let ok = null;
-    for (let i = 0; i < opts.renderRetry; i++) {
-      if (circuitBreaker.isOpen(domain) && !config.scraperApiKey && !config.crawlbaseToken && !config.zenrowsApiKey) break;
-      const r = await rawFetch(targetUrl, { render: true, timeoutMs: 25000, method, headers: reqHeaders, body: reqBody, session, site });
+    let sonHata = null;
+    for (let i = 0; i < maksDeneme; i++) {
+      if (circuitBreaker.isOpen(domain) && !hariciSaglayiciVar()) {
+        sonHata = `${domain} geçici beklemede (bot koruması cooldown)`;
+        break;
+      }
+      if (i > 0 && !hariciVar) {
+        await sleepWithJitter(i);
+      }
+      const r = await rawFetch(targetUrl, {
+        render: true,
+        timeoutMs: 32000,
+        method,
+        headers: reqHeaders,
+        body: reqBody,
+        session,
+        site,
+        ...(i > 0 && !hariciVar ? { profil: 'firefox' } : {}),
+      });
       attempts.push(describeAttempt(r, true));
       if (krediBittiMi(r)) {
         logRequest({ site, purpose, url: targetUrl, cached: false, error: 'scraperapi_kredi_bitti', requests: attempts.length });
         throw new FetchError('ScraperAPI aylık kredisi tükendi. Krediler sonraki fatura döneminde yenilenir ya da dashboard.scraperapi.com/billing üzerinden plan yükseltilebilir.', { status: 103, attempts });
       }
       if (r.status === 200 && !isEmptyBody(r.body)) { ok = r; break; }
-      if (/cooldown|bot koruması/i.test(r?.networkError || '') && !config.scraperApiKey) break;
+      if (r?.networkError) sonHata = r.networkError;
+      else if (r?.timedOut) sonHata = 'zaman aşımı';
+      else if (r?.status && r.status !== 200) sonHata = 'HTTP ' + r.status;
+      if (/cooldown|bot koruması/i.test(r?.networkError || '') && !hariciSaglayiciVar()) break;
     }
     if (ok) {
       const basarili = attempts.filter(a => a.durum === 200).length;
@@ -917,7 +953,10 @@ async function fetchPageInner(targetUrl, opts = {}) {
       return { status: 200, body: ok.body, fromCache: false, requestsSpent: basarili, renderUsed: true, saglayici: ok.saglayici };
     }
     logRequest({ site, purpose, url: targetUrl, cached: false, error: 'korumali_alanadi_render_basarisiz', requests: attempts.length });
-    throw new FetchError('Site korumalı: ' + attempts.length + ' render denemesi de başarısız oldu.', { attempts });
+    const nedenMetni = attempts.length
+      ? `${attempts.length} render denemesi başarısız oldu${sonHata ? ' (' + sonHata + ')' : ''}.`
+      : `devre geçici olarak açık${sonHata ? ' (' + sonHata + ')' : ''}.`;
+    throw new FetchError('Site korumalı: ' + nedenMetni, { attempts });
   }
 
   // 1) İlk deneme

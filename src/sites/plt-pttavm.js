@@ -26,7 +26,7 @@ export function pttavmSite(cfg) {
     },
 
     async searchProducts(query, ctx) {
-      const r = await fetchPage(this.searchUrl(query), { site: this.id, purpose: 'arama', renderRetry: 1 });
+      const r = await fetchPage(this.searchUrl(query), { site: this.id, purpose: 'arama', renderRetry: 2 });
       ctx.spend += r.requestsSpent;
       const html = r.body;
       const gorulen = new Map();
@@ -52,7 +52,7 @@ export function pttavmSite(cfg) {
     },
 
     async getProduct(url, ctx, opts = {}) {
-      const r = await fetchPage(url, { site: this.id, purpose: 'urun', fresh: !!opts.fresh, renderRetry: 1 });
+      const r = await fetchPage(url, { site: this.id, purpose: 'urun', fresh: !!opts.fresh, renderRetry: 2 });
       ctx.spend += r.requestsSpent;
       const p = findJsonLdProduct(r.body);
       if (!p?.name) throw new Error('PTT AVM ürün verisi (JSON-LD) sayfada bulunamadı.');

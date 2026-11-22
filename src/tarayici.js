@@ -156,11 +156,26 @@ const STEALTH_ARGS = [
   '--lang=tr-TR,tr',
 ];
 
-const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-];
+// Tarayıcının çalıştığı işletim sistemi + gerçek Chromium sürümüyle uyumlu UA üret.
+// Linux Docker konteynerinde sahte "Windows NT + Chrome/130" vermek navigator.platform
+// ve Sec-Ch-Ua* ile çelişip Cloudflare Turnstile'ı tetikliyordu.
+function guncelUserAgent(tarayiciOrnegi) {
+  let surum = '136';
+  try {
+    const ham = String(tarayiciOrnegi?.version?.() || '');
+    const m = ham.match(/^(\d{2,3})/);
+    if (m) surum = m[1];
+  } catch { /* varsayılan sürümle devam */ }
+  const osKismi = process.platform === 'linux'
+    ? 'X11; Linux x86_64'
+    : (process.platform === 'darwin' ? 'Macintosh; Intel Mac OS X 10_15_7' : 'Windows NT 10.0; Win64; x64');
+  return `Mozilla/5.0 (${osKismi}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${surum}.0.0.0 Safari/537.36`;
+}
+
+// Çözülmüş CF/WAF oturum çerezlerini sonraki yeni tarayıcı bağlamlarında da koru
+// (aksi halde her istek sıfır çerezle Cloudflare duvarına yeniden çarpar).
+const DOMEN_CEREZLERI = new Map(); // domain -> { cookies: Cookie[], expiresAt: number }
+const DOMEN_CEREZ_TTL_MS = 20 * 60 * 1000;
 
 const CHALLENGE_RE = /just a moment|attention required|güvenlik|security check|cf-chl|enable javascript and reload|verify you are human|are you a robot/i;
 
@@ -365,7 +380,7 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
 
   try {
     const t = await tarayiciAl();
-    const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+    const ua = guncelUserAgent(t);
 
     const ctxAyarlari = {
       locale: 'tr-TR',
@@ -452,17 +467,29 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
       Object.defineProperty(navigator, 'deviceMemory', { get: () => 8, configurable: true });
     });
 
-      // Görsel, medya ve fontları engelleyerek tarama hızını 5x katına çıkar
+      // Görsel ve medyayı engelleyerek tarama hızını artır; ancak Cloudflare/WAF challenge
+      // doğrulamalarını ve yazı tipi/CSS ölçümlerini bozmamak için font'a ve challenge
+      // URL'lerine asla dokunma.
       await ctx.route('**/*', (route) => {
+        const reqUrl = route.request().url();
+        if (/challenges\.cloudflare\.com|\/cdn-cgi\/|datadome|captcha/i.test(reqUrl)) {
+          return route.continue();
+        }
         const type = route.request().resourceType();
-        if (type === 'image' || type === 'media' || type === 'font') {
+        if (type === 'image' || type === 'media') {
           return route.abort();
         }
         route.continue();
       });
     }
 
-    const bitisMs = Date.now() + Math.max(8000, Math.min(timeoutMs || ZAMAN_ASIMI_MS, 25000));
+    // Önceki başarılı taramada çözülmüş CF/WAF çerezleri varsa yeni bağlama aktar
+    const oncedenCerez = DOMEN_CEREZLERI.get(domain);
+    if (oncedenCerez && Date.now() < oncedenCerez.expiresAt && Array.isArray(oncedenCerez.cookies) && oncedenCerez.cookies.length) {
+      await ctx.addCookies(oncedenCerez.cookies).catch(() => {});
+    }
+
+    const bitisMs = Date.now() + Math.max(8000, Math.min(timeoutMs || ZAMAN_ASIMI_MS, 32000));
     const kalanMs = () => Math.max(1000, bitisMs - Date.now());
     sayfa = await ctx.newPage();
     let response = await sayfa.goto(url, {
@@ -506,6 +533,7 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     }
 
     if (challenge || status === 403 || status === 429) {
+      DOMEN_CEREZLERI.delete(domain);
       const opened = circuitBreaker.recordFailure(domain);
       return {
         networkError: `tarayıcı: bot koruması/challenge takıldı (status=${status}${opened ? ' - devre açıldı/cooldown başladı' : ''})`,
@@ -526,10 +554,13 @@ export async function tarayiciIleCek(url, { timeoutMs = ZAMAN_ASIMI_MS } = {}) {
     // (2026-11-09: Shopify .js uçları bu yüzden "JSON değil" hatası veriyordu.)
     const govde = jsonSarmalamasiCoz(html);
 
-    // Çözülen WAF/oturum çerezlerini sonraki HTTP istekleriyle paylaşmak için topla.
+    // Çözülen WAF/oturum çerezlerini sonraki HTTP istekleriyle ve sonraki tarayıcı çağrılarıyla paylaş.
     let cerezler = [];
     try {
       const hamCerezler = await ctx.cookies(url);
+      if (Array.isArray(hamCerezler) && hamCerezler.length) {
+        DOMEN_CEREZLERI.set(domain, { cookies: hamCerezler, expiresAt: Date.now() + DOMEN_CEREZ_TTL_MS });
+      }
       cerezler = (hamCerezler || [])
         .filter(c => c?.name && c.value != null)
         .map(c => `${c.name}=${c.value}`);

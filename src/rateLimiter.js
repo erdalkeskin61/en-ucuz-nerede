@@ -115,6 +115,11 @@ rateLimiter.configure('trendyol.com', { rate: 0.8, burst: 1 });
 rateLimiter.configure('hepsiburada.com', { rate: 0.8, burst: 1 });
 rateLimiter.configure('amazon.com.tr', { rate: 0.8, burst: 1 });
 rateLimiter.configure('mediamarkt.com.tr', { rate: 0.8, burst: 1 });
+rateLimiter.configure('incehesap.com', { rate: 0.8, burst: 1 });
+rateLimiter.configure('pttavm.com', { rate: 0.8, burst: 1 });
+rateLimiter.configure('teknosa.com', { rate: 0.8, burst: 1 });
+rateLimiter.configure('n11.com', { rate: 0.8, burst: 1 });
+rateLimiter.configure('ciceksepeti.com', { rate: 0.8, burst: 1 });
 rateLimiter.configure('vatanbilgisayar.com', { rate: 1, burst: 2 });
 
 // ---- Nazik mod (2026-10-28) ----
