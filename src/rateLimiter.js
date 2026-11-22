@@ -139,6 +139,6 @@ const NAZIK_HOSTLAR = [
   'antalya3dmarket.com', 'teknobilsem.com', '3dteknomarket.com', 'matersan.com.tr',
   'robotistan.com', 'direnc.net', 'motorobit.com', '3dortgen.com', 'shop.3dortgen.com',
   'nmosphere.com.tr', 'hepsivar.com', 'deneystore.com', 'trendruum.com',
-  'bisiparisver.com', 'www.bisiparisver.com',
+  'bisiparisver.com', 'www.bisiparisver.com', 'metatechtr.com', 'store.metatechtr.com',
 ];
 for (const h of NAZIK_HOSTLAR) rateLimiter.configure(h, { rate: 1, burst: 2 });

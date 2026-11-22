@@ -18,6 +18,7 @@ import { filamentVaktiSite } from './plt-filamentvakti.js';
 import { ideasoftKlasikSite } from './plt-ideasoft-klasik.js';
 import { shopifySite } from './plt-shopify.js';
 import { prestashopSite } from './plt-prestashop.js';
+import { tsoftSite } from './plt-tsoft.js';
 
 export const yeniSiteler2 = [
   // ---- Yeni Eklenen Siteler (2026-10-26) ----
@@ -312,5 +313,13 @@ export const yeniSiteler2 = [
       fiyat: [/₺\s*([\d.,]+)\s*KDV dahil/i, /class="num[^>]*>\s*₺?\s*([\d.,]+)/i],
       baslik: [/<h1[^>]*>([\s\S]{3,200}?)<\/h1>/i],
     },
+  }),
+  // MetaTechTR — T-Soft (store.metatechtr.com arama SSR + KDV hariç JSON-LD → KDV dahil hesaplanır)
+  tsoftSite({
+    id: 'metatechtr', name: 'MetaTechTR',
+    hosts: ['metatechtr.com', 'www.metatechtr.com', 'store.metatechtr.com'],
+    base: 'https://store.metatechtr.com',
+    tema: 'baslik',
+    kdvDahil: true,
   }),
 ];

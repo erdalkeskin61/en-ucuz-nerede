@@ -30,7 +30,7 @@ const ONCELIKLI_MAGAZALAR = [
   // --- Hızlı 3D / filament uzmanları (doğrudan HTTP) ---
   'porima3d', 'filamentdepom', 'filamentmarketim', 'filamenthane', 'filamentsan',
   'filamentvakti', 'teknikfilament3d', 'robotistan', 'robolinkmarket', 'robomer',
-  '3dmarketim', '3dcim', 'samm', '3dortgen', '3dteknomarket', '3dultra',
+  '3dmarketim', '3dcim', 'samm', '3dortgen', '3dteknomarket', '3dultra', 'metatechtr',
   'makerfabrika', 'makerpazar', 'sermenkreatif', 'kirpilab', 'efilament',
   'robitshop', 'robocombo', 'robotizmo', 'robotzade', 'motorobit', 'direnc',
   'hepsivar', 'mintengo', 'umr3d', 'ventatek', 'print3d', 'pusula3d',

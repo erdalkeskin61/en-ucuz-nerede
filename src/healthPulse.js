@@ -75,8 +75,8 @@ export function sorguGrubu(siteId) {
     // 'kablo' arandığı için ürün bulunamıyor, sağlık kaydı yanlışlıkla kırmızıya
     // düşüyordu.
     'urhanshop',
-    // 2026-11-13: Yeni eklenen 6 adet 3D / filament mağazası
-    'kirpilab', '3dteknobiz', 'makerpazar', 'efilament', 'zzrobot3d', 'sermenkreatif',
+    // 2026-11-13: Yeni eklenen 3D / filament mağazaları
+    'kirpilab', '3dteknobiz', 'makerpazar', 'efilament', 'zzrobot3d', 'sermenkreatif', 'metatechtr',
   ];
   if (d3.includes(t)) return SAGLIK_SORGULARI._3d;
   // Pazaryerleri ve elektronik: genel bir ürün
