@@ -88,6 +88,37 @@ kontrol('server.js 404 düz metin döndürmüyor', !srv.includes("res.status(404
 const appJs = fs.readFileSync('public/app.js', 'utf8');
 kontrol('public/app.js ?q= parametresini destekliyor', /get\(['"]url['"]\)\s*\|\|\s*[^;]*get\(['"]q['"]\)/.test(appJs));
 
+console.log('\n5) 📈 Ürün sayfası piyasa analizi & dinamik FAQPage');
+const ornekHtml = urunSayfasiHtml({
+  id: 'sentetik-1',
+  ad: 'Porima PLA Filament Siyah 1kg',
+  sorgu: 'Porima PLA Filament Siyah 1kg',
+  kategoriSlug: 'pla-filament',
+  slug: 'porima-pla-filament-siyah-1kg',
+  yol: '/urun/porima-pla-filament-siyah-1kg',
+  enUcuzFiyat: 463.68,
+  enUcuzSite: 'Porima 3D',
+  enUcuzUrl: 'https://porima3d.com/x',
+  enPahaliFiyat: 599,
+  stokluSayisi: 3,
+  birimMetni: '₺463,68 / kg',
+  teklifler: [
+    { site: 'Porima 3D', fiyat: 463.68, kargo: 'Ücretsiz Kargo', stokta: true, url: 'https://porima3d.com/x' },
+    { site: 'N11', fiyat: 599, kargo: 'Ücretsiz Kargo', stokta: true, url: 'https://n11.com/x' },
+  ],
+  lastmod: '2026-11-22',
+}, 'https://baskihesap.tech', []);
+kontrol('piyasa analizi bölümü var', ornekHtml.includes('Piyasa Analizi &amp; Fiyat Geçmişi Özeti'));
+kontrol('mağaza farkı hesaplanır', ornekHtml.includes('135,32 TL') && ornekHtml.includes('%23'));
+kontrol('iç linkler var (/maliyet.html, /sepet.html, /rehber/...)',
+  ornekHtml.includes('/maliyet.html') && ornekHtml.includes('/sepet.html') && ornekHtml.includes('/rehber/pla-vs-petg-filament'));
+kontrol('dinamik SSS akordeonu var', ornekHtml.includes('class="seo-sss"') && ornekHtml.includes('en ucuz hangi mağazada'));
+kontrol('FAQPage JSON-LD şeması geçerli', (() => {
+  const m = [...ornekHtml.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  const faq = m.map(x => JSON.parse(x[1])).find(j => j['@type'] === 'FAQPage');
+  return Array.isArray(faq?.mainEntity) && faq.mainEntity.length >= 3;
+})());
+
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);

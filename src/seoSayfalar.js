@@ -13,7 +13,8 @@
  * ve `anlikOnbellek` kayıtlarından okunur; kayıt yoksa uydurma fiyat basılmaz,
  * doğrudan canlı tarama butonuna yönlendirilir.
  */
-import { katalogGetir, radarDurumVerisi, teklifKategoriyeUygunMu } from './otonomRadar.js';
+import { katalogGetir, radarDurumVerisi, radarSerisi, teklifKategoriyeUygunMu } from './otonomRadar.js';
+import { grafikOzeti } from './grafik.js';
 import { anlikAl, sorgudanAnlikAl, snapshotAra, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
 import { katalogUrunleriAra } from './katalogSync.js';
 import { formatTL, parcaMi, slugYap } from './util.js';
@@ -767,6 +768,15 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .seo-tablo th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--gri-metin); }
     .seo-tablo th:nth-child(5), .seo-tablo td:nth-child(5),
     .seo-tablo th:nth-child(6), .seo-tablo td:nth-child(6) { white-space: nowrap; }
+    .seo-piyasa-izgara { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+    .seo-piyasa-kutu { padding: 12px 14px; border-radius: 14px; background: var(--zemin-2); border: 1px solid var(--cizgi); }
+    .seo-piyasa-etiket { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--gri-metin); }
+    .seo-piyasa-deger { margin-top: 4px; font-size: 17px; font-weight: 800; color: var(--metin); font-variant-numeric: tabular-nums; }
+    .seo-piyasa-metin { margin: 0 0 12px; font-size: 14px; line-height: 1.65; color: var(--gri-metin); }
+    .seo-ic-linkler { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .seo-ic-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--zemin-2); border: 1px solid var(--cizgi); color: var(--ana); font-size: 12.5px; font-weight: 700; text-decoration: none; }
+    .seo-ic-link:hover { border-color: var(--ana); }
+    html[data-theme="dark"] .seo-ic-link { color: var(--ana-parlak); }
     .seo-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
     .seo-mini-kart { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 16px; background: var(--kart); border: 1px solid var(--cizgi); text-decoration: none; color: inherit; transition: transform .14s ease, border-color .14s ease; }
     .seo-mini-kart:hover { transform: translateY(-2px); border-color: var(--ana); }
@@ -974,6 +984,223 @@ function seoUrunKartiHtml(u, gizli = false) {
   </a>`;
 }
 
+const ILGILI_REHBER_ESLEME = [
+  { re: /bambu\s*lab\s*p1s|creality\s*k1c|\bk1c\b/i, yol: '/karsilastir/bambu-lab-p1s-vs-creality-k1c', etiket: 'P1S vs Creality K1C Karşılaştırması' },
+  { re: /ender\s*3\s*v3\s*ke|neptune\s*4\s*pro/i, yol: '/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro', etiket: 'Ender 3 V3 KE vs Neptune 4 Pro' },
+  { re: /bambu\s*lab\s*a1\s*mini/i, yol: '/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke', etiket: 'Bambu Lab A1 Mini vs Ender 3 V3 KE' },
+  { re: /creality\s*k1\s*max|\bk1\s*max\b/i, yol: '/karsilastir/creality-k1-max-vs-bambu-lab-p1s', etiket: 'Creality K1 Max vs Bambu Lab P1S' },
+  { re: /\bpla\b|\bpetg\b/i, yol: '/rehber/pla-vs-petg-filament', etiket: 'PLA vs PETG Filament Rehberi' },
+  { re: /kurutucu|dryer|space\s*pi|ebox/i, yol: '/rehber/filament-kurutucu-gerekli-mi', etiket: 'Filament Kurutucu Gerekli Mi?' },
+];
+
+/**
+ * Ürün sayfası için yalnızca GERÇEK veritabanı teklif/geçmiş kayıtlarından
+ * piyasa analizi özeti + dinamik SSS ve `FAQPage` JSON-LD şeması üretir.
+ */
+function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
+  const teklifler = Array.isArray(urun.teklifler) ? urun.teklifler : [];
+  const stoklular = teklifler.filter(t => t.stokta && Number(t.fiyat) > 0);
+  const tukenenSayisi = teklifler.filter(t => !t.stokta).length;
+  const enUcuz = stoklular[0] || null;
+  const guncelFiyat = urun.enUcuzFiyat > 0 ? Number(urun.enUcuzFiyat) : (enUcuz?.fiyat || null);
+  const enPahaliFiyat = urun.enPahaliFiyat > 0
+    ? Number(urun.enPahaliFiyat)
+    : (stoklular.length ? stoklular[stoklular.length - 1].fiyat : null);
+  const magazaSayisi = Math.max(stoklular.length, Number(urun.stokluSayisi) || 0);
+  const fark = (guncelFiyat > 0 && enPahaliFiyat > guncelFiyat)
+    ? Math.round((enPahaliFiyat - guncelFiyat) * 100) / 100
+    : 0;
+  const farkYuzde = (fark > 0 && enPahaliFiyat > 0) ? Math.round((fark / enPahaliFiyat) * 100) : 0;
+
+  // Gerçek 30 / 90 günlük fiyat geçmişi (yalnızca DB'de ≥ 2 nokta varsa)
+  let gecmis30 = null;
+  let gecmis90 = null;
+  if (Number.isFinite(Number(urun.id)) && Number(urun.id) > 0) {
+    try {
+      const seri90 = radarSerisi(urun.id, { gun: 90, limit: 200 });
+      if (seri90.length >= 2) {
+        const oz90 = grafikOzeti(seri90);
+        const ort90 = seri90.reduce((s, n) => s + n.fiyat, 0) / seri90.length;
+        gecmis90 = { min: oz90.min, max: oz90.max, ort: Math.round(ort90 * 100) / 100, nokta: seri90.length };
+        const esik30 = Date.now() - 30 * 86400000;
+        const seri30 = seri90.filter(n => n.ts >= esik30);
+        if (seri30.length >= 2) {
+          const oz30 = grafikOzeti(seri30);
+          const ort30 = seri30.reduce((s, n) => s + n.fiyat, 0) / seri30.length;
+          gecmis30 = { min: oz30.min, max: oz30.max, ort: Math.round(ort30 * 100) / 100, nokta: seri30.length };
+        }
+      }
+    } catch { /* tarihçe yoksa sessizce atlanır */ }
+  }
+
+  // Metrik kutuları (uydurma kutu yok; yalnızca gerçek veri)
+  const kutular = [];
+  if (gecmis30) {
+    kutular.push({ etiket: 'Son 30 Gün En Düşük', deger: formatTL(gecmis30.min) });
+    kutular.push({ etiket: 'Son 30 Gün Ortalama', deger: formatTL(gecmis30.ort) });
+  }
+  if (gecmis90) {
+    kutular.push({ etiket: 'Son 90 Gün Tabanı', deger: formatTL(gecmis90.min) });
+  }
+  if (fark > 0) {
+    kutular.push({ etiket: 'Mağazalar Arası Fark', deger: `${formatTL(fark)} (%${farkYuzde})` });
+  } else if (magazaSayisi > 0) {
+    kutular.push({ etiket: 'Stoklu Mağaza Sayısı', deger: `${magazaSayisi} mağaza` });
+  }
+  if (urun.birimMetni) {
+    kutular.push({ etiket: 'Birim Fiyat', deger: urun.birimMetni });
+  }
+
+  // 2–3 cümlelik içerik derinliği (piyasa analizi metni)
+  const cumleler = [];
+  if (guncelFiyat > 0 && urun.enUcuzSite) {
+    cumleler.push(
+      `${urun.ad} için Türkiye’deki 3D baskı ve e-ticaret mağazalarında yapılan taramalarda `
+      + `${magazaSayisi || 1} mağazada satın alınabilir stok bulunuyor`
+      + `${tukenenSayisi > 0 ? ` (${tukenenSayisi} mağaza stokta yok olarak elendi)` : ''}; `
+      + `kargo dahil en düşük teklif ${formatTL(guncelFiyat)} ile ${urun.enUcuzSite} mağazasında.`,
+    );
+  } else {
+    cumleler.push(
+      `${urun.ad} için Türkiye mağazalarındaki güncel stok ve kargo dahil toplam fiyatlar düzenli olarak taranır; `
+      + `önbellekte anlık kayıt yoksa "Canlı Fiyatları Şimdi Tara" ile tüm mağazaları kontrol edebilirsiniz.`,
+    );
+  }
+  if (fark > 0) {
+    cumleler.push(
+      `Stoklu mağazalar arasında fiyatlar ${formatTL(guncelFiyat)} ile ${formatTL(enPahaliFiyat)} `
+      + `arasında değişiyor — en uygun satıcıyı seçmek ${formatTL(fark)} (%${farkYuzde}) tasarruf sağlar.`,
+    );
+  }
+  if (gecmis30) {
+    let gecmisNotu = `Son 30 günlük gerçek fiyat takibinde en düşük ${formatTL(gecmis30.min)} ve `
+      + `ortalama ${formatTL(gecmis30.ort)} ölçüldü`;
+    if (gecmis90) gecmisNotu += ` (90 günlük en düşük ${formatTL(gecmis90.min)})`;
+    if (guncelFiyat > 0 && guncelFiyat <= (gecmis90?.min ?? gecmis30.min) + 0.01) {
+      gecmisNotu += '; bugünkü fiyat takip edilen dip seviyede.';
+    } else if (guncelFiyat > 0 && guncelFiyat < gecmis30.ort - 1) {
+      const yuzdeAlt = Math.round(((gecmis30.ort - guncelFiyat) / gecmis30.ort) * 100);
+      gecmisNotu += yuzdeAlt >= 1 ? `; güncel teklif 30 gün ortalamasının %${yuzdeAlt} altında.` : '.';
+    } else {
+      gecmisNotu += '.';
+    }
+    cumleler.push(gecmisNotu);
+  }
+
+  // İlgili rehber & araç linkleri (iç linkleme ağı)
+  const icLinkler = [
+    { yol: `/kategori/${kat.slug}`, metin: `📂 ${kat.kisaAd} Kategorisi` },
+  ];
+  const filamentMi = ['pla-filament', 'petg-tpu-filament', 'filament'].includes(urun.kategoriSlug);
+  if (filamentMi || urun.birimMetni) {
+    icLinkler.push({ yol: '/maliyet.html', metin: '🧮 Baskı Maliyeti Hesapla' });
+  }
+  icLinkler.push({ yol: '/sepet.html', metin: '🧺 Akıllı Sepet ile Kargo Birleştir' });
+  for (const r of ILGILI_REHBER_ESLEME) {
+    if (icLinkler.length >= 5) break;
+    if (r.re.test(`${urun.ad} ${urun.sorgu || ''}`)) {
+      icLinkler.push({ yol: r.yol, metin: `📖 ${r.etiket}` });
+    }
+  }
+
+  // Dinamik 3–4 SSS + FAQPage JSON-LD
+  const sssListesi = [];
+  if (guncelFiyat > 0 && urun.enUcuzSite) {
+    const kargoNotu = enUcuz?.kargo ? ` (${enUcuz.kargo})` : '';
+    sssListesi.push({
+      soru: `${urun.ad} en ucuz hangi mağazada ve ne kadar?`,
+      cevap: `Son tarama verilerine göre ${urun.ad} kargo dahil en ucuz ${formatTL(guncelFiyat)} fiyatıyla ${urun.enUcuzSite} mağazasında stoktadır${kargoNotu}.`,
+    });
+  } else {
+    sssListesi.push({
+      soru: `${urun.ad} güncel fiyatını nasıl görebilirim?`,
+      cevap: `Sayfanın üstündeki "Canlı Fiyatları Şimdi Tara" butonuna tıklayarak Türkiye’deki 60+ 3D baskı ve e-ticaret mağazasındaki güncel stok ve kargo dahil toplam tutarı anlık olarak çekebilirsiniz.`,
+    });
+  }
+
+  if (magazaSayisi >= 2 && fark > 0) {
+    sssListesi.push({
+      soru: `${urun.ad} kaç mağazada stokta ve fiyat farkı ne kadar?`,
+      cevap: `Toplam ${magazaSayisi} mağazada satın alınabilir stok tespit edilmiştir. Kargo dahil teklifler ${formatTL(guncelFiyat)} ile ${formatTL(enPahaliFiyat)} aralığındadır (${formatTL(fark)} / %${farkYuzde} fark).`,
+    });
+  } else {
+    sssListesi.push({
+      soru: `${urun.ad} stokta olmayan mağazalar listede en ucuz sayılır mı?`,
+      cevap: `Hayır. Baskı Hesap yalnızca satın alınabilir, stokta olan teklifleri en ucuz olarak sıralar; "Tükendi" veya "Gelince Haber Ver" durumundaki mağazalar fiyattan düşürülür.`,
+    });
+  }
+
+  if (gecmis30 && guncelFiyat > 0) {
+    const kiyasCumlesi = guncelFiyat <= (gecmis90?.min ?? gecmis30.min) + 0.01
+      ? 'Mevcut teklif takip edilen dönemin en düşük taban seviyesindedir.'
+      : (guncelFiyat < gecmis30.ort
+        ? `Güncel ${formatTL(guncelFiyat)} fiyatı son 30 gün ortalamasının altındadır.`
+        : `Güncel ${formatTL(guncelFiyat)} fiyatı son 30 gün ortalamasına yakın seyretmektedir.`);
+    sssListesi.push({
+      soru: `${urun.ad} son 30 günde en düşük kaç TL oldu?`,
+      cevap: `Son 30 günde kaydedilen en düşük fiyat ${formatTL(gecmis30.min)}, 30 günlük ortalama ${formatTL(gecmis30.ort)}${gecmis90 ? ` ve 90 gün tabanı ${formatTL(gecmis90.min)}` : ''} seviyesindedir. ${kiyasCumlesi}`,
+    });
+  } else if (urun.birimMetni) {
+    sssListesi.push({
+      soru: `${urun.ad} birim fiyatı ne kadar ve parça maliyeti nasıl hesaplanır?`,
+      cevap: `En ucuz stoklu teklife göre birim fiyat ${urun.birimMetni} seviyesindedir. Baskı gramajı, elektrik ve fire oranını ekleyerek parça başı maliyet çıkarmak için Maliyet Hesaplayıcı (/maliyet.html) sayfasını kullanabilirsiniz.`,
+    });
+  } else {
+    sssListesi.push({
+      soru: `Baskı Hesap mağaza fiyatlarını nasıl hesaplıyor?`,
+      cevap: `Her mağazanın satış fiyatına varsa sepette herkesin alabildiği indirimler ve mağazanın kargo ücreti ya da ücretsiz kargo eşiği eklenerek gerçekte ödeyeceğiniz tutar hesaplanır.`,
+    });
+  }
+
+  if (gecmis30 && urun.birimMetni) {
+    sssListesi.push({
+      soru: `${urun.ad} kilogram/litre birim fiyatı ne kadar?`,
+      cevap: `Mevcut en ucuz teklife göre birim fiyat ${urun.birimMetni} düzeyindedir. Modelinizin gramajını girerek toplam baskı maliyetini /maliyet.html üzerinden hesaplayabilirsiniz.`,
+    });
+  }
+
+  const kutularHtml = kutular.length
+    ? `<div class="seo-piyasa-izgara">${kutular.map(k => `
+        <div class="seo-piyasa-kutu">
+          <div class="seo-piyasa-etiket">${htmlKacis(k.etiket)}</div>
+          <div class="seo-piyasa-deger">${htmlKacis(k.deger)}</div>
+        </div>`).join('')}
+      </div>`
+    : '';
+
+  const analizHtml = `<section class="seo-kart">
+    <h2 style="margin-top:0">📈 Piyasa Analizi &amp; Fiyat Geçmişi Özeti</h2>
+    ${kutularHtml}
+    <p class="seo-piyasa-metin">${cumleler.map(c => htmlKacis(c)).join(' ')}</p>
+    <div class="seo-ic-linkler">
+      ${icLinkler.map(l => `<a class="seo-ic-link" href="${htmlKacis(l.yol)}">${htmlKacis(l.metin)}</a>`).join('')}
+    </div>
+  </section>`;
+
+  const sssHtml = `<section class="seo-kart">
+    <h2 style="margin-top:0">❓ ${htmlKacis(urun.ad)} Hakkında Sık Sorulan Sorular</h2>
+    <div class="seo-sss">
+      ${sssListesi.map((s, idx) => `<details${idx === 0 ? ' open' : ''}>
+        <summary>${htmlKacis(s.soru)}</summary>
+        <p>${htmlKacis(s.cevap)}</p>
+      </details>`).join('')}
+    </div>
+  </section>`;
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    url: `${tabanUrl}${urun.yol}`,
+    mainEntity: sssListesi.map(s => ({
+      '@type': 'Question',
+      name: s.soru,
+      acceptedAnswer: { '@type': 'Answer', text: s.cevap },
+    })),
+  };
+
+  return { analizHtml, sssHtml, faqSchema };
+}
+
 export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
   const kat = SEO_KATEGORILER.find(c => c.slug === urun.kategoriSlug) || SEO_KATEGORILER[0];
   const canliTaraUrl = `/?url=${encodeURIComponent(urun.sorgu || urun.ad)}`;
@@ -1051,6 +1278,9 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     jsonLdList.push(productSchema);
   }
 
+  const { analizHtml, sssHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl);
+  jsonLdList.push(faqSchema);
+
   const ozetHtml = urun.enUcuzFiyat > 0
     ? `<div class="seo-fiyat-kutu">
          <div>
@@ -1096,6 +1326,10 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
           </table></div>`
         : '<p>Güncel çoklu mağaza tekliflerini listelemek için yukarıdaki <b>Canlı Fiyatları Şimdi Tara</b> butonunu kullanın.</p>'}
     </section>
+
+    ${analizHtml}
+
+    ${sssHtml}
 
     ${benzerler.length ? `<section class="seo-kart">
       <h2 style="margin-top:0">Aynı Kategorideki Diğer Ürünler</h2>
