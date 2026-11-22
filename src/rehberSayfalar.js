@@ -348,6 +348,72 @@ const YAZICI_KARSILASTIRMALARI = [
       return '300mm dev hacim vs Bambu AMS CoreXY kıyaslaması';
     },
   },
+  {
+    yol: '/karsilastir/bambu-lab-a1-vs-bambu-lab-a1-mini',
+    ikon: '⚖️',
+    kisaBaslik: 'Bambu Lab A1 vs A1 Mini',
+    h1: 'Bambu Lab A1 vs Bambu Lab A1 Mini Karşılaştırması',
+    title: 'Bambu Lab A1 mi A1 Mini mi? Farklar + Canlı Türkiye Fiyatları | Baskı Hesap',
+    description: 'Bambu Lab A1 (256mm) ile Bambu Lab A1 Mini (180mm) arasındaki baskı hacmi, gövde yapısı, AMS Lite ve kargo dahil canlı Türkiye fiyat farkları.',
+    ozet: '"A1 mi almalıyım, A1 Mini yeter mi?" sorusunu 256 mm vs 180 mm baskı alanı, gürültü/yer ihtiyacı, AMS Lite uyumu ve bugünkü Türkiye mağaza fiyatlarıyla yanıtlıyoruz.',
+    solAd: 'Bambu Lab A1',
+    sagAd: 'Bambu Lab A1 Mini',
+    solRegex: /bambu\s*lab\s*a1(?!\s*mini)/i,
+    sagRegex: /bambu\s*lab\s*a1\s*mini/i,
+    ozellikler: [
+      ['Baskı Hacmi', '256 × 256 × 256 mm', '180 × 180 × 180 mm'],
+      ['Gövde Mimarisi', 'Tam köprü (çift sütunlu bedslinger)', 'Tek kollu kompakt kantilever'],
+      ['Çok Renkli Baskı', 'AMS Lite (4 renge kadar)', 'AMS Lite (4 renge kadar)'],
+      ['Tabla Sıcaklığı', '100°C (PETG / büyük parçalarda daha stabil)', '80°C (PLA / PETG / TPU için yeterli)'],
+      ['Hız & Nozul', '500 mm/s · hızlı klipsli nozul değişimi', '500 mm/s · aynı hızlı klipsli nozul'],
+      ['Masa İhtiyacı', 'Geniş çalışma yüzeyi gerektirir', 'Çok kompakt, masaüstü dostu'],
+    ],
+    solKimler: 'Kask, büyük kutu, birden fazla parçayı tek tablada basma veya 256×256 mm standart MakerWorld profillerini ölçeklemeden direkt basmak isteyenler için idealdir.',
+    sagKimler: 'Daha düşük bütçeyle aynı Bambu Lab baskı kalitesini ve otomatik akış kalibrasyonunu isteyen, masasında az yeri olan ve çoğunlukla 18 cm altı modeller basan kullanıcılar için öne çıkar.',
+    sss: [
+      { soru: 'Bambu Lab A1 ve A1 Mini baskı kalitesi aynı mı?', cevap: 'Evet, her iki model de aynı hızlı değişimli hotend sistemini, aktif motor gürültü iptalini ve otomatik akış dinamikleri kalibrasyonunu kullandığı için küçük-orta parçalarda baskı kalitesi neredeyse aynıdır.' },
+      { soru: 'Hangisi daha mantıklı: A1 mi A1 Mini mi?', cevap: 'Bütçeniz elveriyorsa ve 256 mm standart MakerWorld modellerini bölmeden basmak istiyorsanız Bambu Lab A1 daha uzun ömürlüdür; masa alanı ve bütçe öncelikliyse A1 Mini fiyat/performans şampiyonudur.' },
+    ],
+    canliOzet: (u) => {
+      const a = urunBul(u, /bambu\s*lab\s*a1(?!\s*mini)/i);
+      const b = urunBul(u, /bambu\s*lab\s*a1\s*mini/i);
+      if (a?.enUcuzFiyat > 0 && b?.enUcuzFiyat > 0) return `A1: ${formatTL(a.enUcuzFiyat)} · A1 Mini: ${formatTL(b.enUcuzFiyat)}`;
+      return '256 mm standart hacim vs 180 mm kompakt kıyaslaması';
+    },
+  },
+  {
+    yol: '/karsilastir/bambu-lab-a1-vs-creality-k1c',
+    ikon: '🔥',
+    kisaBaslik: 'Bambu Lab A1 vs Creality K1C',
+    h1: 'Bambu Lab A1 vs Creality K1C Karşılaştırması',
+    title: 'Bambu Lab A1 vs Creality K1C — Açık Çok Renk vs Kapalı Kasa | Baskı Hesap',
+    description: 'Bambu Lab A1 ve Creality K1C teknik karşılaştırması: açık kasa AMS Lite çok renkli baskı vs kapalı kasa CoreXY karbon fiber ve canlı Türkiye fiyatları.',
+    ozet: 'Bütçesi yakın bu iki popüler yazıcıda "Bambu ekosistemi + 256 mm alan + AMS Lite şansı (A1)" mı, yoksa "kapalı kasa CoreXY + ABS/ASA/CF uyumu (K1C)" mi daha doğru tercih?',
+    solAd: 'Bambu Lab A1',
+    sagAd: 'Creality K1C',
+    solRegex: /bambu\s*lab\s*a1(?!\s*mini)/i,
+    sagRegex: /creality\s*k1c|\bk1c\b/i,
+    ozellikler: [
+      ['Mimari & Kasa', 'Açık kasa bedslinger', 'CoreXY tam kapalı kasa'],
+      ['Baskı Hacmi', '256 × 256 × 256 mm', '220 × 220 × 250 mm'],
+      ['Malzeme Uyumu', 'PLA, PETG, TPU (ABS/ASA için kapalı ortam önerilmez)', 'PLA, PETG, TPU + ABS, ASA, PA-CF (karbon fiber)'],
+      ['Çoklu Renk', 'AMS Lite ile sonradan 4 renge yükseltilebilir', 'Tek makara odaklı (CFS kiti ayrı)'],
+      ['Ses Seviyesi', 'Aktif motor gürültü azaltma ile çok sessiz', 'Kapalı kasa egzoz/kasa fanları nedeniyle daha sesli'],
+      ['Nozul Değişimi', 'Aletsiz tek klipsli hızlı değişim', 'Unicorn tek parça nozul'],
+    ],
+    solKimler: 'Evde/ofiste ağırlıklı PLA, PETG ve TPU basacak, sessiz çalışma, 256 mm geniş tabla ve ileride AMS Lite ile renkli baskı almak isteyenler için en pratik seçenektir.',
+    sagKimler: 'Mühendislik parçaları (ABS, ASA, Naylon, Karbon Fiber) basacağı için kapalı kabin ve dahili karbon filtre isteyenler için CoreXY avantajı sunar.',
+    sss: [
+      { soru: 'Evde PLA baskı için Bambu Lab A1 mi Creality K1C mi alınmalı?', cevap: 'Yalnızca PLA/PETG/TPU basacaksanız Bambu Lab A1 hem daha sessizdir hem daha geniş 256×256 mm tabla sunar; ABS/ASA gibi mühendislik malzemeleri basacaksanız kapalı kasalı Creality K1C şarttır.' },
+      { soru: 'Hangisinin yedek parça ve nozul maliyeti daha pratik?', cevap: 'Bambu Lab A1 tek klipsle saniyeler içinde nozul değiştirmenize izin verir; K1C ise uzun ömürlü tek parça Unicorn nozul kullanır.' },
+    ],
+    canliOzet: (u) => {
+      const a = urunBul(u, /bambu\s*lab\s*a1(?!\s*mini)/i);
+      const b = urunBul(u, /creality\s*k1c|\bk1c\b/i);
+      if (a?.enUcuzFiyat > 0 && b?.enUcuzFiyat > 0) return `A1: ${formatTL(a.enUcuzFiyat)} · K1C: ${formatTL(b.enUcuzFiyat)}`;
+      return 'Açık kasa 256mm + AMS Lite vs Kapalı CoreXY CF';
+    },
+  },
 ];
 
 function madalya(idx) {
@@ -432,6 +498,28 @@ function canliSiralamaRehberiHtml(tumUrunler, tabanUrl, {
       </section>
       ${sss.html}
       ${altAraclarCubugu()}`,
+  });
+}
+
+function baslangicYaziciRehberiHtml(tumUrunler, tabanUrl) {
+  return canliSiralamaRehberiHtml(tumUrunler, tabanUrl, {
+    yol: '/rehber/baslangic-icin-en-iyi-3d-yazicilar',
+    breadcrumbAd: 'Başlangıç İçin En İyi 3D Yazıcılar',
+    rozet: '🖨️ Canlı Bütçe & Fiyat Sıralaması · 2026',
+    h1Html: 'Başlangıç için <b>en iyi 3D yazıcılar</b> (canlı Türkiye fiyatları)',
+    title: 'Başlangıç İçin En İyi 3D Yazıcılar 2026 — Bütçeye Göre Canlı Fiyatlar | Baskı Hesap',
+    description: 'İlk 3D yazıcısını alacaklar için Bambu Lab A1 Mini, Ender 3 V3 SE/KE, Elegoo Neptune 4 ve kapalı kasa modellerin kargo dahil güncel Türkiye fiyat sıralaması.',
+    altMetin: 'Türkiye’deki 60+ mağazadan otomatik taranan stoklu 3D yazıcılar (yedek parçalar ve combo paketler hariç) kargo dahil en düşük bütçeden başlayarak sıralanır.',
+    bosMesaj: 'Henüz taraması tamamlanan stoklu 3D yazıcı kaydı yok; ana sayfadan model aratarak canlı fiyat çekebilirsiniz.',
+    filtreFn: (u) => (u.kategori === 'yazici' || u.kategoriSlug === '3d-yazici')
+      && !parcaMi(u.ad)
+      && u.enUcuzFiyat >= 4500
+      && !/\bcombo\b/i.test(u.ad),
+    sssListesi: [
+      { soru: 'İlk kez 3D yazıcı alırken kaç TL bütçe ayırmak gerekir?', cevap: 'Giriş seviyesinde otomatik kalibrasyonlu, hızlı bir FDM 3D yazıcı için bütçe genellikle 10.000–16.000 TL bandından başlar; kapalı kasa CoreXY modeller ise 20.000 TL üzerinde yer alır.' },
+      { soru: 'Başlangıçta açık kasa mı kapalı kasa mı tercih edilmeli?', cevap: 'Evde hobi ve figür/aparat için PLA, PETG ve TPU basacaksanız açık kasalı Bambu Lab A1 Mini, A1 veya Ender 3 V3 KE çok pratik ve sessizdir. ABS veya ASA gibi sıcak oda isteyen teknik malzemeler için kapalı kasa (K1C, P1S) gerekir.' },
+      { soru: 'Bu listede neden yedek parça veya Combo paketler karışmıyor?', cevap: 'Sıralama yalnızca tekil gövde yazıcı ilanlarını kapsar; nozzle/tabla gibi aksesuarlar ve çoklu AMS Combo paketler fiyat kıyasını bozmaması için elenir.' },
+    ],
   });
 }
 
@@ -727,6 +815,19 @@ export const REHBER_SAYFALARI = [
     canliOzet: y.canliOzet,
     olustur: (tumUrunler, tabanUrl) => yaziciKarsilastirmaOlustur(y, tumUrunler, tabanUrl),
   })),
+  {
+    yol: '/rehber/baslangic-icin-en-iyi-3d-yazicilar',
+    ikon: '🖨️',
+    baslik: 'Başlangıç İçin En İyi 3D Yazıcılar (Bütçe Sıralaması)',
+    ozet: 'İlk 3D yazıcısını alacaklar için stoklu modellerin kargo dahil güncel en düşük Türkiye fiyatları.',
+    tur: 'Alım Rehberi',
+    canliOzet: (u) => {
+      const en = u.filter(x => (x.kategori === 'yazici' || x.kategoriSlug === '3d-yazici') && !parcaMi(x.ad) && x.enUcuzFiyat >= 4500 && !/\bcombo\b/i.test(x.ad))
+        .sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat)[0];
+      return en ? `Şu an en uygun: ${en.ad} · ${formatTL(en.enUcuzFiyat)}` : '10.000 TL+ canlı başlangıç 3D yazıcı listesi';
+    },
+    olustur: baslangicYaziciRehberiHtml,
+  },
   {
     yol: '/rehber/en-ucuz-pla-filament',
     ikon: '🏷️',

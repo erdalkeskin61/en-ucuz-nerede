@@ -629,7 +629,11 @@ app.get('/rehber', (req, res) => {
 });
 
 app.get(['/rehber/:slug', '/karsilastir/:slug'], (req, res) => {
-  const sayfa = rehberSayfasiBul(req.path);
+  const temizYol = String(req.path || '').replace(/\/+$/, '').toLowerCase();
+  if (temizYol === '/rehber/en-ucuz-petg-tpu-filament') {
+    return res.redirect(301, '/rehber/en-ucuz-petg-ve-tpu-filamentler');
+  }
+  const sayfa = rehberSayfasiBul(temizYol);
   if (!sayfa) return res.status(404).type('text/plain').send('Rehber sayfası bulunamadı');
   try {
     const tumUrunler = seoUrunListesi();

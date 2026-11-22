@@ -4,6 +4,7 @@
  */
 import fs from 'node:fs';
 import { seoUrunYedekCoz, urunSayfasiHtml } from '../src/seoSayfalar.js';
+import { rehberSayfasiBul, rehberSitemapKayitlari, rehberDiziniHtml } from '../src/rehberSayfalar.js';
 import { slugYap } from '../src/util.js';
 import { anlikYaz, snapshotSil, anahtarCikar } from '../src/anlikOnbellek.js';
 
@@ -143,6 +144,48 @@ for (const dosya of ['public/index.html', 'public/maliyet.html', 'public/slicer.
   const h = fs.readFileSync(dosya, 'utf8');
   kontrol(`${dosya} footer-hub içerir`, h.includes('class="footer-hub"') && h.includes('/kategori/3d-yazici') && h.includes('/rehber/en-ucuz-pla-filament'));
 }
+
+console.log('\n7) 📊 Yeni /karsilastir/ ve /rehber/ sayfaları + yönlendirme');
+const rehberOrnekUrunler = [
+  { slug: 'bambu-lab-a1-3d-yazici', yol: '/urun/bambu-lab-a1-3d-yazici', ad: 'Bambu Lab A1 3D Yazıcı', sorgu: 'Bambu Lab A1', marka: 'Bambu Lab', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 21500, stokluSayisi: 5, magazaSayisi: 5 },
+  { slug: 'bambu-lab-a1-combo-3d-yazici', yol: '/urun/bambu-lab-a1-combo-3d-yazici', ad: 'Bambu Lab A1 Combo 3D Yazıcı', sorgu: 'Bambu Lab A1 Combo', marka: 'Bambu Lab', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 29900, stokluSayisi: 4, magazaSayisi: 4 },
+  { slug: 'bambu-lab-a1-mini-3d-yazici', yol: '/urun/bambu-lab-a1-mini-3d-yazici', ad: 'Bambu Lab A1 Mini 3D Yazıcı', sorgu: 'Bambu Lab A1 Mini', marka: 'Bambu Lab', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 13200, stokluSayisi: 6, magazaSayisi: 6 },
+  { slug: 'creality-k1c-3d-yazici', yol: '/urun/creality-k1c-3d-yazici', ad: 'Creality K1C 3D Yazıcı', sorgu: 'Creality K1C', marka: 'Creality', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 24600, stokluSayisi: 4, magazaSayisi: 4 },
+  { slug: 'creality-ender-3-v3-ke', yol: '/urun/creality-ender-3-v3-ke', ad: 'Creality Ender 3 V3 KE 3D Yazıcı', sorgu: 'Creality Ender 3 V3 KE', marka: 'Creality', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 11800, stokluSayisi: 5, magazaSayisi: 5 },
+  { slug: 'creality-ender-3-v3-ke-nozzle-kit', yol: '/urun/creality-ender-3-v3-ke-nozzle-kit', ad: 'Creality Ender 3 V3 KE Nozzle Kit', sorgu: 'Nozzle Kit', marka: 'Creality', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 4001.3, stokluSayisi: 2, magazaSayisi: 2 },
+  { slug: 'esun-petg-filament-siyah-1kg', yol: '/urun/esun-petg-filament-siyah-1kg', ad: 'eSun PETG Filament Siyah 1kg', sorgu: 'eSun PETG', marka: 'eSun', kategoriSlug: 'petg-tpu-filament', enUcuzFiyat: 620, stokluSayisi: 4, magazaSayisi: 4 },
+  { slug: 'porima-tpu-filament-beyaz-1kg', yol: '/urun/porima-tpu-filament-beyaz-1kg', ad: 'Porima TPU Filament Beyaz 1kg', sorgu: 'Porima TPU', marka: 'Porima', kategoriSlug: 'petg-tpu-filament', enUcuzFiyat: 790, stokluSayisi: 3, magazaSayisi: 3 },
+];
+
+const yeniRehberYollari = [
+  '/karsilastir/bambu-lab-a1-vs-bambu-lab-a1-mini',
+  '/karsilastir/bambu-lab-a1-vs-creality-k1c',
+  '/rehber/baslangic-icin-en-iyi-3d-yazicilar',
+  '/rehber/en-ucuz-petg-ve-tpu-filamentler',
+];
+const sitemapYollari = new Set(rehberSitemapKayitlari().map((k) => k.yol));
+
+for (const yol of yeniRehberYollari) {
+  const kayit = rehberSayfasiBul(yol);
+  kontrol(`rehberSayfasiBul(${yol}) mevcut`, !!kayit);
+  kontrol(`sitemap kaydı var (${yol})`, sitemapYollari.has(yol));
+  if (kayit) {
+    const html = kayit.olustur(rehberOrnekUrunler, 'https://baskihesap.com');
+    kontrol(`${yol} HTML ve BreadcrumbList içerir`, html.includes('BreadcrumbList') && html.includes('FAQPage') && html.length > 1000);
+  }
+}
+
+const a1VsMiniHtml = rehberSayfasiBul('/karsilastir/bambu-lab-a1-vs-bambu-lab-a1-mini')?.olustur(rehberOrnekUrunler, 'https://baskihesap.com') || '';
+kontrol('A1 vs A1 Mini doğru eşleşir (Combo karışmaz)', a1VsMiniHtml.includes('/urun/bambu-lab-a1-3d-yazici') && a1VsMiniHtml.includes('/urun/bambu-lab-a1-mini-3d-yazici') && !a1VsMiniHtml.includes('/urun/bambu-lab-a1-combo-3d-yazici'));
+
+const baslangicHtml = rehberSayfasiBul('/rehber/baslangic-icin-en-iyi-3d-yazicilar')?.olustur(rehberOrnekUrunler, 'https://baskihesap.com') || '';
+kontrol('Başlangıç yazıcı rehberi parça ve Combo ürünleri eler', baslangicHtml.includes('Bambu Lab A1 Mini') && baslangicHtml.includes('Ender 3 V3 KE') && !baslangicHtml.includes('Nozzle Kit') && !baslangicHtml.includes('bambu-lab-a1-combo-3d-yazici'));
+
+const dizinHtml = rehberDiziniHtml('https://baskihesap.com', rehberOrnekUrunler);
+kontrol('Rehber dizini yeni sayfaları listeler', dizinHtml.includes('/karsilastir/bambu-lab-a1-vs-bambu-lab-a1-mini') && dizinHtml.includes('/rehber/baslangic-icin-en-iyi-3d-yazicilar'));
+
+const serverKaynak = fs.readFileSync('server.js', 'utf8');
+kontrol("server.js /rehber/en-ucuz-petg-tpu-filament -> 301 yönlendirmesi içerir", serverKaynak.includes("'/rehber/en-ucuz-petg-tpu-filament'") && serverKaynak.includes("res.redirect(301, '/rehber/en-ucuz-petg-ve-tpu-filamentler')"));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
