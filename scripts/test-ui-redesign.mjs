@@ -57,7 +57,7 @@ kontrol('gradyan "Fiyatları Bul" butonu', /id="araBtn"[^>]*>Fiyatları Bul</.te
 kontrol('buton gradyanı', /\.hibrit-form button\s*\{[^}]*var\(--ana-gradyan\)/s.test(css));
 kontrol('odak halkası rgba(99,102,241,.2)', /--halka:\s*0 0 0 4px rgba\(99, 102, 241, 0\.18\)/.test(css));
 kontrol('focus-within halkası uygulanıyor', /\.hibrit-form:focus-within[^}]*box-shadow:\s*var\(--halka\)/s.test(css));
-for (const ad of ['eSun PLA+', 'Bambu Lab P1S', 'Ender 3 V3', 'AirPods Pro 2']) {
+for (const ad of ['eSun PLA+', 'Bambu Lab P1S', 'Ender 3 V3', 'Porima PLA']) {
   kontrol(`hızlı arama çipi: ${ad}`, new RegExp(`data-hizli="${ad.replace(/[+]/g, '\\+')}"`).test(html));
 }
 kontrol('hızlı çip tıklama davranışı', /\.hizli-cip/.test(app) && /requestSubmit/.test(app));

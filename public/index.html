@@ -111,13 +111,13 @@
   <main class="kap">
     <section class="hero">
       <div class="hero-ic">
-        <span class="hero-rozet">⚡ 60+ mağaza · gerçek ödenecek tutar</span>
-        <h1>Aynı ürünün <b>gerçek en ucuz</b> fiyatını bul</h1>
-        <p>Etiket fiyatı değil — kargo, kupon ve kampanyalar düşüldükten sonra <b>gerçekte ödeyeceğin</b> tutar karşılaştırılır.</p>
+        <span class="hero-rozet">⚡ 3D baskı &amp; e-ticaret · stok ve kargo dahil gerçek fiyat</span>
+        <h1>3D yazıcı ve filamentte <b>gerçek en ucuz</b> fiyatı bul</h1>
+        <p>Etiket fiyatı değil — kargo, kupon ve canlı stok kontrolü sonrası filament, 3D yazıcı ve yedek parçada <b>gerçekte ödeyeceğin</b> tutar karşılaştırılır.</p>
         <div class="hero-istatistik">
-          <span><b id="heroSiteSayisi">60</b> site taranır</span>
-          <span>🔍 model kodu + barkod eşleştirme</span>
-          <span>🏷️ kampanyalar akıllıca ayrılır</span>
+          <span><b id="heroSiteSayisi">60</b> mağaza taranır</span>
+          <span>🧵 stokta + ₺/kg birim fiyat</span>
+          <span>🔍 model + renk eşleştirme</span>
         </div>
       </div>
     </section>
@@ -143,7 +143,7 @@
           <input type="text" id="urunUrl" autocomplete="off" spellcheck="false"
             role="combobox" aria-autocomplete="list" aria-expanded="false"
             aria-controls="onerilerKutusu" aria-haspopup="listbox"
-            placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;iPhone 15&quot;" />
+            placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;Bambu Lab A1 Mini&quot;" />
           <button type="submit" id="araBtn">Fiyatları Bul</button>
         </form>
 
@@ -170,17 +170,17 @@
         <button type="button" class="hizli-cip" data-hizli="eSun PLA+">eSun PLA+</button>
         <button type="button" class="hizli-cip" data-hizli="Bambu Lab P1S">Bambu Lab P1S</button>
         <button type="button" class="hizli-cip" data-hizli="Ender 3 V3">Ender 3 V3</button>
-        <button type="button" class="hizli-cip" data-hizli="AirPods Pro 2">AirPods Pro 2</button>
+        <button type="button" class="hizli-cip" data-hizli="Porima PLA">Porima PLA</button>
       </div>
 
       <p class="hibrit-ipucu">
-        ⚡ <b>Link yapıştır</b> ya da <b>ürün adı yaz</b>, <b id="kartSiteSayisi">60</b> mağazada en ucuz fiyatı bulalım ·
-        💬 Danışmak istersen yapay zekaya ihtiyacını yaz (ör. "spor için kulaklık").
+        ⚡ <b>Link yapıştır</b> ya da <b>ürün adı yaz</b>, <b id="kartSiteSayisi">60</b> mağazada stoklu en ucuz fiyatı bulalım ·
+        💬 Danışmak istersen yapay zekaya ihtiyacını yaz (ör. "20 bin TL altı kapalı kasa 3D yazıcı").
       </p>
 
       <!-- Doğal dil / öneri akışı: aynı form kimlikleri korunur, görsel olarak gizlidir -->
       <form id="oneriForm" class="oneri-form oneri-gizli" hidden aria-hidden="true">
-        <textarea id="ihtiyacMetni" rows="2" placeholder="Örn. spor için kablosuz kulaklık, bütçem 3.000 TL"></textarea>
+        <textarea id="ihtiyacMetni" rows="2" placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"></textarea>
         <button type="submit" id="oneriBtn">Öneri al</button>
       </form>
 
