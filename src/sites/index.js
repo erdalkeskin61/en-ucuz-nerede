@@ -13,10 +13,12 @@ import { yeniSiteler2 } from './yeni2.js';
 import { crealityGlobalSiteler } from './creality-global.js';
 import { globalSiteler } from './global.js';
 import { prusaGlobalSiteler } from './prusa3d.js';
+import { amazonGlobalSiteler } from './amazon-global.js';
+import { retailGlobalSiteler } from './retail-global.js';
 
 export const adapters = [
   trendyol, hepsiburada, amazon, vatan, mediamarkt, itopya, pazarama, incehesap,
-  ...ucdSiteler, ...yeniSiteler, ...yeniSiteler2, ...crealityGlobalSiteler, ...globalSiteler, ...prusaGlobalSiteler,
+  ...ucdSiteler, ...yeniSiteler, ...yeniSiteler2, ...crealityGlobalSiteler, ...globalSiteler, ...prusaGlobalSiteler, ...amazonGlobalSiteler, ...retailGlobalSiteler,
 ];
 
 /** Desteklenen bölgesel pazarlar (market) ve varsayılan para birimi/yerel ayarları. */

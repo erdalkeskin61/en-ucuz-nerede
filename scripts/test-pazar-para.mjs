@@ -420,18 +420,33 @@ const usSiteler = adaptersByMarket('us');
 const frSiteler = adaptersByMarket('fr');
 const euSiteler = adaptersByMarket('eu');
 const jpSiteler = adaptersByMarket('jp');
-kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=26, FR>=16, EU>=12, JP>=8)',
+kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=32, FR>=21, EU>=13, JP>=11)',
   trSiteler.length === 70
-  && usSiteler.length >= 26
-  && frSiteler.length >= 16
-  && euSiteler.length >= 12
-  && jpSiteler.length >= 8,
+  && usSiteler.length >= 32
+  && frSiteler.length >= 21
+  && euSiteler.length >= 13
+  && jpSiteler.length >= 11,
   `tr=${trSiteler.length}, us=${usSiteler.length}, fr=${frSiteler.length}, eu=${euSiteler.length}, jp=${jpSiteler.length}`);
 
-kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop ve Prusa3D URL\'lerini tanır',
+kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazon & dev perakendecileri tanır',
   detectSite('https://us.polymaker.com/products/matte-pla')?.id === 'polymaker_us'
   && detectSite('https://shop.polymaker.com/products/polylite-pla')?.id === 'polymaker_us'
   && detectSite('https://us.qidi3d.com/products/q1-pro-3d-printer')?.id === 'qidi_us'
+  && detectSite('https://www.amazon.com/dp/B0CXYZ1234')?.id === 'amazon_us'
+  && detectSite('https://www.amazon.fr/dp/B0CXYZ1234')?.id === 'amazon_fr'
+  && detectSite('https://www.amazon.co.jp/dp/B0CXYZ1234')?.id === 'amazon_jp'
+  && detectSite('https://www.walmart.com/ip/Creality-K1C/123456')?.id === 'walmart_us'
+  && detectSite('https://www.bestbuy.com/site/creality-k1c/654321.p')?.id === 'bestbuy_us'
+  && detectSite('https://www.target.com/p/pla-filament/-/A-123456')?.id === 'target_us'
+  && detectSite('https://www.ebay.com/itm/227594725936')?.id === 'ebay_us'
+  && detectSite('https://www.ebay.fr/itm/225980923047')?.id === 'ebay_fr'
+  && detectSite('https://www.adafruit.com/product/6503')?.id === 'adafruit'
+  && detectSite('https://www.ldlc.com/fiche/PB00728850.html')?.id === 'ldlc'
+  && detectSite('https://www.boulanger.com/ref/9000963538')?.id === 'boulanger'
+  && detectSite('https://www.3djake.fr/elegoo/pla-basic-magenta-3')?.id === '3djake_fr'
+  && detectSite('https://www.3djake.de/elegoo/pla-basic-magenta-3')?.id === '3djake_de'
+  && detectSite('https://item.rakuten.co.jp/elegoo/rt-jp-el-pla/')?.id === 'rakuten_jp'
+  && detectSite('https://www.yodobashi.com/product/100000001005300972/')?.id === 'yodobashi'
   && detectSite('https://store.sunlu.com/products/sunlu-pla')?.id === 'sunlu_us'
   && detectSite('https://store.sunlu.com/fr/products/sunlu-pla')?.id === 'sunlu_fr'
   && detectSite('https://us.snapmaker.com/products/snapmaker-artisan')?.id === 'snapmaker_us'
