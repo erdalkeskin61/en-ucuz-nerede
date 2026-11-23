@@ -141,6 +141,11 @@ const VARSAYILAN_AYARLAR = {
   siteSablon: {},
 };
 
+const VARSAYILAN_SITE_SABLONLARI = Object.freeze({
+  overture_us: '?aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
+  overture_fr: '?aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
+});
+
 /** Kayıtlı ayarları varsayılanlarla birleştirir (eksik alanlar bozulmasın). */
 export function afiliyeAyarlari() {
   const kayitli = getSettings().afiliye || {};
@@ -163,6 +168,9 @@ export function afiliyeAyarlari() {
   // Eski biçim uyumluluğu: siteSablon değeri düz metin (şablon) olabilir.
   // Yeni biçim: { sablon, hedefParametre, token }.
   const siteSablon = {};
+  for (const [site, sablon] of Object.entries(VARSAYILAN_SITE_SABLONLARI)) {
+    siteSablon[site] = { sablon, hedefParametre: '', token: '' };
+  }
   for (const [site, v] of Object.entries(kayitli.siteSablon || {})) {
     const anahtar = String(site).toLowerCase();
     if (typeof v === 'string') {

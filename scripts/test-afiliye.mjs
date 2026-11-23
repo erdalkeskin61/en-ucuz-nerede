@@ -355,5 +355,16 @@ const tabloOnce = afiliyeKayitTablosu(['amazon', 'amazon_us', 'creality_us']);
 kontrol('afiliyeKayitTablosu ağ ve eşleşen mağaza listesini döner',
   Array.isArray(tabloOnce) && tabloOnce.some(s => s.kimlik === 'amazon_us' && s.siteler.includes('amazon_us')));
 
+/* ---------- 20) Overture 3D (US & EU/FR) Affiliatly Kalıcı Yönlendirmesi ---------- */
+const overtureUsUrl = afiliyeLink('overture_us', 'https://overture3d.com/products/overture-pla?variant=445566');
+kontrol('overture_us varyant parametresini koruyarak aff=322 ve utm_campaign=baskihesap ekler',
+  overtureUsUrl === 'https://overture3d.com/products/overture-pla?variant=445566&aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
+  overtureUsUrl);
+
+const overtureFrUrl = afiliyeLink('overture_fr', 'https://overture3d.com/en-eu/products/overture-pla');
+kontrol('overture_fr aff=322 ve utm_campaign=baskihesap ekler',
+  overtureFrUrl === 'https://overture3d.com/en-eu/products/overture-pla?aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
+  overtureFrUrl);
+
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);
