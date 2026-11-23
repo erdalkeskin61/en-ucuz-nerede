@@ -455,12 +455,12 @@ const usSiteler = adaptersByMarket('us');
 const frSiteler = adaptersByMarket('fr');
 const euSiteler = adaptersByMarket('eu');
 const jpSiteler = adaptersByMarket('jp');
-kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=32, FR>=21, EU>=13, JP>=11)',
+kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=38, FR>=22, EU>=13, JP>=12)',
   trSiteler.length === 70
-  && usSiteler.length >= 32
-  && frSiteler.length >= 21
+  && usSiteler.length >= 38
+  && frSiteler.length >= 22
   && euSiteler.length >= 13
-  && jpSiteler.length >= 11,
+  && jpSiteler.length >= 12,
   `tr=${trSiteler.length}, us=${usSiteler.length}, fr=${frSiteler.length}, eu=${euSiteler.length}, jp=${jpSiteler.length}`);
 
 kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazon & dev perakendecileri tanır',
@@ -489,6 +489,14 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazo
   && detectSite('https://overture3d.com/en-eu/products/overture-pla')?.id === 'overture_fr'
   && detectSite('https://eu.flashforge.com/fr/products/ad5x-3d-imprimante')?.id === 'flashforge_fr'
   && detectSite('https://store.landu3d.com/fr/products/matte-pla-filament')?.id === 'landu_fr'
+  && detectSite('https://store.landu3d.com/products/landu-pla-filament')?.id === 'landu_us'
+  && detectSite('https://siraya.tech/products/build-sonic-4k-resin')?.id === 'siraya_us'
+  && detectSite('https://jayo3d.com/products/jayo-pla')?.id === 'jayo_us'
+  && detectSite('https://eryone3d.com/products/matte-pla')?.id === 'eryone_us'
+  && detectSite('https://eryone3d.com/fr/products/matte-pla')?.id === 'eryone_fr'
+  && detectSite('https://iiidmax.com/products/iiid-max-classic-pla')?.id === 'iiidmax'
+  && detectSite('https://store.inslogic3d.com/products/pla-pro-filament-1-75mm')?.id === 'inslogic_us'
+  && detectSite('https://store.inslogic3d.com/ja/products/spool-free-engineering-500g-sample')?.id === 'inslogic_jp'
   && detectSite('https://3dprintersdepot.com/en-jp/products/flashforge-creator-5-3d-printer')?.id === '3dprintersdepot_jp'
   && detectSite('https://www.prusa3d.com/product/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_us'
   && detectSite('https://www.prusa3d.com/fr/produit/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_fr'

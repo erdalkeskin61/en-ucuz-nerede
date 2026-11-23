@@ -29,7 +29,7 @@ function hostListesi(base, extra = []) {
 
 export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   // =========================================================================
-  // 🇺🇸 ABD / Global English (USD) — 26 üretici ve uzman mağaza (+ creality_us + prusa_us = 28)
+  // 🇺🇸 ABD / Global English (USD) — 32 üretici ve uzman mağaza (+ creality_us + prusa_us = 34)
   // =========================================================================
   { id: 'polymaker_us', name: 'Polymaker (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.polymaker.com', extraHosts: ['shop.polymaker.com'] },
   { id: 'overture_us', name: 'Overture 3D', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://overture3d.com' },
@@ -39,6 +39,12 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'qidi_us', name: 'QIDI Tech (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://qidi3d.com', extraHosts: ['us.qidi3d.com'] },
   { id: 'sunlu_us', name: 'SUNLU Store (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.sunlu.com' },
   { id: 'snapmaker_us', name: 'Snapmaker (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.snapmaker.com', extraHosts: ['shop.snapmaker.com'] },
+  { id: 'siraya_us', name: 'Siraya Tech', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://siraya.tech' },
+  { id: 'jayo_us', name: 'JAYO 3D', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://jayo3d.com' },
+  { id: 'eryone_us', name: 'ERYONE (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://eryone3d.com' },
+  { id: 'iiidmax', name: 'IIID Max', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://iiidmax.com' },
+  { id: 'inslogic_us', name: 'Inslogic (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.inslogic3d.com' },
+  { id: 'landu_us', name: 'LANDU 3D (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.landu3d.com' },
   { id: '3dprintersdepot_us', name: '3DPrintersDepot', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://3dprintersdepot.com' },
   { id: '3dprintingusa', name: '3DPrintingUSA', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://3dprintingusa.com' },
   { id: 'filabot_us', name: 'Filabot', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://www.filabot.com' },
@@ -59,13 +65,14 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'sainsmart_us', name: 'SainSmart', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://www.sainsmart.com' },
 
   // =========================================================================
-  // 🇫🇷 Fransa (EUR) — 15 Fransız & lokalize mağaza (+ creality_fr + prusa_fr = 17)
+  // 🇫🇷 Fransa (EUR) — 16 Fransız & lokalize mağaza (+ creality_fr + prusa_fr = 18)
   // =========================================================================
   { id: 'flashforge_fr', name: 'Flashforge (FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://eu.flashforge.com/fr', pathPrefix: '/fr' },
   { id: 'overture_fr', name: 'Overture 3D (EU/FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://overture3d.com/en-eu', pathPrefix: '/en-eu' },
   { id: 'sunlu_fr', name: 'SUNLU Store (FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://store.sunlu.com/fr', pathPrefix: '/fr' },
   { id: 'snapmaker_fr', name: 'Snapmaker (FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://eu.snapmaker.com/fr', pathPrefix: '/fr' },
   { id: 'landu_fr', name: 'LANDU 3D (FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://store.landu3d.com/fr', pathPrefix: '/fr' },
+  { id: 'eryone_fr', name: 'ERYONE (FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://eryone3d.com/fr', pathPrefix: '/fr', currencyQuery: true },
   { id: 'qidi_fr', name: 'QIDI Tech (FR)', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://eu.qidi3d.com/fr', pathPrefix: '/fr' },
   { id: 'makershop_fr', name: 'Makershop', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://www.makershop.fr' },
   { id: 'atome3d', name: 'Atome3D', market: 'fr', currency: 'EUR', tur: 'shopify', base: 'https://www.atome3d.com' },
@@ -93,9 +100,10 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'azurefilm_eu', name: 'AzureFilm', market: 'eu', currency: 'EUR', tur: 'woo', base: 'https://azurefilm.com' },
 
   // =========================================================================
-  // 🇯🇵 Japonya (JPY) — 6 mağaza (+ creality_jp + prusa_ja = 8)
+  // 🇯🇵 Japonya (JPY) — 7 mağaza (+ creality_jp + prusa_ja = 9)
   // =========================================================================
   { id: '3dprintersdepot_jp', name: '3DPrintersDepot (JP)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://3dprintersdepot.com/en-jp', pathPrefix: '/en-jp' },
+  { id: 'inslogic_jp', name: 'Inslogic (JP)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://store.inslogic3d.com/ja', pathPrefix: '/ja', currencyQuery: true },
   { id: 'skhonpo_jp', name: 'SK本舗 (SK Honpo)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://skhonpo.com' },
   { id: 'sunstella_jp', name: 'サンステラ (Sunstella)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://sunstella.co.jp' },
   { id: 'elegoo_jp', name: 'ELEGOO (JP)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://jp.elegoo.com' },
@@ -112,6 +120,7 @@ export const globalSiteler = GLOBAL_MAGAZA_TANIMLARI.map((m) => {
     hosts: hostListesi(m.base, m.extraHosts),
     base: m.base,
     ...(m.pathPrefix ? { pathPrefix: m.pathPrefix } : {}),
+    ...(m.currencyQuery ? { currencyQuery: true } : {}),
   };
   if (m.tur === 'woo') return wooSite(ortak);
   if (m.tur === 'presta') return prestashopSite({ ...ortak, aramaYolu: m.aramaYolu });

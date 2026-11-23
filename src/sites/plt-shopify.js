@@ -187,10 +187,11 @@ export function enIyiVaryant(variants, kaynak = null) {
 }
 
 export function shopifySite(cfg) {
-  const { id, name, hosts, base, pathPrefix = null } = cfg;
+  const { id, name, hosts, base, pathPrefix = null, currencyQuery = false } = cfg;
   const market = cfg.market || 'tr';
   const currency = paraBirimiNormalize(cfg.currency || 'TRY');
   const temizPrefix = pathPrefix ? '/' + String(pathPrefix).replace(/^\/+|\/+$/g, '') : '';
+  const paraParam = currencyQuery ? ('?currency=' + encodeURIComponent(currency)) : '';
 
   const jsonFiyatOku = (ham, bolYuz = false) => {
     if (ham == null || ham === '') return null;
@@ -277,14 +278,14 @@ export function shopifySite(cfg) {
       let kargoHtml = '';
       if (currency !== 'JPY') {
         try {
-          const r = await fetchPage(base + '/products/' + handle + '.js', { site: this.id, purpose: 'urun', fresh: !!opts.fresh });
+          const r = await fetchPage(base + '/products/' + handle + '.js' + paraParam, { site: this.id, purpose: 'urun', fresh: !!opts.fresh });
           ctx.spend += r.requestsSpent;
           kargoHtml = r.body;
           js = guvenliJsonAyristir(r.body, 'Shopify ürün yanıtı (.js ucu) JSON değil.');
         } catch { js = null; }
       }
       if (!js?.title) {
-        const r2 = await fetchPage(base + '/products/' + handle + '.json', { site: this.id, purpose: 'urun', fresh: !!opts.fresh });
+        const r2 = await fetchPage(base + '/products/' + handle + '.json' + paraParam, { site: this.id, purpose: 'urun', fresh: !!opts.fresh });
         ctx.spend += r2.requestsSpent;
         kargoHtml = r2.body;
         const d2 = guvenliJsonAyristir(r2.body, 'Shopify ürün yanıtı (.json ucu) JSON değil.');
