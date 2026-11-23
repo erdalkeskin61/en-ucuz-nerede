@@ -24,7 +24,65 @@ import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
 import { siteNames, adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
-import { normalizeDil, dilByMarket, sozlukGetir, t, sssSablonlari, DIL_META } from './i18n/index.js';
+import { normalizeDil, dilByMarket, sozlukGetir, t, sssSablonlari, DIL_META, dilParaFormati } from './i18n/index.js';
+
+export const GLOBAL_KATALOG_YOLLARI = Object.freeze({
+  tr: '/urunler',
+  en: '/en/products',
+  fr: '/fr/produits',
+  ja: '/ja/products',
+});
+
+export const GLOBAL_KATEGORI_ON_EKLERI = Object.freeze({
+  tr: '/kategori',
+  en: '/en/category',
+  fr: '/fr/categorie',
+  ja: '/ja/category',
+});
+
+export const GLOBAL_REHBER_YOLLARI = Object.freeze({
+  tr: '/rehber',
+  en: '/en/guides',
+  fr: '/fr/guides',
+  ja: '/ja/guides',
+});
+
+export const GLOBAL_SEPET_YOLLARI = Object.freeze({
+  tr: '/sepet.html',
+  en: '/en/basket',
+  fr: '/fr/panier',
+  ja: '/ja/basket',
+});
+
+export function navYollariGetir(dil = 'tr') {
+  const kod = normalizeDil(dil);
+  if (kod === 'en') {
+    return {
+      ana: '/en', katalog: '/en/products', rehber: '/en/guides',
+      maliyet: '/en/cost-calculator', sepet: '/en/basket', slicer: '/en/slicer',
+      ayarlar: '/ayarlar.html', kategoriOnEk: '/en/category',
+    };
+  }
+  if (kod === 'fr') {
+    return {
+      ana: '/fr', katalog: '/fr/produits', rehber: '/fr/guides',
+      maliyet: '/fr/calculateur-cout', sepet: '/fr/panier', slicer: '/fr/slicer',
+      ayarlar: '/ayarlar.html', kategoriOnEk: '/fr/categorie',
+    };
+  }
+  if (kod === 'ja') {
+    return {
+      ana: '/ja', katalog: '/ja/products', rehber: '/ja/guides',
+      maliyet: '/ja/cost-calculator', sepet: '/ja/basket', slicer: '/ja/slicer',
+      ayarlar: '/ayarlar.html', kategoriOnEk: '/ja/category',
+    };
+  }
+  return {
+    ana: '/', katalog: '/urunler', rehber: '/rehber',
+    maliyet: '/maliyet.html', sepet: '/sepet.html', slicer: '/slicer.html',
+    ayarlar: '/ayarlar.html', kategoriOnEk: '/kategori',
+  };
+}
 
 /** Üst bar için kompakt bölge + dil seçici HTML'i üretir (Googlebot tarafından taranabilir linkler). */
 export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
@@ -826,9 +884,72 @@ export const FOOTER_HUB_HTML = `
         </div>
       </nav>`;
 
+/** Seçili dil için ortak Footer İç Link Ağı üretir. */
+export function footerHubHtml(dil = 'tr') {
+  const kod = normalizeDil(dil);
+  if (kod === 'tr') return FOOTER_HUB_HTML;
+  const yol = navYollariGetir(kod);
+  const etiket = {
+    en: {
+      kat: 'Categories', rehber: 'Guides & Versus', arac: 'Tools',
+      k3d: '3D Printers', kpla: 'PLA & PLA+ Filament', kpetg: 'PETG, TPU & ABS', kyedek: 'Spare Parts & Nozzles', krecine: 'UV Resin & Dryers', ktum: 'Full Product Catalog',
+      g1: 'Bambu Lab P1S vs Creality K1C', g2: 'A1 Mini vs Ender 3 V3 KE', g3: 'Ender 3 V3 KE vs Neptune 4 Pro', g4: 'Best Budget 3D Printers', g5: 'Cheapest PLA Filaments', gtum: 'All 3D Buying Guides',
+      a1: 'Live Price Comparison', a2: '3D Print Cost Calculator', a3: 'Smart Basket & Shipping', a4: 'Cura & Slicer Plugin', a5: 'Price Alerts',
+    },
+    fr: {
+      kat: 'Catégories', rehber: 'Guides & Duels', arac: 'Outils',
+      k3d: 'Imprimantes 3D', kpla: 'Filaments PLA & PLA+', kpetg: 'PETG, TPU & ABS', kyedek: 'Pièces détachées & Buses', krecine: 'Résines UV & Séchoirs', ktum: 'Catalogue complet',
+      g1: 'Bambu Lab P1S vs Creality K1C', g2: 'A1 Mini vs Ender 3 V3 KE', g3: 'Ender 3 V3 KE vs Neptune 4 Pro', g4: 'Meilleures imprimantes 3D', g5: 'Filaments PLA pas chers', gtum: 'Tous les guides 3D',
+      a1: 'Comparateur de prix en direct', a2: 'Calculateur de coût STL', a3: 'Panier intelligent & port', a4: 'Extension Cura & Slicer', a5: 'Alertes de prix',
+    },
+    ja: {
+      kat: 'カテゴリー', rehber: 'ガイド＆徹底比較', arac: 'ツール',
+      k3d: '3Dプリンター価格', kpla: 'PLA・PLA+ フィラメント', kpetg: 'PETG・TPU・ABS', kyedek: '交換パーツ・ノズル', krecine: 'UVレジン・乾燥機', ktum: '全製品カタログ',
+      g1: 'Bambu Lab P1S vs Creality K1C', g2: 'A1 Mini vs Ender 3 V3 KE', g3: 'Ender 3 V3 KE vs Neptune 4 Pro', g4: '初心者向けおすすめ3Dプリンター', g5: '最安PLAフィラメント', gtum: '3Dプリントガイド一覧',
+      a1: 'リアルタイム価格比較', a2: '3Dプリント原価計算', a3: 'スマートカート＆送料最適化', a4: 'Cura・スライサー連携', a5: '価格アラート',
+    },
+  }[kod];
+  return `
+      <nav class="footer-hub" aria-label="Footer">
+        <div>
+          <h3 class="footer-hub-baslik">${etiket.kat}</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="${yol.kategoriOnEk}/3d-yazici">🖨️ ${etiket.k3d}</a></li>
+            <li><a href="${yol.kategoriOnEk}/pla-filament">🧵 ${etiket.kpla}</a></li>
+            <li><a href="${yol.kategoriOnEk}/petg-tpu-filament">🦾 ${etiket.kpetg}</a></li>
+            <li><a href="${yol.kategoriOnEk}/3d-yazici-yedek-parca">⚙️ ${etiket.kyedek}</a></li>
+            <li><a href="${yol.kategoriOnEk}/recine-ve-sarf">🧪 ${etiket.krecine}</a></li>
+            <li><a href="${yol.katalog}">🗂️ ${etiket.ktum}</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer-hub-baslik">${etiket.rehber}</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="${yol.rehber}#vs-p1s-k1c">⚖️ ${etiket.g1}</a></li>
+            <li><a href="${yol.rehber}#vs-a1mini-v3ke">🚀 ${etiket.g2}</a></li>
+            <li><a href="${yol.rehber}#vs-v3ke-n4pro">⚡ ${etiket.g3}</a></li>
+            <li><a href="${yol.rehber}#guide-printers">🖨️ ${etiket.g4}</a></li>
+            <li><a href="${yol.rehber}#guide-pla">🥇 ${etiket.g5}</a></li>
+            <li><a href="${yol.rehber}">📖 ${etiket.gtum}</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer-hub-baslik">${etiket.arac}</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="${yol.ana}">🔍 ${etiket.a1}</a></li>
+            <li><a href="${yol.maliyet}">🧮 ${etiket.a2}</a></li>
+            <li><a href="${yol.sepet}">🧺 ${etiket.a3}</a></li>
+            <li><a href="${yol.slicer}">🧩 ${etiket.a4}</a></li>
+            <li><a href="${yol.ayarlar}">🔔 ${etiket.a5}</a></li>
+          </ul>
+        </div>
+      </nav>`;
+}
+
 export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr', dilYolHaritasi = null, anaKapsam = false, bodyClass = '' }) {
   const sz = sozlukGetir(dil);
   const kokYol = sz.meta.dil === 'tr' ? '/' : `/${sz.meta.dil}`;
+  const navYol = navYollariGetir(sz.meta.dil);
   const safeTitle = htmlKacis(title);
   const safeDesc = htmlKacis(description);
   const safeUrl = htmlKacis(canonicalUrl);
@@ -837,10 +958,22 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   const jsonScripts = jsonLdList
     .map(o => `<script type="application/ld+json">${jsonLdMetni(o)}</script>`)
     .join('\n  ');
-  const otoHreflang = (!String(extraMeta || '').includes('hreflang=') && safeUrl)
-    ? `<link rel="alternate" hreflang="${htmlKacis(sz.meta.dil)}" href="${safeUrl}" />`
-      + (sz.meta.dil === 'tr' ? `\n  <link rel="alternate" hreflang="x-default" href="${safeUrl}" />` : '')
-    : '';
+  const alanKok = String(canonicalUrl || '').replace(/^(https?:\/\/[^/]+).*$/, '$1');
+  let otoHreflang = '';
+  if (!String(extraMeta || '').includes('hreflang=') && safeUrl) {
+    if (dilYolHaritasi && alanKok && /^https?:\/\//i.test(alanKok)) {
+      const parcalar = ['tr', 'en', 'fr', 'ja']
+        .filter(d => dilYolHaritasi[d])
+        .map(d => `<link rel="alternate" hreflang="${d}" href="${htmlKacis(alanKok + dilYolHaritasi[d])}" />`);
+      if (dilYolHaritasi.tr) {
+        parcalar.push(`<link rel="alternate" hreflang="x-default" href="${htmlKacis(alanKok + dilYolHaritasi.tr)}" />`);
+      }
+      otoHreflang = parcalar.join('\n  ');
+    } else {
+      otoHreflang = `<link rel="alternate" hreflang="${htmlKacis(sz.meta.dil)}" href="${safeUrl}" />`
+        + (sz.meta.dil === 'tr' ? `\n  <link rel="alternate" hreflang="x-default" href="${safeUrl}" />` : '');
+    }
+  }
   const birlesikExtraMeta = [otoHreflang, extraMeta].filter(Boolean).join('\n  ');
 
   const ga4Snip = ga4HeadSnip();
@@ -1047,13 +1180,13 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <img class="logo-gorsel" src="/logo.png" alt="${htmlKacis(sz.meta.siteAdi)}" width="36" height="30" decoding="async" />
       </a>
       <nav class="menu">
-        <a href="${htmlKacis(kokYol)}"${aktifNav === 'karsilastir' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.karsilastir)}</a>
-        <a href="/urunler"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
-        <a href="/rehber"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
-        <a href="${sz.meta.dil === 'en' ? '/en/cost-calculator' : (sz.meta.dil === 'fr' ? '/fr/calculateur-cout' : (sz.meta.dil === 'ja' ? '/ja/cost-calculator' : '/maliyet.html'))}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
-        <a href="/sepet.html">🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
-        <a href="${sz.meta.dil === 'tr' ? '/slicer.html' : `/${sz.meta.dil}/slicer`}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
-        <a href="/ayarlar.html">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
+        <a href="${htmlKacis(navYol.ana)}"${aktifNav === 'karsilastir' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.karsilastir)}</a>
+        <a href="${htmlKacis(navYol.katalog)}"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
+        <a href="${htmlKacis(navYol.rehber)}"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
+        <a href="${htmlKacis(navYol.maliyet)}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="${htmlKacis(navYol.sepet)}"${aktifNav === 'sepet' ? ' class="etkin"' : ''}>🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
+        <a href="${htmlKacis(navYol.slicer)}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="${htmlKacis(navYol.ayarlar)}">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(sz.meta.dil, dilYolHaritasi)}
       <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
@@ -1070,8 +1203,8 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <img class="footer-marka-logo" src="/logo.png" alt="${htmlKacis(sz.meta.siteAdi)}" width="34" height="29" decoding="async" />
         <a class="footer-marka-alan" href="${htmlKacis(kokYol)}" rel="home">baskihesap.tech</a>
       </div>
-      ${FOOTER_HUB_HTML}
-      <p>${dil === 'tr' ? 'Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.' : htmlKacis(sz.baslik.footerNot)}</p>
+      ${footerHubHtml(sz.meta.dil)}
+      <p>${sz.meta.dil === 'tr' ? 'Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.' : htmlKacis(sz.baslik.footerNot)}</p>
     </div>
   </footer>
   <script src="/tema.js"></script>
@@ -1088,23 +1221,33 @@ function kategoriIkonu(slug) {
   return '🎨';
 }
 
-function seoUrunKartiHtml(u, gizli = false) {
+function seoUrunKartiHtml(u, gizli = false, dil = 'tr') {
+  const kod = normalizeDil(dil);
+  const ceviri = {
+    tr: { canli: '⚡ Canlı Tara', bekliyor: '⏳ Taranmayı bekliyor', magaza: 'mağaza', kargo: 'Kargo dahil →', bul: 'Fiyat Bul →' },
+    en: { canli: '⚡ Live Scan', bekliyor: '⏳ Ready to scan', magaza: 'stores', kargo: 'Incl. shipping →', bul: 'Find Price →' },
+    fr: { canli: '⚡ Scan en direct', bekliyor: '⏳ Prêt à scanner', magaza: 'boutiques', kargo: 'Port inclus →', bul: 'Voir le prix →' },
+    ja: { canli: '⚡ 最安値検索', bekliyor: '⏳ スキャン待機中', magaza: '店舗', kargo: '送料込 →', bul: '価格を探す →' },
+  }[kod];
   const gorselHtml = u.gorsel
     ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" width="56" height="56" loading="lazy" decoding="async" />`
     : `<span class="seo-urun-ikon" aria-hidden="true">${kategoriIkonu(u.kategoriSlug)}</span>`;
   const fiyatHtml = u.enUcuzFiyat > 0
-    ? `<span class="seo-mini-fiyat">${formatTL(u.enUcuzFiyat)}</span>`
-    : `<span class="seo-mini-fiyat" style="color:var(--ana);font-size:14.5px">⚡ Canlı Tara</span>`;
+    ? `<span class="seo-mini-fiyat">${kod === 'tr' ? formatTL(u.enUcuzFiyat) : htmlKacis(dilParaFormati(kod, u.enUcuzFiyat, u.paraBirimi))}</span>`
+    : `<span class="seo-mini-fiyat" style="color:var(--ana);font-size:14.5px">${ceviri.canli}</span>`;
   const magazaRozet = u.enUcuzSite
     ? `<span class="seo-urun-etiket">🏪 ${htmlKacis(u.enUcuzSite)}</span>`
-    : '<span class="seo-urun-etiket">⏳ Taranmayı bekliyor</span>';
+    : `<span class="seo-urun-etiket">${ceviri.bekliyor}</span>`;
   const teklifRozet = u.stokluSayisi > 1
-    ? `<span class="seo-urun-etiket">${u.stokluSayisi} mağaza</span>`
+    ? `<span class="seo-urun-etiket">${u.stokluSayisi} ${ceviri.magaza}</span>`
     : '';
   const birimRozet = u.birimMetni
     ? `<span class="seo-urun-etiket">${htmlKacis(u.birimMetni)}</span>`
     : '';
-  return `<a class="seo-urun-kart${gizli ? ' gizli-katalog-kart' : ''}"${gizli ? ' hidden' : ''} href="${htmlKacis(u.yol)}" data-urun-ad="${htmlKacis(`${u.ad} ${u.enUcuzSite || ''}`.toLowerCase())}">
+  const kartYol = (kod !== 'tr' && String(u.yol || '').startsWith('/urun/'))
+    ? `/${kod}${u.yol}`
+    : (u.yol || `/${kod}?url=${encodeURIComponent(u.sorgu || u.ad || '')}`);
+  return `<a class="seo-urun-kart${gizli ? ' gizli-katalog-kart' : ''}"${gizli ? ' hidden' : ''} href="${htmlKacis(kartYol)}" data-urun-ad="${htmlKacis(`${u.ad} ${u.enUcuzSite || ''}`.toLowerCase())}">
     <div class="seo-urun-ust">
       ${gorselHtml}
       <div class="seo-mini-ad">${htmlKacis(u.ad)}</div>
@@ -1112,7 +1255,7 @@ function seoUrunKartiHtml(u, gizli = false) {
     <div class="seo-urun-etiketler">${magazaRozet}${teklifRozet}${birimRozet}</div>
     <div class="seo-urun-alt">
       ${fiyatHtml}
-      <span class="seo-urun-ok">${u.enUcuzFiyat > 0 ? 'Kargo dahil →' : 'Fiyat Bul →'}</span>
+      <span class="seo-urun-ok">${u.enUcuzFiyat > 0 ? ceviri.kargo : ceviri.bul}</span>
     </div>
   </a>`;
 }
@@ -1745,6 +1888,12 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
     description: kat.aciklama,
     canonicalUrl,
     ogImage: `${tabanUrl}/og-gorsel.png`,
+    dilYolHaritasi: {
+      tr: `/kategori/${kat.slug}`,
+      en: `/en/category/${kat.slug}`,
+      fr: `/fr/categorie/${kat.slug}`,
+      ja: `/ja/category/${kat.slug}`,
+    },
     jsonLdList,
     govdeHtml,
   });
@@ -1790,6 +1939,7 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
     description,
     canonicalUrl,
     ogImage: `${tabanUrl}/og-gorsel.png`,
+    dilYolHaritasi: GLOBAL_KATALOG_YOLLARI,
     jsonLdList: [{
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
@@ -1834,6 +1984,293 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
           <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
           <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
         </div>
+      </section>
+      ${katalogFiltreScriptHtml()}
+    `,
+  });
+}
+
+const GLOBAL_KAT_CEVIRI = Object.freeze({
+  en: {
+    title: '3D Printer, Filament & Resin Catalog — Cheapest US Prices | Baski Hesap',
+    desc: 'Live US store catalog tracking 3D printers, PLA/PETG/TPU filaments, UV resins, and spare parts with checkout shipping & $/kg unit prices.',
+    yolAna: 'Home',
+    yolKatalog: 'Product Catalog',
+    heroRozet: '🗂️ US & Global Stores · Live Catalog',
+    heroH1: '3D Printer &amp; Filament <b>Price Catalog</b>',
+    istTakip: 'tracked products',
+    istStok: 'live in-stock prices',
+    istBirim: '⚖️ Unit $/kg &amp; incl. shipping',
+    araPlaceholder: 'Quick filter catalog (e.g. Bambu, PLA, PETG, Prusa)…',
+    urunKelime: 'products',
+    tumunuGor: 'View all →',
+    rehberBaslik: 'Buying Guides &amp; Print Tools',
+    rehberAlt: 'Compare printer specs, calculate STL cost in USD, or optimize multi-store baskets:',
+    tumRehber: 'All Guides →',
+    enDusukEtiket: 'Lowest:',
+    kargoDahilEtiket: '🚚 Shipping-inclusive total',
+    kategoriler: {
+      '3d-yazici': { kisaAd: '3D Printers', ad: '3D Printer Prices (FDM & SLA)', aciklama: 'Compare Bambu Lab, Creality, Elegoo, Prusa, Flashforge, Snapmaker, and QIDI 3D printers across verified US stores.' },
+      'pla-filament': { kisaAd: 'PLA Filament', ad: 'PLA, PLA+ & Hyper PLA Filaments', aciklama: '1 kg & bulk PLA spools sorted by $/kg normalized unit price from eSun, SUNLU, Polymaker, Overture, and Bambu Lab.' },
+      'petg-tpu-filament': { kisaAd: 'PETG / TPU / ABS', ad: 'PETG, TPU, ABS & Engineering Filaments', aciklama: 'Heat-resistant PETG, flexible TPU 95A, ABS/ASA, and carbon-fiber spools compared with checkout shipping.' },
+      '3d-yazici-yedek-parca': { kisaAd: 'Spare Parts', ad: '3D Printer Nozzles, Hotends & Parts', aciklama: 'Hardened steel nozzles, ceramic hotends, PEI build plates, extruders, and AMS accessories.' },
+      'recine-ve-sarf': { kisaAd: 'Resin & Dryers', ad: 'UV Resins & Filament Dryers', aciklama: 'Standard, water-washable, ABS-like photopolymer resins and multi-spool filament dryers.' },
+    },
+  },
+  fr: {
+    title: 'Catalogue Imprimantes 3D, Filaments & Résines — Meilleurs Prix EUR | Baski Hesap',
+    desc: 'Catalogue européen de comparaison en direct pour imprimantes 3D, filaments PLA/PETG/TPU, résines UV et pièces détachées port compris en EUR (€).',
+    yolAna: 'Accueil',
+    yolKatalog: 'Catalogue Produits',
+    heroRozet: '🗂️ Boutiques FR &amp; EU · Catalogue Live',
+    heroH1: 'Catalogue Prix <b>Imprimantes 3D &amp; Filaments</b>',
+    istTakip: 'produits suivis',
+    istStok: 'prix en stock',
+    istBirim: '⚖️ Prix au €/kg &amp; livraison incluse',
+    araPlaceholder: 'Filtrer le catalogue (ex. Bambu, PLA, Prusa, Elegoo)…',
+    urunKelime: 'produits',
+    tumunuGor: 'Tout voir →',
+    rehberBaslik: 'Guides d’Achat &amp; Outils 3D',
+    rehberAlt: 'Comparez les modèles, calculez vos coûts en euros ou optimisez les frais de port :',
+    tumRehber: 'Tous les guides →',
+    enDusukEtiket: 'Dès :',
+    kargoDahilEtiket: '🚚 Total livraison incluse',
+    kategoriler: {
+      '3d-yazici': { kisaAd: 'Imprimantes 3D', ad: 'Prix Imprimantes 3D (FDM & SLA)', aciklama: 'Comparez Bambu Lab, Creality, Elegoo, Prusa, Flashforge, Snapmaker et QIDI sur les boutiques françaises et européennes.' },
+      'pla-filament': { kisaAd: 'Filament PLA', ad: 'Filaments PLA, PLA+ & Hyper PLA', aciklama: 'Bobines PLA 1 kg comparées au meilleur €/kg chez SUNLU, Overture, Bambu Lab, Elegoo et Amazon.fr.' },
+      'petg-tpu-filament': { kisaAd: 'PETG / TPU / ABS', ad: 'Filaments PETG, TPU, ABS & Techniques', aciklama: 'Filaments résistants à la chaleur, flexibles TPU 95A et composites carbone port compris.' },
+      '3d-yazici-yedek-parca': { kisaAd: 'Pièces Détachées', ad: 'Buses, Hotends & Plateaux PEI', aciklama: 'Buses en acier trempé, corps de chauffe céramique, plateaux texturés PEI et pièces de rechange.' },
+      'recine-ve-sarf': { kisaAd: 'Résines & Séchoirs', ad: 'Résines UV & Sécheurs de Filament', aciklama: 'Résines photopolymères 405nm (standard, lavable à l’eau, ABS-like) et séchoirs à bobines.' },
+    },
+  },
+  ja: {
+    title: '3Dプリンター・フィラメント・レジンカタログ — 最安円価格 | Baski Hesap',
+    desc: '日本市場の公式ストア・取扱店を対象に、3Dプリンター本体、PLA/PETG/TPUフィラメント、UVレジン、交換パーツを送料込み実勢価格で比較。',
+    yolAna: 'ホーム',
+    yolKatalog: '製品カタログ',
+    heroRozet: '🗂️ 日本向けストア対応 · リアルタイムカタログ',
+    heroH1: '3Dプリンター・フィラメント<b>価格カタログ</b>',
+    istTakip: '件の登録製品',
+    istStok: '件の在庫あり価格',
+    istBirim: '⚖️ kg単価 (¥/kg)＆送料込',
+    araPlaceholder: 'カタログ内を絞り込み（例: Bambu, PLA, Prusa, QIDI）…',
+    urunKelime: '製品',
+    tumunuGor: 'すべて見る →',
+    rehberBaslik: '比較ガイド＆3Dプリントツール',
+    rehberAlt: '機種比較、STL原価計算（¥）、複数ショップのまとめ買い送料最適化ツール：',
+    tumRehber: 'ガイド一覧 →',
+    enDusukEtiket: '最安値:',
+    kargoDahilEtiket: '🚚 送料込み合計価格',
+    kategoriler: {
+      '3d-yazici': { kisaAd: '3Dプリンター', ad: '3Dプリンター実勢価格 (FDM / 光造形)', aciklama: 'Bambu Lab・Creality・Prusa・QIDI・Elegooなどの日本公式サイト・EC価格を一括比較。' },
+      'pla-filament': { kisaAd: 'PLAフィラメント', ad: 'PLA・PLA+・高速PLAフィラメント', aciklama: 'eSun・SUNLU・Bambu Lab・Crealityなど人気PLAスプールをkg単価 (¥/kg) で比較。' },
+      'petg-tpu-filament': { kisaAd: 'PETG / TPU / ABS', ad: 'PETG・TPU・ABS・高機能フィラメント', aciklama: '耐熱PETG、軟質TPU、ABS/ASA、カーボン配合フィラメントの送料込み価格比較。' },
+      '3d-yazici-yedek-parca': { kisaAd: '交換パーツ', ad: 'ノズル・ホットエンド・ビルドプレート', aciklama: '焼入れスチールノズル、セラミックホットエンド、PEIプレート、押出機パーツ。' },
+      'recine-ve-sarf': { kisaAd: 'レジン・乾燥機', ad: 'UVレジン＆フィラメント乾燥機', aciklama: '光造形用UVレジン（水洗い・ABSライク・タフ）と防湿・乾燥ボックス。' },
+    },
+  },
+});
+
+const GLOBAL_KESIF_URUNLERI = Object.freeze([
+  { ad: 'Bambu Lab P1S 3D Printer', kategoriSlug: '3d-yazici', sorgu: 'Bambu Lab P1S' },
+  { ad: 'Bambu Lab A1 Mini 3D Printer', kategoriSlug: '3d-yazici', sorgu: 'Bambu Lab A1 Mini' },
+  { ad: 'Creality K1C 3D Printer', kategoriSlug: '3d-yazici', sorgu: 'Creality K1C' },
+  { ad: 'Prusa MK4S 3D Printer', kategoriSlug: '3d-yazici', sorgu: 'Prusa MK4S' },
+  { ad: 'Elegoo Neptune 4 Pro 3D Printer', kategoriSlug: '3d-yazici', sorgu: 'Elegoo Neptune 4 Pro' },
+  { ad: 'QIDI Q1 Pro 3D Printer', kategoriSlug: '3d-yazici', sorgu: 'QIDI Q1 Pro' },
+  { ad: 'eSun PLA+ Filament 1kg', kategoriSlug: 'pla-filament', sorgu: 'eSun PLA+ 1kg' },
+  { ad: 'SUNLU PLA+ Filament 1kg', kategoriSlug: 'pla-filament', sorgu: 'SUNLU PLA+ 1kg' },
+  { ad: 'Overture PLA Filament 1kg', kategoriSlug: 'pla-filament', sorgu: 'Overture PLA 1kg' },
+  { ad: 'Creality Hyper PLA 1kg', kategoriSlug: 'pla-filament', sorgu: 'Creality Hyper PLA 1kg' },
+  { ad: 'Polymaker PolyTerra PLA 1kg', kategoriSlug: 'pla-filament', sorgu: 'Polymaker PolyTerra PLA 1kg' },
+  { ad: 'eSun PETG Filament 1kg', kategoriSlug: 'petg-tpu-filament', sorgu: 'eSun PETG 1kg' },
+  { ad: 'Overture PETG Filament 1kg', kategoriSlug: 'petg-tpu-filament', sorgu: 'Overture PETG 1kg' },
+  { ad: 'eSun TPU 95A Flexible 1kg', kategoriSlug: 'petg-tpu-filament', sorgu: 'eSun TPU 95A 1kg' },
+  { ad: 'Bambu Lab Hardened Steel Nozzle 0.4mm', kategoriSlug: '3d-yazici-yedek-parca', sorgu: 'Bambu Lab Hardened Steel Nozzle' },
+  { ad: 'Creality K1 Ceramic Heating Block', kategoriSlug: '3d-yazici-yedek-parca', sorgu: 'Creality K1 Ceramic Hotend' },
+  { ad: 'Elegoo Standard UV Resin 1kg', kategoriSlug: 'recine-ve-sarf', sorgu: 'Elegoo UV Resin 1kg' },
+  { ad: 'SUNLU FilaDryer S2 Filament Dryer', kategoriSlug: 'recine-ve-sarf', sorgu: 'SUNLU FilaDryer S2' },
+]);
+
+function globalKesifUrunleriOlustur(dil = 'en') {
+  const kod = normalizeDil(dil);
+  const para = DIL_META[kod]?.currency || 'USD';
+  return GLOBAL_KESIF_URUNLERI.map((u) => ({
+    id: `kesif-${slugYap(u.sorgu)}`,
+    ad: u.ad,
+    sorgu: u.sorgu,
+    kategoriSlug: u.kategoriSlug,
+    yol: `/${kod}?url=${encodeURIComponent(u.sorgu)}`,
+    enUcuzFiyat: null,
+    enUcuzSite: null,
+    stokluSayisi: 0,
+    paraBirimi: para,
+  }));
+}
+
+export function globalKatalogDiziniHtml(dil = 'en', tumUrunler = [], tabanUrl = '') {
+  const kod = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'ja' : 'en');
+  const tKat = GLOBAL_KAT_CEVIRI[kod];
+  const nav = navYollariGetir(kod);
+  const canonicalUrl = `${tabanUrl}${GLOBAL_KATALOG_YOLLARI[kod]}`;
+  const gosterimUrunleri = Array.isArray(tumUrunler) && tumUrunler.length
+    ? tumUrunler
+    : globalKesifUrunleriOlustur(kod);
+  const stokluSayi = (tumUrunler || []).filter(u => u.enUcuzFiyat > 0).length;
+
+  const katBar = SEO_KATEGORILER.map(c => {
+    const adet = gosterimUrunleri.filter(c.eslesirMi).length;
+    if (!adet) return '';
+    const kc = tKat.kategoriler[c.slug] || {};
+    return `<a class="seo-kat-hap" href="#kat-${htmlKacis(c.slug)}">${kategoriIkonu(c.slug)} ${htmlKacis(kc.kisaAd || c.kisaAd)} (${adet})</a>`;
+  }).join('');
+
+  const bolumler = SEO_KATEGORILER.map(kat => {
+    const urunler = gosterimUrunleri.filter(kat.eslesirMi);
+    if (!urunler.length) return '';
+    const kc = tKat.kategoriler[kat.slug] || {};
+    return `<section class="seo-kart katalog-bolum" id="kat-${htmlKacis(kat.slug)}">
+      <div class="kat-baslik-ust">
+        <div class="kat-baslik-sol">
+          <span class="kat-ikon" aria-hidden="true">${kategoriIkonu(kat.slug)}</span>
+          <div>
+            <h2 style="margin:0 0 2px">${htmlKacis(kc.ad || kat.ad)}</h2>
+            <div style="font-size:13px;color:var(--gri-metin)">${htmlKacis(kc.aciklama || kat.aciklama)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="kat-sayac">${urunler.length} ${htmlKacis(tKat.urunKelime)}</span>
+          <a class="seo-cta ikincil" style="padding:7px 13px;font-size:12.5px" href="${nav.kategoriOnEk}/${htmlKacis(kat.slug)}">${htmlKacis(tKat.tumunuGor)}</a>
+        </div>
+      </div>
+      <div class="seo-izgara">
+        ${urunler.map((u, idx) => seoUrunKartiHtml(u, idx >= 16, kod)).join('')}
+      </div>
+    </section>`;
+  }).join('');
+
+  return sayfaIskeleti({
+    title: tKat.title,
+    description: tKat.desc,
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    dil: kod,
+    dilYolHaritasi: GLOBAL_KATALOG_YOLLARI,
+    jsonLdList: [{
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: tKat.title,
+      description: tKat.desc,
+      url: canonicalUrl,
+    }],
+    govdeHtml: `
+      <nav class="seo-yol"><a href="${nav.ana}">${htmlKacis(tKat.yolAna)}</a> › <span>${htmlKacis(tKat.yolKatalog)}</span></nav>
+      <section class="hero seo-hero">
+        <div class="hero-ic">
+          <span class="hero-rozet">${tKat.heroRozet}</span>
+          <h1>${tKat.heroH1}</h1>
+          <p>${htmlKacis(tKat.desc)}</p>
+          <div class="hero-istatistik">
+            <span>📦 <b>${gosterimUrunleri.length}</b> ${htmlKacis(tKat.istTakip)}</span>
+            <span>✅ <b>${stokluSayi}</b> ${htmlKacis(tKat.istStok)}</span>
+            <span>${tKat.istBirim}</span>
+          </div>
+        </div>
+      </section>
+      <div class="katalog-kontrol">
+        <div class="seo-kat-bar" style="margin:0">${katBar}</div>
+        <div class="katalog-ara-sar">
+          <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+          <input type="search" id="katalogAraInput" placeholder="${htmlKacis(tKat.araPlaceholder)}" aria-label="${htmlKacis(tKat.araPlaceholder)}" />
+        </div>
+      </div>
+      ${bolumler}
+      <section class="seo-rehber-kart" aria-label="${htmlKacis(tKat.rehberBaslik)}">
+        <div class="seo-rehber-ust">
+          <div>
+            <h2 class="bolum-baslik" style="margin:0 0 4px">${tKat.rehberBaslik}</h2>
+            <p class="ipucu" style="margin:0">${htmlKacis(tKat.rehberAlt)}</p>
+          </div>
+          <a class="seo-tum-link" href="${nav.rehber}">${htmlKacis(tKat.tumRehber)}</a>
+        </div>
+        <div class="seo-rehber-baglar">
+          <a href="${nav.rehber}">📖 ${htmlKacis(sozlukGetir(kod).nav.rehberler)}</a>
+          <a href="${nav.maliyet}">🧮 ${htmlKacis(sozlukGetir(kod).nav.maliyet)}</a>
+          <a href="${nav.sepet}">🧺 ${htmlKacis(sozlukGetir(kod).nav.akilliSepet)}</a>
+          <a href="${nav.slicer}">🧩 ${htmlKacis(sozlukGetir(kod).nav.eklenti)}</a>
+        </div>
+      </section>
+      ${katalogFiltreScriptHtml()}
+    `,
+  });
+}
+
+export function globalKategoriSayfasiHtml(dil = 'en', kat, tumUrunler = [], tabanUrl = '') {
+  const kod = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'ja' : 'en');
+  const tKat = GLOBAL_KAT_CEVIRI[kod];
+  const nav = navYollariGetir(kod);
+  const kc = tKat.kategoriler[kat.slug] || {};
+  const havuz = Array.isArray(tumUrunler) && tumUrunler.length ? tumUrunler : globalKesifUrunleriOlustur(kod);
+  const eslesen = havuz.filter(kat.eslesirMi);
+  const stoklular = eslesen.filter(u => u.enUcuzFiyat > 0).sort((a, b) => a.enUcuzFiyat - b.enUcuzFiyat);
+  const enUcuzUrun = stoklular[0] || null;
+  const katAd = kc.ad || kat.ad;
+  const katAciklama = kc.aciklama || kat.aciklama;
+  const title = `${katAd} | Baski Hesap`;
+  const canonicalUrl = `${tabanUrl}${nav.kategoriOnEk}/${kat.slug}`;
+  const dilYolHaritasi = {
+    tr: `/kategori/${kat.slug}`,
+    en: `/en/category/${kat.slug}`,
+    fr: `/fr/categorie/${kat.slug}`,
+    ja: `/ja/category/${kat.slug}`,
+  };
+
+  const katBar = SEO_KATEGORILER.map(c => {
+    const ck = tKat.kategoriler[c.slug] || {};
+    return `<a class="seo-kat-hap ${c.slug === kat.slug ? 'etkin' : ''}" href="${nav.kategoriOnEk}/${htmlKacis(c.slug)}">${kategoriIkonu(c.slug)} ${htmlKacis(ck.kisaAd || c.kisaAd)}</a>`;
+  }).join('');
+
+  const kartlar = eslesen.map(u => seoUrunKartiHtml(u, false, kod)).join('');
+
+  return sayfaIskeleti({
+    title,
+    description: katAciklama,
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    dil: kod,
+    dilYolHaritasi,
+    jsonLdList: [{
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: katAd,
+      description: katAciklama,
+      url: canonicalUrl,
+    }],
+    govdeHtml: `
+      <nav class="seo-yol">
+        <a href="${nav.ana}">${htmlKacis(tKat.yolAna)}</a> › <a href="${nav.katalog}">${htmlKacis(tKat.yolKatalog)}</a> › <span>${htmlKacis(katAd)}</span>
+      </nav>
+      <section class="hero seo-hero">
+        <div class="hero-ic">
+          <span class="hero-rozet">${kategoriIkonu(kat.slug)} ${htmlKacis(kc.kisaAd || kat.kisaAd)}</span>
+          <h1>${htmlKacis(katAd)}</h1>
+          <p>${htmlKacis(katAciklama)}</p>
+          <div class="hero-istatistik">
+            <span>📦 <b>${eslesen.length}</b> ${htmlKacis(tKat.urunKelime)}</span>
+            ${enUcuzUrun ? `<span>🏷️ ${htmlKacis(tKat.enDusukEtiket)} <b>${htmlKacis(dilParaFormati(kod, enUcuzUrun.enUcuzFiyat, enUcuzUrun.paraBirimi))}</b></span>` : ''}
+            <span>${tKat.kargoDahilEtiket}</span>
+          </div>
+        </div>
+      </section>
+      <div class="katalog-kontrol">
+        <div class="seo-kat-bar" style="margin:0">${katBar}</div>
+        <div class="katalog-ara-sar">
+          <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+          <input type="search" id="katalogAraInput" placeholder="${htmlKacis(tKat.araPlaceholder)}" aria-label="${htmlKacis(tKat.araPlaceholder)}" />
+        </div>
+      </div>
+      <section class="seo-kart katalog-bolum">
+        <div class="seo-izgara">${kartlar}</div>
       </section>
       ${katalogFiltreScriptHtml()}
     `,

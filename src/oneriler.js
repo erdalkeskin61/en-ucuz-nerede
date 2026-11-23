@@ -13,6 +13,7 @@
  * tanımlı popüler ürün listesinden gelir. Eşleşme yoksa boş dizi döner.
  */
 import { getHistory, getTracked, dbBaglantisi } from './store.js';
+import { detectSite, adapterMarket, normalizeMarket } from './sites/index.js';
 
 /** Gerçek, yaygın ürün adları (statik öneri havuzu). */
 export const POPULER_URUNLER = Object.freeze([
@@ -242,11 +243,16 @@ function kategoriIkon(kategori) {
 export function onerileriGetir(sorgu, opts = {}) {
   const q = String(sorgu || '').trim().slice(0, 80);
   const limit = Math.max(1, Math.min(Number(opts.limit) || 8, 20));
+  const hedefMarket = opts.market ? normalizeMarket(opts.market) : null;
 
   const havuz = [
     ...POPULER_URUNLER.map((m) => ({ metin: m, tur: 'populer', url: null, etiket: 'Popüler' })),
     ...dinamikKayitlar(),
-  ].map((k) => {
+  ].filter((k) => {
+    if (!hedefMarket || !k.url) return true;
+    const adpt = detectSite(k.url);
+    return adpt ? adapterMarket(adpt) === hedefMarket : hedefMarket === 'tr';
+  }).map((k) => {
     const kategori = kategoriBul(k.metin);
     return { ...k, kategori, ikon: kategoriIkon(kategori) };
   });

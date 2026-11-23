@@ -13,7 +13,10 @@
  * Dürüstlük ilkesi: hiçbir ürün/mağaza fiyatı uydurulmaz; yalnızca canlı
  * `seoUrunListesi()` sonuçları gösterilir, kayıt yoksa "Canlı Tara" sunulur.
  */
-import { htmlKacis, sayfaIskeleti, crealityResmiMagazaLink } from './seoSayfalar.js';
+import {
+  htmlKacis, sayfaIskeleti, crealityResmiMagazaLink,
+  GLOBAL_REHBER_YOLLARI,
+} from './seoSayfalar.js';
 import { formatTL, parcaMi } from './util.js';
 
 function urunBul(tumUrunler, regex) {
@@ -928,6 +931,7 @@ export function rehberDiziniHtml(tabanUrl, tumUrunler = []) {
     canonicalUrl,
     ogImage: `${tabanUrl}/og-gorsel.png`,
     aktifNav: 'rehber',
+    dilYolHaritasi: GLOBAL_REHBER_YOLLARI,
     jsonLdList: [{
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
@@ -955,4 +959,370 @@ export function rehberDiziniHtml(tabanUrl, tumUrunler = []) {
 export function rehberSayfasiBul(yol) {
   const temiz = String(yol || '').replace(/\/+$/, '').toLowerCase();
   return REHBER_SAYFALARI.find(r => r.yol === temiz) || null;
+}
+
+const GLOBAL_REHBER_KOPYA = Object.freeze({
+  en: {
+    title: '3D Printer Comparisons & Filament Buying Guides | Baski Hesap',
+    desc: 'Live-priced 3D printer head-to-head comparisons, cheapest USD filament guides, and print cost calculation walkthroughs across verified US stores.',
+    yolAna: 'Home',
+    yolAd: 'Guides & Comparisons',
+    rozet: '📖 Live-Priced Buying Guides · 2026',
+    h1: 'Choose the right 3D printer with <b>live market pricing</b>',
+    alt: 'Not static blog posts — compare Bambu Lab, Creality, Elegoo, and Prusa printers plus real USD filament unit costs across US stores.',
+    ist1: 'live buying guides',
+    ist2: '⚖️ Head-to-head VS specs',
+    ist3: '🔄 Real USD store checks',
+    cta: 'Read Guide →',
+    aracBaslik: 'Tools to Estimate & Optimize Your Print',
+    aracAlt: 'Jump straight to STL cost estimation, smart basket splitting, or the full US product catalog:',
+    aracLink1: '🗂️ US Product Catalog',
+    aracLink2: '🧮 STL Cost Calculator ($)',
+    aracLink3: '🧺 Smart Basket Optimizer',
+    aracLink4: '🧩 Cura & Slicer Plugin',
+    kartlar: [
+      {
+        id: 'vs-p1s-k1c',
+        ikon: '⚖️',
+        tur: 'VS Comparison',
+        baslik: 'Bambu Lab P1S vs Creality K1C',
+        ozet: '256 mm AMS multicolor ecosystem vs enclosed Klipper CoreXY with hardened carbon-fiber nozzle and live US pricing.',
+        band: '256×256×256 mm vs 220×220×250 mm · Enclosed CoreXY',
+        sorgu: 'Bambu Lab P1S vs Creality K1C',
+        urunA: 'Bambu Lab P1S',
+        urunB: 'Creality K1C',
+        detay: 'Compare build volume, AMS multi-color support, hardened nozzle durability, and live checkout pricing including shipping across US retailers (Creality US, Bambu Lab US, Amazon US, Best Buy, Walmart, MatterHackers).',
+      },
+      {
+        id: 'vs-a1mini-v3ke',
+        ikon: '🚀',
+        tur: 'VS Comparison',
+        baslik: 'Bambu Lab A1 Mini vs Creality Ender 3 V3 KE',
+        ozet: 'Compact 180 mm quiet AMS Lite desktop printer vs 220 mm Klipper bedslinger with 500 mm/s peak speed.',
+        band: '180 mm AMS Lite vs 220 mm 500 mm/s Klipper',
+        sorgu: 'Bambu Lab A1 Mini',
+        urunA: 'Bambu Lab A1 Mini',
+        urunB: 'Creality Ender 3 V3 KE',
+        detay: 'Best entry-level showdown: automatic flow-rate calibration and ultra-quiet operation on the A1 Mini versus larger build plate and open Klipper firmware on the Ender 3 V3 KE.',
+      },
+      {
+        id: 'vs-v3ke-n4pro',
+        ikon: '⚡',
+        tur: 'VS Comparison',
+        baslik: 'Creality Ender 3 V3 KE vs Elegoo Neptune 4 Pro',
+        ozet: 'Two fast budget Klipper printers head-to-head: Sprite direct drive vs dual-zone heated bed & metal rails.',
+        band: 'Dual-zone 250W bed vs 300°C Sprite hotend',
+        sorgu: 'Elegoo Neptune 4 Pro',
+        urunA: 'Creality Ender 3 V3 KE',
+        urunB: 'Elegoo Neptune 4 Pro',
+        detay: 'Evaluate high-flow hotend throughput, segmented bed heating efficiency, noise levels, and current US store availability.',
+      },
+      {
+        id: 'guide-printers',
+        ikon: '🖨️',
+        tur: 'Buying Guide',
+        baslik: 'Best Budget 3D Printers for Beginners (US Pricing)',
+        ozet: 'Reliable plug-and-play FDM printers under $500 sorted by print speed, auto-leveling reliability, and real US stock.',
+        band: 'Starter & mid-range FDM picks in USD',
+        sorgu: 'Bambu Lab A1 Mini',
+        urunA: 'Bambu Lab A1 Mini',
+        urunB: 'Prusa MK4S',
+        detay: 'From compact starter machines to enclosed multi-material workhorses, filter real US merchant offers with shipping included.',
+      },
+      {
+        id: 'guide-pla',
+        ikon: '🥇',
+        tur: 'Filament Guide',
+        baslik: 'Cheapest PLA & PLA+ Filaments per Kilogram ($/kg)',
+        ozet: 'Compare 1 kg spools from eSun, SUNLU, Polymaker, Overture, and Creality Hyper PLA by real $/kg unit price.',
+        band: 'Normalized $/kg comparison across US stores',
+        sorgu: 'eSun PLA+ 1kg',
+        urunA: 'eSun PLA+ 1kg',
+        urunB: 'SUNLU PLA+ 1kg',
+        detay: 'Never overpay on multi-packs or 2 kg spools: compare normalized $/kg prices after shipping across Amazon US, SUNLU, Polymaker, Overture, and MatterHackers.',
+      },
+      {
+        id: 'guide-cost',
+        ikon: '🧮',
+        tur: 'Cost Guide',
+        baslik: 'How to Calculate 3D Print Cost & Selling Price',
+        ozet: 'Step-by-step formula covering filament grams, kWh electricity ($0.16/kWh), machine wear, and workshop profit margin.',
+        band: '4-step formula + free client-side STL calculator',
+        sorgu: 'PLA filament 1kg',
+        urunA: 'Creality Hyper PLA 1kg',
+        urunB: 'Polymaker PLA 1kg',
+        detay: 'Formula: Net Cost = (Grams / 1000 × $/kg) + ((Watts × Hours / 1000) × $/kWh) + (Hours × $/hr Depreciation). Use the STL Cost Calculator to compute instantly in your browser.',
+      },
+    ],
+  },
+  fr: {
+    title: 'Comparatifs Imprimantes 3D & Guides d’Achat Filament | Baski Hesap',
+    desc: 'Duels techniques, classements des filaments PLA au meilleur prix au €/kg et calculateur de coût réel dans les boutiques européennes.',
+    yolAna: 'Accueil',
+    yolAd: 'Guides & Comparatifs',
+    rozet: '📖 Guides d’Achat & Comparatifs · 2026',
+    h1: 'Choisissez la bonne imprimante 3D au <b>prix réel (€)</b>',
+    alt: 'Comparez Bambu Lab, Creality, Elegoo et Prusa ainsi que le coût réel au kilogramme de vos bobines sur les boutiques EU/FR.',
+    ist1: 'guides pratiques',
+    ist2: '⚖️ Comparatifs côte à côte',
+    ist3: '🔄 Prix vérifiés en EUR (€)',
+    cta: 'Lire le guide →',
+    aracBaslik: 'Outils d’estimation et d’optimisation',
+    aracAlt: 'Accédez directement au calculateur de coût STL, au panier intelligent ou au catalogue européen :',
+    aracLink1: '🗂️ Catalogue Produits EU',
+    aracLink2: '🧮 Calculateur de Coût (€)',
+    aracLink3: '🧺 Panier Intelligent',
+    aracLink4: '🧩 Extension Cura & Slicer',
+    kartlar: [
+      {
+        id: 'vs-p1s-k1c',
+        ikon: '⚖️',
+        tur: 'Duel VS',
+        baslik: 'Bambu Lab P1S vs Creality K1C',
+        ozet: 'Écosystème multicouleur AMS (256 mm) contre CoreXY rapide avec buse renforcée pour fibre de carbone.',
+        band: '256×256×256 mm vs 220×220×250 mm · CoreXY fermée',
+        sorgu: 'Bambu Lab P1S',
+        urunA: 'Bambu Lab P1S',
+        urunB: 'Creality K1C',
+        detay: 'Comparaison du volume d’impression, du support AMS, des températures admissibles et des tarifs TTC livraison incluse sur Bambu Lab EU, Creality EU, Amazon.fr, 3DJake et LDLC.',
+      },
+      {
+        id: 'vs-a1mini-v3ke',
+        ikon: '🚀',
+        tur: 'Duel VS',
+        baslik: 'Bambu Lab A1 Mini vs Creality Ender 3 V3 KE',
+        ozet: 'Imprimante silencieuse 180 mm compatible AMS Lite face à une cartésienne Klipper 220 mm à 500 mm/s.',
+        band: '180 mm AMS Lite vs 220 mm Klipper 500 mm/s',
+        sorgu: 'Bambu Lab A1 Mini',
+        urunA: 'Bambu Lab A1 Mini',
+        urunB: 'Creality Ender 3 V3 KE',
+        detay: 'Calibration automatique du débit et silence remarquable pour la A1 Mini vs grand plateau 220 mm et firmware Klipper ouvert sur la V3 KE.',
+      },
+      {
+        id: 'vs-v3ke-n4pro',
+        ikon: '⚡',
+        tur: 'Duel VS',
+        baslik: 'Creality Ender 3 V3 KE vs Elegoo Neptune 4 Pro',
+        ozet: 'Deux imprimantes Klipper abordables : extrudeur Sprite 300 °C contre plateau chauffant double zone.',
+        band: 'Plateau bi-zone 250 W vs Sprite 300 °C',
+        sorgu: 'Elegoo Neptune 4 Pro',
+        urunA: 'Creality Ender 3 V3 KE',
+        urunB: 'Elegoo Neptune 4 Pro',
+        detay: 'Analyse des performances de chauffe, des rails métalliques et des prix actuels port compris en Europe.',
+      },
+      {
+        id: 'guide-printers',
+        ikon: '🖨️',
+        tur: 'Guide d’achat',
+        baslik: 'Meilleures Imprimantes 3D pour Débuter (Prix EU)',
+        ozet: 'Modèles fiables prêts à imprimer avec nivellement automatique et disponibilité immédiate en France/UE.',
+        band: 'Sélection entrée & milieu de gamme en €',
+        sorgu: 'Bambu Lab A1 Mini',
+        urunA: 'Bambu Lab A1 Mini',
+        urunB: 'Prusa MK4S',
+        detay: 'Des machines compactes aux stations CoreXY rapides, vérifiez les stocks européens port inclus.',
+      },
+      {
+        id: 'guide-pla',
+        ikon: '🥇',
+        tur: 'Guide Filament',
+        baslik: 'Filaments PLA & PLA+ les moins chers au kilo (€/kg)',
+        ozet: 'Comparez le vrai prix au kg (eSun, SUNLU, Overture, Elegoo, Bambu) livraison incluse.',
+        band: 'Prix normalisé au €/kg sur boutiques EU',
+        sorgu: 'eSun PLA+ 1kg',
+        urunA: 'eSun PLA+ 1kg',
+        urunB: 'SUNLU PLA+ 1kg',
+        detay: 'Comparez le coût réel au kilogramme sur les packs 1 kg, 2 kg et bobines recharge.',
+      },
+      {
+        id: 'guide-cost',
+        ikon: '🧮',
+        tur: 'Guide Coût',
+        baslik: 'Comment calculer le coût de revient d’une impression 3D ?',
+        ozet: 'Formule complète (filament, électricité 0,25 €/kWh, usure machine, marge) et calculateur STL gratuit.',
+        band: 'Formule en 4 étapes + calculateur STL local',
+        sorgu: 'PLA filament 1kg',
+        urunA: 'Creality Hyper PLA 1kg',
+        urunB: 'Overture PLA 1kg',
+        detay: 'Coût net = (Grammes / 1000 × €/kg) + (kWh × tarif EDF) + (Heures × amortissement). Testez vos fichiers STL sans rien envoyer en ligne.',
+      },
+    ],
+  },
+  ja: {
+    title: '3Dプリンター徹底比較＆フィラメント購入ガイド | Baski Hesap',
+    desc: '人気3Dプリンターのスペック比較、kg単価ベースの最安PLAフィラメント、3Dプリント原価計算方法を日本市場の円（¥）基準で解説。',
+    yolAna: 'ホーム',
+    yolAd: 'ガイド・徹底比較',
+    rozet: '📖 3Dプリント購入ガイド・比較 · 2026',
+    h1: '<b>実勢価格（円）</b>と性能で失敗しない3Dプリンター選び',
+    alt: 'Bambu Lab・Creality・Elegoo・Prusaのスペック比較や、日本国内ストア対応のkgあたり最安フィラメント選びをサポートします。',
+    ist1: '件の比較・ガイド',
+    ist2: '⚖️ 人気機種の徹底比較',
+    ist3: '🔄 日本円（¥）リアルタイム検索対応',
+    cta: 'ガイドを見る →',
+    aracBaslik: '見積もり・まとめ買いツール',
+    aracAlt: 'STL原価シミュレーターやスマートカート、日本製品カタログへ直接移動できます：',
+    aracLink1: '🗂️ 日本向け製品カタログ',
+    aracLink2: '🧮 原価シミュレーター (¥)',
+    aracLink3: '🧺 スマートカート＆送料最適化',
+    aracLink4: '🧩 Cura・スライサー連携',
+    kartlar: [
+      {
+        id: 'vs-p1s-k1c',
+        ikon: '⚖️',
+        tur: '徹底比較 VS',
+        baslik: 'Bambu Lab P1S vs Creality K1C',
+        ozet: 'AMS多色造形対応の256mm密閉型P1Sと、カーボン強化ノズル標準装備のKlipper機K1Cを比較。',
+        band: '256mm vs 220mm · 密閉型CoreXY高速機',
+        sorgu: 'Bambu Lab P1S',
+        urunA: 'Bambu Lab P1S',
+        urunB: 'Creality K1C',
+        detay: '造形サイズ、多色印刷（AMS）対応、炭素繊維入りフィラメント適正、日本国内公式ストア・Amazon.co.jpでの送料込み価格を比較します。',
+      },
+      {
+        id: 'vs-a1mini-v3ke',
+        ikon: '🚀',
+        tur: '徹底比較 VS',
+        baslik: 'Bambu Lab A1 Mini vs Creality Ender 3 V3 KE',
+        ozet: '静音＆AMS Lite対応の180mmコンパクト機と、500mm/s高速220mmベッドスリンガーを比較。',
+        band: '180mm 静音AMS Lite vs 220mm Klipper高速機',
+        sorgu: 'Bambu Lab A1 Mini',
+        urunA: 'Bambu Lab A1 Mini',
+        urunB: 'Creality Ender 3 V3 KE',
+        detay: '初心者向けの扱いやすさ・静音性と、より広い造形スペースのどちらを優先すべきか比較できます。',
+      },
+      {
+        id: 'vs-v3ke-n4pro',
+        ikon: '⚡',
+        tur: '徹底比較 VS',
+        baslik: 'Creality Ender 3 V3 KE vs Elegoo Neptune 4 Pro',
+        ozet: '高コスパKlipper機対決：300℃ Spriteホットエンド vs デュアルゾーン加熱ベッド＆金属レール。',
+        band: '2エリア独立加熱ベッド vs 300℃ダイレクト',
+        sorgu: 'Elegoo Neptune 4 Pro',
+        urunA: 'Creality Ender 3 V3 KE',
+        urunB: 'Elegoo Neptune 4 Pro',
+        detay: '消費電力節約に効く独立加熱ベッドや高速出力時の冷却性能、日本国内の送料込み価格をチェック。',
+      },
+      {
+        id: 'guide-printers',
+        ikon: '🖨️',
+        tur: '購入ガイド',
+        baslik: '初心者におすすめの高コスパ3Dプリンター（日本価格）',
+        ozet: 'オートレベリング対応で失敗しにくい人気エントリー〜中級機を日本円の実勢価格でチェック。',
+        band: '入門・中級FDMプリンター比較',
+        sorgu: 'Bambu Lab A1 Mini',
+        urunA: 'Bambu Lab A1 Mini',
+        urunB: 'Prusa MK4S',
+        detay: '設置スペースや予算別に日本公式サイト・国内代理店の在庫と送料込み価格を比較できます。',
+      },
+      {
+        id: 'guide-pla',
+        ikon: '🥇',
+        tur: 'フィラメント',
+        baslik: 'kg単価が最安のPLA・PLA+フィラメント比較 (¥/kg)',
+        ozet: 'eSun・SUNLU・Bambu Lab・Creality・QIDIの1kgスプールを送料込kg単価で徹底比較。',
+        band: '1kg換算 ¥/kg ベース比較',
+        sorgu: 'eSun PLA+ 1kg',
+        urunA: 'eSun PLA+ 1kg',
+        urunB: 'SUNLU PLA+ 1kg',
+        detay: 'まとめ買いや容量違いスプールを1kg単価へ自動換算して最安ショップを見つけます。',
+      },
+      {
+        id: 'guide-cost',
+        ikon: '🧮',
+        tur: '原価計算',
+        baslik: '3Dプリントの原価（材料費・電気代・償却費）の計算方法',
+        ozet: 'フィラメント使用量・電力単価（31円/kWh）・機体消耗費から適正販売価格を導く計算式。',
+        band: '4ステップ計算式＋ローカルSTL見積もり',
+        sorgu: 'PLA filament 1kg',
+        urunA: 'Creality Hyper PLA 1kg',
+        urunB: 'eSun PLA+ 1kg',
+        detay: '原価 = (使用グラム/1000 × ¥/kg) + (消費電力kW × 時間 × 電力単価) + (時間 × 償却費)。原価シミュレーターで即計算できます。',
+      },
+    ],
+  },
+});
+
+export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = []) {
+  const kod = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'ja' : 'en');
+  const k = GLOBAL_REHBER_KOPYA[kod];
+  const onEk = `/${kod}`;
+  const canonicalUrl = `${tabanUrl}${GLOBAL_REHBER_YOLLARI[kod]}`;
+  const katYol = kod === 'fr' ? '/fr/produits' : (kod === 'ja' ? '/ja/products' : '/en/products');
+  const malYol = kod === 'fr' ? '/fr/calculateur-cout' : (kod === 'ja' ? '/ja/cost-calculator' : '/en/cost-calculator');
+  const sepYol = kod === 'fr' ? '/fr/panier' : (kod === 'ja' ? '/ja/basket' : '/en/basket');
+  const slcYol = `/${kod}/slicer`;
+
+  const kartlarHtml = k.kartlar.map((g) => {
+    const araLinkA = `${onEk}?url=${encodeURIComponent(g.urunA)}`;
+    const araLinkB = `${onEk}?url=${encodeURIComponent(g.urunB)}`;
+    const tekUrun = tumUrunler.find((u) => {
+      const ad = String(u?.ad || '').toLowerCase();
+      return ad.includes(g.urunA.toLowerCase().split(' ')[0]);
+    });
+    const canliSatir = tekUrun?.enUcuzFiyat > 0
+      ? `${tekUrun.ad} · ${tekUrun.enUcuzSite || ''}`
+      : g.band;
+    return `<article class="rehber-kart" id="${htmlKacis(g.id)}">
+      <div class="rehber-kart-ust">
+        <span class="rehber-ikon" aria-hidden="true">${g.ikon}</span>
+        <span class="rehber-rozet">${htmlKacis(g.tur)}</span>
+      </div>
+      <h2 class="rehber-baslik">${htmlKacis(g.baslik)}</h2>
+      <p class="rehber-ozet">${htmlKacis(g.ozet)}</p>
+      <p class="rehber-ozet" style="font-size:12.5px;opacity:.92">${htmlKacis(g.detay)}</p>
+      <div class="rehber-canli-band">⚡ ${htmlKacis(canliSatir)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+        <a class="rehber-cta" href="${htmlKacis(araLinkA)}">🔍 ${htmlKacis(g.urunA)} →</a>
+        <a class="rehber-cta" href="${htmlKacis(araLinkB)}">⚖️ ${htmlKacis(g.urunB)} →</a>
+      </div>
+    </article>`;
+  }).join('');
+
+  return sayfaIskeleti({
+    title: k.title,
+    description: k.desc,
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    aktifNav: 'rehber',
+    dil: kod,
+    dilYolHaritasi: GLOBAL_REHBER_YOLLARI,
+    jsonLdList: [{
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: k.title,
+      description: k.desc,
+      url: canonicalUrl,
+    }],
+    govdeHtml: `
+      <nav class="seo-yol"><a href="${onEk}">${htmlKacis(k.yolAna)}</a> › <span>${htmlKacis(k.yolAd)}</span></nav>
+      <section class="hero seo-hero">
+        <div class="hero-ic">
+          <span class="hero-rozet">${k.rozet}</span>
+          <h1>${k.h1}</h1>
+          <p>${htmlKacis(k.alt)}</p>
+          <div class="hero-istatistik">
+            <span>📚 <b>${k.kartlar.length}</b> ${htmlKacis(k.ist1)}</span>
+            <span>${k.ist2}</span>
+            <span>${k.ist3}</span>
+          </div>
+        </div>
+      </section>
+      <div class="rehber-izgara">${kartlarHtml}</div>
+      <section class="seo-rehber-kart" aria-label="${htmlKacis(k.aracBaslik)}">
+        <div class="seo-rehber-ust">
+          <div>
+            <h2 class="bolum-baslik" style="margin:0 0 4px">${htmlKacis(k.aracBaslik)}</h2>
+            <p class="ipucu" style="margin:0">${htmlKacis(k.aracAlt)}</p>
+          </div>
+          <a class="seo-tum-link" href="${onEk}">🔍 Compare →</a>
+        </div>
+        <div class="seo-rehber-baglar">
+          <a href="${katYol}">${k.aracLink1}</a>
+          <a href="${malYol}">${k.aracLink2}</a>
+          <a href="${sepYol}">${k.aracLink3}</a>
+          <a href="${slcYol}">${k.aracLink4}</a>
+        </div>
+      </section>`,
+  });
 }

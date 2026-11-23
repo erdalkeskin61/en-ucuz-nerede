@@ -14,11 +14,22 @@
 (() => {
   'use strict';
 
-  /* ---------------- Sabitler (sunucu varsayılanlarıyla aynı) ---------------- */
+  /* ---------------- Bölgesel Ortam & Sabitler ---------------- */
+  const ORTAM = (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM) || {};
+  const ORTAM_DIL = ORTAM.dil || 'tr';
+  const ORTAM_MARKET = ORTAM.market || 'tr';
+  const ORTAM_PARA = ORTAM.currency || 'TRY';
+  const ORTAM_YEREL = ORTAM.yerel || 'tr-TR';
+  const M_VAR = ORTAM.maliyetVarsayilan || {};
+
   const GRAM_SAAT = 12.5;
   const VARSAYILAN = {
-    gramaj: 160, sureSaat: 4, gucW: 150, kwhTl: 2.9,
-    yipranmaSaatTl: 3, karCarpani: 2.5,
+    gramaj: 160,
+    sureSaat: 4,
+    gucW: 150,
+    kwhTl: Number(M_VAR.kwhTl) > 0 ? Number(M_VAR.kwhTl) : 2.9,
+    yipranmaSaatTl: Number(M_VAR.yipranmaSaatTl) >= 0 ? Number(M_VAR.yipranmaSaatTl) : 3,
+    karCarpani: 2.5,
   };
 
   /* ---------------- Durum ---------------- */
@@ -28,7 +39,7 @@
     filamentler: [],
     filamentModu: 'canli', // 'canli' | 'manuel'
     secilenFilamentId: null,
-    manuelTlKg: 600,
+    manuelTlKg: Number(M_VAR.manuelTlKg) > 0 ? Number(M_VAR.manuelTlKg) : 600,
     manuelAd: 'PLA',
     // form
     gramaj: VARSAYILAN.gramaj,
@@ -46,6 +57,11 @@
   const tl = (n) => Number(n || 0).toLocaleString('tr-TR', {
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   });
+  const fPara = (n) => (ORTAM_DIL === 'tr'
+    ? ('₺' + tl(n))
+    : (typeof window.formatPara === 'function'
+      ? window.formatPara(n, ORTAM_PARA, ORTAM_YEREL)
+      : Number(n || 0).toLocaleString(ORTAM_YEREL, { style: 'currency', currency: ORTAM_PARA })));
 
   function el(tag, sinif, metin) {
     const d = document.createElement(tag);
@@ -136,13 +152,13 @@
     const f = aktifFilament();
 
     // --- Bento kartları ---
-    vurgula('ciktiHammadde', '₺' + tl(h.hammadde));
-    $('ciktiHammaddeAlt').textContent = `${h.gramaj} g × ₺${tl(h.tlKg)}/kg`;
-    vurgula('ciktiElektrik', '₺' + tl(h.elektrik));
-    $('ciktiElektrikAlt').textContent = `${h.kwh.toFixed(2).replace('.', ',')} kWh × ₺${tl(h.kwhTl)}`;
-    vurgula('ciktiAmortisman', '₺' + tl(h.amortisman));
-    $('ciktiAmortismanAlt').textContent = `${h.sureSaat} sa × ₺${tl(h.yipranmaSaatTl)}`;
-    vurgula('ciktiNet', '₺' + tl(h.net));
+    vurgula('ciktiHammadde', fPara(h.hammadde));
+    $('ciktiHammaddeAlt').textContent = `${h.gramaj} g × ${fPara(h.tlKg)}/kg`;
+    vurgula('ciktiElektrik', fPara(h.elektrik));
+    $('ciktiElektrikAlt').textContent = `${h.kwh.toFixed(2).replace('.', ORTAM_DIL === 'en' || ORTAM_DIL === 'ja' ? '.' : ',')} kWh × ${fPara(h.kwhTl)}`;
+    vurgula('ciktiAmortisman', fPara(h.amortisman));
+    $('ciktiAmortismanAlt').textContent = `${h.sureSaat} sa × ${fPara(h.yipranmaSaatTl)}`;
+    vurgula('ciktiNet', fPara(h.net));
     $('ciktiNetAlt').textContent = h.sureTahmini
       ? `süre tahmini (${h.sureSaat} sa) · hammadde + elektrik + amortisman`
       : 'hammadde + elektrik + amortisman';
@@ -161,8 +177,8 @@
       const kutu = el('div', `mz-fiyat f-${anahtar}` + (durum.seciliKar === anahtar ? ' secili' : ''));
       kutu.innerHTML = `
         <span class="mz-fiyat-ad">${ikon} ${ad}</span>
-        <span class="mz-fiyat-tutar">₺${tl(v.fiyat)}</span>
-        <span class="mz-fiyat-kar">${v.karYuzde === 0 ? 'kârsız' : `%${v.karYuzde} kâr · ${v.carpan}x`} · +₺${tl(v.kar)}</span>`;
+        <span class="mz-fiyat-tutar">${kacis(fPara(v.fiyat))}</span>
+        <span class="mz-fiyat-kar">${v.karYuzde === 0 ? 'kârsız' : `%${v.karYuzde} kâr · ${v.carpan}x`} · +${kacis(fPara(v.kar))}</span>`;
       kutu.setAttribute('role', 'button');
       kutu.tabIndex = 0;
       const sec = () => {
@@ -183,8 +199,8 @@
 
     // --- Seçili fiyat ---
     const secili = h.satis[durum.seciliKar] || h.satis.atolye;
-    vurgula('secilenFiyat', '₺' + tl(secili.fiyat));
-    vurgula('secilenKar', '₺' + tl(secili.kar));
+    vurgula('secilenFiyat', fPara(secili.fiyat));
+    vurgula('secilenKar', fPara(secili.kar));
 
     // --- CTA: yalnızca canlı filament seçili ve gerçek kayıt varsa ---
     const cta = $('ctaKart');
@@ -192,10 +208,10 @@
       cta.hidden = false;
       $('ctaMetin').innerHTML =
         `💡 Bu modeli en ekonomik maliyetle basabileceğiniz filament şu anda `
-        + `<b>₺${tl(f.tlKg)}/kg</b> ile <b>${kacis(f.site || 'mağaza')}</b> mağazasında stokta!`;
+        + `<b>${kacis(fPara(f.tlKg))}/kg</b> ile <b>${kacis(f.site || 'mağaza')}</b> mağazasında stokta!`;
       const btn = $('ctaBtn');
       btn.href = f.url;
-      btn.textContent = `🛒 En Ucuz Filamenti Satın Al (₺${tl(f.tlKg)})`;
+      btn.textContent = `🛒 En Ucuz Filamenti Satın Al (${fPara(f.tlKg)})`;
     } else {
       cta.hidden = true;
     }
@@ -203,7 +219,7 @@
     // --- Varsayım kutusu ---
     $('varsayimKutu').innerHTML =
       `<b>Kullanılan varsayımlar:</b> ${h.gucW} W yazıcı gücü · `
-      + `₺${tl(h.kwhTl)}/kWh elektrik · ₺${tl(h.yipranmaSaatTl)}/saat amortisman`
+      + `${kacis(fPara(h.kwhTl))}/kWh elektrik · ${kacis(fPara(h.yipranmaSaatTl))}/saat amortisman`
       + `${h.sureTahmini ? ` · süre gramajdan tahmin edildi (${GRAM_SAAT} g/sa)` : ''}. `
       + `Fiyatlar <b>KDV hariçtir</b>. Filament fiyatı canlı radar taramasından gelir.`;
 
@@ -252,7 +268,7 @@
 
       btn.appendChild(nokta);
       btn.appendChild(govde);
-      btn.appendChild(el('span', 'mz-fil-fiyat', `₺${tl(f.tlKg)}/kg`));
+      btn.appendChild(el('span', 'mz-fil-fiyat', `${fPara(f.tlKg)}/kg`));
 
       btn.addEventListener('click', () => {
         durum.secilenFilamentId = f.id;
@@ -335,7 +351,7 @@
       `• Model Ağırlığı: ${h.gramaj} gram`,
       `• Malzeme: ${malzeme}`,
       `• Baskı Süresi: ~${h.sureSaat} saat`,
-      `• Birim Fiyat: ₺${tl(h.satis[durum.seciliKar]?.fiyat || h.secilen)} (KDV Hariç)`,
+      `• Birim Fiyat: ${fPara(h.satis[durum.seciliKar]?.fiyat || h.secilen)} (KDV Hariç)`,
       '',
       'Hazırlayan: Baskı Hesap Baskı Asistanı',
     ].join('\n');
@@ -487,13 +503,16 @@
         durum.yazicilar = v.yazicilar || [];
         durum.karSablonlari = v.karSablonlari || {};
         const vars = v.varsayilan || {};
-        // Sunucu varsayılanı geldiyse uygula (tek doğruluk kaynağı)
+        // Sunucu varsayılanı geldiyse uygula (yalnız TR varsayılan para biriminde)
         if (Number.isFinite(Number(vars.gucW))) durum.gucW = Number(vars.gucW);
-        if (Number.isFinite(Number(vars.kwhTl))) durum.kwhTl = Number(vars.kwhTl);
-        if (Number.isFinite(Number(vars.yipranmaSaatTl))) durum.yipranmaSaatTl = Number(vars.yipranmaSaatTl);
+        if (ORTAM_DIL === 'tr') {
+          if (Number.isFinite(Number(vars.kwhTl))) durum.kwhTl = Number(vars.kwhTl);
+          if (Number.isFinite(Number(vars.yipranmaSaatTl))) durum.yipranmaSaatTl = Number(vars.yipranmaSaatTl);
+        }
         $('gucW').value = String(durum.gucW);
         $('kwhTl').value = String(durum.kwhTl);
         $('yipranma').value = String(durum.yipranmaSaatTl);
+        $('manuelTlKg').value = String(durum.manuelTlKg);
       }
     } catch {
       durum.yazicilar = [
@@ -519,7 +538,8 @@
   async function filamentleriYukle() {
     const kap = $('filamentCanli');
     try {
-      const r = await fetch('/api/baski/en-ucuz-filamentler?limit=20');
+      const qs = ORTAM_MARKET !== 'tr' ? `&market=${encodeURIComponent(ORTAM_MARKET)}` : '';
+      const r = await fetch('/api/baski/en-ucuz-filamentler?limit=20' + qs);
       const v = await r.json();
       if (v?.ok && Array.isArray(v.filamentler)) {
         durum.filamentler = v.filamentler;
@@ -536,7 +556,11 @@
       return;
     }
     filamentleriCiz();
-    render();
+    if (ORTAM_DIL !== 'tr' && !durum.filamentler.length) {
+      modSec('manuel');
+    } else {
+      render();
+    }
   }
 
   /* ================= BAŞLAT ================= */
@@ -567,7 +591,10 @@
 
   /* Aşağıdaki sarmalayıcılar tek kaynak modülü kullanır; modül yüklenmeden
      çağrılırsa güvenli (boş) değer döner — çökme yok. */
-  function para(n) { return stlMaliyetModul ? stlMaliyetModul.para(n) : '—'; }
+  function para(n) {
+    if (ORTAM_DIL !== 'tr') return fPara(n);
+    return stlMaliyetModul ? stlMaliyetModul.para(n) : '—';
+  }
   function turkceAblatif(ad) { return stlMaliyetModul ? stlMaliyetModul.turkceAblatif(ad) : "'den"; }
   function stlOzetMetni(h) { return stlMaliyetModul ? stlMaliyetModul.ozetMetni(h) : ''; }
   function stlCtaMetni(h) { return stlMaliyetModul ? stlMaliyetModul.ctaMetni(h) : '⚡ Bu Filamenti Satın Al ➔'; }
@@ -711,7 +738,7 @@
     if (!t) return;
 
     const yaz = (id, deger) => { const el = $(id); if (el) el.textContent = deger; };
-    const p = (n) => '₺' + teklif.para(n);
+    const p = (n) => (ORTAM_DIL === 'tr' ? ('₺' + teklif.para(n)) : fPara(n));
 
     yaz('fisTarih', teklif.tarihMetni(new Date()));
     yaz('fisModelAd', t.dosyaAdi);
@@ -976,7 +1003,7 @@
       const qTlKg = Number(qs.get('tlKg'));
       if (Number.isFinite(qg) && qg >= 1 && qg <= 50000) durum.gramaj = Math.round(qg * 10) / 10;
       if (Number.isFinite(qSure) && qSure > 0 && qSure <= 500) durum.sureSaat = Math.round(qSure * 100) / 100;
-      if (Number.isFinite(qTlKg) && qTlKg >= 50 && qTlKg <= 20000) durum.manuelTlKg = Math.round(qTlKg * 100) / 100;
+      if (Number.isFinite(qTlKg) && qTlKg >= 1 && qTlKg <= 50000) durum.manuelTlKg = Math.round(qTlKg * 100) / 100;
     } catch { /* yoksay */ }
 
     // İlk boyama: JS yüklenmeden önce de anlamlı görünsün
@@ -984,6 +1011,9 @@
     $('gramajKaydirici').value = String(durum.gramaj);
     $('sure').value = String(durum.sureSaat);
     $('sureKaydirici').value = String(durum.sureSaat);
+    $('kwhTl').value = String(durum.kwhTl);
+    $('yipranma').value = String(durum.yipranmaSaatTl);
+    $('manuelTlKg').value = String(durum.manuelTlKg);
     $('karKaydirici').value = String(Math.round((durum.karCarpani - 1) * 100));
     render();
 

@@ -20,11 +20,22 @@
   const gcodeOzet = $('slGcodeOzet');
   if (!malzeme || !sonuc) return;
 
+  const ORTAM = (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM) || {};
+  const ORTAM_DIL = ORTAM.dil || 'tr';
+  const ORTAM_MARKET = ORTAM.market || 'tr';
+  const ORTAM_PARA = ORTAM.currency || 'TRY';
+  const ORTAM_YEREL = ORTAM.yerel || 'tr-TR';
+
   let aktifSureDk = null;
 
   const tl = (n) => Number(n || 0).toLocaleString('tr-TR', {
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   });
+  const fPara = (n) => (ORTAM_DIL === 'tr'
+    ? ('₺' + tl(n))
+    : (typeof window.formatPara === 'function'
+      ? window.formatPara(n, ORTAM_PARA, ORTAM_YEREL)
+      : Number(n || 0).toLocaleString(ORTAM_YEREL, { style: 'currency', currency: ORTAM_PARA })));
 
   const kac = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -135,6 +146,7 @@
     const r = String(renk?.value || '').trim();
     if (r) qs.set('renk', r);
     if (aktifSureDk) qs.set('sureDk', String(aktifSureDk));
+    if (ORTAM_MARKET !== 'tr') qs.set('market', ORTAM_MARKET);
 
     try {
       const t0 = performance.now();
@@ -153,7 +165,7 @@
               ${altlar.map((a) => `
                 <div class="sl-alt-satir">
                   <span class="sl-alt-ad"><b>${kac(a.magaza || 'Mağaza')}</b> · ${kac(a.urunAdi)}</span>
-                  <span class="sl-alt-fiyat">₺${tl(a.fiyat)} <small>(parça ₺${tl(a.parcaBasiMaliyet)})</small></span>
+                  <span class="sl-alt-fiyat">${kac(fPara(a.fiyat))} <small>(parça ${kac(fPara(a.parcaBasiMaliyet))})</small></span>
                   <a class="sl-alt-link" href="${kac(a.yonlendirmeLinki || a.hamLink)}" target="_blank" rel="noopener sponsored">Git ↗</a>
                 </div>
               `).join('')}
@@ -165,10 +177,10 @@
             <div class="sl-sonuc-sol">
               <span class="sl-sonuc-rozet">✅ En ucuz stokta</span>
               <span class="sl-sonuc-site">${kac(u.magaza)}</span>
-              <span class="sl-sonuc-fiyat">₺${tl(u.fiyat)} <small style="font-size:13px;font-weight:600">(₺${tl(u.tlKg)}/kg)</small></span>
+              <span class="sl-sonuc-fiyat">${kac(fPara(u.fiyat))} <small style="font-size:13px;font-weight:600">(${kac(fPara(u.tlKg))}/kg)</small></span>
               <span class="sl-sonuc-urun">${kac(u.urunAdi)}</span>
               <span class="sl-sonuc-detay">
-                Parça başı hammadde: <b>₺${tl(u.parcaBasiMaliyet)}</b>
+                Parça başı hammadde: <b>${kac(fPara(u.parcaBasiMaliyet))}</b>
                 · ${u.makaraGram || 1000} g makaradan <b>${u.makaradanCikanAdet}</b> adet
                 · ${u.stok ? '🟢 stokta' : '🔴 tükendi'}
               </span>

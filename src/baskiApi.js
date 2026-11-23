@@ -18,15 +18,18 @@ import {
 import { dbBaglantisi } from './store.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { extractColors } from './util.js';
+import { adapterById, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
 
 const sayi = (x) => (Number.isFinite(Number(x)) ? Number(x) : null);
 
 /**
- * Radar durumundaki STOKLU filamentleri ₺/kg'ye göre artan sırada döndürür.
- * @param {{limit?:number}} [opts]
+ * Radar durumundaki STOKLU filamentleri birim fiyata göre artan sırada döndürür.
+ * @param {{limit?:number, market?:string}} [opts]
  */
 export function enUcuzFilamentler(opts = {}) {
   const limit = Math.max(1, Math.min(50, Number(opts.limit) || 12));
+  const hedefMarket = opts.market ? normalizeMarket(opts.market) : 'tr';
+  const varsayilanPara = PAZARLAR[hedefMarket]?.currency || 'TRY';
   let satirlar = [];
   try {
     satirlar = dbBaglantisi().prepare(`
@@ -34,7 +37,7 @@ export function enUcuzFilamentler(opts = {}) {
       FROM radar_durum WHERE stokta = 1 ORDER BY fiyat ASC
     `).all();
   } catch {
-    return { ok: true, guncelleme: null, toplam: 0, filamentler: [], neden: 'Veritabanı okunamadı.' };
+    return { ok: true, market: hedefMarket, paraBirimi: varsayilanPara, guncelleme: null, toplam: 0, filamentler: [], neden: 'Veritabanı okunamadı.' };
   }
 
   const liste = [];
@@ -46,6 +49,11 @@ export function enUcuzFilamentler(opts = {}) {
     try { d = JSON.parse(r.veri); } catch { continue; }
     if (!d || typeof d !== 'object') continue;
     if (String(d.kategori || '').toLowerCase() !== 'filament') continue;
+
+    const sid = d.site_id || d.siteId || r.site_id || null;
+    const adpt = sid ? adapterById(sid) : null;
+    const rowMarket = normalizeMarket(d.market || (adpt ? adapterMarket(adpt) : 'tr'));
+    if (rowMarket !== hedefMarket) continue;
 
     const fiyat = sayi(r.fiyat);
     if (!fiyat || fiyat <= 0) continue;
@@ -82,7 +90,9 @@ export function enUcuzFilamentler(opts = {}) {
       ad,
       ilan: d.urun || null,
       site: d.site || null,
-      siteId: d.site_id || d.siteId || null,
+      siteId: sid,
+      market: rowMarket,
+      paraBirimi: d.paraBirimi || (adpt ? adapterCurrency(adpt) : varsayilanPara),
       fiyat,
       tlKg,
       birimMetni: d.birimMetni || null,
@@ -102,6 +112,8 @@ export function enUcuzFilamentler(opts = {}) {
   liste.sort((a, b) => a.tlKg - b.tlKg);
   return {
     ok: true,
+    market: hedefMarket,
+    paraBirimi: varsayilanPara,
     guncelleme: guncelleme || null,
     toplam: liste.length,
     filamentler: liste,
@@ -129,7 +141,7 @@ export function baskiApiBagla(app) {
 
   app.get('/api/baski/en-ucuz-filamentler', (req, res) => {
     try {
-      const veri = enUcuzFilamentler({ limit: req.query.limit });
+      const veri = enUcuzFilamentler({ limit: req.query.limit, market: req.query.market });
       res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
       res.json(veri);
     } catch (e) {
@@ -149,7 +161,7 @@ export function baskiApiBagla(app) {
       // Canlı filament seçildiyse fiyatı SUNUCUDA tazele: istemciye güvenilmez,
       // böylece bayat/eski fiyatla teklif üretilmez.
       if (b.filamentId != null) {
-        const fil = enUcuzFilamentler({ limit: 50 }).filamentler
+        const fil = enUcuzFilamentler({ limit: 50, market: b.market }).filamentler
           .find(x => Number(x.id) === Number(b.filamentId));
         if (!fil) {
           return res.status(404).json({

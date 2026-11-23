@@ -21,6 +21,8 @@ import { dbBaglantisi } from './store.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { config } from './config.js';
 import { slugYap } from './widget.js';
+import { adapterById, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
+import { formatPara, formatTL } from './util.js';
 
 /* ------------------------------------------------------------------ */
 /* Yardımcılar                                                         */
@@ -113,6 +115,8 @@ export function renkEsleme(renk) {
 export function slicerFilamentBul(opts = {}) {
   const istenenAile = malzemeNormalize(opts.malzeme);
   const renkler = renkEsleme(opts.renk);
+  const hedefMarket = normalizeMarket(opts.market || 'tr');
+  const varsayilanPara = PAZARLAR[hedefMarket]?.currency || 'TRY';
 
   let satirlar = [];
   try {
@@ -132,6 +136,11 @@ export function slicerFilamentBul(opts = {}) {
     try { d = JSON.parse(r.veri); } catch { continue; }
     if (!d || typeof d !== 'object') continue;
     if (String(d.kategori || '').toLowerCase() !== 'filament') continue;
+
+    const sid = d.site_id || d.siteId || r.site_id || null;
+    const adpt = sid ? adapterById(sid) : null;
+    const rowMarket = normalizeMarket(d.market || (adpt ? adapterMarket(adpt) : 'tr'));
+    if (rowMarket !== hedefMarket) continue;
 
     const fiyat = sayi(r.fiyat);
     if (!fiyat) continue;
@@ -180,7 +189,9 @@ export function slicerFilamentBul(opts = {}) {
       ad,
       ilan: d.urun || null,
       site: d.site || null,
-      siteId: d.site_id || d.siteId || null,
+      siteId: sid,
+      market: rowMarket,
+      paraBirimi: d.paraBirimi || (adpt ? adapterCurrency(adpt) : varsayilanPara),
       fiyat: yuvarla(fiyat, 2),      // gerçek makara fiyatı
       tlKg: yuvarla(tlKg, 2),
       makaraGram: Math.round(makaraGram),
@@ -242,10 +253,12 @@ export function slicerOneri(girdi = {}) {
     : null;
   const renk = String(girdi.renk || '').trim() || null;
   const kaynak = String(girdi.kaynak || '').trim().toLowerCase() || null;
+  const market = normalizeMarket(girdi.market || 'tr');
+  const varsayilanPara = PAZARLAR[market]?.currency || 'TRY';
   const taban = String(girdi.tabanUrl || config.publicUrl || '').replace(/\/+$/, '');
 
   const temel = {
-    talep: { malzeme, gramaj, renk, kaynak },
+    talep: { malzeme, gramaj, renk, kaynak, market },
   };
 
   if (!gramaj) {
@@ -258,15 +271,20 @@ export function slicerOneri(girdi = {}) {
     };
   }
 
-  const bulunan = slicerFilamentBul({ malzeme, renk });
+  const bulunan = slicerFilamentBul({ malzeme, renk, market });
   if (!bulunan.ok) {
     return {
       status: 'bulunamadi',
       ...temel,
       hata: bulunan.neden,
       enUcuz: null,
-      bildirimMetni: `Bu baskı ${gramaj} g ${malzeme} gerektiriyor, ancak stokta `
-        + `${malzeme} filament bulunamadı.`,
+      bildirimMetni: market === 'us'
+        ? `This print needs ${gramaj} g ${malzeme}, but no stocked ${malzeme} filament was found.`
+        : market === 'fr'
+          ? `Cette impression nécessite ${gramaj} g de ${malzeme}, mais aucune bobine en stock n'a été trouvée.`
+          : market === 'jp'
+            ? `この造形には ${gramaj} g の ${malzeme} が必要ですが、在庫のあるフィラメントが見つかりません。`
+            : `Bu baskı ${gramaj} g ${malzeme} gerektiriyor, ancak stokta ${malzeme} filament bulunamadı.`,
     };
   }
 
@@ -287,8 +305,9 @@ export function slicerOneri(girdi = {}) {
       ? `${taban}/yonlendir?${parametreler.toString()}`
       : (item.url || null);
     const slug = slugYap(item.ad);
+    const urunOnEk = market === 'us' ? '/en' : (market === 'fr' ? '/fr' : (market === 'jp' ? '/ja' : ''));
     const karsilastirmaUrl = slug
-      ? (taban ? `${taban}/urun/${slug}` : `/urun/${slug}`)
+      ? (taban ? `${taban}${urunOnEk}/urun/${slug}` : `${urunOnEk}/urun/${slug}`)
       : null;
 
     return {
@@ -296,6 +315,8 @@ export function slicerOneri(girdi = {}) {
       ilan: item.ilan,
       magaza: item.site,
       siteId: item.siteId,
+      market: item.market || market,
+      paraBirimi: item.paraBirimi || varsayilanPara,
       fiyat: item.fiyat,
       tlKg: item.tlKg,
       makaraGram,
@@ -316,14 +337,26 @@ export function slicerOneri(girdi = {}) {
   const enIyiAlternatifler = (bulunan.adaylar || [u]).map(adayNesnesi);
   const maliyetParam = new URLSearchParams({ gramaj: String(gramaj), tlKg: String(u.tlKg) });
   if (sureDk) maliyetParam.set('sure', String(yuvarla(sureDk / 60, 2)));
-  const maliyetUrl = `${taban || ''}/maliyet.html?${maliyetParam.toString()}`;
+  const maliyetYol = market === 'us'
+    ? '/en/cost-calculator'
+    : (market === 'fr' ? '/fr/calculateur-cout' : (market === 'jp' ? '/ja/cost-calculator' : '/maliyet.html'));
+  const maliyetUrl = `${taban || ''}${maliyetYol}?${maliyetParam.toString()}`;
 
   const renkNotu = renk
     ? (bulunan.renkBulundu ? `${renk} ` : `${renk} (muadil renk) `)
     : '';
-  const bildirimMetni = `Bu baskı ${gramaj} g ${renkNotu}${malzeme} gerektiriyor. `
-    + `En ucuz alternatif ₺${u.fiyat.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} `
-    + `ile ${u.site} mağazasında! (Parça maliyeti: ₺${enUcuz.parcaBasiMaliyet.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+  const fPara = (val) => ((enUcuz.paraBirimi && enUcuz.paraBirimi !== 'TRY')
+    ? formatPara(val, enUcuz.paraBirimi)
+    : formatTL(val));
+  const bildirimMetni = market === 'us'
+    ? `This print needs ${gramaj} g ${renk ? renk + ' ' : ''}${malzeme}. Cheapest at ${u.site}: ${fPara(u.fiyat)} (${fPara(enUcuz.parcaBasiMaliyet)} per part).`
+    : market === 'fr'
+      ? `Cette impression nécessite ${gramaj} g de ${malzeme}${renk ? ' (' + renk + ')' : ''}. Moins cher chez ${u.site} : ${fPara(u.fiyat)} (${fPara(enUcuz.parcaBasiMaliyet)} / pièce).`
+      : market === 'jp'
+        ? `この造形には ${gramaj} g の ${malzeme}${renk ? '（' + renk + '）' : ''} が必要です。最安値 ${u.site}: ${fPara(u.fiyat)}（1個あたり ${fPara(enUcuz.parcaBasiMaliyet)}）。`
+        : `Bu baskı ${gramaj} g ${renkNotu}${malzeme} gerektiriyor. `
+          + `En ucuz alternatif ₺${u.fiyat.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} `
+          + `ile ${u.site} mağazasında! (Parça maliyeti: ₺${enUcuz.parcaBasiMaliyet.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
 
   return {
     status: 'success',
@@ -346,8 +379,9 @@ export function slicerOneriOnbellekli(girdi = {}) {
   const renk = String(girdi.renk || '').trim() || '';
   const kaynak = String(girdi.kaynak || '').trim().toLowerCase();
   const sureDk = Number(girdi.sureDk) > 0 ? Math.round(Number(girdi.sureDk)) : '';
+  const market = normalizeMarket(girdi.market || 'tr');
   const tabanKey = String(girdi.tabanUrl || '').trim().replace(/\/+$/, '');
-  const anahtar = `${malzeme}|${gramaj ?? ''}|${katla(renk)}|${kaynak}|${sureDk}|${tabanKey}`;
+  const anahtar = `${market}|${malzeme}|${gramaj ?? ''}|${katla(renk)}|${kaynak}|${sureDk}|${tabanKey}`;
   const simdi = Number.isFinite(girdi.simdi) ? girdi.simdi : Date.now();
 
   const kayit = ONERI_CACHE.get(anahtar);
@@ -402,6 +436,7 @@ export function slicerApiBagla(app) {
         renk: req.query.renk,
         kaynak: req.query.kaynak,
         sureDk: req.query.sureDk,
+        market: req.query.market,
         tabanUrl,
       });
       // 60 sn tarayıcı önbelleği (spec) + biraz bayat kullanım payı.

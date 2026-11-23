@@ -22,9 +22,14 @@ export const KARGO_FIRSAT_SINIRI_TL = 150;
 const kurus = (tl) => Math.round(Number(tl || 0) * 100);
 const tl = (k) => Math.round(k) / 100;
 
-/** "₺1.590,00" biçimi. */
+/** "₺1.590,00" (veya global bölgede $ / € / ¥) biçimi. */
 export function para(n) {
   if (n == null || !Number.isFinite(Number(n))) return '—';
+  if (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM && window.BASKI_HESAP_ORTAM.dil && window.BASKI_HESAP_ORTAM.dil !== 'tr') {
+    const { currency = 'USD', yerel = 'en-US' } = window.BASKI_HESAP_ORTAM;
+    if (typeof window.formatPara === 'function') return window.formatPara(n, currency, yerel);
+    return Number(n).toLocaleString(yerel, { style: 'currency', currency });
+  }
   return Number(n).toLocaleString('tr-TR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -484,7 +489,12 @@ export function sepetIstekGovdesi(sepet) {
 export function kargoMetni(senaryo) {
   if (!senaryo) return '—';
   const k = Number(senaryo.kargo) || 0;
-  if (k <= 0) return 'Kargo: ₺0,00 (eşik aşıldı)';
+  if (k <= 0) {
+    if (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM && window.BASKI_HESAP_ORTAM.dil !== 'tr') {
+      return `Shipping: ${para(0)} (free threshold met)`;
+    }
+    return 'Kargo: ₺0,00 (eşik aşıldı)';
+  }
   const magaza = Number(senaryo.magazaSayisi) || (senaryo.gruplar || []).length || 0;
   return `Kargo: ${para(k)}${magaza > 1 ? ` (${magaza} × ayrı gönderim)` : ''}`;
 }

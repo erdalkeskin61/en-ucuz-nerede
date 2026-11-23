@@ -18,8 +18,10 @@ import {
 } from '/sepetHesap.js';
 
 const $ = (s) => document.querySelector(s);
-const DEPO_ANAHTARI = 'eun_sepet_v1';
-const DEPO_PAKET = 'eun_sepet_sonuc_v1';
+const ORTAM = (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM) || {};
+const ORTAM_MARKET = ORTAM.market || 'tr';
+const DEPO_ANAHTARI = ORTAM_MARKET === 'tr' ? 'eun_sepet_v1' : `eun_sepet_${ORTAM_MARKET}_v1`;
+const DEPO_PAKET = ORTAM_MARKET === 'tr' ? 'eun_sepet_sonuc_v1' : `eun_sepet_sonuc_${ORTAM_MARKET}_v1`;
 
 const durum = {
   sepet: [],
@@ -183,7 +185,8 @@ function sepeteEkle(urun) {
 async function teklifleriYukle() {
   if (durum.teklifler) return durum.teklifler;
   try {
-    const r = await fetch('/api/baski/en-ucuz-filamentler?limit=50');
+    const qs = ORTAM_MARKET !== 'tr' ? `&market=${encodeURIComponent(ORTAM_MARKET)}` : '';
+    const r = await fetch('/api/baski/en-ucuz-filamentler?limit=50' + qs);
     const v = await r.json();
     durum.teklifler = Array.isArray(v?.filamentler) ? v.filamentler : [];
   } catch {
@@ -285,7 +288,8 @@ async function oneriGetir(q) {
   if (s.length < 2) return [];
   const kimlik = ++aramaSonId;
   try {
-    const r = await fetch('/api/search-suggestions?q=' + encodeURIComponent(s) + '&limit=8');
+    const qs = ORTAM_MARKET !== 'tr' ? `&market=${encodeURIComponent(ORTAM_MARKET)}` : '';
+    const r = await fetch('/api/search-suggestions?q=' + encodeURIComponent(s) + '&limit=8' + qs);
     const v = await r.json();
     if (kimlik !== aramaSonId) return [];
     return (v?.onerilerDetay || []).filter(o => o?.url && /^https?:\/\//i.test(o.url));
@@ -495,7 +499,7 @@ async function hesapla() {
     const r = await fetch('/api/sepet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...govde, hizliMod: true }),
+      body: JSON.stringify({ ...govde, hizliMod: true, market: ORTAM_MARKET }),
     });
     const v = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(v.hata || 'Sepet isteği başarısız');

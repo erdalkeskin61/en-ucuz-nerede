@@ -57,9 +57,11 @@ import {
   SEO_KATEGORILER, seoUrunListesi, seoUrunBul, seoUrunYedekCoz, sitemapKayitlari,
   urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
   seoOnbelleginiTemizle, slugYap,
+  globalKatalogDiziniHtml, globalKategoriSayfasiHtml,
 } from './src/seoSayfalar.js';
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
+  globalRehberDiziniHtml,
 } from './src/rehberSayfalar.js';
 import {
   globalAracSayfasiBul, globalAracSitemapKayitlari, globalAracAlternatifHaritasi,
@@ -611,6 +613,69 @@ app.post('/api/admin/indexnow', adminGerekli, async (req, res) => {
   }
 });
 
+/* Bölgesel (EN / FR / JA) katalog, kategori, ürün ve rehber sayfaları */
+app.get(['/en/products', '/fr/produits', '/ja/products'], (req, res) => {
+  try {
+    const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
+    const market = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'jp' : 'us');
+    const urunler = seoUrunListesi({ market });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(globalKatalogDiziniHtml(dil, urunler, yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Catalog generation failed');
+  }
+});
+
+app.get(['/en/category/:slug', '/fr/categorie/:slug', '/ja/category/:slug'], (req, res) => {
+  const kat = SEO_KATEGORILER.find(c => c.slug === String(req.params.slug || '').toLowerCase());
+  if (!kat) return res.status(404).type('text/plain').send('Category not found');
+  try {
+    const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
+    const market = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'jp' : 'us');
+    const urunler = seoUrunListesi({ market });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(globalKategoriSayfasiHtml(dil, kat, urunler, yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Category page generation failed');
+  }
+});
+
+app.get(['/en/urun/:slug', '/fr/urun/:slug', '/ja/urun/:slug'], (req, res) => {
+  try {
+    const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
+    const market = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'jp' : 'us');
+    const tumUrunler = seoUrunListesi({ market });
+    const ham = String(req.params.slug || '').trim().toLowerCase();
+    const urun = tumUrunler.find(u => u.slug === ham)
+      || (/^\d+$/.test(ham) ? tumUrunler.find(u => u.id === Number(ham)) : null);
+    if (!urun) {
+      const yedek = ham ? `/${dil}?url=${encodeURIComponent(ham.replace(/-/g, ' '))}&otomatik=0` : `/${dil}`;
+      res.setHeader('Cache-Control', 'no-store');
+      return res.redirect(302, yedek);
+    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(urunSayfasiHtml(urun, yayinKoku(req), tumUrunler, { dil }));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Product page generation failed');
+  }
+});
+
+app.get(['/en/guides', '/fr/guides', '/ja/guides'], (req, res) => {
+  try {
+    const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
+    const market = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'jp' : 'us');
+    const tumUrunler = seoUrunListesi({ market });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(globalRehberDiziniHtml(dil, yayinKoku(req), tumUrunler));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Guides index generation failed');
+  }
+});
+
 /* Programatik SEO: SSR ürün, kategori ve katalog sayfaları */
 app.get('/urunler', (req, res) => {
   try {
@@ -773,6 +838,9 @@ app.get([
   '/en/cost-calculator',
   '/fr/calculateur-cout',
   '/ja/cost-calculator',
+  '/en/basket',
+  '/fr/panier',
+  '/ja/basket',
   '/en/slicer',
   '/fr/slicer',
   '/ja/slicer',
@@ -1813,6 +1881,7 @@ app.post('/api/sepet', (req, res) => {
     signal: job.iptalKontrolu.signal,
     concurrency: 2,
     hizliMod: req.body?.hizliMod !== false,
+    market: req.body?.market || 'tr',
     onProgress: (p) => { job.progress = { ...job.progress, ...p }; },
   })
     .then(result => {
@@ -2043,7 +2112,11 @@ app.get('/api/search-suggestions', (req, res) => {
   // 1 karakterde öneri gösterilmez (spec: en az 2 karakter).
   const detay = sorgu.length === 1
     ? []
-    : onerileriGetir(sorgu, { limit, bosSorguPopuler: req.query.populer !== '0' });
+    : onerileriGetir(sorgu, {
+      limit,
+      bosSorguPopuler: req.query.populer !== '0',
+      market: req.query.market || null,
+    });
   const oneriler = detay.map(o => o.metin);
   const sureMs = Number(process.hrtime.bigint() - bas) / 1e6;
 

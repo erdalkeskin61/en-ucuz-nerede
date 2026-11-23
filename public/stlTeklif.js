@@ -148,17 +148,25 @@ export function teklifMetni(t, secenek = {}) {
     cizgi,
     '*MALİYET KALEMLERİ*',
   ];
+  const fPara = (n) => {
+    if (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM && window.BASKI_HESAP_ORTAM.dil !== 'tr') {
+      const { currency = 'USD', yerel = 'en-US' } = window.BASKI_HESAP_ORTAM;
+      if (typeof window.formatPara === 'function') return window.formatPara(n, currency, yerel);
+      return Number(n || 0).toLocaleString(yerel, { style: 'currency', currency });
+    }
+    return '₺' + para(n);
+  };
   if (t.fiyatBilgisiVar) {
-    satirlar.push(`• Filament: ₺${para(t.hammadde)}`);
+    satirlar.push(`• Filament: ${fPara(t.hammadde)}`);
   } else {
     satirlar.push('• Filament: canlı fiyat alınamadı');
   }
-  satirlar.push(`• Elektrik: ₺${para(t.elektrik)} (${t.kwh} kWh)`);
-  satirlar.push(`• Cihaz amortismanı: ₺${para(t.amortisman)}`);
-  satirlar.push(`*Net üretim maliyeti:* ₺${para(t.net)}`);
+  satirlar.push(`• Elektrik: ${fPara(t.elektrik)} (${t.kwh} kWh)`);
+  satirlar.push(`• Cihaz amortismanı: ${fPara(t.amortisman)}`);
+  satirlar.push(`*Net üretim maliyeti:* ${fPara(t.net)}`);
   satirlar.push(cizgi);
-  satirlar.push(`🏷️ *TEKLİF TUTARI:* ₺${para(t.satisFiyati)}`);
-  satirlar.push(`_(atölye kâr marjı %${t.karYuzde} dahil · kâr ₺${para(t.kar)})_`);
+  satirlar.push(`🏷️ *TEKLİF TUTARI:* ${fPara(t.satisFiyati)}`);
+  satirlar.push(`_(atölye kâr marjı %${t.karYuzde} dahil · kâr ${fPara(t.kar)})_`);
   satirlar.push(cizgi);
   satirlar.push('⚡ Fiyat doğrulama: Baskı Hesap · 62 mağaza canlı radar');
   return satirlar.join('\n');

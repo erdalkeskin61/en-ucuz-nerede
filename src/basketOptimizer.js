@@ -19,7 +19,7 @@
  * Para: tüm ara hesaplar KURUŞ tam sayı (proje standardı — float hatası olmaz).
  */
 import { runComparison, runComparisonByQuery } from './pipeline.js';
-import { adapterById, detectSite } from './sites/index.js';
+import { adapterById, detectSite, adaptersByMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { formatTL } from './util.js';
 import { grupKuponlari } from './kuponSepeti.js';
 
@@ -500,12 +500,15 @@ export async function sepetOptimize(urunler, opts = {}) {
   const onProgress = opts.onProgress || (() => {});
   const signal = opts.signal || null;
   const iptalMi = () => !!(signal && signal.aborted);
+  const market = normalizeMarket(opts.market || 'tr');
   const eszamanli = Math.max(1, Math.min(opts.concurrency || 3, 5));
   const hizliMod = opts.hizliMod !== false; // varsayılan: hızlı; false → 60 site
   // Açıkça verilen boş dizi "site yok" demektir.
   const siteler = Array.isArray(opts.siteler)
     ? opts.siteler
-    : (hizliMod ? SEPET_SITELERI : null);
+    : (market !== 'tr'
+      ? adaptersByMarket(market).map(a => a.id)
+      : (hizliMod ? SEPET_SITELERI : null));
   const siteZamanAsimi = Math.max(5000, Number(opts.siteTimeoutMs) || SITE_ZAMAN_ASIMI_MS);
   const basladi = Date.now();
 
@@ -656,6 +659,7 @@ export async function sepetOptimize(urunler, opts = {}) {
             // Yavaş site (render/CF) tüm sepeti kilitlemesin — site başına üst sınır.
             siteTimeoutMs: siteZamanAsimi,
             // Hızlı mod: sepete özel hızlı site listesi. Kullanıcı kapatırsa 60 site.
+            market,
             siteler,
             onProgress: (siteId, info) => {
               const nt = info?.reason || info?.note || '';
@@ -734,6 +738,7 @@ export async function sepetOptimize(urunler, opts = {}) {
             siniflandir: false,
             semantik: false,
             siteTimeoutMs: siteZamanAsimi,
+            market,
             siteler,
             signal,
             tazeKaynak: true,
@@ -806,6 +811,8 @@ export async function sepetOptimize(urunler, opts = {}) {
   return {
     urunler: basarili,
     ...hesap,
+    market,
+    paraBirimi: PAZARLAR[market]?.currency || 'TRY',
     uyarilar,
     bulunamayanlar,
     ozet: {
