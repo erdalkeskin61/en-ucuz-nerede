@@ -60,21 +60,21 @@ export function navYollariGetir(dil = 'tr') {
     return {
       ana: '/en', katalog: '/en/products', rehber: '/en/guides',
       maliyet: '/en/cost-calculator', sepet: '/en/basket', slicer: '/en/slicer',
-      ayarlar: '/ayarlar.html', kategoriOnEk: '/en/category',
+      ayarlar: '/en/alerts', kategoriOnEk: '/en/category',
     };
   }
   if (kod === 'fr') {
     return {
       ana: '/fr', katalog: '/fr/produits', rehber: '/fr/guides',
       maliyet: '/fr/calculateur-cout', sepet: '/fr/panier', slicer: '/fr/slicer',
-      ayarlar: '/ayarlar.html', kategoriOnEk: '/fr/categorie',
+      ayarlar: '/fr/alertes', kategoriOnEk: '/fr/categorie',
     };
   }
   if (kod === 'ja') {
     return {
       ana: '/ja', katalog: '/ja/products', rehber: '/ja/guides',
       maliyet: '/ja/cost-calculator', sepet: '/ja/basket', slicer: '/ja/slicer',
-      ayarlar: '/ayarlar.html', kategoriOnEk: '/ja/category',
+      ayarlar: '/ja/alerts', kategoriOnEk: '/ja/category',
     };
   }
   return {

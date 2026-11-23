@@ -844,6 +844,9 @@ app.get([
   '/en/slicer',
   '/fr/slicer',
   '/ja/slicer',
+  '/en/alerts',
+  '/fr/alertes',
+  '/ja/alerts',
 ], (req, res) => {
   const kayit = globalAracSayfasiBul(req.path);
   if (!kayit) return res.redirect('/maliyet.html');

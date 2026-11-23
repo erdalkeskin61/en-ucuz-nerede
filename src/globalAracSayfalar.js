@@ -35,6 +35,7 @@ let _indexSablon = null;
 let _maliyetSablon = null;
 let _sepetSablon = null;
 let _slicerSablon = null;
+let _ayarlarSablon = null;
 function sablonOku(dosya) {
   return fs.readFileSync(path.join(__dirname, '..', 'public', dosya), 'utf8');
 }
@@ -53,6 +54,10 @@ function sepetSablonOku() {
 function slicerSablonOku() {
   if (!_slicerSablon || process.env.NODE_ENV !== 'production') _slicerSablon = sablonOku('slicer.html');
   return _slicerSablon;
+}
+function ayarlarSablonOku() {
+  if (!_ayarlarSablon || process.env.NODE_ENV !== 'production') _ayarlarSablon = sablonOku('ayarlar.html');
+  return _ayarlarSablon;
 }
 
 export const GLOBAL_URUNLER_YOLLARI = GLOBAL_KATALOG_YOLLARI;
@@ -74,6 +79,12 @@ export const GLOBAL_SLICER_YOLLARI = Object.freeze({
   en: '/en/slicer',
   fr: '/fr/slicer',
   ja: '/ja/slicer',
+});
+
+export const GLOBAL_AYARLAR_YOLLARI = Object.freeze({
+  en: '/en/alerts',
+  fr: '/fr/alertes',
+  ja: '/ja/alerts',
 });
 
 const CREALITY_MAGAZA_KOK = Object.freeze({
@@ -339,6 +350,11 @@ export const SLICER_YOL_HARITASI = Object.freeze({
   ...GLOBAL_SLICER_YOLLARI,
 });
 
+export const AYARLAR_YOL_HARITASI = Object.freeze({
+  tr: '/ayarlar.html',
+  ...GLOBAL_AYARLAR_YOLLARI,
+});
+
 export const SEPET_YOL_HARITASI = GLOBAL_SEPET_YOLLARI;
 
 function ortakKlonSayfaHazirla(sablon, {
@@ -379,7 +395,7 @@ function ortakKlonSayfaHazirla(sablon, {
         <a href="${htmlKacis(nav.maliyet)}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
         <a href="${htmlKacis(nav.sepet)}"${aktifNav === 'sepet' ? ' class="etkin"' : ''}>🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
         <a href="${htmlKacis(nav.slicer)}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
-        <a href="${htmlKacis(nav.ayarlar)}">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
+        <a href="${htmlKacis(nav.ayarlar)}"${aktifNav === 'ayarlar' ? ' class="etkin"' : ''}>🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(kod, yolHaritasi)}
       <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Theme" title="Theme">🌓</button>
@@ -2008,6 +2024,86 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   return cikti;
 }
 
+export function globalAyarlarSayfasiHtml(dil = 'en', tabanUrl = '') {
+  const kod = ['en', 'fr', 'ja'].includes(normalizeDil(dil)) ? normalizeDil(dil) : 'en';
+  const sz = sozlukGetir(kod);
+  const nav = navYollariGetir(kod);
+  const taramaMagazalari = taramaAdaptersByMarket(sz.meta.market);
+  const c = {
+    en: {
+      title: 'Price Alerts &amp; Preferences — Baski Hesap',
+      h1a: '📈 Tracked Products &amp; Price Alerts',
+      p1: 'Tracked product prices are re-checked automatically throughout the day; you receive an instant browser notification whenever a price drops below your target or the cheapest store changes. You can update target prices anytime.',
+      yukleniyor: 'Loading…',
+      h1b: '🔔 Notifications &amp; Display Preferences',
+      p2: 'No sign-up or email required: receive instant price-drop alerts via browser Web Push on this device and switch between light or dark themes.',
+      durumBekle: 'Checking browser notification status…',
+      aboneBtn: '🔔 Enable Notifications',
+      testBtn: '🧪 Send Test Notification',
+      temaBtn: '🌓 Toggle Theme',
+      footerSitelerBaslik: 'Stores compared in this region',
+    },
+    fr: {
+      title: 'Alertes Prix &amp; Préférences — Baski Hesap',
+      h1a: '📈 Produits suivis &amp; Alertes prix',
+      p1: 'Les prix des produits suivis sont vérifiés régulièrement ; vous recevez une alerte navigateur instantanée dès que le tarif passe sous votre prix cible ou qu’une boutique moins chère apparaît. Modifiez votre prix cible à tout moment.',
+      yukleniyor: 'Chargement…',
+      h1b: '🔔 Notifications &amp; Apparence',
+      p2: 'Aucun compte ni e-mail requis : activez les alertes Web Push directement sur cet appareil et choisissez le thème clair ou sombre.',
+      durumBekle: 'Vérification de l’état des notifications…',
+      aboneBtn: '🔔 Activer les notifications',
+      testBtn: '🧪 Envoyer une notification test',
+      temaBtn: '🌓 Changer de thème',
+      footerSitelerBaslik: 'Boutiques comparées dans cette région',
+    },
+    ja: {
+      title: '価格アラート &amp; 設定 — Baski Hesap',
+      h1a: '📈 追跡中の商品 &amp; 価格アラート',
+      p1: '追跡設定した商品の価格は日中に定期チェックされ、目標価格を下回った際や最安ショップが入れ替わった際にブラウザへ即時通知されます。目標価格はいつでも更新できます。',
+      yukleniyor: '読み込み中…',
+      h1b: '🔔 通知 &amp; 表示設定',
+      p2: '会員登録やメールアドレスは不要です。この端末のブラウザ通知（Web Push）で値下げを受け取り、ライト／ダークテーマを切り替えられます。',
+      durumBekle: 'ブラウザ通知の状態を確認中…',
+      aboneBtn: '🔔 通知を有効にする',
+      testBtn: '🧪 テスト通知を送信',
+      temaBtn: '🌓 テーマを切り替え',
+      footerSitelerBaslik: 'この地域の比較対象ストア',
+    },
+  }[kod];
+
+  const ortam = {
+    dil: kod,
+    market: sz.meta.market,
+    currency: sz.para.kod,
+    yerel: sz.para.yerel,
+    tabanYol: nav.ana,
+  };
+
+  let cikti = ortakKlonSayfaHazirla(ayarlarSablonOku(), {
+    kod, tabanUrl, yolHaritasi: AYARLAR_YOL_HARITASI, aktifNav: 'ayarlar',
+    title: c.title, desc: sz.meta.anaDesc, ogTitle: c.title, ogDesc: sz.meta.anaDesc,
+  });
+
+  cikti = cikti
+    .replace('<h2>📈 Takip edilen ürünler &amp; fiyat alarmlarım</h2>', `<h2>${c.h1a}</h2>`)
+    .replace(/Takibe aldığınız ürünlerin fiyatları gün içinde düzenli kontrol edilir;[\s\S]*?<\/p>/, `${c.p1}</p>`)
+    .replace('<div id="takipListesi"><p class="alt-not">Yükleniyor…</p></div>', `<div id="takipListesi"><p class="alt-not">${c.yukleniyor}</p></div>`)
+    .replace('<h2>🔔 Bildirimler &amp; görünüm tercihleri</h2>', `<h2>${c.h1b}</h2>`)
+    .replace(/Üyelik veya e-posta gerekmez:[\s\S]*?<\/p>/, `${c.p2}</p>`)
+    .replace('<div class="gorev-durumu" id="pushDurumKutusu">Tarayıcı bildirim durumu kontrol ediliyor…</div>', `<div class="gorev-durumu" id="pushDurumKutusu">${c.durumBekle}</div>`)
+    .replace('<button type="button" class="kaydet-btn" id="pushAboneBtn">🔔 Bildirimleri Etkinleştir</button>', `<button type="button" class="kaydet-btn" id="pushAboneBtn">${c.aboneBtn}</button>`)
+    .replace('<button type="button" class="kaydet-btn ikincil" id="pushTestBtn">🧪 Örnek Bildirim Gönder</button>', `<button type="button" class="kaydet-btn ikincil" id="pushTestBtn">${c.testBtn}</button>`)
+    .replace('<button type="button" class="ikincil-btn" id="temaTercihBtn">🌓 Temayı Değiştir</button>', `<button type="button" class="ikincil-btn" id="temaTercihBtn">${c.temaBtn}</button>`)
+    .replace(/<p>\s*Fiyatlar sitelerden anlık okunur;[\s\S]*?<\/p>/, `<p>${htmlKacis(sz.baslik.footerNot)}</p>`)
+    .replace('Karşılaştırılan siteler (<span id="footerSiteSayisi">—</span>):', `${htmlKacis(c.footerSitelerBaslik)} (<span id="footerSiteSayisi">${taramaMagazalari.length}</span>):`)
+    .replace(
+      '<script src="/ayarlar.js"></script>',
+      `<script>window.BASKI_HESAP_ORTAM = ${JSON.stringify(ortam)};</script>\n  <script src="/para.js"></script>\n  <script src="/ayarlar.js"></script>`,
+    );
+
+  return cikti;
+}
+
 export function globalAracSayfasiBul(yol) {
   const temiz = String(yol || '').replace(/\/+$/, '');
   for (const [dil, rYol] of Object.entries(GLOBAL_ANA_YOLLARI)) {
@@ -2022,6 +2118,9 @@ export function globalAracSayfasiBul(yol) {
   for (const [dil, rYol] of Object.entries(GLOBAL_SLICER_YOLLARI)) {
     if (rYol === temiz) return { dil, tur: 'slicer', olustur: (tabanUrl) => globalSlicerSayfasiHtml(dil, tabanUrl) };
   }
+  for (const [dil, rYol] of Object.entries(GLOBAL_AYARLAR_YOLLARI)) {
+    if (rYol === temiz) return { dil, tur: 'ayarlar', olustur: (tabanUrl) => globalAyarlarSayfasiHtml(dil, tabanUrl) };
+  }
   return null;
 }
 
@@ -2031,6 +2130,7 @@ export function globalAracAlternatifHaritasi() {
   const maliyet = { ...MALIYET_YOL_HARITASI, 'x-default': GLOBAL_MALIYET_YOLLARI.en };
   const sepet = { ...SEPET_YOL_HARITASI, 'x-default': GLOBAL_SEPET_YOLLARI.en };
   const slicer = { ...SLICER_YOL_HARITASI, 'x-default': GLOBAL_SLICER_YOLLARI.en };
+  const ayarlar = { ...AYARLAR_YOL_HARITASI, 'x-default': GLOBAL_AYARLAR_YOLLARI.en };
   const katalog = { ...GLOBAL_KATALOG_YOLLARI, 'x-default': '/' + GLOBAL_KATALOG_YOLLARI.en.replace(/^\//, '') };
   const rehber = { ...GLOBAL_REHBER_YOLLARI, 'x-default': '/' + GLOBAL_REHBER_YOLLARI.en.replace(/^\//, '') };
   return {
@@ -2058,6 +2158,10 @@ export function globalAracAlternatifHaritasi() {
     '/en/guides': rehber,
     '/fr/guides': rehber,
     '/ja/guides': rehber,
+    '/ayarlar.html': ayarlar,
+    '/en/alerts': ayarlar,
+    '/fr/alertes': ayarlar,
+    '/ja/alerts': ayarlar,
   };
 }
 
