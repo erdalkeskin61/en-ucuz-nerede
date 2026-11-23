@@ -836,9 +836,9 @@ async function guvenliJson(res) {
   }
 }
 
-function formatPara(n, paraBirimi = 'TRY', yerel = null) {
-  if (typeof window !== 'undefined' && typeof window.formatPara === 'function') {
-    return window.formatPara(n, paraBirimi, yerel);
+function paraBicimle(n, paraBirimi = 'TRY', yerel = null) {
+  if (typeof window !== 'undefined' && typeof window.BaskiPara?.formatPara === 'function') {
+    return window.BaskiPara.formatPara(n, paraBirimi, yerel);
   }
   if (n == null || isNaN(n)) return '—';
   const kod = String(paraBirimi || 'TRY').toUpperCase();
@@ -852,7 +852,7 @@ function formatPara(n, paraBirimi = 'TRY', yerel = null) {
 function tl(n, paraBirimi = null) {
   const kod = paraBirimi || BASKI_ORTAM.currency || 'TRY';
   if (String(kod).toUpperCase() !== 'TRY') {
-    return formatPara(n, kod);
+    return paraBicimle(n, kod);
   }
   if (n == null || isNaN(n)) return '—';
   return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
@@ -1065,12 +1065,60 @@ let linkCozum = null;      // son /api/link-coz yanıtı
 let linkCozTimer = null;
 let linkCozSayaci = 0;     // yarışan istekleri elemek için
 
-const MOD_PLACEHOLDER = {
-  oto: 'Ürün linki yapıştır ya da ürün adı yaz…  ör. "eSun PLA+", "iPhone 15"',
-  link: 'Ürün linkini yapıştır…  ör. https://www.trendyol.com/urun-adi-p-123',
-  ad: 'Ürün adı veya model yaz…  ör. "eSun PLA+", "iPhone 15", "Bambu Lab P1S"',
+const DIL_KOPYA_YEREL = {
+  tr: {
+    placeholder: {
+      oto: 'Ürün linki yapıştır ya da ürün adı yaz…  ör. "eSun PLA+", "iPhone 15"',
+      link: 'Ürün linkini yapıştır…  ör. https://www.trendyol.com/urun-adi-p-123',
+      ad: 'Ürün adı veya model yaz…  ör. "eSun PLA+", "iPhone 15", "Bambu Lab P1S"',
+    },
+    buton: { oto: 'Fiyatları Bul', link: 'Linkte Ara', ad: 'Fiyatları Bul' },
+    araniyor: 'Aranıyor…',
+    taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} site tarandı · ${bulundu} sitede bulundu`,
+  },
+  en: {
+    placeholder: BASKI_ORTAM.placeholders || {
+      oto: 'Paste product URL or type a product name… e.g. "Creality K1C", "Polymaker PLA"',
+      link: 'Paste product URL… e.g. https://store.creality.com/products/...',
+      ad: 'Type product name or model… e.g. "Creality K1C", "Polymaker PLA", "PEI Plate"',
+    },
+    buton: { oto: 'Find Prices', link: 'Check Link', ad: 'Find Prices' },
+    araniyor: 'Searching…',
+    taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} stores scanned · ${bulundu} found`,
+  },
+  fr: {
+    placeholder: BASKI_ORTAM.placeholders || {
+      oto: 'Collez un lien ou tapez un produit… ex. "Creality K1C", "Polymaker PLA"',
+      link: 'Collez le lien du produit… ex. https://store.creality.com/fr/...',
+      ad: 'Tapez le modèle… ex. "Creality K1C", "Arianeplast PLA"',
+    },
+    buton: { oto: 'Trouver les prix', link: 'Analyser le lien', ad: 'Trouver les prix' },
+    araniyor: 'Recherche…',
+    taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} boutiques analysées · ${bulundu} trouvée(s)`,
+  },
+  ja: {
+    placeholder: BASKI_ORTAM.placeholders || {
+      oto: '商品URLを貼り付け、または商品名を入力… 例: "Creality K1C", "ELEGOO PETG"',
+      link: '商品URLを貼り付け… 例: https://store.creality.com/jp/...',
+      ad: '商品名・型番を入力… 例: "Creality K1C", "PLA フィラメント"',
+    },
+    buton: { oto: '最安値を検索', link: 'URLで検索', ad: '最安値を検索' },
+    araniyor: '検索中…',
+    taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} ストア確認 · ${bulundu} 件見つかりました`,
+  },
+}[BASKI_ORTAM.dil] || {
+  placeholder: {
+    oto: 'Ürün linki yapıştır ya da ürün adı yaz…  ör. "eSun PLA+", "iPhone 15"',
+    link: 'Ürün linkini yapıştır…  ör. https://www.trendyol.com/urun-adi-p-123',
+    ad: 'Ürün adı veya model yaz…  ör. "eSun PLA+", "iPhone 15", "Bambu Lab P1S"',
+  },
+  buton: { oto: 'Fiyatları Bul', link: 'Linkte Ara', ad: 'Fiyatları Bul' },
+  araniyor: 'Aranıyor…',
+  taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} site tarandı · ${bulundu} sitede bulundu`,
 };
-const MOD_BUTON = { oto: 'Fiyatları Bul', link: 'Linkte Ara', ad: 'Fiyatları Bul' };
+
+const MOD_PLACEHOLDER = DIL_KOPYA_YEREL.placeholder;
+const MOD_BUTON = DIL_KOPYA_YEREL.buton;
 
 /** Metin link olarak yorumlanabilir mi? (şemasız alan adları da kabul) */
 function dogalDilTavsiyeMi(metin) {
@@ -1370,7 +1418,7 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
   baskiGramaj = 100;
 
   $('#araBtn').disabled = true;
-  $('#araBtn').textContent = 'Aranıyor…';
+  $('#araBtn').textContent = DIL_KOPYA_YEREL.araniyor;
   $('#sonucAlani').hidden = true;
   $('#durumAlani').hidden = false;
   // 📍 Link araması başladı: kullanıcıyı anında tarama durumuna ve mağaza
@@ -2153,7 +2201,7 @@ function cipleriGuncelle(progress) {
   const dolgu = document.querySelector('.tarama-dolgu');
   const sayac = document.getElementById('taramaSayac');
   if (dolgu) dolgu.style.width = Math.round(bitti / Math.max(SITE_SIRASI.length, 1) * 100) + '%';
-  if (sayac) sayac.textContent = `${bitti}/${SITE_SIRASI.length} site tarandı · ${bulundu} sitede bulundu`;
+  if (sayac) sayac.textContent = DIL_KOPYA_YEREL.taramaSayac(bitti, SITE_SIRASI.length, bulundu);
 }
 
 // ---- Filtreleme Mantığı ----
@@ -2995,13 +3043,17 @@ function canliIzle(id, opts = {}) {
 // Sunucu ₺/kg ve ₺/L değerlerini SAYI olarak gönderir; biçim burada yapılır
 // (Türkçe ondalık virgül, binlik nokta).
 
-function birimKgMetni(deger) {
+function birimKgMetni(deger, paraBirimi = null) {
   if (deger == null || !isFinite(deger)) return null;
+  const kod = paraBirimi || BASKI_ORTAM.currency || 'TRY';
+  if (String(kod).toUpperCase() !== 'TRY') return tl(deger, kod) + '/kg';
   return Number(deger).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺/kg';
 }
 
-function birimLMetni(deger) {
+function birimLMetni(deger, paraBirimi = null) {
   if (deger == null || !isFinite(deger)) return null;
+  const kod = paraBirimi || BASKI_ORTAM.currency || 'TRY';
+  if (String(kod).toUpperCase() !== 'TRY') return tl(deger, kod) + '/L';
   return Number(deger).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺/L';
 }
 
@@ -3377,9 +3429,9 @@ function kampanyaEtiketi(kosul) {
  */
 let baskiGramaj = 100;
 
-function baskiTl(n) {
+function baskiTl(n, paraBirimi = null) {
   if (n == null || !isFinite(n)) return '—';
-  return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+  return tl(n, paraBirimi);
 }
 
 function baskiHesapla(bk, gramaj) {
@@ -3620,13 +3672,15 @@ function kartHtml(r) {
     const lVar = b.tlL != null;
     if (!kgVar && !lVar) return '';
 
-    const bicim = (n) => Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const paraKod = p.currency || BASKI_ORTAM.currency || 'TRY';
     const recine = b.ml != null && lVar;
-    const ana = recine
-      ? `🧪 ${bicim(b.tlL)} TL / L`
-      : `🏷️ ${bicim(b.tlKg)} TL / kg`;
+    const ana = String(paraKod).toUpperCase() !== 'TRY'
+      ? (recine ? `🧪 ${tl(b.tlL, paraKod)} / L` : `🏷️ ${tl(b.tlKg, paraKod)} / kg`)
+      : (recine
+        ? `🧪 ${Number(b.tlL).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL / L`
+        : `🏷️ ${Number(b.tlKg).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL / kg`);
     const ikincil = recine && kgVar
-      ? `≈ ${bicim(b.tlKg)} TL/kg (tahmini)`
+      ? `≈ ${tl(b.tlKg, paraKod)}/kg (tahmini)`
       : '';
     const miktar = b.gram != null ? gramMetni(b.gram) : (b.ml != null ? (b.ml / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' L' : '');
     const ipucu = recine
@@ -4653,7 +4707,7 @@ function cizFiyatGrafigi(timeline) {
           displayColors: true,
           callbacks: {
             label: function(context) {
-              return " " + context.dataset.label + ": " + Number(context.parsed.y).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+              return " " + context.dataset.label + ": " + tl(context.parsed.y);
             }
           }
         }
@@ -4676,7 +4730,7 @@ function cizFiyatGrafigi(timeline) {
             font: { size: 11, family: "'Plus Jakarta Sans', Inter, system-ui, sans-serif" },
             padding: 8,
             callback: function(val) {
-              return val.toLocaleString("tr-TR") + " TL";
+              return BASKI_ORTAM.currency && BASKI_ORTAM.currency !== 'TRY' ? tl(val) : (val.toLocaleString("tr-TR") + " TL");
             }
           }
         }

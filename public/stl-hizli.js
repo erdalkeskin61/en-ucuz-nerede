@@ -105,7 +105,9 @@
       const el = document.getElementById(id);
       if (el) el.textContent = deger;
     };
-    const para = (n) => '₺' + teklif.para(n);
+    const para = (n) => (window.BASKI_HESAP_ORTAM?.currency && window.BASKI_HESAP_ORTAM.currency !== 'TRY' && typeof window.formatPara === 'function')
+      ? window.formatPara(n, window.BASKI_HESAP_ORTAM.currency)
+      : ('₺' + teklif.para(n));
 
     yaz('fisTarih', teklif.tarihMetni(new Date()));
     yaz('fisModelAd', t.dosyaAdi);
@@ -167,7 +169,10 @@
   async function filamentleriYukle() {
     if (durum.filamentler) return durum.filamentler;
     try {
-      const r = await fetch('/api/baski/en-ucuz-filamentler?limit=30');
+      const pUrl = window.BASKI_HESAP_ORTAM?.market && window.BASKI_HESAP_ORTAM.market !== 'tr'
+        ? '/api/baski/en-ucuz-filamentler?limit=30&market=' + encodeURIComponent(window.BASKI_HESAP_ORTAM.market)
+        : '/api/baski/en-ucuz-filamentler?limit=30';
+      const r = await fetch(pUrl);
       const v = await r.json();
       durum.filamentler = Array.isArray(v?.filamentler) ? v.filamentler : [];
     } catch {

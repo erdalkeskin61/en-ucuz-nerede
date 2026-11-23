@@ -826,7 +826,7 @@ export const FOOTER_HUB_HTML = `
         </div>
       </nav>`;
 
-export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr', dilYolHaritasi = null, anaKapsam = false }) {
+export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr', dilYolHaritasi = null, anaKapsam = false, bodyClass = '' }) {
   const sz = sozlukGetir(dil);
   const kokYol = sz.meta.dil === 'tr' ? '/' : `/${sz.meta.dil}`;
   const safeTitle = htmlKacis(title);
@@ -1039,7 +1039,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   </style>
   ${jsonScripts}${ga4Snip ? `\n  ${ga4Snip}` : ''}
 </head>
-<body>
+<body${bodyClass ? ` class="${htmlKacis(bodyClass)}"` : ''}>
   <header class="ustbar">
     <div class="kap">
       <a class="logo" href="${htmlKacis(kokYol)}" aria-label="${htmlKacis(sz.meta.siteAdi)}">
@@ -1066,8 +1066,8 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   <footer class="altbar">
     <div class="kap">
       <div class="footer-marka">
-        <img class="footer-marka-logo" src="/logo.png" alt="Baskı Hesap" width="34" height="29" decoding="async" />
-        <a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>
+        <img class="footer-marka-logo" src="/logo.png" alt="${htmlKacis(sz.meta.siteAdi)}" width="34" height="29" decoding="async" />
+        <a class="footer-marka-alan" href="${htmlKacis(kokYol)}" rel="home">baskihesap.tech</a>
       </div>
       ${FOOTER_HUB_HTML}
       <p>${dil === 'tr' ? 'Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.' : htmlKacis(sz.baslik.footerNot)}</p>

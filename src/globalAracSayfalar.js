@@ -355,8 +355,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
   ];
 
   const govdeHtml = `
-    ${dilSeciciCubugu(kod, MALIYET_YOL_HARITASI)}
-    <section class="hero maliyet-hero" style="margin-bottom:20px">
+    <section class="hero maliyet-hero">
       <div class="hero-ic">
         <span class="hero-rozet">${c.rozet}</span>
         <h1>${c.h1}</h1>
@@ -623,6 +622,8 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     aktifNav: 'maliyet',
     dil: kod,
     dilYolHaritasi: MALIYET_YOL_HARITASI,
+    anaKapsam: true,
+    bodyClass: 'sayfa-maliyet',
   });
 }
 
@@ -651,8 +652,7 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
   ];
 
   const govdeHtml = `
-    ${dilSeciciCubugu(kod, SLICER_YOL_HARITASI)}
-    <section class="hero sl-hero" style="margin-bottom:20px">
+    <section class="hero sl-hero">
       <div class="hero-ic">
         <span class="hero-rozet">${c.rozet}</span>
         <h1>${c.h1}</h1>
@@ -722,6 +722,8 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
     aktifNav: 'eklenti',
     dil: kod,
     dilYolHaritasi: SLICER_YOL_HARITASI,
+    anaKapsam: true,
+    bodyClass: 'sayfa-slicer',
   });
 }
 
@@ -879,6 +881,11 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
     dil: kod,
     maliyetYolu: GLOBAL_MALIYET_YOLLARI[kod],
     slicerYolu: GLOBAL_SLICER_YOLLARI[kod],
+    placeholders: {
+      oto: c.placeholderOto.replace(/&quot;/g, '"'),
+      link: c.placeholderLink.replace(/&quot;/g, '"'),
+      ad: c.placeholderAd.replace(/&quot;/g, '"'),
+    },
     siteler: ortakSiteler,
   };
 
@@ -979,6 +986,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
     .replace('<h2 class="bolum-baslik">Siteler araştırılıyor…</h2>', `<h2 class="bolum-baslik">${c.durumBaslik}</h2>`)
     .replace('<button type="button" id="iptalBtn" class="iptal-btn">✕ İptal</button>', `<button type="button" id="iptalBtn" class="iptal-btn">${c.iptalBtn}</button>`)
     .replace('Karşılaştırılan siteler (<span id="footerSiteSayisi">—</span>):', `${c.magazaListeBaslik} (<span id="footerSiteSayisi">${taramaMagazalari.length}</span>):`)
+    .replace('<a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>', `<a class="footer-marka-alan" href="${htmlKacis(GLOBAL_ANA_YOLLARI[kod])}" rel="home">baskihesap.tech</a>`)
     .replace('<ul id="footerSiteler" class="footer-siteler"></ul>', `<ul id="footerSiteler" class="footer-siteler">${bolgeMagazalari.map(m => `<li>${htmlKacis(m.name)}</li>`).join('')}</ul>`);
 
   // 5) Gerçek app.js ortam nesnesi + dinamik UI çevirmeni
