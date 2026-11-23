@@ -10,8 +10,12 @@ import incehesap from './incehesap.js';
 import { ucdSiteler } from './ucd.js';
 import { yeniSiteler } from './yeni.js';
 import { yeniSiteler2 } from './yeni2.js';
+import { crealityGlobalSiteler } from './creality-global.js';
 
-export const adapters = [trendyol, hepsiburada, amazon, vatan, mediamarkt, itopya, pazarama, incehesap, ...ucdSiteler, ...yeniSiteler, ...yeniSiteler2];
+export const adapters = [
+  trendyol, hepsiburada, amazon, vatan, mediamarkt, itopya, pazarama, incehesap,
+  ...ucdSiteler, ...yeniSiteler, ...yeniSiteler2, ...crealityGlobalSiteler,
+];
 
 /** Desteklenen bölgesel pazarlar (market) ve varsayılan para birimi/yerel ayarları. */
 export const PAZARLAR = Object.freeze({
@@ -59,7 +63,11 @@ export function detectSite(url) {
   let u;
   try { u = new URL(url); } catch { return null; }
   const host = u.hostname.toLowerCase().replace(/^www\./, '');
-  return adapters.find(a => a.hosts.some(h => h.toLowerCase().replace(/^www\./, '') === host)) || null;
+  const adaylar = adapters.filter(a => a.hosts.some(h => h.toLowerCase().replace(/^www\./, '') === host));
+  if (!adaylar.length) return null;
+  return adaylar.find(a => typeof a.matchesUrl === 'function' && a.matchesUrl(u))
+    || adaylar.find(a => typeof a.matchesUrl !== 'function')
+    || adaylar[0];
 }
 
 export function adapterById(id) {

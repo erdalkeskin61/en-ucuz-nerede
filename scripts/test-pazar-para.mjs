@@ -7,8 +7,10 @@ import vm from 'node:vm';
 import { formatPara, formatTL, paraBirimiNormalize } from '../src/util.js';
 import {
   adapters, PAZARLAR, normalizeMarket, adapterMarket, adapterCurrency,
-  adaptersByMarket, marketSiteIds,
+  adaptersByMarket, marketSiteIds, detectSite, adapterById,
 } from '../src/sites/index.js';
+import { crealityAramaKartlariCikar, crealityJsonLdUrunOku, parseGlobalFiyat } from '../src/sites/creality-global.js';
+import { afiliyeLink } from '../src/afiliye.js';
 import { seoUrunListesi, urunSayfasiHtml } from '../src/seoSayfalar.js';
 import { katalogUrunleriAra } from '../src/katalogSync.js';
 import { katalogdanKaynakAdayi } from '../src/urunArama.js';
@@ -58,10 +60,14 @@ kontrol('PAZARLAR tr/us/fr/eu/jp tanımlı',
   PAZARLAR.tr?.currency === 'TRY' && PAZARLAR.us?.currency === 'USD' && PAZARLAR.fr?.currency === 'EUR' && PAZARLAR.jp?.currency === 'JPY');
 kontrol('normalizeMarket takma adları çözer',
   normalizeMarket('en') === 'us' && normalizeMarket('ja') === 'jp' && normalizeMarket('FR') === 'fr' && normalizeMarket('bilinmeyen') === 'tr');
-kontrol('mevcut tüm adaptörler varsayılan tr/TRY alır',
-  adapters.length >= 70 && adapters.every(a => adapterMarket(a) === 'tr' && adapterCurrency(a) === 'TRY'));
-kontrol('adaptersByMarket us havuzuna tr mağazaları karışmaz',
-  adaptersByMarket('us').length === 0 && marketSiteIds('tr').has('porima3d') && !marketSiteIds('us').has('porima3d'));
+kontrol('TR adaptörleri varsayılan tr/TRY alır (70 mağaza)',
+  adaptersByMarket('tr').length >= 70 && adaptersByMarket('tr').every(a => adapterMarket(a) === 'tr' && adapterCurrency(a) === 'TRY'));
+kontrol('US/FR/EU/JP pazarları Creality adaptörlerini içerir, tr mağazaları karışmaz',
+  adaptersByMarket('us').some(a => a.id === 'creality_us')
+  && adaptersByMarket('fr').some(a => a.id === 'creality_fr')
+  && adaptersByMarket('eu').some(a => a.id === 'creality_eu')
+  && adaptersByMarket('jp').some(a => a.id === 'creality_jp')
+  && marketSiteIds('tr').has('porima3d') && !marketSiteIds('us').has('porima3d'));
 
 console.log('\n4) 🔒 Katalog, arama ve SEO pazar izolasyonu');
 const trKatalog = katalogUrunleriAra('pla', { limit: 5, ttlMs: 0, market: 'tr' });
@@ -120,6 +126,51 @@ const ornekJpyUrun = {
 const jpyHtml = urunSayfasiHtml(ornekJpyUrun, 'https://baskihesap.tech', []);
 kontrol('JPY ürün sayfasında ¥128,000 ve priceCurrency JPY görünür',
   jpyHtml.includes('¥128,000') && jpyHtml.includes('"priceCurrency":"JPY"'));
+
+console.log('\n6) 🌍 Creality Global adaptörleri (US/FR/EU/JP) & Impact afiliye');
+kontrol('detectSite store.creality.com bölgesel yolları doğru çözer',
+  detectSite('https://store.creality.com/products/k3-multi-material-multicolor-3d-printer')?.id === 'creality_us'
+  && detectSite('https://store.creality.com/fr/products/kit-de-bloc')?.id === 'creality_fr'
+  && detectSite('https://store.creality.com/eu/products/k1c-pei')?.id === 'creality_eu'
+  && detectSite('https://store.creality.com/jp/products/k1c-kit')?.id === 'creality_jp');
+
+kontrol('parseGlobalFiyat USD/EUR/JPY doğru ayrıştırır',
+  parseGlobalFiyat('$<!-- -->849.00', 'USD') === 849
+  && parseGlobalFiyat('799,90 €', 'EUR') === 799.9
+  && parseGlobalFiyat('¥128,000', 'JPY') === 128000);
+
+const sahteAramaHtml = `<header><a href="/fr/products/promo">Promo &gt;&gt;</a></header>
+  <div class="products"><div class="product-item product-item--text-cart">
+    <a class="item-img" href="/fr/products/creality-k1c-fr"><img src="https://cdn.shopify.com/k1c.png" alt="Creality K1C"/></a>
+    <div class="item-content"><a class="title" href="/fr/products/creality-k1c-fr"><div class="item-content-name">Creality K1C FR</div></a>
+    <div class="content"><div class="product-price"><span class="price">€<!-- -->599,00</span></div></div></div>
+  </div></div>`;
+const frKartlar = crealityAramaKartlariCikar(sahteAramaHtml, '/fr', 'EUR');
+kontrol('crealityAramaKartlariCikar promo linki atlar, kartı çeker',
+  frKartlar.length === 1
+  && frKartlar[0].url === 'https://store.creality.com/fr/products/creality-k1c-fr'
+  && frKartlar[0].price === 599
+  && frKartlar[0].currency === 'EUR',
+  JSON.stringify(frKartlar));
+
+const sahteLdHtml = `<script type="application/ld+json">[{"@type":"BreadcrumbList"},{"@type":"Product","name":"Creality K3 Multi-Color","sku":"1002110208","image":["https://cdn.shopify.com/k3.png"],"offers":[{"@type":"Offer","price":849,"priceCurrency":"USD","availability":"https://schema.org/InStock"}]}]</script>`;
+const k3Urun = crealityJsonLdUrunOku(sahteLdHtml, 'https://store.creality.com/products/k3-multi-material-multicolor-3d-printer', adapterById('creality_us'));
+kontrol('crealityJsonLdUrunOku Product JSON-LD okur',
+  k3Urun.title === 'Creality K3 Multi-Color'
+  && k3Urun.sellingPrice === 849
+  && k3Urun.currency === 'USD'
+  && k3Urun.modelCode === '1002110208'
+  && k3Urun.inStock === true);
+
+const impactAyar = {
+  etkin: true,
+  aglar: { impact: { etkin: true, parametre: '', token: '', sablon: 'https://crealityofficialstore.sjv.io/Pzxrme?u={url}' } },
+  siteAg: {},
+  siteSablon: {},
+};
+kontrol('creality_us/fr/eu/jp bağlantıları Impact şablonu ile sarılır',
+  afiliyeLink('creality_us', 'https://store.creality.com/products/k3-multi-material-multicolor-3d-printer', impactAyar).startsWith('https://crealityofficialstore.sjv.io/Pzxrme?u=')
+  && afiliyeLink('creality_jp', 'https://store.creality.com/jp/products/k1c', impactAyar).startsWith('https://crealityofficialstore.sjv.io/Pzxrme?u='));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

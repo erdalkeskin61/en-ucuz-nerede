@@ -31,6 +31,10 @@ export const SITE_AGLARI = {
   hepsiburada: 'hepsiburada',
   amazon: 'amazon',
   creality: 'impact',
+  creality_us: 'impact',
+  creality_fr: 'impact',
+  creality_eu: 'impact',
+  creality_jp: 'impact',
 };
 
 /**
