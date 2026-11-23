@@ -24,6 +24,7 @@ import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
 import { siteNames, adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
+import { normalizeDil, dilByMarket, sozlukGetir, t, sssSablonlari } from './i18n/index.js';
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
 const SEO_CACHE_TTL_MS = 60 * 1000;
@@ -806,7 +807,8 @@ export const FOOTER_HUB_HTML = `
         </div>
       </nav>`;
 
-export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog' }) {
+export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr' }) {
+  const sz = sozlukGetir(dil);
   const safeTitle = htmlKacis(title);
   const safeDesc = htmlKacis(description);
   const safeUrl = htmlKacis(canonicalUrl);
@@ -818,7 +820,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
 
   const ga4Snip = ga4HeadSnip();
   return `<!DOCTYPE html>
-<html lang="tr" data-theme="light">
+<html lang="${htmlKacis(sz.meta.dil)}" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -827,8 +829,8 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   <link rel="canonical" href="${safeUrl}" />
   <meta name="theme-color" content="#4338CA" />
   <meta property="og:type" content="${safeOgType}" />
-  <meta property="og:site_name" content="Baskı Hesap" />
-  <meta property="og:locale" content="tr_TR" />
+  <meta property="og:site_name" content="${htmlKacis(sz.meta.siteAdi)}" />
+  <meta property="og:locale" content="${htmlKacis(sz.meta.ogLocale)}" />
   <meta property="og:title" content="${safeTitle}" />
   <meta property="og:description" content="${safeDesc}" />
   <meta property="og:url" content="${safeUrl}" />
@@ -1019,13 +1021,13 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <img class="logo-gorsel" src="/logo.png" alt="Baskı Hesap" width="36" height="30" decoding="async" />
       </a>
       <nav class="menu">
-        <a href="/">Karşılaştır</a>
-        <a href="/urunler"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ Katalog</a>
-        <a href="/rehber"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 Rehberler</a>
-        <a href="/maliyet.html">🧮 Maliyet</a>
-        <a href="/sepet.html">🧺 Akıllı Sepet</a>
-        <a href="/slicer.html">🧩 Eklenti</a>
-        <a href="/ayarlar.html">🔔 Alarmlarım</a>
+        <a href="/">${htmlKacis(sz.nav.karsilastir)}</a>
+        <a href="/urunler"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
+        <a href="/rehber"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
+        <a href="/maliyet.html">🧮 ${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="/sepet.html">🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
+        <a href="/slicer.html">🧩 ${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="/ayarlar.html">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
     </div>
@@ -1042,7 +1044,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>
       </div>
       ${FOOTER_HUB_HTML}
-      <p>Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.</p>
+      <p>${dil === 'tr' ? 'Fiyatlar Türkiye mağazalarından anlık okunur; kargo ve herkesin yararlanabileceği indirimler dahildir. Güncel fiyat için "Canlı Fiyatları Şimdi Tara" ile anlık kontrol edebilirsiniz.' : htmlKacis(sz.baslik.footerNot)}</p>
     </div>
   </footer>
   <script src="/tema.js"></script>
@@ -1203,8 +1205,9 @@ function ilgiliRehberKartlari(urun) {
  * Ürün sayfası için yalnızca GERÇEK veritabanı teklif/geçmiş kayıtlarından
  * piyasa analizi özeti + dinamik SSS ve `FAQPage` JSON-LD şeması üretir.
  */
-function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
-  const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || 'TRY');
+function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl, dil = 'tr') {
+  const etkinDil = normalizeDil(dil);
+  const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || sozlukGetir(etkinDil).para.kod);
   const fiyatMetni = (v) => urunFiyatMetni(v, paraBirimi);
   const teklifler = Array.isArray(urun.teklifler) ? urun.teklifler : [];
   const stoklular = teklifler.filter(t => t.stokta && Number(t.fiyat) > 0);
@@ -1310,9 +1313,19 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     icLinkler.push({ yol: r.yol, metin: `📖 ${r.etiket}` });
   }
 
-  // Dinamik 3–4 SSS + FAQPage JSON-LD
+  // Dinamik SSS + FAQPage JSON-LD (TR için 30/90g tarihçe cümleleri korunur; EN/FR/JA için i18n şablonu)
   const sssListesi = [];
-  if (guncelFiyat > 0 && urun.enUcuzSite) {
+  if (etkinDil !== 'tr') {
+    sssListesi.push(...sssSablonlari(etkinDil, {
+      ad: urun.ad,
+      guncelFiyat: guncelFiyat || 0,
+      enPahaliFiyat: enPahaliFiyat || 0,
+      enUcuzSite: urun.enUcuzSite || '',
+      magazaSayisi,
+      kargoNotu: enUcuz?.kargo || '',
+      paraBirimi,
+    }));
+  } else if (guncelFiyat > 0 && urun.enUcuzSite) {
     const kargoNotu = enUcuz?.kargo ? ` (${enUcuz.kargo})` : '';
     sssListesi.push({
       soru: `${urun.ad} en ucuz hangi mağazada ve ne kadar?`,
@@ -1325,7 +1338,9 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     });
   }
 
-  if (magazaSayisi >= 2 && fark > 0) {
+  if (etkinDil !== 'tr') {
+    // sssSablonlari(etkinDil, ...) tarafından üretilen 3 temel soru korunur.
+  } else if (magazaSayisi >= 2 && fark > 0) {
     sssListesi.push({
       soru: `${urun.ad} kaç mağazada stokta ve fiyat farkı ne kadar?`,
       cevap: `Toplam ${magazaSayisi} mağazada satın alınabilir stok tespit edilmiştir. Kargo dahil teklifler ${fiyatMetni(guncelFiyat)} ile ${fiyatMetni(enPahaliFiyat)} aralığındadır (${fiyatMetni(fark)} / %${farkYuzde} fark).`,
@@ -1337,7 +1352,9 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     });
   }
 
-  if (gecmis30 && guncelFiyat > 0) {
+  if (etkinDil !== 'tr') {
+    // 3. soru sssSablonlari tarafından eklendi.
+  } else if (gecmis30 && guncelFiyat > 0) {
     const kiyasCumlesi = guncelFiyat <= (gecmis90?.min ?? gecmis30.min) + 0.01
       ? 'Mevcut teklif takip edilen dönemin en düşük taban seviyesindedir.'
       : (guncelFiyat < gecmis30.ort
@@ -1376,16 +1393,16 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     : '';
 
   const analizHtml = `<section class="seo-kart">
-    <h2 style="margin-top:0">📈 Piyasa Analizi &amp; Fiyat Geçmişi Özeti</h2>
+    <h2 style="margin-top:0">📈 ${htmlKacis(t(etkinDil, 'baslik.piyasaAnalizi'))}</h2>
     ${kutularHtml}
-    <p class="seo-piyasa-metin">${cumleler.map(c => htmlKacis(c)).join(' ')}</p>
+    ${etkinDil === 'tr' ? `<p class="seo-piyasa-metin">${cumleler.map(c => htmlKacis(c)).join(' ')}</p>` : ''}
     <div class="seo-ic-linkler">
       ${icLinkler.map(l => `<a class="seo-ic-link" href="${htmlKacis(l.yol)}">${htmlKacis(l.metin)}</a>`).join('')}
     </div>
   </section>`;
 
   const sssHtml = `<section class="seo-kart">
-    <h2 style="margin-top:0">❓ ${htmlKacis(urun.ad)} Hakkında Sık Sorulan Sorular</h2>
+    <h2 style="margin-top:0">❓ ${htmlKacis(t(etkinDil, 'baslik.sssBaslik', { ad: urun.ad }))}</h2>
     <div class="seo-sss">
       ${sssListesi.map((s, idx) => `<details${idx === 0 ? ' open' : ''}>
         <summary>${htmlKacis(s.soru)}</summary>
@@ -1426,25 +1443,35 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
   return { analizHtml, sssHtml, rehberKartlarHtml, faqSchema };
 }
 
-export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
+export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
+  const dil = normalizeDil(opts.dil || urun.dil || dilByMarket(urun.market || 'tr'));
+  const sz = sozlukGetir(dil);
   const kat = SEO_KATEGORILER.find(c => c.slug === urun.kategoriSlug) || SEO_KATEGORILER[0];
-  const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || 'TRY');
+  const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || sz.para.kod);
   const fiyatMetni = (v) => urunFiyatMetni(v, paraBirimi);
   const canliTaraUrl = `/?url=${encodeURIComponent(urun.sorgu || urun.ad)}`;
   const enUcuzEk = urun.enUcuzFiyat > 0 ? ` (${fiyatMetni(urun.enUcuzFiyat)})` : '';
-  const title = `${urun.ad} En Ucuz Fiyatı${enUcuzEk} — Baskı Hesap`;
+  const title = `${urun.ad} ${sz.baslik.enUcuzBaslikEk}${enUcuzEk} — ${sz.meta.siteAdi}`;
   const description = urun.enUcuzFiyat > 0
-    ? `${urun.ad} kargo dahil en ucuz ${fiyatMetni(urun.enUcuzFiyat)} (${urun.enUcuzSite || 'mağaza'}). ${urun.stokluSayisi || 1} mağazada stoklu teklifleri karşılaştır.`
-    : `${urun.ad} Türkiye 3D baskı ve e-ticaret mağazalarında kargo dahil canlı fiyat karşılaştırması. Tek tıkla güncel fiyatları tara.`;
+    ? (dil === 'tr'
+      ? `${urun.ad} kargo dahil en ucuz ${fiyatMetni(urun.enUcuzFiyat)} (${urun.enUcuzSite || 'mağaza'}). ${urun.stokluSayisi || 1} mağazada stoklu teklifleri karşılaştır.`
+      : `${urun.ad} — ${fiyatMetni(urun.enUcuzFiyat)} (${urun.enUcuzSite || sz.baslik.magazaEtiketi}) · ${urun.stokluSayisi || 1} ${sz.baslik.stokluTeklif}.`)
+    : sz.baslik.canliAciklamaYok;
 
-  const tabloSatirlari = urun.teklifler.map((t, idx) => `
+  const kargoEtiketCevir = (k) => {
+    if (!k || k === 'Kargo sepette') return sz.durum.kargoSepette;
+    if (k === 'Ücretsiz Kargo') return sz.durum.ucretsizKargo;
+    return k;
+  };
+
+  const tabloSatirlari = urun.teklifler.map((tkr, idx) => `
     <tr>
-      <td><b>${htmlKacis(t.site)}</b>${idx === 0 && t.stokta ? ' 🏷️' : ''}</td>
-      <td>${htmlKacis(String(t.baslik || urun.ad).slice(0, 85))}</td>
-      <td>${htmlKacis(t.kargo)}</td>
-      <td>${t.stokta ? '🟢 Stokta' : '🔴 Tükendi'}</td>
-      <td><b>${urunFiyatMetni(t.fiyat, t.paraBirimi || paraBirimi)}</b></td>
-      <td>${t.url ? `<a href="${htmlKacis(t.url)}" target="_blank" rel="noopener sponsored nofollow">Mağazaya Git ↗</a>` : '—'}</td>
+      <td><b>${htmlKacis(tkr.site)}</b>${idx === 0 && tkr.stokta ? ' 🏷️' : ''}</td>
+      <td>${htmlKacis(String(tkr.baslik || urun.ad).slice(0, 85))}</td>
+      <td>${htmlKacis(kargoEtiketCevir(tkr.kargo))}</td>
+      <td>${tkr.stokta ? `🟢 ${htmlKacis(sz.durum.stokta)}` : `🔴 ${htmlKacis(sz.durum.tukendi)}`}</td>
+      <td><b>${urunFiyatMetni(tkr.fiyat, tkr.paraBirimi || paraBirimi)}</b></td>
+      <td>${tkr.url ? `<a href="${htmlKacis(tkr.url)}" target="_blank" rel="noopener sponsored nofollow">${htmlKacis(sz.buton.magazayaGit)}</a>` : '—'}</td>
     </tr>`).join('');
 
   const benzerler = tumUrunler
@@ -1505,55 +1532,55 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     jsonLdList.push(productSchema);
   }
 
-  const { analizHtml, sssHtml, rehberKartlarHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl);
+  const { analizHtml, sssHtml, rehberKartlarHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl, dil);
   jsonLdList.push(faqSchema);
   const globalCreality = crealityResmiMagazaLink(urun);
 
   const ozetHtml = urun.enUcuzFiyat > 0
     ? `<div class="seo-fiyat-kutu">
          <div>
-           <div style="font-size:12px;font-weight:700;color:var(--gri-metin)">KARGO DAHİL EN UCUZ TEKLİF</div>
+           <div style="font-size:12px;font-weight:700;color:var(--gri-metin)">${htmlKacis(sz.baslik.enUcuzTeklifEtiketi)}</div>
            <div class="seo-fiyat-ana">${fiyatMetni(urun.enUcuzFiyat)}</div>
          </div>
          <div style="font-size:14px">
-           <div><b>Mağaza:</b> ${htmlKacis(urun.enUcuzSite || '—')}</div>
-           <div><b>Stoklu teklif:</b> ${urun.stokluSayisi || 1} mağaza${urun.birimMetni ? ` · <b>Birim:</b> ${htmlKacis(urun.birimMetni)}` : ''}</div>
-           <div style="color:var(--gri-metin);font-size:12px">Son kontrol: ${htmlKacis(urun.lastmod)}</div>
+           <div><b>${htmlKacis(sz.baslik.magazaEtiketi)}:</b> ${htmlKacis(urun.enUcuzSite || '—')}</div>
+           <div><b>${htmlKacis(sz.baslik.stokluTeklif)}:</b> ${urun.stokluSayisi || 1}${urun.birimMetni ? ` · <b>${htmlKacis(sz.baslik.birimEtiketi)}:</b> ${htmlKacis(urun.birimMetni)}` : ''}</div>
+           <div style="color:var(--gri-metin);font-size:12px">${htmlKacis(sz.baslik.sonKontrol)}: ${htmlKacis(urun.lastmod)}</div>
          </div>
        </div>`
     : `<div class="seo-fiyat-kutu">
-         <div>Bu ürün için önbellekte kayıtlı tarama henüz yok — tüm mağazalardan anlık fiyat çekmek için canlı tarama başlatabilirsiniz.</div>
+         <div>${htmlKacis(sz.baslik.onbellekYok)}</div>
        </div>`;
 
   const govdeHtml = `
-    <nav class="seo-yol" aria-label="İçerik yolu">
-      <a href="/">Ana Sayfa</a> › <a href="/kategori/${htmlKacis(kat.slug)}">${htmlKacis(kat.ad)}</a> › <span>${htmlKacis(urun.ad)}</span>
+    <nav class="seo-yol" aria-label="Breadcrumb">
+      <a href="/">${htmlKacis(sz.nav.anaSayfa)}</a> › <a href="/kategori/${htmlKacis(kat.slug)}">${htmlKacis(kat.ad)}</a> › <span>${htmlKacis(urun.ad)}</span>
     </nav>
 
     <section class="seo-kart">
       <div class="${urun.gorsel ? 'seo-ust' : ''}">
         ${urun.gorsel ? `<img class="seo-gorsel" src="${htmlKacis(urun.gorsel)}" alt="${htmlKacis(urun.ad)}" loading="lazy" />` : ''}
         <div>
-          <h1 class="seo-baslik">${htmlKacis(urun.ad)} Fiyatları</h1>
+          <h1 class="seo-baslik">${htmlKacis(urun.ad)} ${htmlKacis(sz.baslik.fiyatlarEk)}</h1>
           <p class="seo-alt">${htmlKacis(description)}</p>
         </div>
       </div>
       ${ozetHtml}
       <div class="seo-butonlar">
-        <a class="seo-cta" href="${htmlKacis(canliTaraUrl)}">⚡ Canlı Fiyatları Şimdi Tara</a>
-        ${urun.enUcuzUrl ? `<a class="seo-cta ikincil" href="${htmlKacis(urun.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">En Ucuz Mağazaya Git (${htmlKacis(urun.enUcuzSite || '')}) ↗</a>` : ''}
-        ${globalCreality ? `<a class="seo-cta ikincil" href="${htmlKacis(globalCreality.url)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="creality">🌍 Creality Resmî Mağaza (Global) ↗</a>` : ''}
+        <a class="seo-cta" href="${htmlKacis(canliTaraUrl)}">⚡ ${htmlKacis(sz.buton.canliTara)}</a>
+        ${urun.enUcuzUrl ? `<a class="seo-cta ikincil" href="${htmlKacis(urun.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">${htmlKacis(t(dil, 'buton.enUcuzMagaza', { site: urun.enUcuzSite || '' }))}</a>` : ''}
+        ${globalCreality ? `<a class="seo-cta ikincil" href="${htmlKacis(globalCreality.url)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="creality">🌍 ${htmlKacis(sz.baslik.globalCrealityBaslik)} ↗</a>` : ''}
       </div>
     </section>
 
     <section class="seo-kart">
-      <h2 style="margin-top:0">Mağaza Karşılaştırma Tablosu (Kargo Dahil)</h2>
+      <h2 style="margin-top:0">${htmlKacis(sz.baslik.fiyatTablosu)}</h2>
       ${urun.teklifler.length
         ? `<div style="overflow-x:auto"><table class="seo-tablo">
-            <thead><tr><th>Mağaza</th><th>Ürün</th><th>Kargo</th><th>Stok</th><th>Toplam</th><th>Link</th></tr></thead>
+            <thead><tr><th>${htmlKacis(sz.tablo.magaza)}</th><th>${htmlKacis(sz.tablo.urunBasligi)}</th><th>${htmlKacis(sz.tablo.kargo)}</th><th>${htmlKacis(sz.tablo.stok)}</th><th>${htmlKacis(sz.tablo.fiyat)}</th><th>${htmlKacis(sz.tablo.islem)}</th></tr></thead>
             <tbody>${tabloSatirlari}</tbody>
           </table></div>`
-        : '<p>Güncel çoklu mağaza tekliflerini listelemek için yukarıdaki <b>Canlı Fiyatları Şimdi Tara</b> butonunu kullanın.</p>'}
+        : `<p>${htmlKacis(sz.baslik.yetersizFiyat)}</p>`}
     </section>
 
     ${analizHtml}
@@ -1563,7 +1590,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     ${rehberKartlarHtml}
 
     ${benzerler.length ? `<section class="seo-kart">
-      <h2 style="margin-top:0">Aynı Kategorideki Diğer Ürünler</h2>
+      <h2 style="margin-top:0">${htmlKacis(sz.baslik.benzerUrunler)}</h2>
       <div class="seo-izgara">
         ${benzerler.map(b => seoUrunKartiHtml(b)).join('')}
       </div>
@@ -1571,7 +1598,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
   `;
 
   const extraMeta = urun.enUcuzFiyat > 0
-    ? `<meta property="product:price:amount" content="${Number(urun.enUcuzFiyat).toFixed(2)}" />\n  <meta property="product:price:currency" content="TRY" />`
+    ? `<meta property="product:price:amount" content="${Number(urun.enUcuzFiyat).toFixed(paraBirimi === 'JPY' ? 0 : 2)}" />\n  <meta property="product:price:currency" content="${htmlKacis(paraBirimi)}" />`
     : '';
 
   return sayfaIskeleti({
@@ -1583,6 +1610,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     extraMeta,
     jsonLdList,
     govdeHtml,
+    dil,
   });
 }
 

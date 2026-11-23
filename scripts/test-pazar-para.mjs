@@ -11,6 +11,10 @@ import {
 } from '../src/sites/index.js';
 import { crealityAramaKartlariCikar, crealityJsonLdUrunOku, parseGlobalFiyat } from '../src/sites/creality-global.js';
 import { afiliyeLink } from '../src/afiliye.js';
+import {
+  SOZLUKLER, DESTEKLENEN_DILLER, DIL_META, normalizeDil, dilByMarket,
+  sozlukGetir, t, sssSablonlari, dilParaFormati,
+} from '../src/i18n/index.js';
 import { seoUrunListesi, urunSayfasiHtml } from '../src/seoSayfalar.js';
 import { katalogUrunleriAra } from '../src/katalogSync.js';
 import { katalogdanKaynakAdayi } from '../src/urunArama.js';
@@ -171,6 +175,66 @@ const impactAyar = {
 kontrol('creality_us/fr/eu/jp bağlantıları Impact şablonu ile sarılır',
   afiliyeLink('creality_us', 'https://store.creality.com/products/k3-multi-material-multicolor-3d-printer', impactAyar).startsWith('https://crealityofficialstore.sjv.io/Pzxrme?u=')
   && afiliyeLink('creality_jp', 'https://store.creality.com/jp/products/k1c', impactAyar).startsWith('https://crealityofficialstore.sjv.io/Pzxrme?u='));
+
+console.log('\n7) 🗣️ Hafif i18n sözlük motoru (tr / en / fr / ja)');
+kontrol('4 dil tanımlı ve meta bilgileri tam',
+  DESTEKLENEN_DILLER.join(',') === 'tr,en,fr,ja'
+  && DIL_META.en.currency === 'USD' && DIL_META.fr.currency === 'EUR' && DIL_META.ja.currency === 'JPY');
+kontrol('normalizeDil ve dilByMarket doğru eşler',
+  normalizeDil('jp') === 'ja' && normalizeDil('en-US') === 'en' && normalizeDil('fr-FR') === 'fr'
+  && dilByMarket('us') === 'en' && dilByMarket('fr') === 'fr' && dilByMarket('jp') === 'ja');
+
+// Tüm 4 sözlükte anahtar eşitliği
+const trAnahtarlar = [];
+const topla = (obj, on = '') => {
+  for (const [k, v] of Object.entries(obj)) {
+    const yol = on ? `${on}.${k}` : k;
+    if (v && typeof v === 'object') topla(v, yol);
+    else trAnahtarlar.push(yol);
+  }
+};
+topla(SOZLUKLER.tr);
+for (const dil of ['en', 'fr', 'ja']) {
+  const eksik = trAnahtarlar.filter(yol => t(dil, yol) === yol || !t(dil, yol));
+  kontrol(`${dil}.js tüm sözlük anahtarlarına sahip`, eksik.length === 0, eksik.join(', '));
+}
+
+kontrol('stok ve kargo etiketleri hedef dillerde doğru',
+  t('en', 'durum.stokta') === 'In Stock'
+  && t('fr', 'durum.stokta') === 'En stock'
+  && t('ja', 'durum.stokta') === '在庫あり'
+  && t('fr', 'durum.ucretsizKargo') === 'Livraison gratuite'
+  && t('ja', 'durum.ucretsizKargo') === '送料無料');
+
+kontrol('dilParaFormati her dilin yerel para birimini biçimlendirir',
+  dilParaFormati('en', 849) === '$849.00'
+  && dilParaFormati('fr', 799) === '799,00 €'
+  && dilParaFormati('ja', 128000) === '¥128,000'
+  && dilParaFormati('tr', 34990) === '34.990,00 TL');
+
+const enSss = sssSablonlari('en', { ad: 'Creality K3', guncelFiyat: 849, enPahaliFiyat: 899, enUcuzSite: 'Creality Store', magazaSayisi: 2 });
+const jaSss = sssSablonlari('ja', { ad: 'Creality K1C', guncelFiyat: 75000, enUcuzSite: 'Creality JP', magazaSayisi: 1 });
+kontrol('sssSablonlari EN ve JA dinamik SSS üretir',
+  enSss.length === 3 && enSss[0].cevap.includes('$849.00')
+  && jaSss.length === 3 && jaSss[0].cevap.includes('¥75,000'));
+
+const enSayfa = urunSayfasiHtml(ornekUsdUrun, 'https://baskihesap.tech', [], { dil: 'en' });
+kontrol('İngilizce SSR ürün sayfası In Stock, Visit Store ve lang="en" içerir',
+  enSayfa.includes('<html lang="en"') && enSayfa.includes('In Stock') && enSayfa.includes('Visit Store') && enSayfa.includes('$849.00'));
+
+const frSayfa = urunSayfasiHtml({
+  ...ornekUsdUrun,
+  market: 'fr',
+  paraBirimi: 'EUR',
+  enUcuzFiyat: 799,
+  teklifler: [{ ...ornekUsdUrun.teklifler[0], fiyat: 799, paraBirimi: 'EUR' }],
+}, 'https://baskihesap.tech', [], { dil: 'fr' });
+kontrol('Fransızca SSR ürün sayfası En stock, 799,00 € ve lang="fr" içerir',
+  frSayfa.includes('<html lang="fr"') && frSayfa.includes('En stock') && frSayfa.includes('799,00 €'));
+
+const jaSayfa = urunSayfasiHtml(ornekJpyUrun, 'https://baskihesap.tech', [], { dil: 'ja' });
+kontrol('Japonca SSR ürün sayfası 在庫あり, ¥128,000 ve lang="ja" içerir',
+  jaSayfa.includes('<html lang="ja"') && jaSayfa.includes('在庫あり') && jaSayfa.includes('¥128,000'));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
