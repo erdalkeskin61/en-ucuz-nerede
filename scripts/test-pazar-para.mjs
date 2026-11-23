@@ -496,6 +496,7 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazo
   && detectSite('https://eryone3d.com/fr/products/matte-pla')?.id === 'eryone_fr'
   && detectSite('https://iiidmax.com/products/iiid-max-classic-pla')?.id === 'iiidmax'
   && detectSite('https://store.inslogic3d.com/products/pla-pro-filament-1-75mm')?.id === 'inslogic_us'
+  && detectSite('https://kingroon.com/products/kingroon-pla-pluspla')?.id === 'kingroon_us'
   && detectSite('https://store.inslogic3d.com/ja/products/spool-free-engineering-500g-sample')?.id === 'inslogic_jp'
   && detectSite('https://azurefilm.com/product/refill-unset-pla-wood-lumberlay-1-75mm/')?.id === 'azurefilm_eu'
   && taramaAdaptersByMarket('fr').some(a => a.id === 'azurefilm_eu')

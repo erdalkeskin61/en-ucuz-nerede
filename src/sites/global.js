@@ -29,7 +29,7 @@ function hostListesi(base, extra = []) {
 
 export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   // =========================================================================
-  // 🇺🇸 ABD / Global English (USD) — 32 üretici ve uzman mağaza (+ creality_us + prusa_us = 34)
+  // 🇺🇸 ABD / Global English (USD) — 33 üretici ve uzman mağaza (+ creality_us + prusa_us = 35)
   // =========================================================================
   { id: 'polymaker_us', name: 'Polymaker (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.polymaker.com', extraHosts: ['shop.polymaker.com'] },
   { id: 'overture_us', name: 'Overture 3D', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://overture3d.com' },
@@ -45,6 +45,7 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'iiidmax', name: 'IIID Max', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://iiidmax.com' },
   { id: 'inslogic_us', name: 'Inslogic (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.inslogic3d.com' },
   { id: 'landu_us', name: 'LANDU 3D (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.landu3d.com' },
+  { id: 'kingroon_us', name: 'Kingroon', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://kingroon.com' },
   { id: '3dprintersdepot_us', name: '3DPrintersDepot', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://3dprintersdepot.com' },
   { id: '3dprintingusa', name: '3DPrintingUSA', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://3dprintingusa.com' },
   { id: 'filabot_us', name: 'Filabot', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://www.filabot.com' },
