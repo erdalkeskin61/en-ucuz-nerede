@@ -104,6 +104,56 @@
     });
   }
 
+  function kayitTablosuCiz(d) {
+    const alan = $('#afiliyeKayitTablosu');
+    if (!alan) return;
+    const hamSatirlar = Array.isArray(d?.kayitTablosu) ? d.kayitTablosu : [];
+    const kayitli = hamSatirlar.filter(s => s.dolduruldu || s.token || s.sablon || s.etkin);
+    if (!kayitli.length) {
+      alan.innerHTML = '<p class="alt-not" style="padding:12px">Henüz kayıtlı token veya yönlendirme şablonu yok.</p>';
+      return;
+    }
+    const tikHarita = d?.tiklamalar?.siteler || {};
+    const durumBadge = (s) => {
+      if (!s.etkin) return '<span class="rozet" style="background:#f1f3f7;color:#7a8291">kapalı</span>';
+      if (s.hazir) return '<span class="rozet" style="background:#e8f7ee;color:#1f7a45">hazır</span>';
+      return '<span class="rozet" style="background:#fff5e5;color:#a86a12">eksik</span>';
+    };
+    alan.innerHTML = `<table class="admin-tablo">
+      <thead>
+        <tr>
+          <th>Kapsam</th>
+          <th>Ağ / Mağaza</th>
+          <th>Durum</th>
+          <th>Parametre / Hedef</th>
+          <th>Kayıtlı Değer / Şablon</th>
+          <th>Eşleşen Mağazalar</th>
+          <th>30g Tık</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${kayitli.map((s) => {
+          const parcalar = [];
+          if (s.token) parcalar.push(`<code>${esc(s.token)}</code>`);
+          if (s.sablon) parcalar.push(`<code style="word-break:break-all">${esc(s.sablon)}</code>`);
+          const degerHtml = parcalar.length ? parcalar.join('<br>') : '<span class="alt-not">—</span>';
+          const paramTxt = [s.parametre, s.hedefParametre].filter(Boolean).join(' / ') || '—';
+          const sitelerTxt = (s.siteler || []).length ? s.siteler.map(x => `<code>${esc(x)}</code>`).join(' ') : '—';
+          const tikSayisi = (s.siteler || []).reduce((acc, x) => acc + (Number(tikHarita[x]) || 0), 0);
+          return `<tr>
+            <td>${s.tur === 'site' ? 'Mağaza' : 'Ağ'}</td>
+            <td><b>${esc(s.ad)}</b></td>
+            <td>${durumBadge(s)}</td>
+            <td><code>${esc(paramTxt)}</code></td>
+            <td>${degerHtml}</td>
+            <td>${sitelerTxt}</td>
+            <td><b>${tikSayisi}</b></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
   function tiklamalariCiz(t) {
     const el = $('#afiliyeTiklamalar');
     if (!el || !t) return;
@@ -139,6 +189,7 @@
 
       tiklamalariCiz(d.tiklamalar);
       sablonlariCiz();
+      kayitTablosuCiz(d);
     } catch (e) {
       panel.innerHTML = `<p class="alt-not">Ayarlar yüklenemedi: ${esc(e.message)}</p>`;
     }

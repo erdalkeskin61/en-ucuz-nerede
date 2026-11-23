@@ -14,7 +14,7 @@
  * Not: Bu test CANLI İNTERNETE çıkmaz ve gerçek ayarları bozmaz — kaydettiği
  * değerleri sonunda eski hâline döndürür.
  */
-import { afiliyeLink, afiliyeKaydet, afiliyeAyarlari, afiliyeOzet, AG_BILGILERI } from '../src/afiliye.js';
+import { afiliyeLink, afiliyeKaydet, afiliyeAyarlari, afiliyeOzet, afiliyeKayitTablosu, AG_BILGILERI } from '../src/afiliye.js';
 
 let gecen = 0;
 let toplam = 0;
@@ -350,6 +350,10 @@ kontrol('amazon_us tag=baskihesap-20 uygular, TR ve FR tagları karışmaz',
   && afiliyeLink('amazon_fr', 'https://www.amazon.fr/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.fr/dp/B0CXYZ?tag=baskihesapfr-21'
   && afiliyeLink('amazon', 'https://www.amazon.com.tr/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.com.tr/dp/B0CXYZ?tag=tr-21'
   && afiliyeLink('amazon_jp', 'https://www.amazon.co.jp/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.co.jp/dp/B0CXYZ');
+
+const tabloOnce = afiliyeKayitTablosu(['amazon', 'amazon_us', 'creality_us']);
+kontrol('afiliyeKayitTablosu ağ ve eşleşen mağaza listesini döner',
+  Array.isArray(tabloOnce) && tabloOnce.some(s => s.kimlik === 'amazon_us' && s.siteler.includes('amazon_us')));
 
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);

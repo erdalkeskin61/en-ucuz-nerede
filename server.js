@@ -24,7 +24,7 @@ import { startTelegramBot } from './src/telegramBot.js';
 import { saglayiciDurumu } from './src/scraper.js';
 import { saglayiciKredileri } from './src/kredi.js';
 import { getKuponlar, tumunuTopla, tazelemeGerekli } from './src/kuponlar.js';
-import { afiliyeOzet, afiliyeKaydet, tiklaKaydet, tiklaOzet, afiliyeLink } from './src/afiliye.js';
+import { afiliyeOzet, afiliyeKaydet, afiliyeKayitTablosu, tiklaKaydet, tiklaOzet, afiliyeLink } from './src/afiliye.js';
 import { sepetKuponAnalizi } from './src/kuponSepeti.js';
 import {
   saglikKontrolu, saglikDurumu, saglikNobetcisiBaslat,
@@ -3107,7 +3107,12 @@ app.post('/api/sepet-kupon', (req, res) => {
  */
 app.get('/api/afiliye', adminGerekli, (req, res) => {
   try {
-    res.json({ ...afiliyeOzet(adapters.map(a => a.id)), tiklamalar: tiklaOzet(30) });
+    const idList = adapters.map(a => a.id);
+    res.json({
+      ...afiliyeOzet(idList),
+      kayitTablosu: afiliyeKayitTablosu(idList),
+      tiklamalar: tiklaOzet(30),
+    });
   } catch (e) {
     res.status(500).json({ hata: 'Satış ortaklığı durumu okunamadı: ' + e.message });
   }

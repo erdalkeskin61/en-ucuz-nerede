@@ -429,6 +429,70 @@ export function afiliyeOzet(bilinenSiteler = null) {
   };
 }
 
+/**
+ * Yalnızca yönetici paneli (`GET /api/afiliye`) için kayıtlı ağ ve mağaza şablonlarını
+ * açıkça okunabilir tablo satırları olarak döner.
+ */
+export function afiliyeKayitTablosu(bilinenSiteler = []) {
+  const a = afiliyeAyarlari();
+  const bilinen = Array.isArray(bilinenSiteler) ? new Set(bilinenSiteler.map(s => String(s).toLowerCase())) : null;
+  const ozet = afiliyeOzet(bilinenSiteler);
+  const ozetHarita = Object.fromEntries(ozet.aglar.map(x => [x.id, x]));
+
+  const agSiteleri = {};
+  for (const [site, agId] of Object.entries(SITE_AGLARI)) {
+    const k = String(site).toLowerCase();
+    const guncelAg = a.siteAg[k] || agId;
+    if (!agSiteleri[guncelAg]) agSiteleri[guncelAg] = [];
+    agSiteleri[guncelAg].push(k);
+  }
+  for (const [site, agId] of Object.entries(a.siteAg || {})) {
+    const k = String(site).toLowerCase();
+    if (!agSiteleri[agId]) agSiteleri[agId] = [];
+    if (!agSiteleri[agId].includes(k)) agSiteleri[agId].push(k);
+  }
+
+  const satirlar = [];
+  for (const [id, bilgi] of Object.entries(AG_BILGILERI)) {
+    const cfg = a.aglar[id] || {};
+    const hazir = !!ozetHarita[id]?.hazir;
+    const dolduruldu = !!(cfg.etkin || cfg.token || cfg.sablon || cfg.hedefParametre);
+    satirlar.push({
+      tur: 'ag',
+      kimlik: id,
+      ad: bilgi.ad,
+      etkin: !!cfg.etkin,
+      hazir,
+      dolduruldu,
+      parametre: cfg.parametre || '',
+      token: cfg.token || '',
+      sablon: cfg.sablon || '',
+      hedefParametre: cfg.hedefParametre || '',
+      siteler: agSiteleri[id] || [],
+    });
+  }
+
+  for (const [site, v] of Object.entries(a.siteSablon || {})) {
+    const k = String(site).toLowerCase();
+    satirlar.push({
+      tur: 'site',
+      kimlik: k,
+      ad: k,
+      etkin: true,
+      hazir: true,
+      dolduruldu: true,
+      parametre: v?.hedefParametre || '',
+      token: v?.token || '',
+      sablon: v?.sablon || '',
+      hedefParametre: v?.hedefParametre || '',
+      siteler: [k],
+      siteKayitli: bilinen ? bilinen.has(k) : null,
+    });
+  }
+
+  return satirlar;
+}
+
 /* --------------------------- tıklama sayacı (yerel) --------------------------- */
 // Amaç: "link gerçekten tıklanıyor mu" sorusunu ölçmek. Kişisel veri yok;
 // yalnızca gün + site + sayı tutulur. Ağ isteği yapılmaz, dosya yerel kalır.
