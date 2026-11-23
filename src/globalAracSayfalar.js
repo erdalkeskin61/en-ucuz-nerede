@@ -547,6 +547,12 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       kopyala: '📋 Copy Customer Quote',
       varsayimAlt: 'Electricity & depreciation are estimates shown alongside net cost. Live filament prices update from regional scans.',
       crealityBtn: '🛒 Shop Official Creality Store ↗',
+      gramajIpucu: '“Filament used” value reported by Bambu Studio, Cura, or OrcaSlicer.',
+      yaziciLbl: '⚡ 3D printer model',
+      malzemeAdLbl: 'Material name',
+      gelismisSum: '⚙️ Advanced settings (electricity · depreciation · profit margin)',
+      hedefKarLbl: '💰 Target profit margin',
+      footerUstNot: 'Live filament pricing is scanned from regional stores; always verify final checkout totals.',
       birimSira: ['Weight', 'Time', 'Printer power', 'Filament', 'Advanced settings (electricity · depreciation · profit margin)', 'Target profit margin', 'Material price', 'Material name', 'Estimated print time.', 'Filament Used from your slicer.'],
       dolulukSecenek: ['10% — draft', '20% — standard', '40% — strong', '100% — solid'],
       fisBaslik: '3D Print Cost &amp; Quote Summary', fisOnerilen: 'RECOMMENDED SELLING PRICE',
@@ -560,6 +566,12 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       kopyala: '📋 Copier le devis client',
       varsayimAlt: 'L’électricité et l’amortissement sont estimés localement (hors TVA). Les tarifs bobines proviennent des scans régionaux.',
       crealityBtn: '🛒 Boutique Officielle Creality FR ↗',
+      gramajIpucu: 'Valeur « Filament used » indiquée par Bambu Studio, Cura ou OrcaSlicer.',
+      yaziciLbl: '⚡ Modèle d’imprimante 3D',
+      malzemeAdLbl: 'Nom du matériau',
+      gelismisSum: '⚙️ Paramètres avancés (électricité · amortissement · marge bénéficiaire)',
+      hedefKarLbl: '💰 Marge bénéficiaire cible',
+      footerUstNot: 'Les prix des filaments proviennent de l’analyse régionale en direct ; vérifiez toujours chez le marchand.',
       dolulukSecenek: ['10 % — brouillon', '20 % — standard', '40 % — solide', '100 % — plein'],
       fisBaslik: 'Résumé Coût &amp; Devis Impression 3D', fisOnerilen: 'PRIX DE VENTE CONSEILLÉ',
       fisWa: '📲 Envoyer sur WhatsApp', fisKopya: '📋 Copier le devis', fisYaz: '🖨️ Imprimer / PDF',
@@ -572,6 +584,12 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       kopyala: '📋 見積もりテキストをコピー',
       varsayimAlt: '電気代・償却費は参考設定値です（いつでも変更可）。税抜原価として表示されます。',
       crealityBtn: '🛒 Creality 日本公式ストアを見る ↗',
+      gramajIpucu: 'Bambu Studio・Cura・OrcaSlicerに表示される「Filament used」の値を入力してください。',
+      yaziciLbl: '⚡ 3Dプリンター機種',
+      malzemeAdLbl: '素材名',
+      gelismisSum: '⚙️ 詳細設定（電気代・償却費・目標利益率）',
+      hedefKarLbl: '💰 目標利益率',
+      footerUstNot: 'フィラメント価格は地域ライブスキャン結果です。購入前にショップ画面で最終金額をご確認ください。',
       dolulukSecenek: ['10% — 下書き', '20% — 標準', '40% — 高強度', '100% — ソリッド'],
       fisBaslik: '3Dプリント原価・お見積り書', fisOnerilen: '推奨販売価格',
       fisWa: '📲 WhatsAppで共有', fisKopya: '📋 見積書をコピー', fisYaz: '🖨️ 印刷 / PDF',
@@ -617,15 +635,21 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('⬇️ Bu gramajı hesaplayıcıya aktar', c.aktarBtn)
     .replace('<h2 id="girdiBaslik" class="mz-baslik">🎛️ Girdiler</h2>', `<h2 id="girdiBaslik" class="mz-baslik">${k.girdi}</h2>`)
     .replace('<label for="gramaj">⚖️ Model gramajı</label>', `<label for="gramaj">${c.gramajLabel}</label>`)
+    .replace('<p class="mz-ipucu">Dilimleyicide (Bambu Studio, Cura, OrcaSlicer) “Filament used” değeri.</p>', `<p class="mz-ipucu">${k.gramajIpucu}</p>`)
     .replace('<label for="sure">⏱️ Baskı süresi (saat)</label>', `<label for="sure">${c.sureLabel}</label>`)
+    .replace('<label for="yazici">⚡ 3D yazıcı modeli</label>', `<label for="yazici">${k.yaziciLbl}</label>`)
     .replace('<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">Canlı piyasa</button>', `<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">${k.canliPiyasa}</button>`)
     .replace('<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">Manuel</button>', `<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">${k.manuel}</button>`)
     .replace('<label for="manuelTlKg">Fiyat (₺/kg)</label>', `<label for="manuelTlKg">${c.filamentFiyatLabel}</label>`)
+    .replace('<label for="manuelAd">Malzeme adı</label>', `<label for="manuelAd">${k.malzemeAdLbl}</label>`)
+    .replace('<summary>⚙️ Gelişmiş ayarlar (elektrik · amortisman · kâr marjı)</summary>', `<summary>${k.gelismisSum}</summary>`)
+    .replace('<label for="karCarpani">💰 Hedef kâr marjı</label>', `<label for="karCarpani">${k.hedefKarLbl}</label>`)
     .replace('value="600" inputmode="decimal"', `value="${c.varsayilanFilamentKg}" inputmode="decimal"`)
     .replace('<label for="kwhTl">💡 Elektrik (₺/kWh)</label>', `<label for="kwhTl">${c.elektrikLabel}</label>`)
     .replace('value="2.90" inputmode="decimal"', `value="${c.varsayilanElektrikKwh}" inputmode="decimal"`)
     .replace('<label for="yipranma">🛠️ Yıpranma (₺/saat)</label>', `<label for="yipranma">${c.yipranmaLabel}</label>`)
     .replace('value="3.00" inputmode="decimal"', `value="${c.varsayilanYipranma}" inputmode="decimal"`)
+    .replace('Filament fiyatları canlı radar taramasından gelir; her zaman mağazada doğrulayın.', k.footerUstNot)
     .replace('<h2 id="ciktiBaslik" class="mz-baslik">📊 Maliyet dökümü</h2>', `<h2 id="ciktiBaslik" class="mz-baslik">${k.cikti}</h2>`)
     .replace('<span class="mz-kart-ad">Hammadde</span>', `<span class="mz-kart-ad">${k.hammaddeAd}</span>`)
     .replace('<strong class="mz-kart-deger" id="ciktiHammadde">₺0,00</strong>', `<strong class="mz-kart-deger" id="ciktiHammadde">${sifirPara}</strong>`)
@@ -683,6 +707,44 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
       apiNot: 'Public, CORS-enabled, 60s cached.',
       crealityBtn: '🛒 Shop Official Creality Store ↗',
       footerNot: 'The slicer plugin is free and needs no account. Outbound affiliate links never affect your price.',
+      heroGuven1: '🔒 Only weight + material sent',
+      heroGuven2: '🆓 Free, no account needed',
+      jsonBtn: '{ } Show API JSON output',
+      curaAdim1: '<code>.curapackage</code> file: <b>drag &amp; drop</b> into Cura window.',
+      curaAdim2: '<b>Restart</b> Cura.',
+      curaAdim3: 'Slice a model — instant filament alert appears.',
+      bambuAdim1: 'Save the script locally (e.g. <code>C:\\BaskiHesap\\en_ucuz_slicer.py</code>).',
+      bambuAdim2: 'Paste full path in <b>Print Settings ➔ Output options ➔ Post-processing scripts</b>.',
+      bambuAdim3: 'Slice and save — price notification appears automatically.',
+      pySum: '🐍 No Python installed? (Windows)',
+      pyP1: 'The script requires Python 3. Install from <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a>, check <b>"Add python.exe to PATH"</b>, then enter:',
+      pyP2: 'Optional standalone <code>.exe</code> build:',
+      pyP3: '⚠️ With <code>--noconsole</code>, <code>--test</code> prints no terminal output; alerts still work.',
+      testSum: '✅ Verify setup',
+      testP1: 'Run in terminal:',
+      testP2: 'Shows a test notification if reachable; prints <code>RESULT: API unreachable</code> offline — slicing never fails.',
+      guvenHtml: `<li><b>What is sent:</b> only material type (PLA/PETG…), weight, and source tag (<code>cura</code>, <code>bambu</code>…). Color is optional.</li>
+        <li><b>What is never sent:</b> file name, 3D geometry, G-Code, or personal data beyond standard IP.</li>
+        <li><b>G-Code untouched:</b> post-processor is strictly <b>read-only</b>; never modifies slices.</li>
+        <li><b>Zero slicer lag:</b> HTTP request and toast run asynchronously; finishes in milliseconds.</li>
+        <li><b>Silent offline:</b> if API is unreachable, nothing interrupts slicing.</li>
+        <li><b>Honest results:</b> if no matching spool is in stock, returns not found — never synthetic prices.</li>`,
+      apiParamHtml: 'Parameters: <code>malzeme</code> · <code>gramaj</code> (required) · <code>renk</code> · <code>market</code> · <code>kaynak</code>. Missing weight returns <code>400</code>; no stock returns <code>status:"bulunamadi"</code>.',
+      apiOrnek: `GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;market=us&amp;kaynak=cura
+
+{
+  "status": "success",
+  "talep": { "malzeme": "PLA", "gramaj": 340, "renk": "Black" },
+  "enUcuz": {
+    "urunAdi": "PolyLite PLA Filament Black 1kg",
+    "magaza": "Polymaker (US)",
+    "fiyat": 19.99,
+    "parcaBasiMaliyet": 6.80,
+    "makaradanCikanAdet": 2,
+    "stok": true,
+    "yonlendirmeLinki": "https://baskihesap.tech/yonlendir?urunId=4&amp;kaynak=cura"
+  },
+  "bildirimMetni": "This print requires 340 g Black PLA ($6.80 at Polymaker US)."`,
     },
     fr: {
       canliBaslik: '🔎 Exemple API en Direct &amp; Analyseur G-Code',
@@ -702,6 +764,44 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
       apiNot: 'Ouverte, compatible CORS, cache 60 s.',
       crealityBtn: '🛒 Boutique Officielle Creality FR ↗',
       footerNot: 'L’extension slicer est 100 % gratuite et sans compte. Les liens affiliés n’augmentent jamais votre prix.',
+      heroGuven1: '🔒 Seuls poids + matériau envoyés',
+      heroGuven2: '🆓 Gratuit, sans compte',
+      jsonBtn: '{ } Afficher la réponse JSON',
+      curaAdim1: 'Glissez-déposez le fichier <code>.curapackage</code> dans la fenêtre Cura.',
+      curaAdim2: '<b>Redémarrez</b> Cura.',
+      curaAdim3: 'Tranchez un modèle — la notification s’affiche aussitôt.',
+      bambuAdim1: 'Enregistrez le script (ex. <code>C:\\BaskiHesap\\en_ucuz_slicer.py</code>).',
+      bambuAdim2: 'Collez le chemin dans <b>Print Settings ➔ Output options ➔ Post-processing scripts</b>.',
+      bambuAdim3: 'Tranchez et exportez — le meilleur prix s’affiche.',
+      pySum: '🐍 Python absent ? (Windows)',
+      pyP1: 'Le script requiert Python 3. Installez-le sur <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> en cochant <b>« Add python.exe to PATH »</b>, puis saisissez :',
+      pyP2: 'Optionnel — générer un <code>.exe</code> autonome :',
+      pyP3: '⚠️ Avec <code>--noconsole</code>, <code>--test</code> reste silencieux en console mais les notifications fonctionnent.',
+      testSum: '✅ Vérifier l’installation',
+      testP1: 'Exécutez dans un terminal :',
+      testP2: 'Affiche une notification test si l’API répond ; sinon n’interrompt jamais le tranchage.',
+      guvenHtml: `<li><b>Données envoyées :</b> uniquement matériau (PLA/PETG…), poids et source (<code>cura</code>, <code>bambu</code>…).</li>
+        <li><b>Jamais envoyé :</b> nom de fichier, modèle 3D, G-Code ni donnée personnelle.</li>
+        <li><b>G-Code intact :</b> lecture seule uniquement ; le fichier tranché n’est jamais modifié.</li>
+        <li><b>Aucun ralentissement :</b> requête exécutée en tâche de fond en quelques millisecondes.</li>
+        <li><b>Silencieux hors ligne :</b> aucune erreur bloquante si la connexion est absente.</li>
+        <li><b>Aucun prix fictif :</b> si le stock est épuisé, l’API renvoie simplement indisponible.</li>`,
+      apiParamHtml: 'Paramètres : <code>malzeme</code> · <code>gramaj</code> (requis) · <code>renk</code> · <code>market</code> · <code>kaynak</code>. Retourne <code>status:"bulunamadi"</code> si rupture.',
+      apiOrnek: `GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;market=fr&amp;kaynak=cura
+
+{
+  "status": "success",
+  "talep": { "malzeme": "PLA", "gramaj": 340, "renk": "Black" },
+  "enUcuz": {
+    "urunAdi": "Overture PLA Filament Noir 1kg",
+    "magaza": "Overture 3D (EU/FR)",
+    "fiyat": 18.99,
+    "parcaBasiMaliyet": 6.46,
+    "makaradanCikanAdet": 2,
+    "stok": true,
+    "yonlendirmeLinki": "https://baskihesap.tech/yonlendir?urunId=4&amp;kaynak=cura"
+  },
+  "bildirimMetni": "Cette impression nécessite 340 g de PLA Noir (6,46 € chez Overture FR)."`,
     },
     ja: {
       canliBaslik: '🔎 リアルタイムAPIデモ＆G-Code解析',
@@ -721,6 +821,44 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
       apiNot: 'CORS対応・認証不要・60秒キャッシュ。',
       crealityBtn: '🛒 Creality 日本公式ストアを見る ↗',
       footerNot: 'スライサー連携プラグインは完全無料・登録不要です。アフィリエイトリンクにより価格が上がることはありません。',
+      heroGuven1: '🔒 重量と素材名のみ送信',
+      heroGuven2: '🆓 完全無料・登録不要',
+      jsonBtn: '{ } API JSON出力を表示',
+      curaAdim1: '<code>.curapackage</code> ファイルを Cura ウィンドウへドラッグ＆ドロップ。',
+      curaAdim2: 'Cura を<b>再起動</b>します。',
+      curaAdim3: 'モデルをスライスすると最安価格が通知されます。',
+      bambuAdim1: 'スクリプトを保存（例: <code>C:\\BaskiHesap\\en_ucuz_slicer.py</code>）。',
+      bambuAdim2: '<b>Print Settings ➔ Output options ➔ Post-processing scripts</b> にフルパスを貼付。',
+      bambuAdim3: 'スライス保存で通知が表示されます。',
+      pySum: '🐍 Python未導入の場合（Windows）',
+      pyP1: 'Python 3 が必要です。<a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> から <b>「Add python.exe to PATH」</b> にチェックを入れて導入後、以下を入力:',
+      pyP2: '任意（単体 <code>.exe</code> 化コマンド）:',
+      pyP3: '⚠️ <code>--noconsole</code> 指定時は <code>--test</code> 出力が見えませんが通知は動作します。',
+      testSum: '✅ 動作確認',
+      testP1: 'ターミナルで実行:',
+      testP2: 'API接続時にテスト通知を表示します（オフライン時でもスライスは中断しません）。',
+      guvenHtml: `<li><b>送信内容:</b> 素材種別 (PLA/PETG…)、重量(g)、呼び出し元 (<code>cura</code>等) のみ。</li>
+        <li><b>非送信:</b> ファイル名・3Dモデル・G-Code本体や個人情報は一切送信しません。</li>
+        <li><b>G-Code非改変:</b> 読み取り専用で、スライス結果を書き換えません。</li>
+        <li><b>高速動作:</b> 別プロセス実行のためスライス処理が遅くなりません。</li>
+        <li><b>オフライン安全:</b> 通信エラー時は無音で終了し作業を妨げません。</li>
+        <li><b>実在庫のみ:</b> 在庫切れ時に架空価格を表示しません。</li>`,
+      apiParamHtml: 'パラメータ: <code>malzeme</code> · <code>gramaj</code>（必須）· <code>renk</code> · <code>market</code> · <code>kaynak</code>。在庫なし時は <code>status:"bulunamadi"</code>。',
+      apiOrnek: `GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;market=jp&amp;kaynak=cura
+
+{
+  "status": "success",
+  "talep": { "malzeme": "PLA", "gramaj": 340, "renk": "Black" },
+  "enUcuz": {
+    "urunAdi": "Creality Hyper PLA ブラック 1kg",
+    "magaza": "Creality (JP)",
+    "fiyat": 2980,
+    "parcaBasiMaliyet": 1013,
+    "makaradanCikanAdet": 2,
+    "stok": true,
+    "yonlendirmeLinki": "https://baskihesap.tech/yonlendir?urunId=4&amp;kaynak=cura"
+  },
+  "bildirimMetni": "この造形には 340 g のブラック PLA が必要です（最安 ¥1,013）。"`,
     },
   }[kod];
 
@@ -741,25 +879,35 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<span class="hero-rozet">🧩 Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>', `<span class="hero-rozet">${c.rozet}</span>`)
     .replace('<h1>Dilimleme bittiği anda<br><b>en ucuz filamenti</b> göster</h1>', `<h1>${c.h1}</h1>`)
     .replace(/Web sitesine gitmeye gerek yok\.[\s\S]*?<\/p>/, `${c.alt}</p>`)
+    .replace('<span>🔒 Yalnızca gramaj + malzeme gönderilir</span>', `<span>${k.heroGuven1}</span>`)
+    .replace('<span>🆓 Ücretsiz, hesap gerekmez</span>', `<span>${k.heroGuven2}</span>`)
     .replace('<h2 id="slCanliBaslik">🔎 Canlı örnek &amp; anında G-Code analizi</h2>', `<h2 id="slCanliBaslik">${k.canliBaslik}</h2>`)
     .replace('<span class="sl-canli-etiket">68 mağaza · gerçek veri</span>', `<span class="sl-canli-etiket">${k.canliEtiket}</span>`)
     .replace('<b>İsterseniz bir <code>.gcode</code> dosyasını buraya bırakın (veya tıklayın)</b>', `<b>${c.dropBaslik}</b>`)
     .replace('<span>Bambu Studio, OrcaSlicer, PrusaSlicer, Cura meta verisi tarayıcıda okunur; dosya sunucuya yüklenmez.</span>', `<span>${k.dropMeta}</span>`)
+    .replace('Renk (isteğe bağlı)', k.renkLbl)
     .replace('value="Siyah" maxlength="30" placeholder="Siyah"', `value="${k.renkVal}" maxlength="30" placeholder="${k.renkVal}"`)
+    .replace('>{ } API JSON çıktısını göster</button>', `>${k.jsonBtn}</button>`)
     .replace('<h2 id="slIndirmeBaslik" class="sl-bolum-baslik">📥 İndir ve kur</h2>', `<h2 id="slIndirmeBaslik" class="sl-bolum-baslik">${k.indirmeBaslik}</h2>`)
     .replace('<p class="sl-kart-alt">Cura 4.13 ve üzeri</p>', `<p class="sl-kart-alt">${k.curaAlt}</p>`)
     .replace('⬇️ Baskı Hesap — Cura paketi', c.curaBtn)
     .replace('<p class="sl-kart-alt">Post-processing script</p>', `<p class="sl-kart-alt">${k.bambuAlt}</p>`)
     .replace('⬇️ en_ucuz_slicer.py', c.pyBtn)
+    .replace(/<li><code>\.curapackage<\/code>[\s\S]*?<\/ol>/, `<li>${k.curaAdim1}</li><li>${k.curaAdim2}</li><li>${k.curaAdim3}</li></ol>`)
+    .replace(/<li>Dosyayı bilgisayarınıza kaydedin[\s\S]*?<\/ol>/, `<li>${k.bambuAdim1}</li><li>${k.bambuAdim2}</li><li>${k.bambuAdim3}</li></ol>`)
+    .replace(/<summary>🐍 Python yok mu\? \(Windows\)<\/summary>[\s\S]*?<\/details>/, `<summary>${k.pySum}</summary><p>${k.pyP1}</p><pre class="sl-kod">python "C:\\BaskiHesap\\en_ucuz_slicer.py"</pre><p class="sl-not">${k.pyP2}</p><pre class="sl-kod">pip install pyinstaller\npyinstaller --onefile --noconsole en_ucuz_slicer.py</pre><p class="sl-not">${k.pyP3}</p></details>`)
+    .replace(/<summary>✅ Kurulumu doğrula<\/summary>[\s\S]*?<\/details>/, `<summary>${k.testSum}</summary><p>${k.testP1}</p><pre class="sl-kod">python en_ucuz_slicer.py --test</pre><p class="sl-not">${k.testP2}</p></details>`)
     .replace('<h2 id="slNasilBaslik" class="sl-bolum-baslik">⚙️ Nasıl çalışır?</h2>', `<h2 id="slNasilBaslik" class="sl-bolum-baslik">${k.nasilBaslik}</h2>`)
-    .replace('<b>Dilimleme biter</b>\n          <span>Slicer gramajı ve malzeme türünü G-Code\'a yazar.</span>', `<b>${k.adim1t}</b>\n          <span>${k.adim1d}</span>`)
-    .replace('<b>Eklenti okur</b>\n          <span>Yalnızca <code>filament used [g]</code>, <code>filament_type</code> ve renk.</span>', `<b>${k.adim2t}</b>\n          <span>${k.adim2d}</span>`)
-    .replace('<b>API sorgular</b>\n          <span>68 mağazadaki stoklu en ucuz makara, 1,5 sn zaman aşımıyla.</span>', `<b>${k.adim3t}</b>\n          <span>${k.adim3d}</span>`)
-    .replace('<b>Bildirim gelir</b>\n          <span>“Bu baskı 340 g PLA gerektiriyor. En ucuz ₺463,68 ile Porima 3D\'de.”</span>', `<b>${k.adim4t}</b>\n          <span>${k.adim4d}</span>`)
+    .replace(/<b>Dilimleme biter<\/b>[\s\S]*?<span>Slicer gramajı[\s\S]*?<\/span>/, `<b>${k.adim1t}</b>\n          <span>${k.adim1d}</span>`)
+    .replace(/<b>Eklenti okur<\/b>[\s\S]*?<span>Yalnızca[\s\S]*?<\/span>/, `<b>${k.adim2t}</b>\n          <span>${k.adim2d}</span>`)
+    .replace(/<b>API sorgular<\/b>[\s\S]*?<span>68 mağazadaki[\s\S]*?<\/span>/, `<b>${k.adim3t}</b>\n          <span>${k.adim3d}</span>`)
+    .replace(/<b>Bildirim gelir<\/b>[\s\S]*?<span>“Bu baskı[\s\S]*?<\/span>/, `<b>${k.adim4t}</b>\n          <span>${k.adim4d}</span>`)
     .replace('<h2 id="slGuvenBaslik" class="sl-bolum-baslik">🔒 Gizlilik ve dürüstlük</h2>', `<h2 id="slGuvenBaslik" class="sl-bolum-baslik">${k.guvenBaslik}</h2>`)
+    .replace(/<ul class="sl-liste">[\s\S]*?<\/ul>/, `<ul class="sl-liste">${k.guvenHtml}</ul>`)
     .replace('<h2 id="slApiBaslik" class="sl-bolum-baslik">🔌 API (kendi entegrasyonunuz için)</h2>', `<h2 id="slApiBaslik" class="sl-bolum-baslik">${k.apiBaslik}</h2>`)
     .replace('<p class="sl-api-not">Herkese açık, CORS destekli, 60 sn önbellekli.</p>', `<p class="sl-api-not">${k.apiNot} <a href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">${k.crealityBtn}</a></p>`)
-    .replace('GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;renk=Siyah&amp;kaynak=cura', `GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;market=${sz.meta.market}&amp;kaynak=cura`)
+    .replace(/GET \/api\/embed\/oner\?malzeme=PLA[\s\S]*?"bildirimMetni": "[^"]*"/, k.apiOrnek)
+    .replace(/<p class="sl-api-not">Parametreler:[\s\S]*?<\/p>/, `<p class="sl-api-not">${k.apiParamHtml}</p>`)
     .replace(/Slicer eklentisi ücretsizdir ve hesap gerektirmez\.[\s\S]*?<\/p>/, `${htmlKacis(k.footerNot)}</p>`)
     .replace(
       '<script src="/slicer.js"></script>',

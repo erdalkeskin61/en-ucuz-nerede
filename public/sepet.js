@@ -12,7 +12,7 @@
  */
 import {
   para, yuzde, senaryoListesi, onerilenAnahtar, senaryoFarki, tasarrufOzeti,
-  kargoFirsati, tamamlayiciEtkisi, paketCoz, PAKETLER, turkceAblatif,
+  kargoFirsati, tamamlayiciEtkisi, paketCoz, paketCevir, PAKETLER, turkceAblatif,
   sepetNormalize, sepetDogrula, sepetToplami, sepetIstekGovdesi,
   MAKS_URUN, kiyasVerisi, paketKargoDurumu,
 } from '/sepetHesap.js';
@@ -20,6 +20,234 @@ import {
 const $ = (s) => document.querySelector(s);
 const ORTAM = (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM) || {};
 const ORTAM_MARKET = ORTAM.market || 'tr';
+const ORTAM_DIL = ORTAM.dil || 'tr';
+const SP = {
+  tr: {
+    isimleAra: '🔎 İsimle arama', link: '🔗 Link', paketten: ' · 🎨 paketten',
+    adetAria: 'Adet', azalt: 'Adedi azalt', artir: 'Adedi artır', cikar: 'Ürünü sepetten çıkar',
+    kargoSonra: 'Kargo, seçilen senaryoya göre ayrıca hesaplanır',
+    kargoDegisir: 'Kargo seçilen senaryoya göre değişir',
+    maksUrun: (n) => `Sepet en fazla ${n} ürün alabilir.`,
+    stoktaYok: '⚠️ Şu an stokta yok:', yerine: 'yerine',
+    katalogBos: 'Canlı katalogda uygun ürün yok',
+    paketEkleBtn: '+ Paketi Sepete Ekle', urunBulunamadi: 'Ürün bulunamadı',
+    canliTeklif: (n) => `${n} canlı filament teklifi okundu. Fiyatlar radar taramasından gelir.`,
+    katalogOkunamadi: 'Canlı filament kataloğu okunamadı; paketler şu an eklenemiyor. Ürün arayarak devam edebilirsiniz.',
+    paketYetersiz: 'Bu paket için yeterli ürün bulunamadı. Ürün arayarak ekleyebilirsiniz.',
+    paketEklendi: (ad, n) => `✅ ${ad} eklendi (${n} ürün)`,
+    eksik: 'eksik', degisim: 'değişim',
+    paketToast: (ad) => `🎨 ${ad} sepete eklendi`,
+    sonuc: 'Sonuç', linkEklendi: '✅ Link sepete eklendi.',
+    linkHata: '⚠️ Geçerli bir ürün linki yapıştırın.',
+    isimleEkleEtiket: 'İsimle ara ve sepete ekle',
+    ucHarf: 'En az 3 harfli ürün adı yazın ya da ürün linki yapıştırın.',
+    ikiHarf: 'En az 2 harfli ürün adı yazın ya da ürün linki yapıştırın.',
+    urunYaz: 'Ürün adı yazın ya da ürün linki yapıştırın.',
+    linkliBulundu: (n) => `${n} linkli ürün bulundu — seçebilir veya doğrudan isimle ekleyebilirsiniz.`,
+    eslesmeYok: 'Öneride doğrudan eşleşme çıkmadı — "İsimle ara ve sepete ekle" ile ekleyebilirsiniz.',
+    sEklendi: (s) => `✅ "${s}" sepete eklendi.`,
+    sToast: (s) => `🛒 "${s}" sepete eklendi`,
+    senaryoHesap: '🧮 Senaryolar hesaplanıyor…',
+    tarandi: (b, t) => `🔎 ${b}/${t} ürün tarandı`,
+    enUcuz: 'en ucuz',
+    magazaAc: 'Mağazayı Aç ➔',
+    magazadanAl: (ad) => `⚡ ${ad}${turkceAblatif(ad)} Al ➔`,
+    cokMagazaAl: (n) => `🏪 ${n} Mağazadan Satın Al ➔`,
+    senaryoMeta: (u, s) => `${u} ürün · ${s} aday mağaza`,
+    kurulamadi: 'Bu senaryo bu sepet için kurulamadı (hiçbir mağaza tüm ürünleri birlikte satmıyor).',
+    pahali: (t) => `⚠️ Kargo/dağıtım yüzünden <b>${t}</b> daha pahalı`,
+    esitEnDusuk: '💡 En düşük toplam maliyet (eşit)',
+    enDusuk: '💡 En düşük toplam maliyet',
+    onerilen: 'ÖNERİLEN', magazaTekil: '🏪', magazaCoklu: (n) => `🏪 ${n} mağaza`,
+    urunler: 'Ürünler', kupon: 'Kupon', kargo: 'Kargo', toplam: 'TOPLAM',
+    gonderim: (n) => `(${n} gönderim)`, kargoBelirsiz: '⚠️ Sepette belli', kargoBedava: 'Bedava (eşik aşıldı)',
+    linkYokToast: 'Bu senaryoda açılacak ürün bağlantısı yok.',
+    sekmeAciliyor: (n, adlar) => `🛒 ${n} ürün sekmesi açılıyor: ${adlar}`,
+    popupEngel: 'Tarayıcı yeni sekmeleri engelledi. Aşağıdaki ürün linklerine tek tek dokunabilirsiniz.',
+    kargoKaldi: (t) => `💡 Kargoya <b>${t}</b> kaldı`,
+    kargoMesaj: (u, e, k) => `${u} kargo ödemek yerine en az ${e} ürün ekleyin — kargo bedava olsun. Net kazanç: <b>${k}</b>.`,
+    tamamlayiciAraniyor: '⏳ Tamamlayıcı ürünler aranıyor…',
+    tamamlayiciYok: 'Bu eşik aralığında kârlı tamamlayıcı ürün bulunamadı.',
+    uruneGit: 'Ürüne git ➔', sepeteEkleBtn: '+ Sepete Ekle',
+    teklifAlinamadi: 'Teklifler alınamadı; eşiğe kalan tutarı yukarıda görebilirsiniz.',
+    onceHesapla: 'Önce sepeti hesaplayın.', linkOlusturuluyor: '⏳ Link oluşturuluyor…',
+    linkKopyalandi: (u) => `✅ Bağlantı panoya kopyalandı (30 gün geçerli): ${u}`,
+    linkHazir: (u) => `🔗 Paylaşım linki (30 gün): ${u}`,
+    paylasBtn: '🔗 Sepeti Paylaş', urunEklendi: '✅ Ürün sepete eklendi.',
+    sepetBosaltildi: 'Sepet boşaltıldı.',
+    tamamlayiciToast: '➕ Tamamlayıcı ürün sepete eklendi. Yeniden hesaplayın.',
+    tamamlayiciNot: 'Kargo kurtarıcı ürünü eklendi — "3 Senaryoyu Karşılaştır" ile yeniden hesaplayın.',
+  },
+  en: {
+    isimleAra: '🔎 Name search', link: '🔗 Link', paketten: ' · 🎨 from pack',
+    adetAria: 'Quantity', azalt: 'Decrease quantity', artir: 'Increase quantity', cikar: 'Remove item from cart',
+    kargoSonra: 'Shipping is calculated separately for each scenario',
+    kargoDegisir: 'Shipping depends on the selected scenario',
+    maksUrun: (n) => `Cart can hold at most ${n} items.`,
+    stoktaYok: '⚠️ Currently out of stock:', yerine: 'instead of',
+    katalogBos: 'No matching in-stock items in regional catalog',
+    paketEkleBtn: '+ Add Pack to Cart', urunBulunamadi: 'Unavailable',
+    canliTeklif: (n) => `${n} live filament offers loaded from regional scans.`,
+    katalogOkunamadi: 'Regional filament catalog is currently empty; search by name or paste product links below.',
+    paketYetersiz: 'Not enough in-stock items found for this pack. Add products manually below.',
+    paketEklendi: (ad, n) => `✅ Added ${ad} (${n} items)`,
+    eksik: 'missing', degisim: 'substituted',
+    paketToast: (ad) => `🎨 Added ${ad} to cart`,
+    sonuc: 'Result', linkEklendi: '✅ Product link added.',
+    linkHata: '⚠️ Please paste a valid product URL.',
+    isimleEkleEtiket: 'Search by name & add to cart',
+    ucHarf: 'Enter at least 3 characters or paste a product link.',
+    ikiHarf: 'Enter at least 2 characters or paste a product link.',
+    urunYaz: 'Type a product name or paste a product URL.',
+    linkliBulundu: (n) => `Found ${n} matching product(s) — pick one or add by name.`,
+    eslesmeYok: 'No exact catalog match — click "Search by name & add to cart".',
+    sEklendi: (s) => `✅ Added "${s}" to cart.`,
+    sToast: (s) => `🛒 Added "${s}" to cart`,
+    senaryoHesap: '🧮 Calculating scenarios…',
+    tarandi: (b, t) => `🔎 Scanned ${b}/${t} items`,
+    enUcuz: 'lowest',
+    magazaAc: 'Open Store ➔',
+    magazadanAl: (ad) => `⚡ Buy at ${ad} ➔`,
+    cokMagazaAl: (n) => `🏪 Buy from ${n} Stores ➔`,
+    senaryoMeta: (u, s) => `${u} items · ${s} candidate stores`,
+    kurulamadi: 'This scenario is not available (no single store stocks every item).',
+    pahali: (t) => `⚠️ <b>${t}</b> more expensive due to shipping/splitting`,
+    esitEnDusuk: '💡 Lowest total cost (tie)',
+    enDusuk: '💡 Lowest total cost',
+    onerilen: 'RECOMMENDED', magazaTekil: '🏪', magazaCoklu: (n) => `🏪 ${n} stores`,
+    urunler: 'Items', kupon: 'Coupon', kargo: 'Shipping', toplam: 'TOTAL',
+    gonderim: (n) => `(${n} shipments)`, kargoBelirsiz: '⚠️ At checkout', kargoBedava: 'Free (threshold met)',
+    linkYokToast: 'No store links available for this scenario.',
+    sekmeAciliyor: (n, adlar) => `🛒 Opening ${n} store tab(s): ${adlar}`,
+    popupEngel: 'Pop-ups were blocked. Click the individual item links below.',
+    kargoKaldi: (t) => `💡 Only <b>${t}</b> away from free shipping`,
+    kargoMesaj: (u, e, k) => `Instead of paying ${u} shipping, add at least ${e} worth of items to unlock free shipping. Net savings: <b>${k}</b>.`,
+    tamamlayiciAraniyor: '⏳ Searching add-on items…',
+    tamamlayiciYok: 'No qualifying add-on items found in this price range.',
+    uruneGit: 'View item ➔', sepeteEkleBtn: '+ Add to Cart',
+    teklifAlinamadi: 'Could not load add-on suggestions; check threshold remaining above.',
+    onceHesapla: 'Calculate the cart scenarios first.', linkOlusturuluyor: '⏳ Creating share link…',
+    linkKopyalandi: (u) => `✅ Share link copied (valid 30 days): ${u}`,
+    linkHazir: (u) => `🔗 Share link (30 days): ${u}`,
+    paylasBtn: '🔗 Share Cart', urunEklendi: '✅ Item added to cart.',
+    sepetBosaltildi: 'Cart cleared.',
+    tamamlayiciToast: '➕ Add-on item added. Recalculate scenarios.',
+    tamamlayiciNot: 'Add-on added — click "Compare 3 Scenarios" to refresh totals.',
+  },
+  fr: {
+    isimleAra: '🔎 Recherche par nom', link: '🔗 Lien', paketten: ' · 🎨 du pack',
+    adetAria: 'Quantité', azalt: 'Diminuer', artir: 'Augmenter', cikar: 'Retirer du panier',
+    kargoSonra: 'Les frais de port sont calculés par scénario',
+    kargoDegisir: 'Livraison calculée selon le scénario choisi',
+    maksUrun: (n) => `Maximum ${n} articles dans le panier.`,
+    stoktaYok: '⚠️ Actuellement en rupture :', yerine: 'à la place de',
+    katalogBos: 'Aucun produit compatible en stock dans ce catalogue',
+    paketEkleBtn: '+ Ajouter le pack', urunBulunamadi: 'Indisponible',
+    canliTeklif: (n) => `${n} offres de filaments en direct chargées pour cette région.`,
+    katalogOkunamadi: 'Aucune offre régionale en cache ; recherchez un produit ou collez vos liens ci-dessous.',
+    paketYetersiz: 'Articles insuffisants en stock pour ce pack. Ajoutez vos articles manuellement.',
+    paketEklendi: (ad, n) => `✅ ${ad} ajouté (${n} articles)`,
+    eksik: 'manquant', degisim: 'remplacé',
+    paketToast: (ad) => `🎨 ${ad} ajouté au panier`,
+    sonuc: 'Résultat', linkEklendi: '✅ Lien ajouté au panier.',
+    linkHata: '⚠️ Veuillez coller un lien produit valide.',
+    isimleEkleEtiket: 'Rechercher par nom et ajouter',
+    ucHarf: 'Saisissez au moins 3 caractères ou collez une URL produit.',
+    ikiHarf: 'Saisissez au moins 2 caractères ou collez une URL produit.',
+    urunYaz: 'Saisissez un nom de produit ou collez un lien.',
+    linkliBulundu: (n) => `${n} produit(s) trouvé(s) — choisissez ou ajoutez par nom.`,
+    eslesmeYok: 'Aucune correspondance directe — cliquez sur « Rechercher par nom et ajouter ».',
+    sEklendi: (s) => `✅ « ${s} » ajouté au panier.`,
+    sToast: (s) => `🛒 « ${s} » ajouté au panier`,
+    senaryoHesap: '🧮 Calcul des scénarios…',
+    tarandi: (b, t) => `🔎 ${b}/${t} articles vérifiés`,
+    enUcuz: 'moins cher',
+    magazaAc: 'Ouvrir la boutique ➔',
+    magazadanAl: (ad) => `⚡ Acheter chez ${ad} ➔`,
+    cokMagazaAl: (n) => `🏪 Acheter dans ${n} boutiques ➔`,
+    senaryoMeta: (u, s) => `${u} articles · ${s} boutiques analysées`,
+    kurulamadi: 'Scénario indisponible (aucune boutique ne propose tous les articles).',
+    pahali: (t) => `⚠️ <b>${t}</b> plus cher à cause du port / fractionnement`,
+    esitEnDusuk: '💡 Coût total le plus bas (égalité)',
+    enDusuk: '💡 Coût total le plus bas',
+    onerilen: 'RECOMMANDÉ', magazaTekil: '🏪', magazaCoklu: (n) => `🏪 ${n} boutiques`,
+    urunler: 'Articles', kupon: 'Promo', kargo: 'Livraison', toplam: 'TOTAL',
+    gonderim: (n) => `(${n} colis)`, kargoBelirsiz: '⚠️ Au paiement', kargoBedava: 'Gratuite (seuil atteint)',
+    linkYokToast: 'Aucun lien boutique disponible pour ce scénario.',
+    sekmeAciliyor: (n, adlar) => `🛒 Ouverture de ${n} onglet(s) : ${adlar}`,
+    popupEngel: 'Pop-ups bloqués. Cliquez individuellement sur chaque lien ci-dessous.',
+    kargoKaldi: (t) => `💡 Plus que <b>${t}</b> pour le port gratuit`,
+    kargoMesaj: (u, e, k) => `Au lieu de payer ${u} de port, ajoutez au moins ${e} d’articles pour la livraison gratuite. Gain net : <b>${k}</b>.`,
+    tamamlayiciAraniyor: '⏳ Recherche d’articles complémentaires…',
+    tamamlayiciYok: 'Aucun article complémentaire pertinent dans cette tranche.',
+    uruneGit: 'Voir l’article ➔', sepeteEkleBtn: '+ Ajouter',
+    teklifAlinamadi: 'Impossible de charger les suggestions ; consultez le montant manquant ci-dessus.',
+    onceHesapla: 'Calculez d’abord les scénarios.', linkOlusturuluyor: '⏳ Génération du lien…',
+    linkKopyalandi: (u) => `✅ Lien copié (valide 30 jours) : ${u}`,
+    linkHazir: (u) => `🔗 Lien de partage (30 jours) : ${u}`,
+    paylasBtn: '🔗 Partager le panier', urunEklendi: '✅ Article ajouté.',
+    sepetBosaltildi: 'Panier vidé.',
+    tamamlayiciToast: '➕ Article ajouté. Relancez le calcul.',
+    tamamlayiciNot: 'Article ajouté — cliquez sur « Comparer les 3 scénarios ».',
+  },
+  ja: {
+    isimleAra: '🔎 商品名検索', link: '🔗 URL', paketten: ' · 🎨 セットから',
+    adetAria: '数量', azalt: '減らす', artir: '増やす', cikar: 'カートから削除',
+    kargoSonra: '送料は選択した購入プランごとに計算されます',
+    kargoDegisir: '送料はプランにより変動します',
+    maksUrun: (n) => `カートには最大${n}件まで追加できます。`,
+    stoktaYok: '⚠️ 現在在庫切れ:', yerine: 'の代替:',
+    katalogBos: 'この地域のライブカタログに該当在庫がありません',
+    paketEkleBtn: '+ セットを追加', urunBulunamadi: '在庫なし',
+    canliTeklif: (n) => `${n}件の地域ライブフィラメント情報を読み込みました。`,
+    katalogOkunamadi: '現在この地域のセット用在庫データが取得できません。下の検索欄から商品を追加できます。',
+    paketYetersiz: 'このセットに必要な在庫が不足しています。下の検索から追加してください。',
+    paketEklendi: (ad, n) => `✅ ${ad} を追加しました（${n}点）`,
+    eksik: '欠品', degisim: '代替',
+    paketToast: (ad) => `🎨 ${ad} をカートに追加しました`,
+    sonuc: '候補', linkEklendi: '✅ 商品URLを追加しました。',
+    linkHata: '⚠️ 有効な商品URLを入力してください。',
+    isimleEkleEtiket: '商品名で検索して追加',
+    ucHarf: '3文字以上の商品名、または商品URLを入力してください。',
+    ikiHarf: '2文字以上の商品名、または商品URLを入力してください。',
+    urunYaz: '商品名または商品URLを入力してください。',
+    linkliBulundu: (n) => `${n}件の候補が見つかりました — 選択または商品名で追加できます。`,
+    eslesmeYok: '直接の一致はありません —「商品名で検索して追加」から登録できます。',
+    sEklendi: (s) => `✅「${s}」をカートに追加しました。`,
+    sToast: (s) => `🛒「${s}」をカートに追加`,
+    senaryoHesap: '🧮 購入プランを計算中…',
+    tarandi: (b, t) => `🔎 ${b}/${t} 件をスキャン済み`,
+    enUcuz: '最安',
+    magazaAc: 'ショップを開く ➔',
+    magazadanAl: (ad) => `⚡ ${ad} で購入 ➔`,
+    cokMagazaAl: (n) => `🏪 ${n}店舗から購入 ➔`,
+    senaryoMeta: (u, s) => `${u}点 · ${s}ショップを比較`,
+    kurulamadi: 'このプランは構成できません（全商品を扱う単一ショップがありません）。',
+    pahali: (t) => `⚠️ 送料・分割により <b>${t}</b> 割高`,
+    esitEnDusuk: '💡 合計最安（同額）',
+    enDusuk: '💡 合計最安プラン',
+    onerilen: 'おすすめ', magazaTekil: '🏪', magazaCoklu: (n) => `🏪 ${n}店舗`,
+    urunler: '商品小計', kupon: 'クーポン', kargo: '送料', toplam: '合計',
+    gonderim: (n) => `(${n}件発送)`, kargoBelirsiz: '⚠️ レジで確認', kargoBedava: '送料無料（条件達成）',
+    linkYokToast: 'このプランで開けるリンクがありません。',
+    sekmeAciliyor: (n, adlar) => `🛒 ${n}件のストアタブを開いています: ${adlar}`,
+    popupEngel: 'ポップアップがブロックされました。下のリンクを個別に開いてください。',
+    kargoKaldi: (t) => `💡 送料無料まであと <b>${t}</b>`,
+    kargoMesaj: (u, e, k) => `送料${u}を払う代わりに、あと${e}以上の商品を追加すると送料無料になります（実質お得額: <b>${k}</b>）。`,
+    tamamlayiciAraniyor: '⏳ 追加候補を検索中…',
+    tamamlayiciYok: '条件に合う追加商品が見つかりませんでした。',
+    uruneGit: '商品を見る ➔', sepeteEkleBtn: '+ 追加',
+    teklifAlinamadi: '追加候補を取得できませんでした。上の不足額をご確認ください。',
+    onceHesapla: '先にプランを計算してください。', linkOlusturuluyor: '⏳ 共有リンク作成中…',
+    linkKopyalandi: (u) => `✅ 共有リンクをコピーしました（30日間有効）: ${u}`,
+    linkHazir: (u) => `🔗 共有リンク（30日間有効）: ${u}`,
+    paylasBtn: '🔗 カートを共有', urunEklendi: '✅ 商品を追加しました。',
+    sepetBosaltildi: 'カートを空にしました。',
+    tamamlayiciToast: '➕ 追加商品をカートに入れました。再計算してください。',
+    tamamlayiciNot: '商品を追加しました —「3プランを比較」で再計算してください。',
+  },
+}[ORTAM_DIL] || {};
+const SZ = new Proxy(SP, { get: (t, p) => (p in t ? t[p] : '') });
 const DEPO_ANAHTARI = ORTAM_MARKET === 'tr' ? 'eun_sepet_v1' : `eun_sepet_${ORTAM_MARKET}_v1`;
 const DEPO_PAKET = ORTAM_MARKET === 'tr' ? 'eun_sepet_sonuc_v1' : `eun_sepet_sonuc_${ORTAM_MARKET}_v1`;
 
@@ -120,26 +348,24 @@ function sepetCiz() {
             ? `<a class="sepet-satir-ad" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.ad)}</a>`
             : `<span class="sepet-satir-ad">${esc(x.ad)}</span>`}
           <span class="sepet-satir-alt">
-            ${x.tur === 'ad' ? '🔎 İsimle arama' : (x.site ? `🏪 ${esc(x.site)}` : '🔗 Link')}
+            ${x.tur === 'ad' ? SZ.isimleAra : (x.site ? `🏪 ${esc(x.site)}` : SZ.link)}
             ${x.fiyat ? ` · ${para(x.fiyat)}` : ''}
-            ${x.kaynak === 'paket' ? ' · 🎨 paketten' : ''}
+            ${x.kaynak === 'paket' ? SZ.paketten : ''}
           </span>
         </div>
       </div>
       <div class="sepet-satir-sag">
-        <div class="sepet-adet" role="group" aria-label="Adet">
-          <button type="button" data-adet="-1" data-id="${esc(x.id)}" aria-label="Adedi azalt">−</button>
+        <div class="sepet-adet" role="group" aria-label="${esc(SZ.adetAria)}">
+          <button type="button" data-adet="-1" data-id="${esc(x.id)}" aria-label="${esc(SZ.azalt)}">−</button>
           <span>${Math.max(1, Number(x.adet) || 1)}</span>
-          <button type="button" data-adet="1" data-id="${esc(x.id)}" aria-label="Adedi artır">+</button>
+          <button type="button" data-adet="1" data-id="${esc(x.id)}" aria-label="${esc(SZ.artir)}">+</button>
         </div>
-        <button type="button" class="sepet-sil" data-id="${esc(x.id)}" aria-label="Ürünü sepetten çıkar">🗑</button>
+        <button type="button" class="sepet-sil" data-id="${esc(x.id)}" aria-label="${esc(SZ.cikar)}">🗑</button>
       </div>
     </div>
   `).join(''));
 
-  $('#sepetAltNot').textContent = durum.sepet.length
-    ? 'Kargo, seçilen senaryoya göre ayrıca hesaplanır'
-    : 'Kargo seçilen senaryoya göre değişir';
+  $('#sepetAltNot').textContent = durum.sepet.length ? SZ.kargoSonra : SZ.kargoDegisir;
 }
 
 /** innerHTML yerine parça parça yazma (XSS riski yok, hız aynı). */
@@ -157,10 +383,10 @@ function sepeteEkle(urun) {
   const toplam = durum.sepet.reduce((s, x) => s + Math.max(1, Number(x.adet) || 1), 0);
 
   if (ayni) {
-    if (toplam >= MAKS_URUN) { toast(`Sepet en fazla ${MAKS_URUN} ürün alabilir.`, 'hata'); return false; }
+    if (toplam >= MAKS_URUN) { toast(SZ.maksUrun(MAKS_URUN), 'hata'); return false; }
     ayni.adet = Math.max(1, Number(ayni.adet) || 1) + 1;
   } else {
-    if (toplam >= MAKS_URUN) { toast(`Sepet en fazla ${MAKS_URUN} ürün alabilir.`, 'hata'); return false; }
+    if (toplam >= MAKS_URUN) { toast(SZ.maksUrun(MAKS_URUN), 'hata'); return false; }
     durum.sepet.push({
       id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       ad: String(urun.ad || anaDeger).slice(0, 200),
@@ -201,8 +427,9 @@ function paketleriCiz() {
   kap.setAttribute('aria-busy', 'false');
 
   const teklifler = durum.teklifler || [];
-  kaplama(kap, PAKETLER.map(p => {
-    const r = paketCoz(p, teklifler);
+  kaplama(kap, PAKETLER.map(hamPaket => {
+    const p = paketCevir(hamPaket, ORTAM_DIL);
+    const r = paketCoz(hamPaket, teklifler, ORTAM_DIL);
     const satirlar = r.parcalar.map(x => {
       const fiyat = para(Number(x.teklif.fiyat) * (x.adet || 1));
       return `<li>
@@ -211,10 +438,10 @@ function paketleriCiz() {
       </li>`;
     }).join('');
     const eksik = r.eksikler.length
-      ? `<p class="paket-eksik">⚠️ Şu an stokta yok: ${r.eksikler.map(e => esc(e.etiket)).join(', ')}</p>`
+      ? `<p class="paket-eksik">${SZ.stoktaYok} ${r.eksikler.map(e => esc(e.etiket)).join(', ')}</p>`
       : '';
     const degisim = r.degisimler.length
-      ? `<p class="paket-degisim">↔️ ${r.degisimler.map(d => `${esc(d.istenen)} yerine ${esc(d.eklenen)}`).join('; ')}</p>`
+      ? `<p class="paket-degisim">↔️ ${r.degisimler.map(d => `${esc(d.istenen)} ${SZ.yerine} ${esc(d.eklenen)}`).join('; ')}</p>`
       : '';
     const toplam = r.tahminiToplam != null ? para(r.tahminiToplam) : '—';
     return `<article class="paket-kart" data-paket="${esc(p.id)}">
@@ -225,13 +452,13 @@ function paketleriCiz() {
           <p class="paket-icerik">${esc(p.icerik)}</p>
         </div>
       </div>
-      <ul class="paket-satirlar">${satirlar || '<li class="paket-parca-ad">Canlı katalogda uygun ürün yok</li>'}</ul>
+      <ul class="paket-satirlar">${satirlar || `<li class="paket-parca-ad">${esc(SZ.katalogBos)}</li>`}</ul>
       ${eksik}${degisim}
       <div class="paket-alt">
         <span class="paket-toplam">${toplam}</span>
         <button type="button" class="paket-ekle" data-paket-ekle="${esc(p.id)}"
           ${r.eklenebilir ? '' : 'disabled aria-disabled="true"'}>
-          ${r.eklenebilir ? '+ Paketi Sepete Ekle' : 'Ürün bulunamadı'}
+          ${r.eklenebilir ? esc(SZ.paketEkleBtn) : esc(SZ.urunBulunamadi)}
         </button>
       </div>
     </article>`;
@@ -240,17 +467,18 @@ function paketleriCiz() {
   const not = $('#paketNot');
   if (not) {
     not.textContent = teklifler.length
-      ? `${teklifler.length} canlı filament teklifi okundu. Fiyatlar radar taramasından gelir.`
-      : 'Canlı filament kataloğu okunamadı; paketler şu an eklenemiyor. Ürün arayarak devam edebilirsiniz.';
+      ? SZ.canliTeklif(teklifler.length)
+      : SZ.katalogOkunamadi;
   }
 }
 
 function paketEkle(paketId) {
-  const paket = PAKETLER.find(p => p.id === paketId);
-  if (!paket) return;
-  const r = paketCoz(paket, durum.teklifler || []);
+  const hamPaket = PAKETLER.find(p => p.id === paketId);
+  if (!hamPaket) return;
+  const paket = paketCevir(hamPaket, ORTAM_DIL);
+  const r = paketCoz(hamPaket, durum.teklifler || [], ORTAM_DIL);
   if (!r.eklenebilir) {
-    toast('Bu paket için yeterli ürün bulunamadı. Ürün arayarak ekleyebilirsiniz.', 'hata');
+    toast(SZ.paketYetersiz, 'hata');
     return;
   }
   let eklenen = 0;
@@ -267,11 +495,11 @@ function paketEkle(paketId) {
     }
   }
   const parcalar = [];
-  parcalar.push(`✅ ${paket.ad} eklendi (${eklenen} ürün)`);
-  if (r.eksikler.length) parcalar.push(`eksik: ${r.eksikler.map(e => e.etiket).join(', ')}`);
-  if (r.degisimler.length) parcalar.push(`değişim: ${r.degisimler.map(d => d.eklenen).join(', ')}`);
+  parcalar.push(SZ.paketEklendi(paket.ad, eklenen));
+  if (r.eksikler.length) parcalar.push(`${SZ.eksik}: ${r.eksikler.map(e => e.etiket).join(', ')}`);
+  if (r.degisimler.length) parcalar.push(`${SZ.degisim}: ${r.degisimler.map(d => d.eklenen).join(', ')}`);
   durumYaz(parcalar.join(' · '), r.eksikler.length ? 'uyari' : 'basarili');
-  toast(`🎨 ${paket.ad} sepete eklendi`, 'basarili');
+  toast(SZ.paketToast(paket.ad), 'basarili');
   // Tek tıkla akış: paket eklendiği anda hesaplama başlar (istek üzerine).
   if (durum.sepet.length >= 2) hesapla();
 }
@@ -311,7 +539,7 @@ function onerileriCiz(liste, q) {
     <button type="button" class="sepet-oneri" role="option" data-url="${esc(o.url)}"
       data-ad="${esc(o.metin || o.url)}" data-tur="${esc(o.tur || 'url')}" data-idx="${i}">
       <span class="sepet-oneri-metin">${esc(o.metin || o.url)}</span>
-      <span class="sepet-oneri-etiket">${esc(o.etiket || 'Sonuç')}</span>
+      <span class="sepet-oneri-etiket">${esc(o.etiket || SZ.sonuc)}</span>
     </button>
   `).join(''));
   kap.hidden = false;
@@ -331,29 +559,27 @@ async function aramaYap() {
   if (/^https?:\/\//i.test(q.trim())) {
     const ok = sepeteEkle({ ad: q.trim(), url: q.trim(), kaynak: 'link' });
     if (ok) {
-      durumYaz('✅ Link sepete eklendi.', 'basarili');
+      durumYaz(SZ.linkEklendi, 'basarili');
       girdi.value = '';
       onerileriKapat();
     } else {
-      durumYaz('⚠️ Geçerli bir ürün linki yapıştırın.', 'hata');
+      durumYaz(SZ.linkHata, 'hata');
     }
     return;
   }
   const liste = await oneriGetir(q);
   const s = q.trim();
   const isimSecenegi = s.length >= 3
-    ? [{ url: s, metin: s, tur: 'ad', etiket: 'İsimle ara ve sepete ekle' }]
+    ? [{ url: s, metin: s, tur: 'ad', etiket: SZ.isimleEkleEtiket }]
     : [];
   const birlesik = [...liste, ...isimSecenegi];
   if (!birlesik.length) {
-    durumYaz('En az 3 harfli ürün adı yazın ya da ürün linki yapıştırın.', 'uyari');
+    durumYaz(SZ.ucHarf, 'uyari');
     onerileriCiz([], q);
     return;
   }
   onerileriCiz(birlesik, q);
-  durumYaz(liste.length
-    ? `${liste.length} linkli ürün bulundu — seçebilir veya doğrudan isimle ekleyebilirsiniz.`
-    : 'Öneride doğrudan eşleşme çıkmadı — "İsimle ara ve sepete ekle" ile ekleyebilirsiniz.');
+  durumYaz(liste.length ? SZ.linkliBulundu(liste.length) : SZ.eslesmeYok);
 }
 
 /** "Ekle" butonuna basıldığında öneri listesinde takılmadan yazılan ürünü doğrudan sepete ekler. */
@@ -362,7 +588,7 @@ async function metinleSepeteEkle() {
   const s = (girdi?.value || '').trim();
   onerileriKapat();
   if (!s) {
-    durumYaz('Ürün adı yazın ya da ürün linki yapıştırın.', 'uyari');
+    durumYaz(SZ.urunYaz, 'uyari');
     girdi?.focus();
     return;
   }
@@ -370,14 +596,14 @@ async function metinleSepeteEkle() {
     return aramaYap();
   }
   if (s.length < 2) {
-    durumYaz('En az 2 harfli ürün adı yazın ya da ürün linki yapıştırın.', 'uyari');
+    durumYaz(SZ.ikiHarf, 'uyari');
     girdi?.focus();
     return;
   }
   const ok = sepeteEkle({ ad: s, url: s, tur: 'ad', kaynak: 'arama' });
   if (ok) {
-    durumYaz(`✅ "${s}" sepete eklendi.`, 'basarili');
-    toast(`🛒 "${s}" sepete eklendi`, 'basarili');
+    durumYaz(SZ.sEklendi(s), 'basarili');
+    toast(SZ.sToast(s), 'basarili');
     girdi.value = '';
   }
 }
@@ -404,15 +630,15 @@ function ilerlemeCiz(p) {
   const faz = $('#sepetFaz');
   if (faz) {
     faz.textContent = p?.faz === 'optimizasyon'
-      ? '🧮 Senaryolar hesaplanıyor…'
-      : `🔎 ${biten}/${toplam} ürün tarandı${p?.not ? ' · ' + String(p.not).slice(0, 90) : ''}`;
+      ? SZ.senaryoHesap
+      : `${SZ.tarandi(biten, toplam)}${p?.not ? ' · ' + String(p.not).slice(0, 90) : ''}`;
   }
 
   const liste = $('#sepetUrunDurumlari');
   if (liste && Array.isArray(p?.urunler)) {
     kaplama(liste, p.urunler.map(u => {
       const ikon = u.durum === 'ok' ? '✅' : u.durum === 'hata' ? '❌' : (u.durum === 'bulunamadi' ? '⚪' : '⏳');
-      const fiyat = u.enUcuz ? ` · en ucuz ${para(u.enUcuz.fiyat)} (${esc(u.enUcuz.site)})` : '';
+      const fiyat = u.enUcuz ? ` · ${SZ.enUcuz} ${para(u.enUcuz.fiyat)} (${esc(u.enUcuz.site)})` : '';
       return `<li class="sepet-urun-durum ${esc(u.durum || '')}">
         <span>${ikon} ${esc(String(u.ad || '').slice(0, 80))}</span>
         <span class="sepet-urun-durum-not">${esc(String(u.not || '').slice(0, 70))}${fiyat}</span>
@@ -668,12 +894,12 @@ function kiyasAnimasyonu() {
 
 function ctaMetni(senaryo) {
   const gruplar = senaryo?.gruplar || [];
-  if (!gruplar.length) return 'Mağazayı Aç ➔';
+  if (!gruplar.length) return SZ.magazaAc;
   if (gruplar.length === 1) {
-    const ad = String(gruplar[0].siteName || 'Mağaza');
-    return `⚡ ${ad}${turkceAblatif(ad)} Al ➔`;
+    const ad = String(gruplar[0].siteName || 'Store');
+    return SZ.magazadanAl(ad);
   }
-  return `🏪 ${gruplar.length} Mağazadan Satın Al ➔`;
+  return SZ.cokMagazaAl(gruplar.length);
 }
 
 function senaryolariCiz(sonuc) {
@@ -686,7 +912,7 @@ function senaryolariCiz(sonuc) {
   const ozet = tasarrufOzeti(sonuc);
   const enIyi = ozet.enIyiAnahtar;
 
-  $('#senaryoMeta').textContent = `${sonuc.urunSayisi || 0} ürün · ${sonuc.adaySiteSayisi || 0} aday mağaza`;
+  $('#senaryoMeta').textContent = SZ.senaryoMeta(sonuc.urunSayisi || 0, sonuc.adaySiteSayisi || 0);
 
   kaplama($('#senaryoKartlari'), kartlar.map(k => {
     if (!k.dolu) {
@@ -696,8 +922,7 @@ function senaryolariCiz(sonuc) {
           <div><h3 class="senaryo-baslik">${esc(k.baslik)}</h3>
             <p class="senaryo-aciklama">${esc(k.aciklama)}</p></div>
         </div>
-        <p class="senaryo-kurulamadi">Bu senaryo bu sepet için kurulamadı
-          (hiçbir mağaza tüm ürünleri birlikte satmıyor).</p>
+        <p class="senaryo-kurulamadi">${SZ.kurulamadi}</p>
       </article>`;
     }
     const s = k.senaryo;
@@ -708,11 +933,11 @@ function senaryolariCiz(sonuc) {
       : null;
     const farkHtml = fark && fark.tl > 0
       ? `<p class="senaryo-fark ${fark.tl >= 100 ? 'buyuk' : ''}">
-           ⚠️ Kargo/dağıtım yüzünden <b>${para(fark.tl)}</b> daha pahalı
+           ${SZ.pahali(para(fark.tl))}
          </p>`
       : (fark && fark.tl === 0
-        ? '<p class="senaryo-fark kazanc">💡 En düşük toplam maliyet (eşit)</p>'
-        : (enIyiMi ? '<p class="senaryo-fark kazanc">💡 En düşük toplam maliyet</p>' : ''));
+        ? `<p class="senaryo-fark kazanc">${SZ.esitEnDusuk}</p>`
+        : (enIyiMi ? `<p class="senaryo-fark kazanc">${SZ.enDusuk}</p>` : ''));
 
     return `<article class="senaryo-kart ${onerilenMi ? 'oneri' : ''} ${enIyiMi ? 'en-iyi' : ''}"
         data-anahtar="${esc(k.anahtar)}">
@@ -722,26 +947,26 @@ function senaryolariCiz(sonuc) {
           <h3 class="senaryo-baslik">${onerilenMi ? '🏆 ' : ''}${esc(k.baslik)}</h3>
           <p class="senaryo-aciklama">${esc(k.aciklama)}</p>
         </div>
-        ${onerilenMi ? '<span class="senaryo-oneri-rozet">ÖNERİLEN</span>' : ''}
+        ${onerilenMi ? `<span class="senaryo-oneri-rozet">${SZ.onerilen}</span>` : ''}
       </div>
 
       <p class="senaryo-magaza-satiri">
-        ${(s.gruplar || []).length === 1 ? '🏪' : '🏪 ' + (s.gruplar || []).length + ' mağaza'}
+        ${(s.gruplar || []).length === 1 ? SZ.magazaTekil : SZ.magazaCoklu((s.gruplar || []).length)}
         <span class="senaryo-magaza-adlari">${esc((s.gruplar || []).map(g => g.siteName).join(' + '))}</span>
       </p>
 
       <div class="senaryo-gruplar">${grupOzet(s)}</div>
 
       <dl class="senaryo-toplama">
-        <div><dt>Ürünler</dt><dd>${para(s.araToplam)}</dd></div>
-        ${Number(s.kuponIndirim) > 0 ? `<div><dt>Kupon</dt><dd>−${para(s.kuponIndirim)}</dd></div>` : ''}
+        <div><dt>${SZ.urunler}</dt><dd>${para(s.araToplam)}</dd></div>
+        ${Number(s.kuponIndirim) > 0 ? `<div><dt>${SZ.kupon}</dt><dd>−${para(s.kuponIndirim)}</dd></div>` : ''}
         <div class="${Number(s.kargo) > 0 || s.kargoBelirsiz ? 'kargo-ucretli' : 'kargo-bedava'}">
-          <dt>Kargo</dt>
+          <dt>${SZ.kargo}</dt>
           <dd>${Number(s.kargo) > 0
-            ? para(s.kargo) + ((s.gruplar || []).length > 1 ? ` (${(s.gruplar || []).length} gönderim)` : '')
-            : (s.kargoBelirsiz ? '⚠️ Sepette belli' : 'Bedava (eşik aşıldı)')}</dd>
+            ? para(s.kargo) + ((s.gruplar || []).length > 1 ? ` ${SZ.gonderim((s.gruplar || []).length)}` : '')
+            : (s.kargoBelirsiz ? SZ.kargoBelirsiz : SZ.kargoBedava)}</dd>
         </div>
-        <div class="senaryo-toplam-satir"><dt>TOPLAM</dt><dd>${para(s.toplam)}</dd></div>
+        <div class="senaryo-toplam-satir"><dt>${SZ.toplam}</dt><dd>${para(s.toplam)}</dd></div>
       </dl>
 
       ${farkHtml}
@@ -854,14 +1079,13 @@ async function kargoKurtariciCiz(sonuc) {
     <div class="kargo-kart" data-site="${esc(grup.site)}">
       <div class="kargo-kart-ust">
         <span class="kargo-kart-site">🏪 ${esc(grup.siteName)}</span>
-        <span class="kargo-kart-eksik">💡 Kargoya <b>${para(acik.eksik)}</b> kaldı</span>
+        <span class="kargo-kart-eksik">${SZ.kargoKaldi(para(acik.eksik))}</span>
       </div>
       <p class="kargo-kart-metin">
-        ${para(acik.kargoUcreti)} kargo ödemek yerine en az ${para(acik.eksik)} ürün ekleyin —
-        kargo bedava olsun. Net kazanç: <b>${para(acik.netKazanc)}</b>.
+        ${SZ.kargoMesaj(para(acik.kargoUcreti), para(acik.eksik), para(acik.netKazanc))}
       </p>
       <div class="kargo-kart-oneriler" data-yukleniyor="1">
-        <span class="kargo-yukleniyor">⏳ Tamamlayıcı ürünler aranıyor…</span>
+        <span class="kargo-yukleniyor">${SZ.tamamlayiciAraniyor}</span>
       </div>
     </div>
   `).join(''));
@@ -888,7 +1112,7 @@ async function kargoKurtariciCiz(sonuc) {
       const oneriler = Array.isArray(v?.oneriler) ? v.oneriler : [];
       if (!oneriler.length) {
         kap.removeAttribute('data-yukleniyor');
-        kap.innerHTML = '<span class="kargo-yukleniyor">Bu eşik aralığında kârlı tamamlayıcı ürün bulunamadı.</span>';
+        kap.innerHTML = `<span class="kargo-yukleniyor">${esc(SZ.tamamlayiciYok)}</span>`;
         continue;
       }
       kap.removeAttribute('data-yukleniyor');
@@ -901,13 +1125,13 @@ async function kargoKurtariciCiz(sonuc) {
           </div>
           <div class="kargo-oneri-btnler">
             <a class="kargo-oneri-link" href="${esc(o.afiliyeUrl || o.url)}"
-               target="_blank" rel="noopener sponsored">Ürüne git ➔</a>
+               target="_blank" rel="noopener sponsored">${SZ.uruneGit}</a>
             <button type="button" class="kargo-oneri-ekle"
               data-ekle-ad="${esc(o.title || '')}"
               data-ekle-url="${esc(o.url || o.afiliyeUrl || '')}"
               data-ekle-fiyat="${esc(String(o.fiyat ?? ''))}"
               data-ekle-site="${esc(grup.siteName || grup.site || '')}"
-              ${etki && etki.mantikli ? '' : 'disabled'}>+ Sepete Ekle</button>
+              ${etki && etki.mantikli ? '' : 'disabled'}>${SZ.sepeteEkleBtn}</button>
           </div>
         </div>`;
       }).join(''));
@@ -915,7 +1139,7 @@ async function kargoKurtariciCiz(sonuc) {
       const kap = icerik.querySelector(`.kargo-kart[data-site="${CSS.escape(grup.site)}"] .kargo-kart-oneriler`);
       if (kap) {
         kap.removeAttribute('data-yukleniyor');
-        kap.innerHTML = '<span class="kargo-yukleniyor">Teklifler alınamadı; eşiğe kalan tutarı yukarıda görebilirsiniz.</span>';
+        kap.innerHTML = `<span class="kargo-yukleniyor">${esc(SZ.teklifAlinamadi)}</span>`;
       }
     }
   }
@@ -928,9 +1152,9 @@ async function kargoKurtariciCiz(sonuc) {
 async function sepetPaylas() {
   const btn = $('#sepetPaylas');
   const el = $('#sepetPaylasSonuc');
-  if (!durum.sonuc) { toast('Önce sepeti hesaplayın.', 'hata'); return; }
+  if (!durum.sonuc) { toast(SZ.onceHesapla, 'hata'); return; }
   btn.disabled = true;
-  btn.textContent = '⏳ Link oluşturuluyor…';
+  btn.textContent = SZ.linkOlusturuluyor;
   try {
     const r = await fetch('/api/sepet/paylas', {
       method: 'POST',
@@ -942,17 +1166,17 @@ async function sepetPaylas() {
     const tam = v.url || (location.origin + (v.path || ''));
     try {
       await navigator.clipboard.writeText(tam);
-      el.textContent = `✅ Bağlantı panoya kopyalandı (30 gün geçerli): ${tam}`;
+      el.textContent = SZ.linkKopyalandi(tam);
     } catch {
-      el.textContent = `🔗 Paylaşım linki (30 gün): ${tam}`;
+      el.textContent = SZ.linkHazir(tam);
     }
     el.className = 'sepet-paylas-sonuc basarili';
   } catch (e) {
-    el.textContent = '❌ ' + (e.message || 'Paylaşım başarısız');
+    el.textContent = '❌ ' + (e.message || 'Share failed');
     el.className = 'sepet-paylas-sonuc hata';
   } finally {
     btn.disabled = false;
-    btn.textContent = '🔗 Sepeti Paylaş';
+    btn.textContent = SZ.paylasBtn;
   }
 }
 
@@ -1004,7 +1228,7 @@ function olaylariBagla() {
       kaynak: 'arama',
     });
     if (ok) {
-      durumYaz('✅ Ürün sepete eklendi.', 'basarili');
+      durumYaz(SZ.urunEklendi, 'basarili');
       $('#sepetOneriler').hidden = true;
       girdi.value = '';
     }
@@ -1020,7 +1244,7 @@ function olaylariBagla() {
       if (!urun) return;
       const toplam = durum.sepet.reduce((s, x) => s + Math.max(1, Number(x.adet) || 1), 0);
       if (delta > 0 && toplam >= MAKS_URUN) {
-        toast(`Sepet en fazla ${MAKS_URUN} ürün alabilir.`, 'hata');
+        toast(SZ.maksUrun(MAKS_URUN), 'hata');
         return;
       }
       urun.adet = Math.max(1, (Number(urun.adet) || 1) + delta);
@@ -1045,7 +1269,7 @@ function olaylariBagla() {
     $('#senaryoAlani').hidden = true;
     $('#kargoKurtarici').hidden = true;
     hataGoster('');
-    toast('Sepet boşaltıldı.');
+    toast(SZ.sepetBosaltildi);
   });
 
   $('#sepetHesapla')?.addEventListener('click', hesapla);
@@ -1058,7 +1282,7 @@ function olaylariBagla() {
     }
     hesaplaButonu(false);
     $('#sepetIlerlemeAlani').hidden = true;
-    hataGoster('Tarama durduruldu. Sepetiniz korunuyor.');
+    hataGoster(SZ.taramaDurduruldu || 'Tarama durduruldu. Sepetiniz korunuyor.');
   });
 
   $('#senaryoKartlari')?.addEventListener('click', (e) => {

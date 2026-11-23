@@ -26,6 +26,89 @@
   const ORTAM_PARA = ORTAM.currency || 'TRY';
   const ORTAM_YEREL = ORTAM.yerel || 'tr-TR';
 
+  const SL_SZ = {
+    tr: {
+      gecersizGramaj: 'Geçerli bir gramaj girin.',
+      sorguBekle: '⏳ Sorgulanıyor…',
+      altBaslik: '📦 Diğer en ucuz stoklu seçenekler',
+      parcaEtiket: 'parça', git: 'Git ↗', magazaFallback: 'Mağaza',
+      enUcuzRozet: '✅ En ucuz stokta',
+      parcaBasi: 'Parça başı hammadde:',
+      makaradan: (gr, adet) => `${gr} g makaradan <b>${adet}</b> adet`,
+      stokVar: '🟢 stokta', stokYok: '🔴 tükendi',
+      magazayaGit: '🛒 Mağazaya Git', tumMagazalar: '📊 Tüm mağazalar', maliyetHesap: '🧮 Maliyet + kâr hesapla',
+      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · ${n} alternatif mağaza`,
+      bulunamadi: '⚠️ Bulunamadı', uygunYok: 'Uygun filament yok.',
+      durustYok: 'Stokta bu malzeme yoksa fiyat <b>uydurulmaz</b> — dürüst davranış.',
+      sorguHata: (e) => `⚠️ Sorgu başarısız: ${e}`,
+      gcodeGramajYok: (fn) => `⚠️ "${fn}" içinde filament gramajı bulunamadı; lütfen dilimleyici ayarlarından G-Code yorumlarını etkinleştirin.`,
+      gcodeOkundu: (fn, gr, clr, mat, sr) => `✅ "${fn}" okundu: ${gr} g ${clr}${mat}${sr} (cihazınızdan yüklenmedi)`,
+      gcodeHata: '⚠️ G-Code dosyası okunamadı.',
+      jsonGoster: '{ } API JSON çıktısını göster', jsonGizle: '{ } JSON çıktısını gizle',
+      kopyala: '📋 Kopyala', kopyalandi: '✅ Kopyalandı',
+    },
+    en: {
+      gecersizGramaj: 'Enter a valid filament weight.',
+      sorguBekle: '⏳ Querying…',
+      altBaslik: '📦 Other lowest in-stock options',
+      parcaEtiket: 'part', git: 'Go ↗', magazaFallback: 'Store',
+      enUcuzRozet: '✅ Cheapest in stock',
+      parcaBasi: 'Material cost per part:',
+      makaradan: (gr, adet) => `<b>${adet}</b> parts per ${gr} g spool`,
+      stokVar: '🟢 in stock', stokYok: '🔴 out of stock',
+      magazayaGit: '🛒 Visit Store', tumMagazalar: '📊 All stores', maliyetHesap: '🧮 Cost & profit calc',
+      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · ${n} alternative stores`,
+      bulunamadi: '⚠️ Not Found', uygunYok: 'No matching filament in stock.',
+      durustYok: 'No synthetic price is shown when this material is out of stock.',
+      sorguHata: (e) => `⚠️ Request failed: ${e}`,
+      gcodeGramajYok: (fn) => `⚠️ No filament weight found in "${fn}"; enable slicer G-Code comments.`,
+      gcodeOkundu: (fn, gr, clr, mat, sr) => `✅ "${fn}" parsed: ${gr} g ${clr}${mat}${sr} (processed locally)`,
+      gcodeHata: '⚠️ Could not read G-Code file.',
+      jsonGoster: '{ } Show API JSON output', jsonGizle: '{ } Hide API JSON output',
+      kopyala: '📋 Copy', kopyalandi: '✅ Copied',
+    },
+    fr: {
+      gecersizGramaj: 'Veuillez saisir un poids valide.',
+      sorguBekle: '⏳ Recherche en cours…',
+      altBaslik: '📦 Autres options en stock les moins chères',
+      parcaEtiket: 'pièce', git: 'Voir ↗', magazaFallback: 'Boutique',
+      enUcuzRozet: '✅ Moins cher en stock',
+      parcaBasi: 'Coût matière par pièce :',
+      makaradan: (gr, adet) => `<b>${adet}</b> pièces par bobine de ${gr} g`,
+      stokVar: '🟢 en stock', stokYok: '🔴 rupture',
+      magazayaGit: '🛒 Voir l’offre', tumMagazalar: '📊 Toutes les boutiques', maliyetHesap: '🧮 Calculateur coût + marge',
+      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · ${n} boutiques alternatives`,
+      bulunamadi: '⚠️ Introuvable', uygunYok: 'Aucun filament en stock correspondant.',
+      durustYok: 'Aucun prix fictif n’est affiché si le matériau est en rupture.',
+      sorguHata: (e) => `⚠️ Échec de la requête : ${e}`,
+      gcodeGramajYok: (fn) => `⚠️ Poids introuvable dans « ${fn} » ; activez les commentaires G-Code dans votre slicer.`,
+      gcodeOkundu: (fn, gr, clr, mat, sr) => `✅ « ${fn} » analysé : ${gr} g ${clr}${mat}${sr} (traitement local)`,
+      gcodeHata: '⚠️ Impossible de lire le fichier G-Code.',
+      jsonGoster: '{ } Afficher la réponse JSON', jsonGizle: '{ } Masquer la réponse JSON',
+      kopyala: '📋 Copier', kopyalandi: '✅ Copié',
+    },
+    ja: {
+      gecersizGramaj: '有効な重量(g)を入力してください。',
+      sorguBekle: '⏳ 照会中…',
+      altBaslik: '📦 その他の在庫あり最安候補',
+      parcaEtiket: '1個あたり', git: '開く ↗', magazaFallback: 'ストア',
+      enUcuzRozet: '✅ 在庫あり最安値',
+      parcaBasi: '1個あたりの材料費:',
+      makaradan: (gr, adet) => `${gr} g スプールから <b>${adet}</b> 個出力可能`,
+      stokVar: '🟢 在庫あり', stokYok: '🔴 在庫切れ',
+      magazayaGit: '🛒 ショップへ', tumMagazalar: '📊 全ストアを見る', maliyetHesap: '🧮 原価＋利益を計算',
+      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · 他 ${n} 店舗`,
+      bulunamadi: '⚠️ 見つかりません', uygunYok: '在庫のある該当フィラメントがありません。',
+      durustYok: '在庫がない場合は架空の価格を表示しません。',
+      sorguHata: (e) => `⚠️ 照会エラー: ${e}`,
+      gcodeGramajYok: (fn) => `⚠️「${fn}」内にフィラメント重量が見つかりません。スライサーでG-Codeコメント出力を有効にしてください。`,
+      gcodeOkundu: (fn, gr, clr, mat, sr) => `✅「${fn}」解析完了: ${gr} g ${clr}${mat}${sr}（ローカル処理）`,
+      gcodeHata: '⚠️ G-Codeファイルを読み込めませんでした。',
+      jsonGoster: '{ } API JSON出力を表示', jsonGizle: '{ } API JSON出力を隠す',
+      kopyala: '📋 コピー', kopyalandi: '✅ コピー済み',
+    },
+  }[ORTAM_DIL] || {};
+
   let aktifSureDk = null;
 
   const tl = (n) => Number(n || 0).toLocaleString('tr-TR', {
@@ -131,12 +214,12 @@
   async function sorgula() {
     const g = Number(gramaj?.value);
     if (!Number.isFinite(g) || g <= 0) {
-      sonuc.innerHTML = '<span class="sl-hata">Geçerli bir gramaj girin.</span>';
+      sonuc.innerHTML = `<span class="sl-hata">${kac(SL_SZ.gecersizGramaj)}</span>`;
       return;
     }
 
     const benim = ++istekNo;
-    sonuc.innerHTML = '<span class="sl-bekle">⏳ Sorgulanıyor…</span>';
+    sonuc.innerHTML = `<span class="sl-bekle">${kac(SL_SZ.sorguBekle)}</span>`;
 
     const qs = new URLSearchParams({
       malzeme: malzeme.value || 'PLA',
@@ -160,13 +243,13 @@
         const altlar = Array.isArray(v.enIyiAlternatifler) ? v.enIyiAlternatifler.slice(1, 4) : [];
         const altHtml = altlar.length ? `
           <div class="sl-alt-kutu">
-            <div class="sl-alt-baslik">📦 Diğer en ucuz stoklu seçenekler</div>
+            <div class="sl-alt-baslik">${SL_SZ.altBaslik}</div>
             <div class="sl-alt-liste">
               ${altlar.map((a) => `
                 <div class="sl-alt-satir">
-                  <span class="sl-alt-ad"><b>${kac(a.magaza || 'Mağaza')}</b> · ${kac(a.urunAdi)}</span>
-                  <span class="sl-alt-fiyat">${kac(fPara(a.fiyat))} <small>(parça ${kac(fPara(a.parcaBasiMaliyet))})</small></span>
-                  <a class="sl-alt-link" href="${kac(a.yonlendirmeLinki || a.hamLink)}" target="_blank" rel="noopener sponsored">Git ↗</a>
+                  <span class="sl-alt-ad"><b>${kac(a.magaza || SL_SZ.magazaFallback)}</b> · ${kac(a.urunAdi)}</span>
+                  <span class="sl-alt-fiyat">${kac(fPara(a.fiyat))} <small>(${SL_SZ.parcaEtiket} ${kac(fPara(a.parcaBasiMaliyet))})</small></span>
+                  <a class="sl-alt-link" href="${kac(a.yonlendirmeLinki || a.hamLink)}" target="_blank" rel="noopener sponsored">${SL_SZ.git}</a>
                 </div>
               `).join('')}
             </div>
@@ -175,35 +258,35 @@
         sonuc.innerHTML = `
           <div class="sl-sonuc-kart">
             <div class="sl-sonuc-sol">
-              <span class="sl-sonuc-rozet">✅ En ucuz stokta</span>
+              <span class="sl-sonuc-rozet">${SL_SZ.enUcuzRozet}</span>
               <span class="sl-sonuc-site">${kac(u.magaza)}</span>
               <span class="sl-sonuc-fiyat">${kac(fPara(u.fiyat))} <small style="font-size:13px;font-weight:600">(${kac(fPara(u.tlKg))}/kg)</small></span>
               <span class="sl-sonuc-urun">${kac(u.urunAdi)}</span>
               <span class="sl-sonuc-detay">
-                Parça başı hammadde: <b>${kac(fPara(u.parcaBasiMaliyet))}</b>
-                · ${u.makaraGram || 1000} g makaradan <b>${u.makaradanCikanAdet}</b> adet
-                · ${u.stok ? '🟢 stokta' : '🔴 tükendi'}
+                ${SL_SZ.parcaBasi} <b>${kac(fPara(u.parcaBasiMaliyet))}</b>
+                · ${SL_SZ.makaradan(u.makaraGram || 1000, u.makaradanCikanAdet)}
+                · ${u.stok ? SL_SZ.stokVar : SL_SZ.stokYok}
               </span>
             </div>
             <div class="sl-sonuc-aksiyonlar">
               <a class="sl-sonuc-btn" href="${kac(u.yonlendirmeLinki || u.hamLink)}"
-                 target="_blank" rel="noopener sponsored">🛒 Mağazaya Git</a>
+                 target="_blank" rel="noopener sponsored">${SL_SZ.magazayaGit}</a>
               <div class="sl-sonuc-alt-btnler">
-                ${u.karsilastirmaUrl ? `<a class="sl-mini-link" href="${kac(u.karsilastirmaUrl)}">📊 Tüm mağazalar</a>` : ''}
-                ${v.maliyetUrl ? `<a class="sl-mini-link" href="${kac(v.maliyetUrl)}">🧮 Maliyet + kâr hesapla</a>` : ''}
+                ${u.karsilastirmaUrl ? `<a class="sl-mini-link" href="${kac(u.karsilastirmaUrl)}">${SL_SZ.tumMagazalar}</a>` : ''}
+                ${v.maliyetUrl ? `<a class="sl-mini-link" href="${kac(v.maliyetUrl)}">${SL_SZ.maliyetHesap}</a>` : ''}
               </div>
             </div>
           </div>
           <p class="sl-sonuc-not">${kac(v.bildirimMetni)}</p>
           ${altHtml}
-          <p class="sl-sonuc-sure">⚡ ${ms} ms · ${Number(v.alternatifSayisi) || 0} alternatif mağaza</p>`;
+          <p class="sl-sonuc-sure">${SL_SZ.altMagazaSayi(ms, Number(v.alternatifSayisi) || 0)}</p>`;
       } else {
         sonuc.innerHTML = `
           <div class="sl-sonuc-kart sl-bos-kart">
             <div class="sl-sonuc-sol">
-              <span class="sl-sonuc-rozet sl-rozet-uyari">⚠️ Bulunamadı</span>
-              <span class="sl-sonuc-detay">${kac(v.bildirimMetni || v.hata || 'Uygun filament yok.')}</span>
-              <span class="sl-sonuc-detay">Stokta bu malzeme yoksa fiyat <b>uydurulmaz</b> — dürüst davranış.</span>
+              <span class="sl-sonuc-rozet sl-rozet-uyari">${SL_SZ.bulunamadi}</span>
+              <span class="sl-sonuc-detay">${kac(v.bildirimMetni || v.hata || SL_SZ.uygunYok)}</span>
+              <span class="sl-sonuc-detay">${SL_SZ.durustYok}</span>
             </div>
           </div>
           <p class="sl-sonuc-sure">⚡ ${ms} ms</p>`;
@@ -212,7 +295,7 @@
       if (jsonBar) jsonBar.hidden = false;
     } catch (e) {
       if (benim !== istekNo) return;
-      sonuc.innerHTML = `<span class="sl-hata">⚠️ Sorgu başarısız: ${kac(String(e?.message || e))}</span>`;
+      sonuc.innerHTML = `<span class="sl-hata">${SL_SZ.sorguHata(kac(String(e?.message || e)))}</span>`;
     }
   }
 
@@ -227,7 +310,7 @@
         if (gcodeOzet) {
           gcodeOzet.hidden = false;
           gcodeOzet.className = 'sl-gcode-ozet uyari';
-          gcodeOzet.textContent = `⚠️ "${file.name}" içinde filament gramajı bulunamadı; lütfen dilimleyici ayarlarından G-Code yorumlarını etkinleştirin.`;
+          gcodeOzet.textContent = SL_SZ.gcodeGramajYok(file.name);
         }
         return;
       }
@@ -245,14 +328,14 @@
         const sureTxt = meta.sureDk
           ? ` · ⏱️ ${Math.floor(meta.sureDk / 60)} sa ${meta.sureDk % 60} dk`
           : '';
-        gcodeOzet.textContent = `✅ "${file.name}" okundu: ${meta.gramaj} g ${meta.renk ? meta.renk + ' ' : ''}${meta.malzeme || 'PLA'}${sureTxt} (cihazınızdan yüklenmedi)`;
+        gcodeOzet.textContent = SL_SZ.gcodeOkundu(file.name, meta.gramaj, meta.renk ? meta.renk + ' ' : '', meta.malzeme || 'PLA', sureTxt);
       }
       sorgula();
     } catch {
       if (gcodeOzet) {
         gcodeOzet.hidden = false;
         gcodeOzet.className = 'sl-gcode-ozet uyari';
-        gcodeOzet.textContent = '⚠️ G-Code dosyası okunamadı.';
+        gcodeOzet.textContent = SL_SZ.gcodeHata;
       }
     }
   }
@@ -279,7 +362,7 @@
   if (jsonToggle && jsonKutu) {
     jsonToggle.addEventListener('click', () => {
       jsonKutu.hidden = !jsonKutu.hidden;
-      jsonToggle.textContent = jsonKutu.hidden ? '{ } API JSON çıktısını göster' : '{ } JSON çıktısını gizle';
+      jsonToggle.textContent = jsonKutu.hidden ? SL_SZ.jsonGoster : SL_SZ.jsonGizle;
     });
   }
 
@@ -292,12 +375,12 @@
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'sl-kopyala-btn';
-    btn.textContent = '📋 Kopyala';
+    btn.textContent = SL_SZ.kopyala;
     btn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(pre.textContent || '');
-        btn.textContent = '✅ Kopyalandı';
-        setTimeout(() => { btn.textContent = '📋 Kopyala'; }, 1500);
+        btn.textContent = SL_SZ.kopyalandi;
+        setTimeout(() => { btn.textContent = SL_SZ.kopyala; }, 1500);
       } catch { /* yoksay */ }
     });
     sar.appendChild(btn);

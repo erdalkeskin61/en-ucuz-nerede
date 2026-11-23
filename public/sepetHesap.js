@@ -256,6 +256,11 @@ export const PAKETLER = Object.freeze([
     ikon: '🎨',
     ad: "3'lü Temel Renk Paketi",
     icerik: '1× Siyah PLA + 1× Beyaz PLA + 1× Gri PLA',
+    i18n: {
+      en: { ad: '3-Spool Essential Color Pack', icerik: '1× Black PLA + 1× White PLA + 1× Grey PLA', etiketler: ['Black PLA', 'White PLA', 'Grey PLA'] },
+      fr: { ad: 'Pack 3 Couleurs Essentielles', icerik: '1× PLA Noir + 1× PLA Blanc + 1× PLA Gris', etiketler: ['PLA Noir', 'PLA Blanc', 'PLA Gris'] },
+      ja: { ad: '定番カラー PLA 3本セット', icerik: 'ブラック PLA ×1 + ホワイト PLA ×1 + グレー PLA ×1', etiketler: ['ブラック PLA', 'ホワイト PLA', 'グレー PLA'] },
+    },
     parcalar: [
       { etiket: 'Siyah PLA', malzeme: 'PLA', renk: 'siyah', adet: 1 },
       { etiket: 'Beyaz PLA', malzeme: 'PLA', renk: 'beyaz', adet: 1 },
@@ -267,6 +272,11 @@ export const PAKETLER = Object.freeze([
     ikon: '⚡',
     ad: "3'lü Yüksek Hızlı Baskı Paketi",
     icerik: '2× eSun ePLA-HS + 1× Creality Hyper PLA',
+    i18n: {
+      en: { ad: '3-Spool High-Speed Pack', icerik: '2× eSun ePLA-HS + 1× Creality Hyper PLA', etiketler: ['eSun ePLA-HS', 'Creality Hyper PLA'] },
+      fr: { ad: 'Pack 3 Bobines Haute Vitesse', icerik: '2× eSun ePLA-HS + 1× Creality Hyper PLA', etiketler: ['eSun ePLA-HS', 'Creality Hyper PLA'] },
+      ja: { ad: '高速印刷向け PLA 3本セット', icerik: 'eSun ePLA-HS ×2 + Creality Hyper PLA ×1', etiketler: ['eSun ePLA-HS', 'Creality Hyper PLA'] },
+    },
     parcalar: [
       { etiket: 'eSun ePLA-HS', malzeme: 'PLA', hizli: true, tercih: /esun/i, adet: 2 },
       { etiket: 'Creality Hyper PLA', malzeme: 'PLA', hizli: true, tercih: /creality/i, adet: 1 },
@@ -277,12 +287,33 @@ export const PAKETLER = Object.freeze([
     ikon: '🦾',
     ad: 'Dayanıklı Prototip Paketi',
     icerik: '2× PETG + 1× ABS',
+    i18n: {
+      en: { ad: 'Durable Prototype Pack', icerik: '2× PETG + 1× ABS', etiketler: ['PETG', 'ABS'] },
+      fr: { ad: 'Pack Prototype Résistant', icerik: '2× PETG + 1× ABS', etiketler: ['PETG', 'ABS'] },
+      ja: { ad: '高耐久プロトタイプセット', icerik: 'PETG ×2 + ABS ×1', etiketler: ['PETG', 'ABS'] },
+    },
     parcalar: [
       { etiket: 'PETG', malzeme: 'PETG', adet: 2 },
       { etiket: 'ABS', malzeme: 'ABS', adet: 1 },
     ],
   },
 ]);
+
+/** Paketin başlık, içerik ve parça etiketlerini seçili dilde döndürür. */
+export function paketCevir(paket, dil = 'tr') {
+  if (!paket || !dil || dil === 'tr') return paket;
+  const cev = paket.i18n?.[dil];
+  if (!cev) return paket;
+  return {
+    ...paket,
+    ad: cev.ad || paket.ad,
+    icerik: cev.icerik || paket.icerik,
+    parcalar: (paket.parcalar || []).map((p, idx) => ({
+      ...p,
+      etiket: cev.etiketler?.[idx] || p.etiket,
+    })),
+  };
+}
 
 /** Türkçe renk sözcüklerini başlıkta ararken kullanılan eşleştiriciler. */
 const RENK_DESENI = {
@@ -324,14 +355,15 @@ function hizliMi(teklif) {
  *            eklenebilir:boolean, adet:number, tahminiToplam:number|null}}
  *   parcalar: [{etiket, adet, teklif}] — teklif gerçek (ad/site/fiyat/url dolu)
  */
-export function paketCoz(paket, teklifler) {
+export function paketCoz(paket, teklifler, dil = 'tr') {
+  const cevrilmisPaket = paketCevir(paket, dil);
   const havuz = (Array.isArray(teklifler) ? teklifler : [])
     .filter(t => t && t.ad && Number(t.fiyat) > 0 && t.url);
   const parcalar = [];
   const eksikler = [];
   const degisimler = [];
 
-  for (const parca of paket?.parcalar || []) {
+  for (const parca of cevrilmisPaket?.parcalar || []) {
     const aile = String(parca.malzeme || '').toUpperCase();
     let adaylar = havuz.filter(t => malzemeAilesi(t) === aile);
     if (parca.hizli) adaylar = adaylar.filter(hizliMi);
