@@ -18,10 +18,22 @@
  *  - Global mağaza CTA bağlantıları yapılandırılmış Impact şablonu (`afiliyeLink`)
  *    üzerinden geçer ve `rel="noopener sponsored"` taşır.
  */
-import { htmlKacis, sayfaIskeleti } from './seoSayfalar.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { htmlKacis, sayfaIskeleti, dilSeciciHtml, ga4HeadSnip } from './seoSayfalar.js';
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { adaptersByMarket } from './sites/index.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+let _indexSablon = null;
+function indexSablonOku() {
+  if (!_indexSablon) {
+    _indexSablon = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  }
+  return _indexSablon;
+}
 
 export const GLOBAL_ANA_YOLLARI = Object.freeze({
   en: '/en',
@@ -854,359 +866,128 @@ const ANA_KOPYA = Object.freeze({
 export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   const kod = ['en', 'fr', 'ja'].includes(normalizeDil(dil)) ? normalizeDil(dil) : 'en';
   const c = ANA_KOPYA[kod];
+  const sz = sozlukGetir(kod);
   const canonicalUrl = `${tabanUrl}${GLOBAL_ANA_YOLLARI[kod]}`;
-  const cr = crealityAracLinki(kod, '3D Printer');
   const bolgeMagazalari = kod === 'fr'
     ? [...adaptersByMarket('fr'), ...adaptersByMarket('eu')]
     : adaptersByMarket(c.market);
   const taramaMagazalari = adaptersByMarket(c.market);
+  const ortakSiteler = taramaMagazalari.map(m => ({ id: m.id, ad: m.name }));
+  const ortam = {
+    market: c.market,
+    currency: c.currency,
+    dil: kod,
+    maliyetYolu: GLOBAL_MALIYET_YOLLARI[kod],
+    slicerYolu: GLOBAL_SLICER_YOLLARI[kod],
+    siteler: ortakSiteler,
+  };
 
-  const extraMeta = [
+  let cikti = indexSablonOku();
+
+  // 1) Dil, meta etiketleri, canonical, hreflang ve GA4
+  cikti = cikti
+    .replace('<html lang="tr" data-theme="light">', `<html lang="${htmlKacis(kod)}" data-theme="light">`)
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${c.title}</title>`)
+    .replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${htmlKacis(c.desc)}" />`)
+    .replace(/<meta property="og:locale" content="[^"]*"\s*\/>/, `<meta property="og:locale" content="${htmlKacis(sz.meta.ogLocale)}" />`)
+    .replace(/<meta property="og:title" content="[^"]*"\s*\/>/, `<meta property="og:title" content="${c.title}" />`)
+    .replace(/<meta property="og:description" content="[^"]*"\s*\/>/, `<meta property="og:description" content="${htmlKacis(c.desc)}" />`)
+    .replace(/<meta name="twitter:title" content="[^"]*"\s*\/>/, `<meta name="twitter:title" content="${c.title}" />`)
+    .replace(/<meta name="twitter:description" content="[^"]*"\s*\/>/, `<meta name="twitter:description" content="${htmlKacis(c.desc)}" />`);
+
+  if (tabanUrl) {
+    cikti = cikti.replace(/content="\/og-gorsel\.png"/g, `content="${htmlKacis(tabanUrl)}/og-gorsel.png"`);
+  }
+  const ga4Snip = ga4HeadSnip();
+  const ekHead = [
+    `<link rel="canonical" href="${htmlKacis(canonicalUrl)}" />`,
+    `<meta property="og:url" content="${htmlKacis(canonicalUrl)}" />`,
     hreflangEtiketleri(tabanUrl, ANA_YOL_HARITASI),
-    '<script src="/para.js"></script>',
-  ].join('\n  ');
+    ga4Snip,
+  ].filter(Boolean).join('\n  ');
+  cikti = cikti.replace('</head>', `  ${ekHead}\n</head>`);
 
-  const govdeHtml = `
-    <section class="hero">
+  // 2) Üst menü & bölgesel dil seçici (TR nav yerine seçili dilin rotaları)
+  cikti = cikti.replace(
+    /<header class="ustbar">[\s\S]*?<\/header>/,
+    `<header class="ustbar">
+    <div class="kap">
+      <a class="logo" href="${htmlKacis(GLOBAL_ANA_YOLLARI[kod])}" aria-label="${htmlKacis(sz.meta.siteAdi)}">
+        <img class="logo-gorsel" src="/logo.png" alt="${htmlKacis(sz.meta.siteAdi)}" width="36" height="30" decoding="async" />
+      </a>
+      <nav class="menu">
+        <a href="${htmlKacis(GLOBAL_ANA_YOLLARI[kod])}" class="etkin">${htmlKacis(sz.nav.karsilastir)}</a>
+        <a href="/urunler">🗂️ ${htmlKacis(sz.nav.katalog)}</a>
+        <a href="/rehber">📖 ${htmlKacis(sz.nav.rehberler)}</a>
+        <a href="${htmlKacis(GLOBAL_MALIYET_YOLLARI[kod])}">🧮 ${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="/sepet.html">🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
+        <a href="${htmlKacis(GLOBAL_SLICER_YOLLARI[kod])}">🧩 ${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="/ayarlar.html">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
+      </nav>
+      ${dilSeciciHtml(kod, ANA_YOL_HARITASI)}
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Theme" title="Theme">🌓</button>
+    </div>
+  </header>`,
+  );
+
+  // 3) Hero + Hibrit arama kartı (index.html ile birebir CSS/ID yapısı, seçili dilde)
+  cikti = cikti.replace(
+    /<section class="hero">[\s\S]*?<\/section>/,
+    `<section class="hero">
       <div class="hero-ic">
         <span class="hero-rozet">${c.rozet}</span>
         <h1>${c.h1}</h1>
         <p>${c.alt}</p>
         <div class="hero-istatistik">
-          <span><b>${taramaMagazalari.length}</b> ${c.statMagaza}</span>
+          <span><b id="heroSiteSayisi">${taramaMagazalari.length}</b> ${c.statMagaza}</span>
           <span>${c.statBirim}</span>
           <span>${c.statEslesme}</span>
         </div>
       </div>
-    </section>
+    </section>`,
+  );
 
-    <section class="giris-kart hibrit-kart">
-      <div class="arama-modu" role="tablist">
-        <button type="button" class="mod-secim aktif" data-gmod="oto" role="tab" aria-selected="true">${c.modOto}</button>
-        <button type="button" class="mod-secim" data-gmod="link" role="tab" aria-selected="false">${c.modLink}</button>
-        <button type="button" class="mod-secim" data-gmod="ad" role="tab" aria-selected="false">${c.modAd}</button>
-      </div>
-
-      <div class="hibrit-sarmal">
-        <form id="globalAraForm" class="hibrit-form" role="search" autocomplete="off">
-          <span class="hibrit-ikon" aria-hidden="true">🔎</span>
-          <input id="globalAraInput" type="text" autocomplete="off" spellcheck="false"
-                 placeholder="${htmlKacis(c.placeholderOto)}" />
-          <button type="submit" id="globalAraBtn">${c.araBtn}</button>
-        </form>
-      </div>
-
-      <div class="hizli-arama">
+  cikti = cikti
+    .replace('✨ Otomatik', c.modOto)
+    .replace('🔗 Linkte ara', c.modLink)
+    .replace('💬 Ürün adıyla ara', c.modAd)
+    .replace(
+      'placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;Bambu Lab A1 Mini&quot;"',
+      `placeholder="${htmlKacis(c.placeholderOto)}"`,
+    )
+    .replace('<button type="submit" id="araBtn">Fiyatları Bul</button>', `<button type="submit" id="araBtn">${c.araBtn}</button>`)
+    .replace(
+      /<div class="hizli-arama">[\s\S]*?<\/div>/,
+      `<div class="hizli-arama">
         <span class="hizli-etiket">${c.populerEtiket}</span>
-        ${c.ornekler.map(o => `<button type="button" class="hizli-cip global-ornek-btn" data-q="${htmlKacis(o)}">${htmlKacis(o)}</button>`).join('')}
-      </div>
+        ${c.ornekler.map(o => `<button type="button" class="hizli-cip" data-hizli="${htmlKacis(o)}">${htmlKacis(o)}</button>`).join('\n        ')}
+      </div>`,
+    )
+    .replace(
+      /<p class="hibrit-ipucu">[\s\S]*?<\/p>/,
+      `<p class="hibrit-ipucu">${c.ipucu} (<b id="kartSiteSayisi">${taramaMagazalari.length}</b> ${c.statMagaza})</p>`,
+    );
 
-      <p class="hibrit-ipucu">${c.ipucu}</p>
-      <div id="globalHata" class="hata-kutusu" hidden></div>
-    </section>
+  // 4) STL hızlı hesap kutusu + Alt mağaza listesi başlığı
+  cikti = cikti
+    .replace(/<h2 id="stlHizliBaslik" class="stl-hizli-baslik">[\s\S]*?<\/h2>/, `<h2 id="stlHizliBaslik" class="stl-hizli-baslik">${c.stlBaslik}</h2>`)
+    .replace('<span class="stl-hizli-gizlilik">🔒 Dosya cihazından çıkmaz</span>', `<span class="stl-hizli-gizlilik">${c.stlGizlilik}</span>`)
+    .replace('<b>STL / 3MF dosyanı buraya bırak</b>', `<b>${c.stlBirakAna}</b>`)
+    .replace('<span class="stl-hizli-alt">Modeline yetecek en ucuz filamenti ve parça başı maliyeti anında hesaplarız</span>', `<span class="stl-hizli-alt">${c.stlBirakAlt}</span>`)
+    .replace('<span class="stl-hizli-rozet">⚡ Anında · sunucusuz</span>', `<span class="stl-hizli-rozet">${c.stlRozet}</span>`)
+    .replace(/📊 Kâr, elektrik ve amortismanla tam maliyet hesabı ➔/g, c.stlDetay)
+    .replace('<h2 class="bolum-baslik">Siteler araştırılıyor…</h2>', `<h2 class="bolum-baslik">${c.durumBaslik}</h2>`)
+    .replace('<button type="button" id="iptalBtn" class="iptal-btn">✕ İptal</button>', `<button type="button" id="iptalBtn" class="iptal-btn">${c.iptalBtn}</button>`)
+    .replace('Karşılaştırılan siteler (<span id="footerSiteSayisi">—</span>):', `${c.magazaListeBaslik} (<span id="footerSiteSayisi">${taramaMagazalari.length}</span>):`)
+    .replace('<ul id="footerSiteler" class="footer-siteler"></ul>', `<ul id="footerSiteler" class="footer-siteler">${bolgeMagazalari.map(m => `<li>${htmlKacis(m.name)}</li>`).join('')}</ul>`);
 
-    <section id="globalDurumAlani" hidden>
-      <div class="durum-baslik-satiri">
-        <h2 class="bolum-baslik" id="globalDurumBaslik">${c.durumBaslik}</h2>
-        <button type="button" id="globalIptalBtn" class="iptal-btn">${c.iptalBtn}</button>
-      </div>
-      <div class="tarama-ozet">
-        <div class="tarama-bar"><div class="tarama-dolgu" id="globalDolgu" style="width:12%"></div></div>
-        <span id="globalTaramaSayac" class="tarama-sayac"></span>
-      </div>
-      <div id="globalSiteCipler" class="cip-satiri"></div>
-    </section>
+  // 5) Gerçek app.js ortam nesnesi + dinamik UI çevirmeni
+  cikti = cikti.replace(
+    '<script src="/app.js"></script>',
+    `<script>window.BASKI_HESAP_ORTAM = ${JSON.stringify(ortam)};</script>\n  <script src="/i18n-global.js"></script>\n  <script src="/app.js"></script>`,
+  );
 
-    <section id="globalSonucAlani" hidden>
-      <div id="globalOzet" class="ozet" hidden></div>
-      <div id="globalKartlar" class="kartlar"></div>
-    </section>
-
-    <section class="stl-hizli" aria-labelledby="gStlBaslik">
-      <div class="stl-hizli-ust">
-        <h2 id="gStlBaslik" class="stl-hizli-baslik">${c.stlBaslik}</h2>
-        <span class="stl-hizli-gizlilik">${c.stlGizlilik}</span>
-      </div>
-      <div id="gMiniStlBirak" class="stl-hizli-birak" role="button" tabindex="0">
-        <input type="file" id="gMiniStlDosya" accept=".stl,.3mf,model/stl,model/3mf" hidden />
-        <span class="stl-hizli-ikon" aria-hidden="true">📥</span>
-        <span class="stl-hizli-metin">
-          <b>${c.stlBirakAna}</b>
-          <span class="stl-hizli-alt">${c.stlBirakAlt}</span>
-        </span>
-        <span class="stl-hizli-rozet">${c.stlRozet}</span>
-      </div>
-      <p class="stl-hizli-durum" id="gMiniStlDurum" role="status" aria-live="polite"></p>
-      <div class="stl-hizli-sonuc" id="gMiniStlSonuc" hidden>
-        <div class="stl-hizli-sonuc-ust">
-          <span id="gMiniStlAd" class="stl-hizli-dosya">—</span>
-          <button type="button" class="stl-hizli-kapat" id="gMiniStlKapat" aria-label="Close">✕</button>
-        </div>
-        <div class="stl-hizli-metrikler" style="margin-bottom:10px">
-          <span><b id="gMiniBoyut">—</b><small>mm</small></span>
-          <span><b id="gMiniHacim">—</b><small>cm³</small></span>
-          <span class="vurgu"><b id="gMiniGram">—</b><small>PLA (20%)</small></span>
-        </div>
-        <a class="stl-hizli-detay" href="${htmlKacis(GLOBAL_MALIYET_YOLLARI[kod])}">${c.stlDetay}</a>
-      </div>
-    </section>
-
-    <section class="seo-kart" style="margin-top:22px">
-      <h2 style="margin-top:0">${c.aracBaslik}</h2>
-      <div class="rehber-izgara">
-        <a class="rehber-kart" href="${htmlKacis(GLOBAL_MALIYET_YOLLARI[kod])}">
-          <h3 class="rehber-baslik">${c.kartMaliyetBaslik}</h3>
-          <p class="rehber-ozet">${c.kartMaliyetMetin}</p>
-          <span class="rehber-cta">→</span>
-        </a>
-        <a class="rehber-kart" href="${htmlKacis(GLOBAL_SLICER_YOLLARI[kod])}">
-          <h3 class="rehber-baslik">${c.kartSlicerBaslik}</h3>
-          <p class="rehber-ozet">${c.kartSlicerMetin}</p>
-          <span class="rehber-cta">→</span>
-        </a>
-        <a class="rehber-kart" href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">
-          <h3 class="rehber-baslik">${c.kartStoreBaslik}</h3>
-          <p class="rehber-ozet">${c.kartStoreMetin}</p>
-          <span class="rehber-cta">${c.git}</span>
-        </a>
-      </div>
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cizgi)">
-        <p class="footer-siteler-baslik" style="margin:0 0 8px">${c.magazaListeBaslik} (${bolgeMagazalari.length}):</p>
-        <ul class="footer-siteler" style="margin:0">
-          ${bolgeMagazalari.map(m => `<li>${htmlKacis(m.name)}</li>`).join('')}
-        </ul>
-      </div>
-    </section>
-
-    <script type="module">
-      import { stlOku, hesaplaGramaj } from '/stlParser.js';
-      const miniDrop = document.getElementById('gMiniStlBirak');
-      const miniInp = document.getElementById('gMiniStlDosya');
-      const miniDurum = document.getElementById('gMiniStlDurum');
-      const miniSonuc = document.getElementById('gMiniStlSonuc');
-      const miniOku = async (f) => {
-        if (!f) return;
-        try {
-          if (miniDurum) miniDurum.textContent = '...';
-          const buf = await f.arrayBuffer();
-          const m = stlOku(buf, f.name);
-          const g = Math.max(1, Math.round(hesaplaGramaj(m.hacimCm3, { doluluk: 20, malzeme: 'PLA' })));
-          document.getElementById('gMiniStlAd').textContent = f.name;
-          document.getElementById('gMiniBoyut').textContent = m.boyutlar.genislik.toFixed(1) + ' × ' + m.boyutlar.derinlik.toFixed(1) + ' × ' + m.boyutlar.yukseklik.toFixed(1);
-          document.getElementById('gMiniHacim').textContent = m.hacimCm3.toFixed(2);
-          document.getElementById('gMiniGram').textContent = g + ' g';
-          if (miniDurum) miniDurum.textContent = '';
-          if (miniSonuc) miniSonuc.hidden = false;
-        } catch (err) {
-          if (miniDurum) miniDurum.textContent = err?.message || 'Error';
-        }
-      };
-      miniDrop?.addEventListener('click', () => miniInp?.click());
-      miniDrop?.addEventListener('dragover', (e) => { e.preventDefault(); miniDrop.classList.add('surukle'); });
-      miniDrop?.addEventListener('dragleave', () => miniDrop.classList.remove('surukle'));
-      miniDrop?.addEventListener('drop', (e) => { e.preventDefault(); miniDrop.classList.remove('surukle'); miniOku(e.dataTransfer?.files?.[0]); });
-      miniInp?.addEventListener('change', () => miniOku(miniInp.files?.[0]));
-      document.getElementById('gMiniStlKapat')?.addEventListener('click', () => { if (miniSonuc) miniSonuc.hidden = true; });
-    </script>
-
-    <script>
-      (function () {
-        var form = document.getElementById('globalAraForm');
-        var inp = document.getElementById('globalAraInput');
-        var hataEl = document.getElementById('globalHata');
-        var durumAlani = document.getElementById('globalDurumAlani');
-        var durumBaslik = document.getElementById('globalDurumBaslik');
-        var dolgu = document.getElementById('globalDolgu');
-        var sayac = document.getElementById('globalTaramaSayac');
-        var cipler = document.getElementById('globalSiteCipler');
-        var iptalBtn = document.getElementById('globalIptalBtn');
-        var sonucAlani = document.getElementById('globalSonucAlani');
-        var ozetEl = document.getElementById('globalOzet');
-        var kartlarEl = document.getElementById('globalKartlar');
-
-        var market = ${JSON.stringify(c.market)};
-        var cur = ${JSON.stringify(c.currency)};
-        var magazaListesi = ${JSON.stringify(taramaMagazalari.map(m => ({ id: m.id, ad: m.name })))};
-        var placeholders = {
-          oto: ${JSON.stringify(c.placeholderOto)},
-          link: ${JSON.stringify(c.placeholderLink)},
-          ad: ${JSON.stringify(c.placeholderAd)},
-        };
-        var aktifJobId = null;
-        var timer = null;
-        if (!form || !inp || !sonucAlani) return;
-
-        document.querySelectorAll('[data-gmod]').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            document.querySelectorAll('[data-gmod]').forEach(function (x) {
-              x.classList.remove('aktif');
-              x.setAttribute('aria-selected', 'false');
-            });
-            btn.classList.add('aktif');
-            btn.setAttribute('aria-selected', 'true');
-            var m = btn.dataset.gmod || 'oto';
-            if (placeholders[m]) inp.placeholder = placeholders[m];
-          });
-        });
-
-        function esc(s) {
-          return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
-          });
-        }
-        function fmt(n, cKod) {
-          var k = cKod || cur;
-          return typeof window.formatPara === 'function' ? window.formatPara(n, k) : (n + ' ' + k);
-        }
-        function toplamFiyat(x) {
-          var p = x && x.product;
-          if (!p) return null;
-          if (p.pricing && p.pricing.toplam != null) return Number(p.pricing.toplam);
-          return p.sellingPrice != null ? Number(p.sellingPrice) : null;
-        }
-        function cizIlerleme(progress) {
-          if (!cipler) return;
-          var prog = progress || {};
-          var biten = 0;
-          cipler.innerHTML = magazaListesi.map(function (m) {
-            var p = prog[m.id];
-            var st = p ? p.status : 'waiting';
-            if (st && st !== 'running' && st !== 'waiting') biten++;
-            var cls = st === 'found' ? 'ok' : (st === 'running' ? 'run' : (st === 'error' ? 'err' : ''));
-            return '<span class="cip ' + cls + '">' + esc(m.ad) + '</span>';
-          }).join('');
-          var yuzde = magazaListesi.length ? Math.min(100, Math.max(12, Math.round((biten / magazaListesi.length) * 100))) : 25;
-          if (dolgu) dolgu.style.width = yuzde + '%';
-          if (sayac) sayac.textContent = biten + ' / ' + magazaListesi.length;
-        }
-        function cizSonuclar(res, devamEdiyor) {
-          var ham = Array.isArray(res && res.sonuclar) ? res.sonuclar : [];
-          var bulunanlar = ham.filter(function (x) { return x && x.status === 'found' && x.product && toplamFiyat(x) > 0; });
-          if (!bulunanlar.length) {
-            if (!devamEdiyor) {
-              sonucAlani.hidden = false;
-              ozetEl.hidden = true;
-              kartlarEl.innerHTML = '<div class="kart"><div class="kart-ic" style="grid-template-columns:1fr"><div class="kart-govde"><p style="margin:0 0 12px">' + esc(${JSON.stringify(c.bulunamadi)}) + '</p><a class="kart-cta" href="' + esc(${JSON.stringify(cr.storeUrl)}) + '" target="_blank" rel="noopener sponsored nofollow">' + esc(${JSON.stringify(c.kartStoreBaslik)}) + ' ↗</a></div></div></div>';
-            }
-            return;
-          }
-          bulunanlar.sort(function (a, b) {
-            var as = a.product.inStock !== false ? 0 : 1;
-            var bs = b.product.inStock !== false ? 0 : 1;
-            if (as !== bs) return as - bs;
-            return (toplamFiyat(a) || Infinity) - (toplamFiyat(b) || Infinity);
-          });
-          sonucAlani.hidden = false;
-          var enIyi = bulunanlar.find(function (x) { return x.product.inStock !== false; }) || bulunanlar[0];
-          var enIyiTutar = toplamFiyat(enIyi);
-          var enIyiPara = enIyi.product.currency || cur;
-          ozetEl.hidden = false;
-          ozetEl.innerHTML = '<div><div class="ozet-alt">' + esc(${JSON.stringify(c.ozetEnUcuz)}) + ' · ' + esc(enIyi.siteName || enIyi.site) + '</div><div style="font-size:20px;font-weight:800;margin-top:4px">' + esc(enIyi.product.title) + '</div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><strong style="font-size:28px">' + esc(fmt(enIyiTutar, enIyiPara)) + '</strong><a class="kart-cta" href="' + esc(enIyi.product.afiliyeUrl || enIyi.product.url) + '" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="' + esc(enIyi.site) + '">' + esc(${JSON.stringify(c.git)}) + '</a></div>';
-
-          kartlarEl.innerHTML = bulunanlar.map(function (x, idx) {
-            var p = x.product;
-            var f = toplamFiyat(x);
-            var pKod = p.currency || cur;
-            var stoklu = p.inStock !== false;
-            var kargoNot = p.shipping && p.shipping.note ? '<div class="kart-kargo">' + esc(p.shipping.note) + '</div>' : '';
-            var imgHtml = p.image ? '<img class="kart-resim" src="' + esc(p.image) + '" alt="' + esc(p.title) + '" loading="lazy" />' : '<div class="kart-resim" style="display:grid;place-items:center;font-size:24px">🧵</div>';
-            return '<article class="kart' + (idx === 0 && stoklu ? ' en-ucuz' : '') + '"><div class="kart-ic">'
-              + imgHtml
-              + '<div class="kart-govde">'
-              + '<div class="kart-ust"><span class="kart-site">' + esc(x.siteName || x.site) + '</span>'
-              + '<span class="kart-rozet">' + esc(stoklu ? ${JSON.stringify(c.stoktaLabel)} : ${JSON.stringify(c.tukendiLabel)}) + '</span></div>'
-              + '<h3 class="kart-baslik">' + esc(p.title) + '</h3>'
-              + kargoNot
-              + '</div>'
-              + '<div class="kart-sag"><div class="kart-fiyat">' + esc(f != null ? fmt(f, pKod) : ${JSON.stringify(c.fiyatYokLabel)}) + '</div>'
-              + '<a class="kart-cta" href="' + esc(p.afiliyeUrl || p.url) + '" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="' + esc(x.site) + '">' + esc(${JSON.stringify(c.git)}) + '</a>'
-              + '</div></div></article>';
-          }).join('');
-        }
-
-        function temizleZamanlayici() {
-          if (timer) { clearTimeout(timer); timer = null; }
-        }
-
-        iptalBtn?.addEventListener('click', function () {
-          temizleZamanlayici();
-          if (aktifJobId) {
-            fetch('/api/compare/' + encodeURIComponent(aktifJobId) + '/cancel', { method: 'POST' }).catch(function () {});
-          }
-          durumAlani.hidden = true;
-        });
-
-        function baslat(deger) {
-          var q = String(deger || '').trim();
-          if (q.length < 2) return;
-          temizleZamanlayici();
-          if (hataEl) hataEl.hidden = true;
-          durumAlani.hidden = false;
-          if (durumBaslik) durumBaslik.textContent = ${JSON.stringify(c.durumBaslik)};
-          cizIlerleme({});
-          sonucAlani.hidden = true;
-          ozetEl.hidden = true;
-          kartlarEl.innerHTML = '';
-
-          var isUrl = /^https?:\\/\\//i.test(q);
-          fetch('/api/compare', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(isUrl ? { url: q, market: market } : { query: q, market: market }),
-          }).then(function (r) { return r.json(); }).then(function (d) {
-            if (!d || !d.id) {
-              durumAlani.hidden = true;
-              if (hataEl) { hataEl.hidden = false; hataEl.textContent = d?.error || ${JSON.stringify(c.bulunamadi)}; }
-              return;
-            }
-            aktifJobId = d.id;
-            if (d.sonuc && Array.isArray(d.sonuc.sonuclar)) {
-              cizSonuclar(d.sonuc, true);
-            }
-            var yokla = function () {
-              fetch('/api/compare/' + encodeURIComponent(d.id)).then(function (r) { return r.json(); }).then(function (j) {
-                if (j.progress) cizIlerleme(j.progress);
-                if (Array.isArray(j.partialResults) && j.partialResults.length && j.status !== 'done') {
-                  cizSonuclar({ sonuclar: j.partialResults }, true);
-                }
-                if (j.status === 'done') {
-                  durumAlani.hidden = true;
-                  cizSonuclar(j.result || { sonuclar: j.partialResults || [] }, false);
-                } else if (j.status === 'error') {
-                  durumAlani.hidden = true;
-                  cizSonuclar({ sonuclar: j.partialResults || [] }, false);
-                } else {
-                  timer = setTimeout(yokla, 750);
-                }
-              }).catch(function () { timer = setTimeout(yokla, 1000); });
-            };
-            yokla();
-          }).catch(function () {
-            durumAlani.hidden = true;
-            cizSonuclar({ sonuclar: [] }, false);
-          });
-        }
-
-        form.addEventListener('submit', function (e) { e.preventDefault(); baslat(inp.value); });
-        document.querySelectorAll('.global-ornek-btn').forEach(function (b) {
-          b.addEventListener('click', function () { inp.value = b.dataset.q || ''; baslat(inp.value); });
-        });
-      })();
-    </script>
-  `;
-
-  return sayfaIskeleti({
-    title: c.title,
-    description: c.desc,
-    canonicalUrl,
-    ogImage: `${tabanUrl}/og-gorsel.png`,
-    extraMeta,
-    govdeHtml,
-    aktifNav: 'karsilastir',
-    dil: kod,
-    dilYolHaritasi: ANA_YOL_HARITASI,
-    anaKapsam: true,
-  });
+  return cikti;
 }
 
 export function globalAracSayfasiBul(yol) {

@@ -899,6 +899,7 @@ async function karsilastirmaAkisiniTamamla({
         birimHesap: birimFiyatHesapla(
           r.product.title,
           r.product.pricing?.toplam ?? r.product.sellingPrice,
+          r.product.currency || etkinCurrency,
         ),
       } : null,
     })),

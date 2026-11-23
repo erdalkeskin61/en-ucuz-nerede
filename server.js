@@ -1330,7 +1330,7 @@ function adAnahtariBenzer(katalogAd, sorgu) {
 }
 
 app.post('/api/compare', async (req, res) => {
-  let url = String(req.body?.url || req.body?.sorgu || req.body?.q || '').trim();
+  let url = String(req.body?.url || req.body?.sorgu || req.body?.q || req.body?.query || '').trim();
   if (!url) return res.status(400).json({ hata: 'URL veya ürün adı gerekli' });
 
   const problems = secretProblems();
@@ -1398,6 +1398,7 @@ app.post('/api/compare', async (req, res) => {
       birimHesap: birimFiyatHesapla(
         r.product.title,
         r.product.pricing?.toplam ?? r.product.sellingPrice,
+        r.product.currency || adapterCurrency(adapterById(r.site)),
       ),
     } : null,
     // 🖨️ 3D Baskı Uzmanlık Modülü (2026-10-30): kart düzeyinde (pipeline ile aynı

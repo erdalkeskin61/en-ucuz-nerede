@@ -417,6 +417,7 @@ function sponsorFiyat(n) {
 async function sponsorVitrinYukle() {
   const alan = document.getElementById('sponsorVitrinAlani');
   if (!alan) return null;
+  if (BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr') { alan.hidden = true; return null; }
   try {
     const res = await fetch('/api/sponsor/vitrin', { credentials: 'same-origin' });
     const d = await res.json().catch(() => ({}));
@@ -552,6 +553,7 @@ async function vitrinYukle({ sessiz = false } = {}) {
   const grid = document.getElementById('vitrinGrid');
   const bos = document.getElementById('vitrinBos');
   if (!alan || !grid || vitrinYukleniyor) return;
+  if (BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr') { alan.hidden = true; return; }
   vitrinYukleniyor = true;
   alan.hidden = false;
   if (!sessiz && !grid.children.length) {
@@ -685,13 +687,21 @@ document.addEventListener('click', (e) => {
 });
 
 
+const BASKI_ORTAM = (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM)
+  ? window.BASKI_HESAP_ORTAM
+  : { market: 'tr', currency: 'TRY', dil: 'tr' };
+
 // Site listesi sunucudan (/api/durum) dinamik olarak yüklenir; yüklenene kadar
 // bilinen temel siteler gösterilir.
-let SITE_SIRASI = ['trendyol', 'hepsiburada', 'amazon', 'vatan', 'mediamarkt', 'itopya', 'pazarama', 'incehesap'];
-let SITE_ADLARI = {
-  trendyol: 'Trendyol', hepsiburada: 'Hepsiburada', amazon: 'Amazon.tr', vatan: 'Vatan Bilgisayar',
-  mediamarkt: 'MediaMarkt', itopya: 'İtopya', pazarama: 'Pazarama', incehesap: 'İncehesap',
-};
+let SITE_SIRASI = Array.isArray(BASKI_ORTAM.siteler) && BASKI_ORTAM.siteler.length
+  ? BASKI_ORTAM.siteler.map(s => s.id)
+  : ['trendyol', 'hepsiburada', 'amazon', 'vatan', 'mediamarkt', 'itopya', 'pazarama', 'incehesap'];
+let SITE_ADLARI = Array.isArray(BASKI_ORTAM.siteler) && BASKI_ORTAM.siteler.length
+  ? Object.fromEntries(BASKI_ORTAM.siteler.map(s => [s.id, s.ad]))
+  : {
+    trendyol: 'Trendyol', hepsiburada: 'Hepsiburada', amazon: 'Amazon.tr', vatan: 'Vatan Bilgisayar',
+    mediamarkt: 'MediaMarkt', itopya: 'İtopya', pazarama: 'Pazarama', incehesap: 'İncehesap',
+  };
 
 /**
  * Site listesinin sunucudan gelmesini bekleyen söz.
@@ -701,7 +711,10 @@ let SITE_ADLARI = {
  */
 let sitelerHazir = (async () => {
   try {
-    const res = await fetch('/api/durum');
+    const durumUrl = BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr'
+      ? '/api/durum?market=' + encodeURIComponent(BASKI_ORTAM.market)
+      : '/api/durum';
+    const res = await fetch(durumUrl);
     if (!res.ok) return;
     const d = await res.json();
     if (Array.isArray(d.siteler) && d.siteler.length) {
@@ -837,8 +850,9 @@ function formatPara(n, paraBirimi = 'TRY', yerel = null) {
 }
 
 function tl(n, paraBirimi = null) {
-  if (paraBirimi && String(paraBirimi).toUpperCase() !== 'TRY') {
-    return formatPara(n, paraBirimi);
+  const kod = paraBirimi || BASKI_ORTAM.currency || 'TRY';
+  if (String(kod).toUpperCase() !== 'TRY') {
+    return formatPara(n, kod);
   }
   if (n == null || isNaN(n)) return '—';
   return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
@@ -944,7 +958,9 @@ async function onerileriYukle(sorgu) {
   if (q.length < 2) { onerileriKapat(); return; }
   const benim = ++oneriIstegeSayaci;
   try {
-    const res = await fetch('/api/search-suggestions?q=' + encodeURIComponent(q) + '&limit=8');
+    const oneriUrl = '/api/search-suggestions?q=' + encodeURIComponent(q) + '&limit=8'
+      + (BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr' ? '&market=' + encodeURIComponent(BASKI_ORTAM.market) : '');
+    const res = await fetch(oneriUrl);
     if (!res.ok) throw new Error('öneri hatası');
     const veri = await res.json();
     if (benim !== oneriIstegeSayaci) return; // daha yeni sorgu var
@@ -1392,7 +1408,9 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
   try {
     // "Fiyatları Bul" / form araması her zaman güncel tarama başlatır; geçmiş önbellek
     // sonucunu kullanıcıya tekrar sunmaz. (SWR akışı API katmanında korunur.)
-    const govde = { url, taze: true };
+    const govde = BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr'
+      ? { url, taze: true, market: BASKI_ORTAM.market }
+      : { url, taze: true };
     zorlaTaze = false;
     const res = await fetch('/api/compare', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

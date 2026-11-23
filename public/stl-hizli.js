@@ -228,7 +228,7 @@
 
     const detay = $('#stlHizliDetay');
     if (detay) {
-      detay.href = '/maliyet.html';
+      detay.href = window.BASKI_HESAP_ORTAM?.maliyetYolu || '/maliyet.html';
       detay.onclick = () => {
         try {
           sessionStorage.setItem(DURUM_ANAHTARI, JSON.stringify({

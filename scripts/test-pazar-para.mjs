@@ -263,15 +263,19 @@ for (const yol of [
       && html.includes('hreflang="en"')
       && html.includes('hreflang="fr"')
       && html.includes('hreflang="ja"')
-      && html.includes('store.creality.com'));
+      && (kayit.tur === 'ana' ? html.includes('Creality Store') : html.includes('store.creality.com')));
   }
 }
 
 const enAna = globalAracSayfasiBul('/en').olustur('https://baskihesap.tech');
+const frAnaSayfa = globalAracSayfasiBul('/fr').olustur('https://baskihesap.tech');
 const jaAna = globalAracSayfasiBul('/ja').olustur('https://baskihesap.tech');
-kontrol('/en ve /ja ana sayfaları kendi market ve dil menüsünü ve TR tasarımını içerir',
-  enAna.includes('market = "us"') && enAna.includes('/en/cost-calculator')
-  && jaAna.includes('market = "jp"') && jaAna.includes('/ja/cost-calculator')
+kontrol('/en, /fr ve /ja ana sayfaları kendi market ortamını, gerçek TR sistemini ve TR tasarımını içerir',
+  enAna.includes('"market":"us"') && enAna.includes('/en/cost-calculator')
+  && frAnaSayfa.includes('"market":"fr"') && frAnaSayfa.includes('Creality Store (FR)')
+  && jaAna.includes('"market":"jp"') && jaAna.includes('/ja/cost-calculator')
+  && enAna.includes('window.BASKI_HESAP_ORTAM')
+  && enAna.includes('/app.js') && enAna.includes('/i18n-global.js') && enAna.includes('/stl-hizli.js')
   && enAna.includes('class="hero"')
   && enAna.includes('class="giris-kart hibrit-kart"')
   && enAna.includes('class="arama-modu"')
