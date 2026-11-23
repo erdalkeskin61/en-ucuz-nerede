@@ -499,7 +499,9 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazo
   && detectSite('https://kingroon.com/products/kingroon-pla-pluspla')?.id === 'kingroon_us'
   && detectSite('https://store.inslogic3d.com/ja/products/spool-free-engineering-500g-sample')?.id === 'inslogic_jp'
   && detectSite('https://azurefilm.com/product/refill-unset-pla-wood-lumberlay-1-75mm/')?.id === 'azurefilm_eu'
+  && detectSite('https://www.3dbooster.com/en/shop/qidi-tech-q1-pro-3d-printer/')?.id === '3dbooster_eu'
   && taramaAdaptersByMarket('fr').some(a => a.id === 'azurefilm_eu')
+  && taramaAdaptersByMarket('fr').some(a => a.id === '3dbooster_eu')
   && detectSite('https://3dprintersdepot.com/en-jp/products/flashforge-creator-5-3d-printer')?.id === '3dprintersdepot_jp'
   && detectSite('https://www.prusa3d.com/product/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_us'
   && detectSite('https://www.prusa3d.com/fr/produit/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_fr'

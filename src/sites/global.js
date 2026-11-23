@@ -36,7 +36,7 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'elegoo_us', name: 'Elegoo (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.elegoo.com' },
   { id: 'anycubic_us', name: 'Anycubic (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.anycubic.com' },
   { id: 'flashforge_us', name: 'Flashforge (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://flashforge.com' },
-  { id: 'qidi_us', name: 'QIDI Tech (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://qidi3d.com', extraHosts: ['us.qidi3d.com'] },
+  { id: 'qidi_us', name: 'QIDI Tech (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.qidi3d.com', extraHosts: ['qidi3d.com'] },
   { id: 'sunlu_us', name: 'SUNLU Store (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.sunlu.com' },
   { id: 'snapmaker_us', name: 'Snapmaker (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.snapmaker.com', extraHosts: ['shop.snapmaker.com'] },
   { id: 'siraya_us', name: 'Siraya Tech', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://siraya.tech' },
@@ -99,6 +99,7 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'filamentworld_eu', name: 'Filamentworld', market: 'eu', currency: 'EUR', tur: 'woo', base: 'https://www.filamentworld.de' },
   { id: 'meltbro_eu', name: 'Meltbro', market: 'eu', currency: 'EUR', tur: 'woo', base: 'https://meltbro.de' },
   { id: 'azurefilm_eu', name: 'AzureFilm', market: 'eu', currency: 'EUR', tur: 'woo', base: 'https://azurefilm.com' },
+  { id: '3dbooster_eu', name: '3DBooster (EU)', market: 'eu', currency: 'EUR', tur: 'woo', base: 'https://www.3dbooster.com/en', urunDeseni: /\/(?:en|it)\/shop\/[^/]+/i },
 
   // =========================================================================
   // 🇯🇵 Japonya (JPY) — 7 mağaza (+ creality_jp + prusa_ja = 9)
@@ -122,6 +123,7 @@ export const globalSiteler = GLOBAL_MAGAZA_TANIMLARI.map((m) => {
     base: m.base,
     ...(m.pathPrefix ? { pathPrefix: m.pathPrefix } : {}),
     ...(m.currencyQuery ? { currencyQuery: true } : {}),
+    ...(m.urunDeseni ? { urunDeseni: m.urunDeseni } : {}),
   };
   if (m.tur === 'woo') return wooSite(ortak);
   if (m.tur === 'presta') return prestashopSite({ ...ortak, aramaYolu: m.aramaYolu });
