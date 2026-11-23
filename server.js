@@ -12,7 +12,7 @@ import './src/httpPool.js';
 import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
-import { detectSite, adapters } from './src/sites/index.js';
+import { detectSite, adapters, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
 import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi } from './src/util.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
@@ -1073,6 +1073,7 @@ function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {
     signal: job.iptalKontrolu.signal,
     // Tazeleme modunda veya taze:true istendiğinde sayfa önbelleği atlanır → fiyat gerçekten siteden okunur.
     taze: job.mod === 'tazeleme' || job.taze === true,
+    ...(job.market ? { market: job.market } : {}),
     // Opsiyonel site alt kümesi (teşhis/test). Verilmezse tüm siteler taranır —
     // varsayılan davranış değişmez (2026-10-29).
     ...(Array.isArray(job.siteler) && job.siteler.length ? { siteler: job.siteler } : {}),
@@ -1285,6 +1286,7 @@ app.post('/api/compare', async (req, res) => {
       sellingPrice: r.product.sellingPrice,
       listPrice: r.product.listPrice,
       shipping: r.product.shipping,
+      currency: r.product.currency || adapterCurrency(adapterById(r.site)),
       campaigns: r.product.campaigns,
       classifiedCampaigns: r.product.classifiedCampaigns,
       pricing: r.product.pricing,
@@ -1317,8 +1319,12 @@ app.post('/api/compare', async (req, res) => {
     }) : null,
   });
 
+  const secilenMarket = normalizeMarket(
+    req.body?.market || req.query?.market || (site ? adapterMarket(site) : 'tr'),
+  );
   const yeniKarsilastirma = (ek = {}) => yeniJob('compare', {
     url,
+    market: secilenMarket,
     // Ürün ADI ile gelen aramalarda site henüz çözülmemiştir (asenkron çözülür).
     site: site?.id || null,
     progress: {},
@@ -1372,7 +1378,10 @@ app.post('/api/compare', async (req, res) => {
    */
   if (arananSorgu) {
     const sorguAnlikHam = tazeZorla ? null : sorgudanAnlikAl(arananSorgu, { maxYasMs: swrMaxYasMs });
-    if (sorguAnlikHam?.kaynakUrl) {
+    const anlikMarket = sorguAnlikHam?.kaynakUrl && detectSite(sorguAnlikHam.kaynakUrl)
+      ? adapterMarket(detectSite(sorguAnlikHam.kaynakUrl))
+      : 'tr';
+    if (sorguAnlikHam?.kaynakUrl && anlikMarket === secilenMarket) {
       const anlik = { ...sorguAnlikHam, payload: baskiZenginlestir(sorguAnlikHam.payload) };
       const hedefSite = detectSite(sorguAnlikHam.kaynakUrl);
       const job = yeniKarsilastirma({
@@ -1424,7 +1433,7 @@ app.post('/api/compare', async (req, res) => {
             const yerelUrl = durum?.afiliyeUrl || durum?.hamUrl || yerel.url;
             const yerelSite = yerelUrl ? detectSite(yerelUrl) : null;
             const yerelSiteId = durum?.siteId || yerelSite?.id || null;
-            if (yerelUrl && yerelSite) {
+            if (yerelUrl && yerelSite && adapterMarket(yerelSite) === secilenMarket) {
               const kayit = {
                 url: yerelUrl,
                 siteId: yerelSiteId,
@@ -1455,6 +1464,7 @@ app.post('/api/compare', async (req, res) => {
           const ham = await hizliKaynakUrunBul(arananSorgu, {
             signal: job.iptalKontrolu?.signal || null,
             taze: tazeZorla,
+            market: secilenMarket,
           });
           if (ham?.url) {
             const katalogdan = ham.kaynak === 'katalog';

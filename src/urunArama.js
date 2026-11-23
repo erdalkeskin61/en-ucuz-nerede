@@ -5,7 +5,7 @@
  * "iPhone 15", "Bambu Lab P1S"), en uygun kaynak ürün URL'sini 1-3 saniyede bulup
  * tek bir tam karş�laştırma akışına yönlendirmek.
  */
-import { adapterById } from './sites/index.js';
+import { adapterById, adaptersByMarket, marketSiteIds, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { katalogUrunleriAra } from './katalogSync.js';
 import {
   titleSimilarity, modelSerisiCakismasi, hatCakismasi, kapasiteCakismasi,
@@ -364,16 +364,20 @@ function benzersizSiteAdaylari(siraliListe, max = 5) {
 export function katalogdanKaynakAdayi(sorgu, opts = {}) {
   const temiz = String(sorgu || '').trim();
   if (temiz.length < 2) return null;
+  const market = normalizeMarket(opts.market || 'tr');
+  const izinliSiteler = marketSiteIds(market);
+  const beklenenPara = PAZARLAR[market]?.currency || 'TRY';
 
   let adaylar = [];
   try {
-    adaylar = katalogUrunleriAra(temiz, { limit: 15, ttlMs: opts.ttlMs });
+    adaylar = katalogUrunleriAra(temiz, { limit: 15, ttlMs: opts.ttlMs, market });
   } catch {
     return null;
   }
   if (!Array.isArray(adaylar) || !adaylar.length) return null;
 
   const puanli = adaylar
+    .filter(a => (!a.siteId || izinliSiteler.has(a.siteId)) && (!a.paraBirimi || a.paraBirimi === beklenenPara))
     .map(a => ({ ...a, url: a.urunUrl, puan: sorguPuanla(a.baslik, temiz) + (a.fiyat != null ? 0.03 : 0) }))
     .filter(a => a.puan >= 0.35);
 
@@ -414,18 +418,20 @@ export function katalogdanKaynakAdayi(sorgu, opts = {}) {
   };
 }
 
-export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disSinyal = null, katalogTtlMs = undefined, taze = false } = {}) {
+export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disSinyal = null, katalogTtlMs = undefined, taze = false, market = 'tr' } = {}) {
   const temizSorgu = String(sorgu || '').trim();
   if (!temizSorgu || temizSorgu.length < 2) return null;
+  const etkinMarket = normalizeMarket(market);
+  const izinliSiteler = marketSiteIds(etkinMarket);
 
-  const key = temizSorgu.toLocaleLowerCase('tr-TR');
+  const key = `${etkinMarket}:${temizSorgu.toLocaleLowerCase('tr-TR')}`;
   const cached = taze ? null : KAYNAK_CACHE.get(key);
   if (cached && (Date.now() - cached.ts < CACHE_TTL_MS)) {
     return cached.urun;
   }
 
   // 🗂️ KATMAN 0: yerel katalog indeksi — ağ isteği yok, milisaniyeler sürer.
-  const katalogAdayi = katalogdanKaynakAdayi(temizSorgu, { ttlMs: katalogTtlMs });
+  const katalogAdayi = katalogdanKaynakAdayi(temizSorgu, { ttlMs: katalogTtlMs, market: etkinMarket });
   if (katalogAdayi) {
     KAYNAK_CACHE.set(key, { ts: Date.now(), urun: katalogAdayi });
     console.log('[urunArama] kaynak katalog indeksinden bulundu (ağ isteği yok): "'
@@ -439,9 +445,12 @@ export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disS
   // 3D kategorisinde n11 de taranır (2026-11-05): eSun ePLA-HS gibi niş
   // filamentler yalnız n11'de stokta olabiliyor.
   const is3D = _3D_KELIMELER.test(temizSorgu);
-  const hedefSiteler = is3D
-    ? ['porima3d', 'robotistan', 'filamentdepom', '3dortgen', 'filamentsan', 'kirpilab', 'efilament', 'makerpazar', '3dmarketim', 'samm', 'filamentmarketim', 'domirobot', 'robolinkmarket', 'hepsiburada', 'trendyol', 'n11']
-    : ['robotistan', 'samm', 'direnc', 'hepsiburada', 'vatan', 'mediamarkt', 'trendyol', 'amazon', 'n11'];
+  const hedefSiteler = etkinMarket === 'tr'
+    ? (is3D
+      ? ['porima3d', 'robotistan', 'filamentdepom', '3dortgen', 'filamentsan', 'kirpilab', 'efilament', 'makerpazar', '3dmarketim', 'samm', 'filamentmarketim', 'domirobot', 'robolinkmarket', 'hepsiburada', 'trendyol', 'n11']
+      : ['robotistan', 'samm', 'direnc', 'hepsiburada', 'vatan', 'mediamarkt', 'trendyol', 'amazon', 'n11']
+    ).filter(id => izinliSiteler.has(id))
+    : adaptersByMarket(etkinMarket).map(a => a.id);
 
   // 🛑 2026-11-14: AbortController yayılımı. Zaman aşımında promise'i yalnızca
   // reddetmek yetmiyordu — altındaki fetch/tarayıcı isteği arka planda çalışmaya

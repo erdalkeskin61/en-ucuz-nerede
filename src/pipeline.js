@@ -16,7 +16,7 @@ import { semanticMatch, explainCheapest } from './ai.js';
  *  6. Aynı renktekiler arasında en ucuz işaretlenir.
  */
 import { config } from './config.js';
-import { adapters, detectSite } from './sites/index.js';
+import { adapters, detectSite, adaptersByMarket, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { classifyCampaigns } from './ai.js';
 import {
   computePricing, enUcuzFiyatDegerlendir, sahteIndirimleriIsaretle, zamanlamaTahminiYap,
@@ -816,6 +816,12 @@ async function karsilastirmaAkisiniTamamla({
 
   const totalRequests = allResults.reduce((s, r) => s + (r.requestsSpent || 0), 0);
   const afiliyeAyar = afiliyeAyarlari();
+  const etkinMarket = opts.market
+    ? normalizeMarket(opts.market)
+    : (adapter ? adapterMarket(adapter) : 'tr');
+  const etkinCurrency = etkinSrcProduct?.currency
+    || (adapter ? adapterCurrency(adapter) : PAZARLAR[etkinMarket]?.currency)
+    || 'TRY';
 
   const sonuc = {
     kaynak: {
@@ -829,6 +835,8 @@ async function karsilastirmaAkisiniTamamla({
       barkod: etkinSrcProduct.barcode,
       renk: etkinSrcProduct.color,
       fiyat: etkinSrcProduct.pricing?.toplam ?? etkinSrcProduct.sellingPrice,
+      currency: etkinCurrency,
+      market: etkinMarket,
       resim: etkinSrcProduct.image,
       aramaSorgulari: queries,
     },
@@ -877,6 +885,7 @@ async function karsilastirmaAkisiniTamamla({
         sellingPrice: r.product.sellingPrice,
         listPrice: r.product.listPrice,
         shipping: r.product.shipping,
+        currency: r.product.currency || etkinCurrency,
         campaigns: r.product.campaigns,
         classifiedCampaigns: r.product.classifiedCampaigns,
         pricing: r.product.pricing,
@@ -894,6 +903,8 @@ async function karsilastirmaAkisiniTamamla({
       } : null,
     })),
     ozet: {
+      market: etkinMarket,
+      currency: etkinCurrency,
       toplamSureMs: Date.now() - startedAt,
       harcananIstek: totalRequests,
       bulunanSiteSayisi: stok.bulunanSiteSayisi,
@@ -1028,9 +1039,10 @@ export async function runComparisonByQuery(sorgu, opts = {}) {
     : 3;
   const queries = tumSorgular.slice(0, sorguSiniri);
 
+  const etkinMarket = normalizeMarket(opts.market || 'tr');
   const siteFiltresi = Array.isArray(opts.siteler) && opts.siteler.length ? new Set(opts.siteler) : null;
   const hizliKume = new Set(HIZLI_SITELER);
-  const others = adapters
+  const others = adaptersByMarket(etkinMarket)
     .filter(a => (!siteFiltresi || siteFiltresi.has(a.id)))
     .sort((a, b) => {
       const ak = KIRILGAN_KAYNAK_SITELER.has(a.id) ? 1 : 0;
@@ -1038,6 +1050,9 @@ export async function runComparisonByQuery(sorgu, opts = {}) {
       if (ak !== bk) return ak - bk;
       return (hizliKume.has(b.id) ? 1 : 0) - (hizliKume.has(a.id) ? 1 : 0);
     });
+
+  sanalKaynak.market = etkinMarket;
+  sanalKaynak.currency = PAZARLAR[etkinMarket]?.currency || 'TRY';
 
   return karsilastirmaAkisiniTamamla({
     adapter: null,
@@ -1124,9 +1139,10 @@ export async function runComparison(sourceUrl, opts = {}) {
     ? Math.floor(opts.maxQueries)
     : tumSorgular.length;
   const queries = tumSorgular.slice(0, sorguSiniri);
+  const kaynakMarket = opts.market ? normalizeMarket(opts.market) : adapterMarket(adapter);
   const siteFiltresi = Array.isArray(opts.siteler) && opts.siteler.length ? new Set(opts.siteler) : null;
   const hizliKume = new Set(HIZLI_SITELER);
-  const others = adapters
+  const others = adaptersByMarket(kaynakMarket)
     .filter(a => a.id !== adapter.id && (!siteFiltresi || siteFiltresi.has(a.id)))
     .sort((a, b) => (hizliKume.has(b.id) ? 1 : 0) - (hizliKume.has(a.id) ? 1 : 0));
 

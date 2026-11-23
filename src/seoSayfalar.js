@@ -17,21 +17,26 @@ import { katalogGetir, radarDurumVerisi, radarSerisi, teklifKategoriyeUygunMu } 
 import { grafikOzeti } from './grafik.js';
 import { anlikAl, sorgudanAnlikAl, snapshotAra, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
 import { katalogUrunleriAra } from './katalogSync.js';
-import { formatTL, parcaMi, slugYap } from './util.js';
+import { formatTL, formatPara, paraBirimiNormalize, parcaMi, slugYap } from './util.js';
 export { slugYap };
 import { birimFiyatHesapla } from './birimFiyat.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
-import { siteNames } from './sites/index.js';
+import { siteNames, adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
 const SEO_CACHE_TTL_MS = 60 * 1000;
 const BESLEME_MAKS_URUN = 550;
-let _seoListeOnbellek = { ts: 0, liste: [] };
+let _seoListeOnbellek = new Map();
 
 export function seoOnbelleginiTemizle() {
-  _seoListeOnbellek = { ts: 0, liste: [] };
+  _seoListeOnbellek = new Map();
+}
+
+function urunFiyatMetni(fiyat, paraBirimi = 'TRY') {
+  const kod = paraBirimiNormalize(paraBirimi);
+  return kod === 'TRY' ? formatTL(fiyat) : formatPara(fiyat, kod);
 }
 
 export function htmlKacis(metin) {
@@ -178,19 +183,29 @@ export const SEO_KATEGORILER = Object.freeze([
   },
 ]);
 
-function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
+function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar, market = 'tr') {
   const harita = new Map();
+  const etkinMarket = normalizeMarket(market);
+  const beklenenPara = PAZARLAR[etkinMarket]?.currency || 'TRY';
+  const sitePazarUygun = (siteId) => {
+    if (!siteId) return etkinMarket === 'tr';
+    const a = adapterById(siteId);
+    return a ? adapterMarket(a) === etkinMarket : etkinMarket === 'tr';
+  };
 
   // 1) En güncel tam snapshot teklifleri (kargo dahil tüm mağazalar)
   const sonuclar = Array.isArray(snapshot?.payload?.sonuclar) ? snapshot.payload.sonuclar : [];
   for (const r of sonuclar) {
     if (r?.status !== 'found' || !r?.product) continue;
     if (r.renkAyni === false) continue;
+    const siteId = r.site || '';
+    if (!sitePazarUygun(siteId)) continue;
+    const teklifPara = r.product.currency ? paraBirimiNormalize(r.product.currency) : beklenenPara;
+    if (teklifPara !== beklenenPara) continue;
     if (!teklifKategoriyeUygunMu(r, kayit)) continue;
     const pr = r.product.pricing || {};
     const toplam = Number(pr.toplam ?? pr.araToplam ?? r.product.sellingPrice);
     if (!Number.isFinite(toplam) || toplam <= 0) continue;
-    const siteId = r.site || '';
     const siteAd = r.siteName || siteId;
     const stokta = r.product.inStock !== false;
     const kargoUygulanir = pr.kargo?.uygulanir;
@@ -198,7 +213,7 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
     const kargoMetni = kargoUygulanir === false
       ? 'Ücretsiz Kargo'
       : (kargoUygulanir === true && Number.isFinite(kargoUcret) && kargoUcret > 0
-        ? `+${formatTL(kargoUcret)} kargo dahil`
+        ? `+${urunFiyatMetni(kargoUcret, beklenenPara)} kargo dahil`
         : 'Kargo sepette');
 
     const anahtar = siteId || siteAd.toLowerCase();
@@ -209,6 +224,7 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
         site: siteAd,
         baslik: r.product.title || kayit.ad,
         fiyat: Math.round(toplam * 100) / 100,
+        paraBirimi: beklenenPara,
         urunFiyati: Number(pr.araToplam ?? r.product.sellingPrice) || null,
         stokta,
         kargo: kargoMetni,
@@ -219,12 +235,13 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
 
   // 2) Snapshot yoksa veya eskiyse radar_durum verisinden besle
   if (!harita.size && durum) {
-    if (durum.fiyat > 0 && durum.site) {
+    if (durum.fiyat > 0 && durum.site && sitePazarUygun(durum.siteId)) {
       harita.set(durum.siteId || durum.site, {
         siteId: durum.siteId || '',
         site: durum.site,
         baslik: durum.urun || kayit.ad,
         fiyat: Number(durum.fiyat),
+        paraBirimi: beklenenPara,
         urunFiyati: null,
         stokta: durum.stokta !== false,
         kargo: durum.kargo || 'Kargo bilgisi',
@@ -232,7 +249,7 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
       });
     }
     for (const d of Array.isArray(durum.digerleri) ? durum.digerleri : []) {
-      if (!d?.site || !(Number(d.fiyat) > 0)) continue;
+      if (!d?.site || !(Number(d.fiyat) > 0) || !sitePazarUygun(d.siteId)) continue;
       const k = d.siteId || d.site;
       if (!harita.has(k)) {
         harita.set(k, {
@@ -240,6 +257,7 @@ function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar) {
           site: d.site,
           baslik: kayit.ad,
           fiyat: Number(d.fiyat),
+          paraBirimi: beklenenPara,
           urunFiyati: null,
           stokta: true,
           kargo: d.kargo || 'Kargo bilgisi',
@@ -279,22 +297,29 @@ function kargoHesaplaTeklif(siteId, urunFiyati) {
  * Mağaza beslemelerinden (`katalog_urunleri`) gelen stoklu ve gerçek fiyatlı ürünleri
  * temizleyip tekilleştirerek programa dayalı uzun kuyruk (long-tail) SEO sayfaları üretir.
  */
-function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar) {
+function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar, market = 'tr') {
+  const etkinMarket = normalizeMarket(market);
+  const beklenenPara = PAZARLAR[etkinMarket]?.currency || 'TRY';
+  const minFiyat = etkinMarket === 'tr' ? 40 : 1;
   let rows = [];
   try {
     const db = dbBaglantisi();
     rows = db.prepare(`
-      SELECT siteId, urunUrl, baslik, marka, fiyat, stokta, gorselUrl, guncellemeTs
+      SELECT siteId, urunUrl, baslik, marka, fiyat, paraBirimi, stokta, gorselUrl, guncellemeTs
       FROM katalog_urunleri
-      WHERE fiyat >= 40 AND stokta = 1 AND length(baslik) >= 8
+      WHERE fiyat >= ? AND stokta = 1 AND length(baslik) >= 8
       ORDER BY guncellemeTs DESC
-    `).all();
+    `).all(minFiyat);
   } catch {
     return [];
   }
 
   const gruplar = new Map();
   for (const r of rows) {
+    const a = r.siteId ? adapterById(r.siteId) : null;
+    const satirMarket = a ? adapterMarket(a) : 'tr';
+    if (satirMarket !== etkinMarket) continue;
+    if (r.paraBirimi && paraBirimiNormalize(r.paraBirimi) !== beklenenPara) continue;
     const ad = String(r.baslik || '').trim();
     if (/hediye\s*çeki|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo/i.test(ad)) continue;
     const slug = slugYap(ad);
@@ -399,10 +424,13 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar) {
  * Aktif katalog + besleme ürünlerini SEO/SSR sayfaları için hazırlar (60 sn bellek önbellekli).
  * @returns {Array<object>}
  */
-export function seoUrunListesi({ taze = false } = {}) {
+export function seoUrunListesi({ taze = false, market = 'tr' } = {}) {
+  const etkinMarket = normalizeMarket(market);
+  const beklenenPara = PAZARLAR[etkinMarket]?.currency || 'TRY';
   const simdi = Date.now();
-  if (!taze && _seoListeOnbellek.liste.length && (simdi - _seoListeOnbellek.ts) < SEO_CACHE_TTL_MS) {
-    return _seoListeOnbellek.liste;
+  const onbellek = _seoListeOnbellek.get(etkinMarket);
+  if (!taze && onbellek?.liste?.length && (simdi - onbellek.ts) < SEO_CACHE_TTL_MS) {
+    return onbellek.liste;
   }
 
   let kayitlar = [];
@@ -415,7 +443,14 @@ export function seoUrunListesi({ taze = false } = {}) {
   const afiliyeAyar = afiliyeAyarlari();
   const kullanilanSluglar = new Set();
 
-  const radarUrunler = kayitlar.map((k) => {
+  const radarUrunler = kayitlar
+    .filter((k) => {
+      const kMarket = k.url && adapterById(k.siteId || '')
+        ? adapterMarket(adapterById(k.siteId))
+        : (k.market ? normalizeMarket(k.market) : 'tr');
+      return kMarket === etkinMarket;
+    })
+    .map((k) => {
     let slug = slugYap(k.ad);
     if (kullanilanSluglar.has(slug)) slug = `${slug}-${k.id}`;
     kullanilanSluglar.add(slug);
@@ -427,7 +462,7 @@ export function seoUrunListesi({ taze = false } = {}) {
         || sorgudanAnlikAl(k.sorgu || k.ad, { maxYasMs: SNAPSHOT_MAX_YAS_MS });
     } catch { snapshot = null; }
 
-    const teklifler = teklifListesiTopla(k, durum, snapshot, afiliyeAyar);
+    const teklifler = teklifListesiTopla(k, durum, snapshot, afiliyeAyar, etkinMarket);
     const stoklu = teklifler.filter(t => t.stokta && t.fiyat > 0);
     const enIyi = stoklu[0] || null;
     const enPahali = stoklu.length ? stoklu[stoklu.length - 1] : null;
@@ -436,13 +471,17 @@ export function seoUrunListesi({ taze = false } = {}) {
     const sonTs = Math.max(snapshotTs, durumTs) || null;
     const katSlug = anaKategoriSlugBul(k);
 
-    const enIyiBirim = enIyi ? (birimFiyatHesapla(enIyi.baslik || k.ad, enIyi.fiyat) || birimFiyatHesapla(k.ad, enIyi.fiyat)) : null;
+    const enIyiBirim = (etkinMarket === 'tr' && enIyi)
+      ? (birimFiyatHesapla(enIyi.baslik || k.ad, enIyi.fiyat) || birimFiyatHesapla(k.ad, enIyi.fiyat))
+      : null;
     const birimMetni = enIyiBirim
       ? `₺${formatTL(enIyiBirim.birimFiyat).replace(/\s*TL$/, '')} / ${enIyiBirim.birim === 'L' ? 'L' : 'kg'}`
       : (durum?.birimMetni || null);
 
     return {
       id: k.id,
+      market: etkinMarket,
+      paraBirimi: beklenenPara,
       kaynakTip: 'radar',
       ad: k.ad,
       sorgu: k.sorgu || k.ad,
@@ -452,11 +491,11 @@ export function seoUrunListesi({ taze = false } = {}) {
       slug,
       yol: `/urun/${slug}`,
       teklifler,
-      enUcuzFiyat: enIyi ? enIyi.fiyat : (durum?.stokta && durum?.fiyat > 0 ? Number(durum.fiyat) : null),
-      enUcuzSite: enIyi ? enIyi.site : (durum?.site || null),
-      enUcuzUrl: enIyi?.url || durum?.afiliyeUrl || null,
-      enPahaliFiyat: enPahali ? enPahali.fiyat : (durum?.enPahaliFiyat || null),
-      stokluSayisi: stoklu.length || Number(durum?.stokluSayisi || 0),
+      enUcuzFiyat: enIyi ? enIyi.fiyat : (durum?.stokta && durum?.fiyat > 0 && etkinMarket === 'tr' ? Number(durum.fiyat) : null),
+      enUcuzSite: enIyi ? enIyi.site : (etkinMarket === 'tr' ? (durum?.site || null) : null),
+      enUcuzUrl: enIyi?.url || (etkinMarket === 'tr' ? (durum?.afiliyeUrl || null) : null),
+      enPahaliFiyat: enPahali ? enPahali.fiyat : (etkinMarket === 'tr' ? (durum?.enPahaliFiyat || null) : null),
+      stokluSayisi: stoklu.length || (etkinMarket === 'tr' ? Number(durum?.stokluSayisi || 0) : 0),
       gorsel: snapshot?.payload?.kaynak?.image || null,
       marka: snapshot?.payload?.kaynak?.brand || null,
       modelKodu: snapshot?.payload?.kaynak?.modelKodu || null,
@@ -467,9 +506,10 @@ export function seoUrunListesi({ taze = false } = {}) {
     };
   });
 
-  const beslemeUrunler = beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar);
+  const beslemeUrunler = beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar, etkinMarket)
+    .map(u => ({ ...u, market: etkinMarket, paraBirimi: beklenenPara }));
   const birlesik = [...radarUrunler, ...beslemeUrunler];
-  _seoListeOnbellek = { ts: simdi, liste: birlesik };
+  _seoListeOnbellek.set(etkinMarket, { ts: simdi, liste: birlesik });
   return birlesik;
 }
 
@@ -1164,6 +1204,8 @@ function ilgiliRehberKartlari(urun) {
  * piyasa analizi özeti + dinamik SSS ve `FAQPage` JSON-LD şeması üretir.
  */
 function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
+  const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || 'TRY');
+  const fiyatMetni = (v) => urunFiyatMetni(v, paraBirimi);
   const teklifler = Array.isArray(urun.teklifler) ? urun.teklifler : [];
   const stoklular = teklifler.filter(t => t.stokta && Number(t.fiyat) > 0);
   const tukenenSayisi = teklifler.filter(t => !t.stokta).length;
@@ -1202,14 +1244,14 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
   // Metrik kutuları (uydurma kutu yok; yalnızca gerçek veri)
   const kutular = [];
   if (gecmis30) {
-    kutular.push({ etiket: 'Son 30 Gün En Düşük', deger: formatTL(gecmis30.min) });
-    kutular.push({ etiket: 'Son 30 Gün Ortalama', deger: formatTL(gecmis30.ort) });
+    kutular.push({ etiket: 'Son 30 Gün En Düşük', deger: fiyatMetni(gecmis30.min) });
+    kutular.push({ etiket: 'Son 30 Gün Ortalama', deger: fiyatMetni(gecmis30.ort) });
   }
   if (gecmis90) {
-    kutular.push({ etiket: 'Son 90 Gün Tabanı', deger: formatTL(gecmis90.min) });
+    kutular.push({ etiket: 'Son 90 Gün Tabanı', deger: fiyatMetni(gecmis90.min) });
   }
   if (fark > 0) {
-    kutular.push({ etiket: 'Mağazalar Arası Fark', deger: `${formatTL(fark)} (%${farkYuzde})` });
+    kutular.push({ etiket: 'Mağazalar Arası Fark', deger: `${fiyatMetni(fark)} (%${farkYuzde})` });
   } else if (magazaSayisi > 0) {
     kutular.push({ etiket: 'Stoklu Mağaza Sayısı', deger: `${magazaSayisi} mağaza` });
   }
@@ -1224,7 +1266,7 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
       `${urun.ad} için Türkiye’deki 3D baskı ve e-ticaret mağazalarında yapılan taramalarda `
       + `${magazaSayisi || 1} mağazada satın alınabilir stok bulunuyor`
       + `${tukenenSayisi > 0 ? ` (${tukenenSayisi} mağaza stokta yok olarak elendi)` : ''}; `
-      + `kargo dahil en düşük teklif ${formatTL(guncelFiyat)} ile ${urun.enUcuzSite} mağazasında.`,
+      + `kargo dahil en düşük teklif ${fiyatMetni(guncelFiyat)} ile ${urun.enUcuzSite} mağazasında.`,
     );
   } else {
     cumleler.push(
@@ -1234,14 +1276,14 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
   }
   if (fark > 0) {
     cumleler.push(
-      `Stoklu mağazalar arasında fiyatlar ${formatTL(guncelFiyat)} ile ${formatTL(enPahaliFiyat)} `
-      + `arasında değişiyor — en uygun satıcıyı seçmek ${formatTL(fark)} (%${farkYuzde}) tasarruf sağlar.`,
+      `Stoklu mağazalar arasında fiyatlar ${fiyatMetni(guncelFiyat)} ile ${fiyatMetni(enPahaliFiyat)} `
+      + `arasında değişiyor — en uygun satıcıyı seçmek ${fiyatMetni(fark)} (%${farkYuzde}) tasarruf sağlar.`,
     );
   }
   if (gecmis30) {
-    let gecmisNotu = `Son 30 günlük gerçek fiyat takibinde en düşük ${formatTL(gecmis30.min)} ve `
-      + `ortalama ${formatTL(gecmis30.ort)} ölçüldü`;
-    if (gecmis90) gecmisNotu += ` (90 günlük en düşük ${formatTL(gecmis90.min)})`;
+    let gecmisNotu = `Son 30 günlük gerçek fiyat takibinde en düşük ${fiyatMetni(gecmis30.min)} ve `
+      + `ortalama ${fiyatMetni(gecmis30.ort)} ölçüldü`;
+    if (gecmis90) gecmisNotu += ` (90 günlük en düşük ${fiyatMetni(gecmis90.min)})`;
     if (guncelFiyat > 0 && guncelFiyat <= (gecmis90?.min ?? gecmis30.min) + 0.01) {
       gecmisNotu += '; bugünkü fiyat takip edilen dip seviyede.';
     } else if (guncelFiyat > 0 && guncelFiyat < gecmis30.ort - 1) {
@@ -1274,7 +1316,7 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     const kargoNotu = enUcuz?.kargo ? ` (${enUcuz.kargo})` : '';
     sssListesi.push({
       soru: `${urun.ad} en ucuz hangi mağazada ve ne kadar?`,
-      cevap: `Son tarama verilerine göre ${urun.ad} kargo dahil en ucuz ${formatTL(guncelFiyat)} fiyatıyla ${urun.enUcuzSite} mağazasında stoktadır${kargoNotu}.`,
+      cevap: `Son tarama verilerine göre ${urun.ad} kargo dahil en ucuz ${fiyatMetni(guncelFiyat)} fiyatıyla ${urun.enUcuzSite} mağazasında stoktadır${kargoNotu}.`,
     });
   } else {
     sssListesi.push({
@@ -1286,7 +1328,7 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
   if (magazaSayisi >= 2 && fark > 0) {
     sssListesi.push({
       soru: `${urun.ad} kaç mağazada stokta ve fiyat farkı ne kadar?`,
-      cevap: `Toplam ${magazaSayisi} mağazada satın alınabilir stok tespit edilmiştir. Kargo dahil teklifler ${formatTL(guncelFiyat)} ile ${formatTL(enPahaliFiyat)} aralığındadır (${formatTL(fark)} / %${farkYuzde} fark).`,
+      cevap: `Toplam ${magazaSayisi} mağazada satın alınabilir stok tespit edilmiştir. Kargo dahil teklifler ${fiyatMetni(guncelFiyat)} ile ${fiyatMetni(enPahaliFiyat)} aralığındadır (${fiyatMetni(fark)} / %${farkYuzde} fark).`,
     });
   } else {
     sssListesi.push({
@@ -1299,11 +1341,11 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
     const kiyasCumlesi = guncelFiyat <= (gecmis90?.min ?? gecmis30.min) + 0.01
       ? 'Mevcut teklif takip edilen dönemin en düşük taban seviyesindedir.'
       : (guncelFiyat < gecmis30.ort
-        ? `Güncel ${formatTL(guncelFiyat)} fiyatı son 30 gün ortalamasının altındadır.`
-        : `Güncel ${formatTL(guncelFiyat)} fiyatı son 30 gün ortalamasına yakın seyretmektedir.`);
+        ? `Güncel ${fiyatMetni(guncelFiyat)} fiyatı son 30 gün ortalamasının altındadır.`
+        : `Güncel ${fiyatMetni(guncelFiyat)} fiyatı son 30 gün ortalamasına yakın seyretmektedir.`);
     sssListesi.push({
-      soru: `${urun.ad} son 30 günde en düşük kaç TL oldu?`,
-      cevap: `Son 30 günde kaydedilen en düşük fiyat ${formatTL(gecmis30.min)}, 30 günlük ortalama ${formatTL(gecmis30.ort)}${gecmis90 ? ` ve 90 gün tabanı ${formatTL(gecmis90.min)}` : ''} seviyesindedir. ${kiyasCumlesi}`,
+      soru: `${urun.ad} son 30 günde en düşük ne kadar oldu?`,
+      cevap: `Son 30 günde kaydedilen en düşük fiyat ${fiyatMetni(gecmis30.min)}, 30 günlük ortalama ${fiyatMetni(gecmis30.ort)}${gecmis90 ? ` ve 90 gün tabanı ${fiyatMetni(gecmis90.min)}` : ''} seviyesindedir. ${kiyasCumlesi}`,
     });
   } else if (urun.birimMetni) {
     sssListesi.push({
@@ -1386,11 +1428,13 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl) {
 
 export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
   const kat = SEO_KATEGORILER.find(c => c.slug === urun.kategoriSlug) || SEO_KATEGORILER[0];
+  const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || 'TRY');
+  const fiyatMetni = (v) => urunFiyatMetni(v, paraBirimi);
   const canliTaraUrl = `/?url=${encodeURIComponent(urun.sorgu || urun.ad)}`;
-  const enUcuzEk = urun.enUcuzFiyat > 0 ? ` (${formatTL(urun.enUcuzFiyat)})` : '';
+  const enUcuzEk = urun.enUcuzFiyat > 0 ? ` (${fiyatMetni(urun.enUcuzFiyat)})` : '';
   const title = `${urun.ad} En Ucuz Fiyatı${enUcuzEk} — Baskı Hesap`;
   const description = urun.enUcuzFiyat > 0
-    ? `${urun.ad} kargo dahil en ucuz ${formatTL(urun.enUcuzFiyat)} (${urun.enUcuzSite || 'mağaza'}). ${urun.stokluSayisi || 1} mağazada stoklu teklifleri karşılaştır.`
+    ? `${urun.ad} kargo dahil en ucuz ${fiyatMetni(urun.enUcuzFiyat)} (${urun.enUcuzSite || 'mağaza'}). ${urun.stokluSayisi || 1} mağazada stoklu teklifleri karşılaştır.`
     : `${urun.ad} Türkiye 3D baskı ve e-ticaret mağazalarında kargo dahil canlı fiyat karşılaştırması. Tek tıkla güncel fiyatları tara.`;
 
   const tabloSatirlari = urun.teklifler.map((t, idx) => `
@@ -1399,7 +1443,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
       <td>${htmlKacis(String(t.baslik || urun.ad).slice(0, 85))}</td>
       <td>${htmlKacis(t.kargo)}</td>
       <td>${t.stokta ? '🟢 Stokta' : '🔴 Tükendi'}</td>
-      <td><b>${formatTL(t.fiyat)}</b></td>
+      <td><b>${urunFiyatMetni(t.fiyat, t.paraBirimi || paraBirimi)}</b></td>
       <td>${t.url ? `<a href="${htmlKacis(t.url)}" target="_blank" rel="noopener sponsored nofollow">Mağazaya Git ↗</a>` : '—'}</td>
     </tr>`).join('');
 
@@ -1424,8 +1468,8 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     const stokluTeklifler = (urun.teklifler || []).filter(t => t.stokta && Number(t.fiyat) > 0);
     const altTeklifler = stokluTeklifler.slice(0, 12).map(t => ({
       '@type': 'Offer',
-      priceCurrency: 'TRY',
-      price: Number(t.fiyat).toFixed(2),
+      priceCurrency: paraBirimiNormalize(t.paraBirimi || paraBirimi),
+      price: Number(t.fiyat).toFixed(paraBirimi === 'JPY' ? 0 : 2),
       priceValidUntil: gecerlilikTarihi,
       availability: 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
@@ -1449,9 +1493,9 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
       ...(barkodTemiz ? { gtin: barkodTemiz } : {}),
       offers: {
         '@type': 'AggregateOffer',
-        priceCurrency: 'TRY',
-        lowPrice: Number(urun.enUcuzFiyat).toFixed(2),
-        ...(urun.enPahaliFiyat > 0 ? { highPrice: Number(urun.enPahaliFiyat).toFixed(2) } : {}),
+        priceCurrency: paraBirimi,
+        lowPrice: Number(urun.enUcuzFiyat).toFixed(paraBirimi === 'JPY' ? 0 : 2),
+        ...(urun.enPahaliFiyat > 0 ? { highPrice: Number(urun.enPahaliFiyat).toFixed(paraBirimi === 'JPY' ? 0 : 2) } : {}),
         offerCount: Math.max(1, urun.stokluSayisi || stokluTeklifler.length),
         availability: 'https://schema.org/InStock',
         url: `${tabanUrl}${urun.yol}`,
@@ -1469,7 +1513,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
     ? `<div class="seo-fiyat-kutu">
          <div>
            <div style="font-size:12px;font-weight:700;color:var(--gri-metin)">KARGO DAHİL EN UCUZ TEKLİF</div>
-           <div class="seo-fiyat-ana">${formatTL(urun.enUcuzFiyat)}</div>
+           <div class="seo-fiyat-ana">${fiyatMetni(urun.enUcuzFiyat)}</div>
          </div>
          <div style="font-size:14px">
            <div><b>Mağaza:</b> ${htmlKacis(urun.enUcuzSite || '—')}</div>

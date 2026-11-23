@@ -823,7 +823,23 @@ async function guvenliJson(res) {
   }
 }
 
-function tl(n) {
+function formatPara(n, paraBirimi = 'TRY', yerel = null) {
+  if (typeof window !== 'undefined' && typeof window.formatPara === 'function') {
+    return window.formatPara(n, paraBirimi, yerel);
+  }
+  if (n == null || isNaN(n)) return '—';
+  const kod = String(paraBirimi || 'TRY').toUpperCase();
+  const varsayilanYerel = kod === 'USD' ? 'en-US' : (kod === 'EUR' ? 'fr-FR' : (kod === 'JPY' ? 'ja-JP' : 'tr-TR'));
+  const ondalik = kod === 'JPY' ? 0 : 2;
+  return new Intl.NumberFormat(yerel || varsayilanYerel, {
+    style: 'currency', currency: kod, minimumFractionDigits: ondalik, maximumFractionDigits: ondalik,
+  }).format(Number(n)).replace(/[\u00a0\u202f]/g, ' ').replace(/\uFFE5/g, '¥');
+}
+
+function tl(n, paraBirimi = null) {
+  if (paraBirimi && String(paraBirimi).toUpperCase() !== 'TRY') {
+    return formatPara(n, paraBirimi);
+  }
   if (n == null || isNaN(n)) return '—';
   return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
 }
@@ -2444,11 +2460,13 @@ function bentoOzetCiz(sonuc) {
     : `<div class="bento-bos">📈 Henüz yeterli fiyat geçmişi yok.<br>
          <span class="bento-alt-metin">Her karşılaştırma bir kayıt ekler; trend birkaç günde oluşur.</span></div>`;
 
+  const enUcuzPara = enUcuz?.r?.product?.currency || sonuc?.ozet?.currency || 'TRY';
+  const alan_fiyat = tl(enUcuz.fiyat, enUcuzPara);
   alan.innerHTML = `
     <article class="bento-blok bento-spot">
       <div class="bento-etiket">🏷️ EN UCUZ</div>
       <div class="bento-site">${siteAdiHtml(enUcuz.r.site, siteAdi, p.url)}</div>
-      <div class="bento-fiyat">${tl(enUcuz.fiyat)}</div>
+      <div class="bento-fiyat">${alan_fiyat}</div>
       <div class="bento-rozetler">${kargoNotu}${stokNotu}</div>
       <a class="bento-cta" href="${esc(link)}" target="_blank" rel="noopener sponsored"
          data-afiliye-site="${esc(enUcuz.r.site || '')}">Mağazaya Git <span aria-hidden="true">↗</span></a>
@@ -3695,7 +3713,7 @@ function kartHtml(r) {
     <div class="kart-fiyat">
       ${p.enDusukFiyatNotu ? `<div class="magaza-dip-rozet" title="${esc(SITE_ADLARI[r.site] || r.siteName || 'Mağaza')} ürün sayfasında belirtilen dip fiyat rozeti">📉 ${esc(p.enDusukFiyatNotu)}</div>` : ''}
       ${pr.etiket && pr.etiket > (pr.araToplam ?? pr.taban) ? `<div class="etiket-fiyat ${r.sahteIndirim?.sahteIndirim ? 'supheli' : ''}"${r.sahteIndirim?.sahteIndirim ? ` tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}"` : ''}>${tl(pr.etiket)}</div>` : ''}
-      <div class="gercek-fiyat ${r.enUcuz ? 'ek' : ''}">${tl(pr.toplam ?? pr.araToplam ?? p.sellingPrice)}</div>
+      <div class="gercek-fiyat ${r.enUcuz ? 'ek' : ''}">${tl(pr.toplam ?? pr.araToplam ?? p.sellingPrice, p.currency)}</div>
       ${stoktaYok ? '<span class="stok-fiyat-rozet" title="Ürün şu anda tükendi; gösterilen fiyat son bilinen fiyattır.">Tükendi</span>' : ''}
       ${r.sahteIndirim?.sahteIndirim ? `<span class="sahte-indirim-rozet" tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}" data-ipucu="${esc(r.sahteIndirim.tooltip)}">⚠️ Şişirilmiş Liste Fiyatı<small>iddia %${esc(String(r.sahteIndirim.iddiaEdilenIndirim ?? '—'))} · gerçek %${esc(String(r.sahteIndirim.gercekTasarruf ?? '0'))}</small></span>` : ''}
       ${r.sahteIndirim?.gercekFirsat ? `<span class="gercek-firsat-rozet" title="${esc(r.sahteIndirim.tooltip || 'Son 90 günün en düşük fiyatı')}">🔥 GERÇEK FIRSAT<small>Son 90 günün dip fiyatı</small></span>` : ''}
@@ -3766,7 +3784,7 @@ function tabloDoldur(sonuc) {
       <td><a href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}" style="color:#3450D1">${esc(p.title.slice(0, 90))}</a></td>
       <td>${esc(p.color || '—')}${r.renkAyni === false ? ' (farklı)' : ''}</td>
       <td style="text-align:center">${stokBadge}</td>
-      <td class="fiyat-hucre">${tl(pr.toplam ?? p.sellingPrice)}</td>
+      <td class="fiyat-hucre">${tl(pr.toplam ?? p.sellingPrice, p.currency)}</td>
       <td>${kosullu}</td>
       <td>${esc(kargo)}</td>
       <td>${kac(r.requestsSpent)}</td>

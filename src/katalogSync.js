@@ -36,7 +36,7 @@
  * yorulmaz. Senkron 6 saatte bir arka planda çalışır (env ile değiştirilir).
  */
 import { dbBaglantisi } from './store.js';
-import { adapterById } from './sites/index.js';
+import { adapterById, marketSiteIds, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { httpIste } from './impitIstemci.js';
 import { titleSimilarity, toLowerTr, gercekMarkaBul } from './util.js';
 import { kdvDahilFiyat, kdvOraniBul } from './kdv.js';
@@ -507,8 +507,13 @@ export function katalogUrunleriAra(sorgu, opts = {}) {
     args.push(...parametreler);
 
     const satirlar = db.prepare(sql).all(...args);
+    const pazarFiltresi = (!opts.siteId && opts.market) ? marketSiteIds(normalizeMarket(opts.market)) : null;
+    const beklenenPara = (!opts.siteId && opts.market) ? PAZARLAR[normalizeMarket(opts.market)]?.currency : null;
+    const pazarSatirlari = pazarFiltresi
+      ? satirlar.filter(s => pazarFiltresi.has(s.siteId) && (!beklenenPara || !s.paraBirimi || s.paraBirimi === beklenenPara))
+      : satirlar;
     const simdi = Date.now();
-    const puanli = satirlar.map((s) => {
+    const puanli = pazarSatirlari.map((s) => {
       const ad = String(s.temizBaslik || '');
       let eslesen = 0;
       for (const w of kelimeler) if (ad.includes(w)) eslesen++;

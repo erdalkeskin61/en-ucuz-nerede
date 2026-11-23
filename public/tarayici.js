@@ -318,7 +318,7 @@ function barkodSonucGoster(r, rafFiyat) {
           ${s.barkodDogrulandi ? '<span class="rozet-kucuk dogrulandi">✓ barkod doğrulandı</span>' : ''}
         </div>
         <a class="barkod-kart-baslik" href="${esc(s.product.url)}" target="_blank" rel="noopener">${esc(String(s.product.title).slice(0, 90))}</a>
-        <div class="barkod-kart-fiyat">${tl(pr.toplam ?? s.product.sellingPrice)}</div>
+        <div class="barkod-kart-fiyat">${tl(pr.toplam ?? s.product.sellingPrice, s.product.currency)}</div>
         <div class="barkod-kart-alt">
           ${kargo.uygulanir === true ? `+ kargo ${tl(kargo.ucret)}` : kargo.uygulanir === false ? 'kargo bedava' : 'kargo sepette'}
           ${s.product.seller ? ' · ' + esc(s.product.seller) : ''}
