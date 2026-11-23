@@ -60,8 +60,10 @@
       </div>
       <p class="alt-not" style="margin:8px 0 0;font-size:12px">
         ${ag.id === 'amazon' ? 'Amazon Associates: parametre adı <code>tag</code>, değer ör. <code>siteadi-21</code>.' :
-          ag.id === 'gelirortaklari' || ag.id === 'reklamaction'
-            ? 'Aracı ağ: size verilen yönlendirme adresini şablon alanına yapıştırın; ayrıca aşağıdan mağaza bazlı şablon ekleyebilirsiniz.'
+          (ag.id === 'gelirortaklari' || ag.id === 'reklamaction' || ag.id === 'admitad' || ag.id === 'impact')
+            ? 'Aracı / global ağ: size verilen yönlendirme adresini şablon alanına (<code>{url}</code> ile) yapıştırın; ayrıca aşağıdan mağaza bazlı şablon ekleyebilirsiniz.' :
+          ag.id === 'shopify_collabs'
+            ? 'Shopify Collabs: tek parametre veren mağazalar için aşağıdan <b>Mağaza bazlı şablon</b> kısmına site kimliği (ör. <code>rfturkiye</code>, <code>porima3d</code>) + <code>?dt_id=KODUNUZ</code> eklemeniz önerilir.'
             : 'Parametre adını ve değerini kendi ortaklık panelinizden kopyalayın (uydurulmuş değer yazılmaz).'}
       </p>
     </div>`;
@@ -79,7 +81,8 @@
     const tipEtiketi = (v) => {
       const sablon = typeof v === 'string' ? v : (v?.sablon || '');
       const hedef = typeof v === 'object' && v ? (v.hedefParametre || '') : '';
-      if (sablon.includes('{url}')) return '<span class="rozet" style="background:#e8f7ee;color:#1f7a45">ürün bazlı</span>';
+      if (sablon.includes('{url}') || sablon.includes('{raw_url}')) return '<span class="rozet" style="background:#e8f7ee;color:#1f7a45">ürün bazlı</span>';
+      if (/^[?&][^=]+=/.test(sablon)) return '<span class="rozet" style="background:#e8f7ee;color:#1f7a45">ürün parametresi</span>';
       if (hedef) return `<span class="rozet" style="background:#eef2ff;color:#3b4a8f">${esc(hedef)} parametresi</span>`;
       return '<span class="rozet" style="background:#fff5e5;color:#a86a12">teklif linki</span>';
     };
@@ -198,12 +201,14 @@
       if (!/^[a-z0-9_-]{2,40}$/.test(site)) {
         return mesajla(el, 'Site kimliği geçersiz (ör. 3dmarketim, flo).', false);
       }
-      // Şablon geçerli bir adres olmalı; {url} ZORUNLU DEĞİL (2026-10-29).
-      // Ağların "teklif" (offer) linkleri ürün adresi almaz — bu geçerli bir kullanımdır.
-      let gecerliUrl = false;
-      try { gecerliUrl = /^https?:\/\//i.test(new URL(sablon.replace(/\{token\}/g, 'x')).href) && /^https?:\/\//i.test(sablon); } catch { gecerliUrl = false; }
+      // Şablon geçerli bir adres VEYA doğrudan sorgu parametresi (?dt_id=... / ?ref=...) olmalı.
+      const sorguEkMi = /^[?&][a-z0-9_.-]+=.+/i.test(sablon);
+      let gecerliUrl = sorguEkMi;
       if (!gecerliUrl) {
-        return mesajla(el, 'Şablon https:// ile başlayan geçerli bir adres olmalı.', false);
+        try { gecerliUrl = /^https?:\/\//i.test(new URL(sablon.replace(/\{token\}/g, 'x')).href) && /^https?:\/\//i.test(sablon); } catch { gecerliUrl = false; }
+      }
+      if (!gecerliUrl) {
+        return mesajla(el, 'Şablon https://... veya ?parametre=değer biçiminde olmalı.', false);
       }
 
       durum.siteSablon[site] = { sablon, hedefParametre, token: '' };
@@ -212,11 +217,13 @@
       if ($('#afiliyeHedefParametre')) $('#afiliyeHedefParametre').value = '';
       sablonlariCiz();
 
-      const ipucu = sablon.includes('{url}')
+      const ipucu = (sablon.includes('{url}') || sablon.includes('{raw_url}'))
         ? 'Ürün bazlı bağlantı kuruldu.'
-        : (hedefParametre
-          ? `Ürün adresi "${hedefParametre}" parametresine eklenecek.`
-          : 'Şablon {url} içermiyor: bağlantı ağın TEKLİF sayfasına gider (tüm mağaza için tek teklif).');
+        : (sorguEkMi
+          ? 'Sorgu parametresi tüm ürün ve varyant adreslerine doğrudan eklenecek (Shopify Collabs uyumlu).'
+          : (hedefParametre
+            ? `Ürün adresi "${hedefParametre}" parametresine eklenecek.`
+            : 'Şablon {url} içermiyor: bağlantı ağın TEKLİF sayfasına gider (tüm mağaza için tek teklif).'));
       mesajla(el, `Eklendi — ${ipucu} Kaydetmeyi unutmayın.`);
     });
   });

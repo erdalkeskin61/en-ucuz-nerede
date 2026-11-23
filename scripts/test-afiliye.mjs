@@ -273,5 +273,38 @@ const ayarHtml = fsMod.readFileSync('public/admin.html', 'utf8');
 kontrol('HTML’de hedef parametresi alanı var', /id="afiliyeHedefParametre"/.test(ayarHtml));
 kontrol('HTML’de offer_id örneği var', /offer_id/.test(ayarHtml));
 
+/* ---------- 17) Shopify Collabs / Admitad / Impact & RFTürkiye ---------- */
+import { adapterById, detectSite } from '../src/sites/index.js';
+import { SITE_KARGO_VARSAYILANLARI } from '../src/kargo.js';
+
+kontrol('yeni ağlar AG_BILGILERI içinde',
+  !!AG_BILGILERI.shopify_collabs && !!AG_BILGILERI.admitad && !!AG_BILGILERI.impact);
+
+const aShopify = {
+  etkin: true,
+  aglar: {},
+  siteAg: {},
+  siteSablon: {
+    rfturkiye: { sablon: '?dt_id=987654&utm_source=baskihesap', hedefParametre: '', token: '' },
+    porima3d: { sablon: '?ref=baskihesap', hedefParametre: '', token: '' },
+  },
+};
+const rfVaryant = afiliyeLink('rfturkiye', 'https://rfturkiye.com/products/rpla?variant=46793811984623', aShopify);
+kontrol('Shopify Collabs ?dt_id varyantı koruyarak eklenir',
+  rfVaryant === 'https://rfturkiye.com/products/rpla?variant=46793811984623&dt_id=987654&utm_source=baskihesap',
+  rfVaryant);
+
+const porimaLink = afiliyeLink('porima3d', 'https://porima3d.com/products/porima-pla-filament', aShopify);
+kontrol('Shopify ?ref ürün adresine eklenir',
+  porimaLink === 'https://porima3d.com/products/porima-pla-filament?ref=baskihesap',
+  porimaLink);
+
+kontrol('rfturkiye adaptörü ve detectSite kayıtlı',
+  !!adapterById('rfturkiye') && detectSite('https://rfturkiye.com/products/rpla')?.id === 'rfturkiye');
+kontrol('rfturkiye kargo eşiği 2000 TL tanımlı',
+  SITE_KARGO_VARSAYILANLARI.rfturkiye?.freeOver === 2000);
+kontrol('HTML datalist #afiliyeSite üzerinde bağlı',
+  /id="afiliyeSite"[^>]*list="adminSitelerDatalist"/.test(ayarHtml));
+
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);

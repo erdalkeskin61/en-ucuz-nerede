@@ -84,6 +84,7 @@ const VARSAYILAN_PARA = process.env.KATALOG_PARA_BIRIMI || 'TRY';
 export const KATALOG_HEDEFLERI = [
   // ---- Shopify (tam veri: fiyat + stok + görsel) ----
   { siteId: 'porima3d', tur: 'shopify', base: 'https://porima3d.com' },
+  { siteId: 'rfturkiye', tur: 'shopify', base: 'https://rfturkiye.com' },
   { siteId: 'filamenthane', tur: 'shopify', base: 'https://filamenthane.com' },
   { siteId: '3dteknomarket', tur: 'shopify', base: 'https://3dteknomarket.com' },
 

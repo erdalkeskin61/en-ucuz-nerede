@@ -136,7 +136,7 @@ const NAZIK_HOSTLAR = [
   'robolinkmarket.com', 'robomer.com', 'robocombo.com', 'tou3d.com', 'fixx3d.com',
   '3dprinterankara.com', 'filamentmarketim.com', 'filamenthane.com', 'filamentvakti.com',
   'artyteknoloji.com', 'ileri3d.com', 'mikron3d.com', '3dcopycenter.com.tr',
-  'antalya3dmarket.com', 'teknobilsem.com', '3dteknomarket.com', 'matersan.com.tr',
+  'antalya3dmarket.com', 'teknobilsem.com', '3dteknomarket.com', 'matersan.com.tr', 'rfturkiye.com',
   'robotistan.com', 'direnc.net', 'motorobit.com', '3dortgen.com', 'shop.3dortgen.com',
   'nmosphere.com.tr', 'hepsivar.com', 'deneystore.com', 'trendruum.com',
   'bisiparisver.com', 'www.bisiparisver.com', 'metatechtr.com', 'store.metatechtr.com',

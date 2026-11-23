@@ -76,7 +76,7 @@ export function sorguGrubu(siteId) {
     // düşüyordu.
     'urhanshop',
     // 2026-11-13: Yeni eklenen 3D / filament mağazaları
-    'kirpilab', '3dteknobiz', 'makerpazar', 'efilament', 'zzrobot3d', 'sermenkreatif', 'metatechtr',
+    'kirpilab', '3dteknobiz', 'makerpazar', 'efilament', 'zzrobot3d', 'sermenkreatif', 'metatechtr', 'rfturkiye',
   ];
   if (d3.includes(t)) return SAGLIK_SORGULARI._3d;
   // Pazaryerleri ve elektronik: genel bir ürün

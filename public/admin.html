@@ -126,32 +126,32 @@
           <div id="afiliyePaneli"><p class="alt-not">Yükleniyor…</p></div>
 
           <div style="margin-top:16px">
-            <h3 style="font-size:15px; margin-bottom:8px">🏬 Niş mağaza bağlantısı (GelirOrtaklari / ReklamAction)</h3>
+            <h3 style="font-size:15px; margin-bottom:8px">🏬 Mağaza bazlı bağlantı (Shopify Collabs / Admitad / GelirOrtaklari)</h3>
             <p class="alt-not">
-              Ağın size verdiği yönlendirme adresini girin. Üç kullanım biçimi var:
-              <br>• <b>Ürün bazlı:</b> adreste <code>{url}</code> varsa hedef ürünle değiştirilir —
-                <code>https://ag.example.com/git?u={url}&amp;ref={token}</code>
-              <br>• <b>Parametreli:</b> <code>{url}</code> yoksa ama aşağıya <b>hedef parametresi</b> yazarsanız
-                ürün adresi o parametreye eklenir — ör. <code>url</code> →
-                <code>...&amp;url=https%3A%2F%2F...</code>
-              <br>• <b>Teklif (offer):</b> ikisi de yoksa adres <b>olduğu gibi</b> kullanılır (<code>offer_id</code> linkleri).
+              Mağazaya veya ağa göre yönlendirme girin. Dört kullanım biçimi var:
+              <br>• <b>Shopify Collabs / Doğrudan Parametre:</b> <code>?dt_id=KODUNUZ</code> veya <code>?ref=baskihesap</code> yazarsanız
+                ürünün kendi adresine (<code>?variant=...</code> korunarak) otomatik eklenir.
+              <br>• <b>Ürün bazlı deeplink:</b> adreste <code>{url}</code> varsa hedef ürünle değiştirilir —
+                <code>https://ad.admitad.com/g/.../?ulp={url}</code>
+              <br>• <b>Hedef parametreli:</b> <code>{url}</code> yoksa aşağıya <b>hedef parametresi</b> yazabilirsiniz (ör. <code>url</code>).
+              <br>• <b>Teklif (offer):</b> hiçbiri yoksa adres <b>olduğu gibi</b> kullanılır (<code>offer_id</code> linkleri).
             </p>
             <div class="form-satir">
               <div class="ikili">
                 <div>
                   <label for="afiliyeSite">Site kimliği</label>
-                  <input type="text" id="afiliyeSite" placeholder="ör. flo, 3dmarketim" autocomplete="off" />
+                  <input type="text" id="afiliyeSite" list="adminSitelerDatalist" placeholder="ör. rfturkiye, porima3d, mediamarkt" autocomplete="off" />
                 </div>
                 <div>
                   <label for="afiliyeHedefParametre">Hedef parametresi (isteğe bağlı)</label>
-                  <input type="text" id="afiliyeHedefParametre" placeholder="ör. url — boş bırakılabilir" autocomplete="off" />
+                  <input type="text" id="afiliyeHedefParametre" placeholder="ör. url — ?param=val için boş bırakın" autocomplete="off" />
                 </div>
               </div>
             </div>
             <div style="margin-top:8px">
-              <label for="afiliyeSablon">Yönlendirme şablonu / teklif adresi</label>
+              <label for="afiliyeSablon">Yönlendirme şablonu / parametre eki</label>
               <input type="text" id="afiliyeSablon"
-                placeholder="https://ad.reklm.com/aff_c?offer_id=...&aff_id=..." autocomplete="off" />
+                placeholder="ör. ?dt_id=123456 veya https://ad.admitad.com/g/.../?ulp={url}" autocomplete="off" />
             </div>
             <button type="button" class="ikincil-btn" id="afiliyeSablonEkleBtn" style="margin-top:8px">＋ Şablonu ekle</button>
             <span id="afiliyeSablonMesaj" class="durum-mesaji"></span>

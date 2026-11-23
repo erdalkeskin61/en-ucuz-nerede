@@ -81,6 +81,11 @@ export const yeniSiteler2 = [
     id: 'porima3d', name: 'Porima 3D',
     hosts: ['porima3d.com', 'www.porima3d.com'], base: 'https://porima3d.com',
   }),
+  // ---- RFTürkiye / Recycling Fabrik (Shopify, 2026-11-23) ----
+  shopifySite({
+    id: 'rfturkiye', name: 'RFTürkiye',
+    hosts: ['rfturkiye.com', 'www.rfturkiye.com'], base: 'https://rfturkiye.com',
+  }),
 
   // ---- Özel platformlar (genel adaptör) ----
 

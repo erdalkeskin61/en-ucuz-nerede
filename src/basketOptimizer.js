@@ -39,7 +39,7 @@ export const HIZLI_SITELER = [
   'robotistan', 'robolinkmarket', 'filamentsan', 'filamentmarketim', 'samm',
   'ventatek', '3dcim', 'pusula3d', 'robitshop', 'filamentvakti', 'print3d',
   'makerfabrika', '3dultra', 'robomer', 'tou3d', '3dmarketim', '3dprinterankara',
-  'teknikfilament3d', 'porima3d',
+  'teknikfilament3d', 'porima3d', 'rfturkiye',
 ];
 
 /**
@@ -69,6 +69,8 @@ export const SEPET_SITELERI = [
   'porima3d',
   // 2026-11-21: filamentdepom.com (Ticimax; 120 TL / 2.000 TL ücretsiz kargo tarifesi tanımlı).
   'filamentdepom',
+  // 2026-11-23: rfturkiye.com (Shopify; 2.000 TL ücretsiz kargo eşiği, geri dönüştürülmüş rPLA).
+  'rfturkiye',
 ];
 
 /** Sepette tek siteye ayrılan en fazla süre — yavaş site tüm sepeti kilitlemesin. */

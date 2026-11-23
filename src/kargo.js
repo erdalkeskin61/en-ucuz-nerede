@@ -105,6 +105,14 @@ export const SITE_KARGO_VARSAYILANLARI = {
     applies: true,
     note: '1.500 TL üzeri ücretsiz kargo · altında kargo ücreti ödeme adımında hesaplanır',
   },
+  // 2026-11-23: rfturkiye.com (Shopify). Ücretsiz kargo eşiği sitenin kendi
+  // sepet çekmecesinden okundu (free-shipping-bar "2,000.00TL").
+  'rfturkiye': {
+    fee: null,
+    freeOver: 2000,
+    applies: true,
+    note: '2.000 TL üzeri ücretsiz kargo · altında kargo ücreti ödeme adımında hesaplanır',
+  },
   // 2026-11-03: mintengo.com (IdeaSoft). 2.000 TL ve üzeri ücretsiz kargo.
   // Altında ücret sepette hesaplanır (sitede sabit tutar yayımlanmıyor).
   'mintengo': {

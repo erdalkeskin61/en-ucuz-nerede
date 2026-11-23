@@ -28,7 +28,7 @@ import { HIZLI_SITELER } from './basketOptimizer.js';
 // doğrudan yanıt verdiği için aday havuzu saniyeler içinde dolar.
 const ONCELIKLI_MAGAZALAR = [
   // --- Hızlı 3D / filament uzmanları (doğrudan HTTP) ---
-  'porima3d', 'filamentdepom', 'filamentmarketim', 'filamenthane', 'filamentsan',
+  'porima3d', 'rfturkiye', 'filamentdepom', 'filamentmarketim', 'filamenthane', 'filamentsan',
   'filamentvakti', 'teknikfilament3d', 'robotistan', 'robolinkmarket', 'robomer',
   '3dmarketim', '3dcim', 'samm', '3dortgen', '3dteknomarket', '3dultra', 'metatechtr',
   'makerfabrika', 'makerpazar', 'sermenkreatif', 'kirpilab', 'efilament',

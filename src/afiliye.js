@@ -72,6 +72,26 @@ export const AG_BILGILERI = {
     parametreIpucu: 'Ağın verdiği yönlendirme şablonu',
     sablonGerekli: true,
   },
+  admitad: {
+    ad: 'Admitad / Mitgo (MediaMarkt, n11, Koçtaş…)',
+    komisyon: '%1,5 – %8',
+    varsayilanParametre: '',
+    parametreIpucu: 'Ağın verdiği deeplink şablonu ({url})',
+    sablonGerekli: true,
+  },
+  impact: {
+    ad: 'Impact.com (Creality, Bambu Lab vb. markalar)',
+    komisyon: '%3 – %8',
+    varsayilanParametre: '',
+    parametreIpucu: 'Ağın verdiği yönlendirme şablonu ({url})',
+    sablonGerekli: true,
+  },
+  shopify_collabs: {
+    ad: 'Shopify Collabs (Doğrudan Shopify Mağazaları)',
+    komisyon: '%3 – %10 (mağaza bazlı)',
+    varsayilanParametre: '',
+    parametreIpucu: 'Ör. dt_id veya ref — mağaza bazlı şablon da eklenebilir',
+  },
 };
 
 const VARSAYILAN_AYARLAR = {
@@ -82,6 +102,9 @@ const VARSAYILAN_AYARLAR = {
     amazon: { etkin: false, parametre: 'tag', token: '', sablon: '' },
     gelirortaklari: { etkin: false, parametre: '', token: '', sablon: '' },
     reklamaction: { etkin: false, parametre: '', token: '', sablon: '' },
+    admitad: { etkin: false, parametre: '', token: '', sablon: '' },
+    impact: { etkin: false, parametre: '', token: '', sablon: '' },
+    shopify_collabs: { etkin: false, parametre: '', token: '', sablon: '' },
   },
   /** siteId → ağ kimliği (varsayılan eşlemenin üzerine yazar; niş siteler için). */
   siteAg: {},
@@ -199,8 +222,26 @@ function sablonUygula(sablon, url, token, hedefParametre) {
   if (!s) return null;
   let cikti = s.replaceAll('{token}', encodeURIComponent(token || ''));
 
+  // 0) Sorgu parametresi şablonu (?dt_id=... veya &ref=... — Shopify Collabs / UTM için):
+  //    Ürünün kendi adresini ve mevcut ?variant=... parametrelerini bozmadan eklenir.
+  if (/^[?&][^=]+=/.test(cikti)) {
+    try {
+      const u = new URL(url);
+      const ek = new URLSearchParams(cikti.replace(/^[?&]+/, ''));
+      for (const [k, v] of ek.entries()) {
+        if (k) u.searchParams.set(k, v);
+      }
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
+
   if (cikti.includes('{url}')) {
     return cikti.replaceAll('{url}', encodeURIComponent(url));
+  }
+  if (cikti.includes('{raw_url}')) {
+    return cikti.replaceAll('{raw_url}', url);
   }
 
   // Hedef parametresi verilmişse ürün adresini o parametreye ekle
@@ -290,9 +331,14 @@ export function afiliyeOzet(bilinenSiteler = null) {
   const a = afiliyeAyarlari();
   const bilinen = Array.isArray(bilinenSiteler) ? new Set(bilinenSiteler.map(s => String(s).toLowerCase())) : null;
 
-  /** Şablon "hazır" mı? {url} ya da hedef parametresi varsa ürün bazlı çalışır. */
+  /** Şablon "hazır" mı? {url}, {raw_url}, ?param=val ya da hedef parametresi varsa ürün bazlı çalışır. */
   const sablonHazir = (sablon, hedefParametre) =>
-    !!sablon && (String(sablon).includes('{url}') || !!String(hedefParametre || '').trim());
+    !!sablon && (
+      String(sablon).includes('{url}')
+      || String(sablon).includes('{raw_url}')
+      || /^[?&][^=]+=/.test(String(sablon).trim())
+      || !!String(hedefParametre || '').trim()
+    );
 
   const aglar = Object.entries(AG_BILGILERI).map(([id, bilgi]) => {
     const cfg = a.aglar[id] || {};
@@ -319,7 +365,9 @@ export function afiliyeOzet(bilinenSiteler = null) {
     hedefParametre: v.hedefParametre || '',
     tokenVar: !!v.token,
     // Dürüst bilgi: {url} ya da hedef parametresi yoksa bağlantı sabit teklif linkidir
-    sablonTipi: v.sablon.includes('{url}') ? 'urun' : (v.hedefParametre ? 'parametre' : 'teklif'),
+    sablonTipi: (v.sablon.includes('{url}') || v.sablon.includes('{raw_url}'))
+      ? 'urun'
+      : ((v.hedefParametre || /^[?&][^=]+=/.test(v.sablon)) ? 'parametre' : 'teklif'),
     // Adaptör kayıtlı değilse şablon hiç uygulanmaz → kullanıcı bilsin
     siteKayitli: bilinen ? bilinen.has(site) : null,
   }));
