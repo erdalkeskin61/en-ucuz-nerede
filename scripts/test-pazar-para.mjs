@@ -269,9 +269,14 @@ for (const yol of [
 
 const enAna = globalAracSayfasiBul('/en').olustur('https://baskihesap.tech');
 const jaAna = globalAracSayfasiBul('/ja').olustur('https://baskihesap.tech');
-kontrol('/en ve /ja ana sayfaları kendi market ve dil menüsünü içerir',
+kontrol('/en ve /ja ana sayfaları kendi market ve dil menüsünü ve TR tasarımını içerir',
   enAna.includes('market = "us"') && enAna.includes('/en/cost-calculator')
-  && jaAna.includes('market = "jp"') && jaAna.includes('/ja/cost-calculator'));
+  && jaAna.includes('market = "jp"') && jaAna.includes('/ja/cost-calculator')
+  && enAna.includes('class="hero"')
+  && enAna.includes('class="giris-kart hibrit-kart"')
+  && enAna.includes('class="arama-modu"')
+  && enAna.includes('class="stl-hizli"')
+  && enAna.includes('class="footer-siteler"'));
 
 for (const dosya of ['public/index.html', 'public/maliyet.html', 'public/slicer.html', 'public/sepet.html', 'public/ayarlar.html']) {
   const h = fs.readFileSync(dosya, 'utf8');

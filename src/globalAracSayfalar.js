@@ -717,37 +717,81 @@ const ANA_KOPYA = Object.freeze({
   en: {
     market: 'us',
     currency: 'USD',
-    title: 'Baski Hesap Global — 3D Printer Price Search, STL Cost Calculator &amp; Cura Plugin',
-    desc: 'Search live Creality Official Store (USD) prices, calculate STL/3MF print costs privately in your browser, and download our free UltiMaker Cura plugin.',
-    rozet: '🌍 Global US / English Hub · USD',
-    h1: 'Smart tools for <b>3D printing</b> makers &amp; workshops',
-    alt: 'Check live global 3D printer & filament prices, calculate part cost from STL/3MF files privately, or automate filament checks inside Cura.',
-    placeholder: 'Search Creality K3, K1C, Ender 3 V3, Hyper PLA or paste store.creality.com URL...',
-    araBtn: 'Check Price →',
-    ornekler: ['Creality K3', 'Creality K1C', 'Ender 3 V3 KE', 'Hyper PLA'],
+    title: 'Baski Hesap Global — Find the Real Lowest Price on 3D Printers &amp; Filaments',
+    desc: 'Compare live 3D printer, filament &amp; spare-part prices across US official manufacturers (USD), calculate STL/3MF costs locally, and use our free Cura plugin.',
+    rozet: '⚡ 3D Printing &amp; Makers · Live Stock &amp; Real Prices (USD)',
+    h1: 'Find the <b>real lowest price</b> on 3D printers &amp; filament',
+    alt: 'Not just list prices — we check live stock, shipping thresholds, and $/kg unit cost across verified US 3D printing manufacturers &amp; stores.',
+    statMagaza: 'stores scanned',
+    statBirim: '🧵 in-stock + $/kg unit price',
+    statEslesme: '🔍 model + color match',
+    modOto: '✨ Auto',
+    modLink: '🔗 Search by link',
+    modAd: '💬 Search by name',
+    placeholderOto: 'Paste a store link or type a product name… e.g. "Polymaker PLA", "Creality K1C"',
+    placeholderLink: 'Paste product URL from store.creality.com, us.polymaker.com, printedsolid.com…',
+    placeholderAd: 'Type product name… e.g. "Creality K1C", "Overture PLA"',
+    araBtn: 'Find Prices',
+    populerEtiket: 'Popular:',
+    ornekler: ['Polymaker PLA', 'Overture PLA', 'Creality K1C', 'Elegoo PLA'],
+    ipucu: '⚡ Paste any product link or type a name to compare live stock &amp; total price across US stores · Free browser STL calculator below.',
+    durumBaslik: 'Scanning regional stores…',
+    iptalBtn: '✕ Cancel',
+    ozetEnUcuz: 'Best Total Price',
+    stoktaLabel: '✅ In Stock',
+    tukendiLabel: '❌ Out of Stock',
+    fiyatYokLabel: 'Price on store',
+    stlBaslik: '🧩 Drop your 3D model, see <b>part cost</b>',
+    stlGizlilik: '🔒 Never leaves your device',
+    stlBirakAna: 'Drop an STL / 3MF file here',
+    stlBirakAlt: 'Instant local weight, volume &amp; filament estimate — zero server upload',
+    stlRozet: '⚡ Instant · Serverless',
+    stlDetay: '📊 Full profit, electricity &amp; depreciation calculator ➔',
     aracBaslik: 'Global Maker Toolkit',
     kartMaliyetBaslik: '🧮 STL / 3MF Cost Calculator',
-    kartMaliyetMetin: 'Calculate filament weight, electricity, machine wear and suggested selling price in USD/EUR/JPY — 100% locally in your browser.',
+    kartMaliyetMetin: 'Calculate filament weight, electricity, machine wear and suggested selling price in USD/EUR/JPY — 100% locally.',
     kartSlicerBaslik: '🧩 UltiMaker Cura &amp; Slicer Plugin',
     kartSlicerMetin: 'Automatically read filament usage right after slicing in Cura, OrcaSlicer, Bambu Studio or PrusaSlicer.',
     kartStoreBaslik: '🛒 Creality Official Store (US)',
     kartStoreMetin: 'Browse K3 Multi-Color, K1C, Ender 3 V3 series and official filaments directly on store.creality.com.',
-    araniyor: 'Scanning regional store...',
-    bulunamadi: 'No matching offer found for this query.',
+    araniyor: 'Scanning regional stores…',
+    bulunamadi: 'No in-stock matching offer found for this query right now. Try browsing the official store directly:',
     git: 'Visit Store ↗',
-    magazaListeBaslik: 'Supported stores in this region',
+    magazaListeBaslik: 'Compared stores in this region',
   },
   fr: {
     market: 'fr',
     currency: 'EUR',
-    title: 'Baski Hesap France — Prix Imprimantes 3D, Calculateur STL &amp; Plugin Cura',
-    desc: 'Vérifiez les prix officiels Creality France (EUR), calculez vos coûts d’impression 3D depuis un fichier STL/3MF et téléchargez notre extension Cura gratuite.',
-    rozet: '🇫🇷 Espace France / Europe · EUR (€)',
-    h1: 'Outils intelligents pour l’<b>impression 3D</b> et les ateliers',
-    alt: 'Consultez les prix Creality France en euros, estimez vos coûts de fabrication à partir de fichiers STL/3MF et installez le plugin Cura.',
-    placeholder: 'Rechercher Creality K1C, Ender 3 V3, buse ou coller une URL store.creality.com/fr...',
-    araBtn: 'Vérifier le prix →',
-    ornekler: ['Creality K1C', 'Ender 3 V3', 'Unicorn Nozzle', 'PEI Plate'],
+    title: 'Baski Hesap France — Trouvez le Vrai Meilleur Prix Imprimantes 3D &amp; Filaments',
+    desc: 'Comparez en direct les prix TTC en euros (€) chez les fabricants et boutiques françaises (Creality FR, Arianeplast, Francofil, Atome3D, Makershop, Polyfab3D).',
+    rozet: '⚡ Impression 3D &amp; Makers · Stock en direct &amp; prix réels (EUR)',
+    h1: 'Trouvez le <b>vrai meilleur prix</b> imprimante 3D &amp; filament',
+    alt: 'Plus que le prix affiché — nous comparons stock réel, frais de port et coût au €/kg chez les fabricants et distributeurs français.',
+    statMagaza: 'boutiques analysées',
+    statBirim: '🧵 en stock + prix €/kg',
+    statEslesme: '🔍 modèle + couleur',
+    modOto: '✨ Automatique',
+    modLink: '🔗 Par lien',
+    modAd: '💬 Par nom de produit',
+    placeholderOto: 'Collez un lien ou tapez un produit… ex. "Creality K1C", "Polymaker PLA", "Arianeplast"',
+    placeholderLink: 'Collez l’URL d’un produit (store.creality.com/fr, makershop.fr, arianeplast.com…)',
+    placeholderAd: 'Tapez un modèle… ex. "Creality K1C", "PLA Noir 1kg", "Francofil"',
+    araBtn: 'Trouver les prix',
+    populerEtiket: 'Populaires :',
+    ornekler: ['Creality K1C', 'Polymaker PLA', 'Arianeplast PLA', 'Francofil PLA'],
+    ipucu: '⚡ Collez un lien ou saisissez un nom pour comparer le stock et le prix total en France · Calculateur STL 100 % local ci-dessous.',
+    durumBaslik: 'Analyse des boutiques françaises…',
+    iptalBtn: '✕ Annuler',
+    ozetEnUcuz: 'Meilleur Prix Total',
+    stoktaLabel: '✅ En stock',
+    tukendiLabel: '❌ Rupture',
+    fiyatYokLabel: 'Voir boutique',
+    stlBaslik: '🧩 Déposez votre modèle 3D, voyez le <b>coût réel</b>',
+    stlGizlilik: '🔒 Reste sur votre appareil',
+    stlBirakAna: 'Glissez un fichier STL / 3MF ici',
+    stlBirakAlt: 'Estimation locale instantanée du poids, du volume et du coût matière sans envoi serveur',
+    stlRozet: '⚡ Instantané · Local',
+    stlDetay: '📊 Calculateur complet électricité, usure &amp; marge (€) ➔',
     aracBaslik: 'Outils Gratuits Impression 3D',
     kartMaliyetBaslik: '🧮 Calculateur de Coût STL / 3MF',
     kartMaliyetMetin: 'Calculez poids, électricité, amortissement et prix de vente en € — 100 % local dans votre navigateur.',
@@ -755,22 +799,44 @@ const ANA_KOPYA = Object.freeze({
     kartSlicerMetin: 'Obtenez la consommation exacte dès le tranchage sur Cura, OrcaSlicer, Bambu Studio ou PrusaSlicer.',
     kartStoreBaslik: '🛒 Boutique Officielle Creality FR',
     kartStoreMetin: 'Découvrez les imprimantes, plateaux PEI, buses et filaments sur store.creality.com/fr.',
-    araniyor: 'Analyse en cours...',
-    bulunamadi: 'Aucune offre correspondante trouvée.',
+    araniyor: 'Analyse en cours…',
+    bulunamadi: 'Aucune offre correspondante en stock pour le moment. Consultez la boutique officielle :',
     git: 'Voir l’offre ↗',
-    magazaListeBaslik: 'Boutiques suivies dans cette région',
+    magazaListeBaslik: 'Boutiques comparées dans cette région',
   },
   ja: {
     market: 'jp',
     currency: 'JPY',
-    title: 'Baski Hesap 日本 — 3Dプリンター価格チェック・STL原価計算・Curaプラグイン',
-    desc: 'Creality公式ストア（日本・円建て）のリアルタイム価格確認、STL/3MF原価シミュレーター、UltiMaker Cura連携プラグインを無料で提供。',
-    rozet: '🇯🇵 日本マーケット / 日本語 · JPY (¥)',
-    h1: '3Dプリント造形のための<b>原価計算・価格チェック</b>ハブ',
-    alt: 'Creality公式ストアの最新価格（¥）検索、ブラウザ完結のSTL/3MF重量・原価計算、Curaスライサープラグインをすぐにお使いいただけます。',
-    placeholder: 'Creality K1C, Ender 3 V3, ノズル 等を入力、または store.creality.com/jp URL を貼付...',
-    araBtn: '価格を確認 →',
-    ornekler: ['K1C', 'Ender 3 V3', 'Unicorn', 'PLA'],
+    title: 'Baski Hesap 日本 — 3Dプリンター＆フィラメント実質最安値比較',
+    desc: '日本国内の3Dプリンター・フィラメント専門店（Creality公式、SK本舗、サンステラ、ELEGOO JP等）の在庫と円建て（¥）価格を一括比較。',
+    rozet: '⚡ 3Dプリント最安値比較 · リアルタイム在庫＆実質価格 (JPY)',
+    h1: '3Dプリンター・フィラメントの<b>実質最安値</b>を比較',
+    alt: '表示価格だけでなく在庫状況や¥/kg単価までチェック。日本国内の公式ストア・専門店をリアルタイムに比較します。',
+    statMagaza: 'ストアを検索',
+    statBirim: '🧵 在庫あり + ¥/kg 単価',
+    statEslesme: '🔍 型番 + カラー一致',
+    modOto: '✨ 自動判定',
+    modLink: '🔗 URLで検索',
+    modAd: '💬 商品名で検索',
+    placeholderOto: '商品URLを貼り付け、または商品名を入力… 例: "Creality K1C", "ELEGOO PETG"',
+    placeholderLink: 'store.creality.com/jp、skhonpo.com、sunstella.co.jp 等の商品URLを入力',
+    placeholderAd: '商品名を入力… 例: "Creality K1C", "PLA フィラメント"',
+    araBtn: '最安値を検索',
+    populerEtiket: '人気検索:',
+    ornekler: ['Creality K1C', 'ELEGOO PETG', 'Bambu Lab', 'PLA フィラメント'],
+    ipucu: '⚡ URLまたは商品名を入力して日本国内ストアの在庫・価格を比較。下のボックスでSTL/3MFの重量・原価もすぐ計算できます。',
+    durumBaslik: '国内ストアを検索中…',
+    iptalBtn: '✕ 中止',
+    ozetEnUcuz: '実質最安値',
+    stoktaLabel: '✅ 在庫あり',
+    tukendiLabel: '❌ 在庫切れ',
+    fiyatYokLabel: 'ショップで確認',
+    stlBaslik: '🧩 3Dモデルをドロップして<b>印刷コスト</b>を試算',
+    stlGizlilik: '🔒 端末内で完結（アップロードなし）',
+    stlBirakAna: 'STL / 3MF ファイルをここにドロップ',
+    stlBirakAlt: 'ブラウザ上で瞬時に体積・重量・フィラメント消費量を計算します',
+    stlRozet: '⚡ 即時計算 · ローカル',
+    stlDetay: '📊 電気代・償却費・利益率を含む詳細原価計算 ➔',
     aracBaslik: '無料3Dプリントツール',
     kartMaliyetBaslik: '🧮 STL / 3MF 原価シミュレーター',
     kartMaliyetMetin: 'STL/3MFを読み込んでフィラメント代・電気代・償却費・推奨販売価格を円（¥）で即時計算します。',
@@ -778,10 +844,10 @@ const ANA_KOPYA = Object.freeze({
     kartSlicerMetin: 'Cura、OrcaSlicer、Bambu Studio等でのスライス直後に使用グラム数を自動取得します。',
     kartStoreBaslik: '🛒 Creality 公式ストア（日本）',
     kartStoreMetin: 'store.creality.com/jp で3Dプリンター本体や純正ノズル・フィラメントを確認。',
-    araniyor: '公式ストアを確認中...',
-    bulunamadi: '該当する商品が見つかりませんでした。',
+    araniyor: 'ストアを確認中…',
+    bulunamadi: '現在一致する在庫オファーが見つかりませんでした。公式ストアをご確認ください:',
     git: 'ショップへ ↗',
-    magazaListeBaslik: 'この地域の対応ストア',
+    magazaListeBaslik: 'この地域の比較対象ストア',
   },
 });
 
@@ -793,6 +859,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   const bolgeMagazalari = kod === 'fr'
     ? [...adaptersByMarket('fr'), ...adaptersByMarket('eu')]
     : adaptersByMarket(c.market);
+  const taramaMagazalari = adaptersByMarket(c.market);
 
   const extraMeta = [
     hreflangEtiketleri(tabanUrl, ANA_YOL_HARITASI),
@@ -800,25 +867,91 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   ].join('\n  ');
 
   const govdeHtml = `
-    <section class="hero seo-hero" style="margin-bottom:22px">
+    <section class="hero">
       <div class="hero-ic">
         <span class="hero-rozet">${c.rozet}</span>
         <h1>${c.h1}</h1>
         <p>${c.alt}</p>
-        <form id="globalAraForm" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
-          <input id="globalAraInput" type="search" placeholder="${htmlKacis(c.placeholder)}"
-                 style="flex:1;min-width:220px;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);font:inherit;font-size:14.5px;background:#fff;color:#0f172a" />
-          <button type="submit" class="seo-cta" style="border:none;cursor:pointer">${c.araBtn}</button>
-        </form>
-        <div class="seo-ic-linkler" style="margin-top:10px">
-          ${c.ornekler.map(o => `<button type="button" class="seo-ic-link global-ornek-btn" data-q="${htmlKacis(o)}" style="cursor:pointer">${htmlKacis(o)}</button>`).join('')}
+        <div class="hero-istatistik">
+          <span><b>${taramaMagazalari.length}</b> ${c.statMagaza}</span>
+          <span>${c.statBirim}</span>
+          <span>${c.statEslesme}</span>
         </div>
       </div>
     </section>
 
-    <div id="globalSonucAlani" class="seo-kart" hidden></div>
+    <section class="giris-kart hibrit-kart">
+      <div class="arama-modu" role="tablist">
+        <button type="button" class="mod-secim aktif" data-gmod="oto" role="tab" aria-selected="true">${c.modOto}</button>
+        <button type="button" class="mod-secim" data-gmod="link" role="tab" aria-selected="false">${c.modLink}</button>
+        <button type="button" class="mod-secim" data-gmod="ad" role="tab" aria-selected="false">${c.modAd}</button>
+      </div>
 
-    <section class="seo-kart">
+      <div class="hibrit-sarmal">
+        <form id="globalAraForm" class="hibrit-form" role="search" autocomplete="off">
+          <span class="hibrit-ikon" aria-hidden="true">🔎</span>
+          <input id="globalAraInput" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="${htmlKacis(c.placeholderOto)}" />
+          <button type="submit" id="globalAraBtn">${c.araBtn}</button>
+        </form>
+      </div>
+
+      <div class="hizli-arama">
+        <span class="hizli-etiket">${c.populerEtiket}</span>
+        ${c.ornekler.map(o => `<button type="button" class="hizli-cip global-ornek-btn" data-q="${htmlKacis(o)}">${htmlKacis(o)}</button>`).join('')}
+      </div>
+
+      <p class="hibrit-ipucu">${c.ipucu}</p>
+      <div id="globalHata" class="hata-kutusu" hidden></div>
+    </section>
+
+    <section id="globalDurumAlani" hidden>
+      <div class="durum-baslik-satiri">
+        <h2 class="bolum-baslik" id="globalDurumBaslik">${c.durumBaslik}</h2>
+        <button type="button" id="globalIptalBtn" class="iptal-btn">${c.iptalBtn}</button>
+      </div>
+      <div class="tarama-ozet">
+        <div class="tarama-bar"><div class="tarama-dolgu" id="globalDolgu" style="width:12%"></div></div>
+        <span id="globalTaramaSayac" class="tarama-sayac"></span>
+      </div>
+      <div id="globalSiteCipler" class="cip-satiri"></div>
+    </section>
+
+    <section id="globalSonucAlani" hidden>
+      <div id="globalOzet" class="ozet" hidden></div>
+      <div id="globalKartlar" class="kartlar"></div>
+    </section>
+
+    <section class="stl-hizli" aria-labelledby="gStlBaslik">
+      <div class="stl-hizli-ust">
+        <h2 id="gStlBaslik" class="stl-hizli-baslik">${c.stlBaslik}</h2>
+        <span class="stl-hizli-gizlilik">${c.stlGizlilik}</span>
+      </div>
+      <div id="gMiniStlBirak" class="stl-hizli-birak" role="button" tabindex="0">
+        <input type="file" id="gMiniStlDosya" accept=".stl,.3mf,model/stl,model/3mf" hidden />
+        <span class="stl-hizli-ikon" aria-hidden="true">📥</span>
+        <span class="stl-hizli-metin">
+          <b>${c.stlBirakAna}</b>
+          <span class="stl-hizli-alt">${c.stlBirakAlt}</span>
+        </span>
+        <span class="stl-hizli-rozet">${c.stlRozet}</span>
+      </div>
+      <p class="stl-hizli-durum" id="gMiniStlDurum" role="status" aria-live="polite"></p>
+      <div class="stl-hizli-sonuc" id="gMiniStlSonuc" hidden>
+        <div class="stl-hizli-sonuc-ust">
+          <span id="gMiniStlAd" class="stl-hizli-dosya">—</span>
+          <button type="button" class="stl-hizli-kapat" id="gMiniStlKapat" aria-label="Close">✕</button>
+        </div>
+        <div class="stl-hizli-metrikler" style="margin-bottom:10px">
+          <span><b id="gMiniBoyut">—</b><small>mm</small></span>
+          <span><b id="gMiniHacim">—</b><small>cm³</small></span>
+          <span class="vurgu"><b id="gMiniGram">—</b><small>PLA (20%)</small></span>
+        </div>
+        <a class="stl-hizli-detay" href="${htmlKacis(GLOBAL_MALIYET_YOLLARI[kod])}">${c.stlDetay}</a>
+      </div>
+    </section>
+
+    <section class="seo-kart" style="margin-top:22px">
       <h2 style="margin-top:0">${c.aracBaslik}</h2>
       <div class="rehber-izgara">
         <a class="rehber-kart" href="${htmlKacis(GLOBAL_MALIYET_YOLLARI[kod])}">
@@ -837,63 +970,221 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
           <span class="rehber-cta">${c.git}</span>
         </a>
       </div>
-      <div class="seo-ic-linkler" style="margin-top:16px">
-        <span style="font-size:12.5px;color:var(--gri-metin);align-self:center">${c.magazaListeBaslik} (${bolgeMagazalari.length}):</span>
-        ${bolgeMagazalari.map(m => `<span class="seo-ic-link">${htmlKacis(m.name)}</span>`).join('')}
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cizgi)">
+        <p class="footer-siteler-baslik" style="margin:0 0 8px">${c.magazaListeBaslik} (${bolgeMagazalari.length}):</p>
+        <ul class="footer-siteler" style="margin:0">
+          ${bolgeMagazalari.map(m => `<li>${htmlKacis(m.name)}</li>`).join('')}
+        </ul>
       </div>
     </section>
+
+    <script type="module">
+      import { stlOku, hesaplaGramaj } from '/stlParser.js';
+      const miniDrop = document.getElementById('gMiniStlBirak');
+      const miniInp = document.getElementById('gMiniStlDosya');
+      const miniDurum = document.getElementById('gMiniStlDurum');
+      const miniSonuc = document.getElementById('gMiniStlSonuc');
+      const miniOku = async (f) => {
+        if (!f) return;
+        try {
+          if (miniDurum) miniDurum.textContent = '...';
+          const buf = await f.arrayBuffer();
+          const m = stlOku(buf, f.name);
+          const g = Math.max(1, Math.round(hesaplaGramaj(m.hacimCm3, { doluluk: 20, malzeme: 'PLA' })));
+          document.getElementById('gMiniStlAd').textContent = f.name;
+          document.getElementById('gMiniBoyut').textContent = m.boyutlar.genislik.toFixed(1) + ' × ' + m.boyutlar.derinlik.toFixed(1) + ' × ' + m.boyutlar.yukseklik.toFixed(1);
+          document.getElementById('gMiniHacim').textContent = m.hacimCm3.toFixed(2);
+          document.getElementById('gMiniGram').textContent = g + ' g';
+          if (miniDurum) miniDurum.textContent = '';
+          if (miniSonuc) miniSonuc.hidden = false;
+        } catch (err) {
+          if (miniDurum) miniDurum.textContent = err?.message || 'Error';
+        }
+      };
+      miniDrop?.addEventListener('click', () => miniInp?.click());
+      miniDrop?.addEventListener('dragover', (e) => { e.preventDefault(); miniDrop.classList.add('surukle'); });
+      miniDrop?.addEventListener('dragleave', () => miniDrop.classList.remove('surukle'));
+      miniDrop?.addEventListener('drop', (e) => { e.preventDefault(); miniDrop.classList.remove('surukle'); miniOku(e.dataTransfer?.files?.[0]); });
+      miniInp?.addEventListener('change', () => miniOku(miniInp.files?.[0]));
+      document.getElementById('gMiniStlKapat')?.addEventListener('click', () => { if (miniSonuc) miniSonuc.hidden = true; });
+    </script>
 
     <script>
       (function () {
         var form = document.getElementById('globalAraForm');
         var inp = document.getElementById('globalAraInput');
-        var alan = document.getElementById('globalSonucAlani');
+        var hataEl = document.getElementById('globalHata');
+        var durumAlani = document.getElementById('globalDurumAlani');
+        var durumBaslik = document.getElementById('globalDurumBaslik');
+        var dolgu = document.getElementById('globalDolgu');
+        var sayac = document.getElementById('globalTaramaSayac');
+        var cipler = document.getElementById('globalSiteCipler');
+        var iptalBtn = document.getElementById('globalIptalBtn');
+        var sonucAlani = document.getElementById('globalSonucAlani');
+        var ozetEl = document.getElementById('globalOzet');
+        var kartlarEl = document.getElementById('globalKartlar');
+
         var market = ${JSON.stringify(c.market)};
         var cur = ${JSON.stringify(c.currency)};
+        var magazaListesi = ${JSON.stringify(taramaMagazalari.map(m => ({ id: m.id, ad: m.name })))};
+        var placeholders = {
+          oto: ${JSON.stringify(c.placeholderOto)},
+          link: ${JSON.stringify(c.placeholderLink)},
+          ad: ${JSON.stringify(c.placeholderAd)},
+        };
+        var aktifJobId = null;
         var timer = null;
-        if (!form || !inp || !alan) return;
+        if (!form || !inp || !sonucAlani) return;
+
+        document.querySelectorAll('[data-gmod]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            document.querySelectorAll('[data-gmod]').forEach(function (x) {
+              x.classList.remove('aktif');
+              x.setAttribute('aria-selected', 'false');
+            });
+            btn.classList.add('aktif');
+            btn.setAttribute('aria-selected', 'true');
+            var m = btn.dataset.gmod || 'oto';
+            if (placeholders[m]) inp.placeholder = placeholders[m];
+          });
+        });
 
         function esc(s) {
           return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
           });
         }
-        function fmt(n) {
-          return typeof window.formatPara === 'function' ? window.formatPara(n, cur) : (n + ' ' + cur);
+        function fmt(n, cKod) {
+          var k = cKod || cur;
+          return typeof window.formatPara === 'function' ? window.formatPara(n, k) : (n + ' ' + k);
         }
+        function toplamFiyat(x) {
+          var p = x && x.product;
+          if (!p) return null;
+          if (p.pricing && p.pricing.toplam != null) return Number(p.pricing.toplam);
+          return p.sellingPrice != null ? Number(p.sellingPrice) : null;
+        }
+        function cizIlerleme(progress) {
+          if (!cipler) return;
+          var prog = progress || {};
+          var biten = 0;
+          cipler.innerHTML = magazaListesi.map(function (m) {
+            var p = prog[m.id];
+            var st = p ? p.status : 'waiting';
+            if (st && st !== 'running' && st !== 'waiting') biten++;
+            var cls = st === 'found' ? 'ok' : (st === 'running' ? 'run' : (st === 'error' ? 'err' : ''));
+            return '<span class="cip ' + cls + '">' + esc(m.ad) + '</span>';
+          }).join('');
+          var yuzde = magazaListesi.length ? Math.min(100, Math.max(12, Math.round((biten / magazaListesi.length) * 100))) : 25;
+          if (dolgu) dolgu.style.width = yuzde + '%';
+          if (sayac) sayac.textContent = biten + ' / ' + magazaListesi.length;
+        }
+        function cizSonuclar(res, devamEdiyor) {
+          var ham = Array.isArray(res && res.sonuclar) ? res.sonuclar : [];
+          var bulunanlar = ham.filter(function (x) { return x && x.status === 'found' && x.product && toplamFiyat(x) > 0; });
+          if (!bulunanlar.length) {
+            if (!devamEdiyor) {
+              sonucAlani.hidden = false;
+              ozetEl.hidden = true;
+              kartlarEl.innerHTML = '<div class="kart"><div class="kart-ic" style="grid-template-columns:1fr"><div class="kart-govde"><p style="margin:0 0 12px">' + esc(${JSON.stringify(c.bulunamadi)}) + '</p><a class="kart-cta" href="' + esc(${JSON.stringify(cr.storeUrl)}) + '" target="_blank" rel="noopener sponsored nofollow">' + esc(${JSON.stringify(c.kartStoreBaslik)}) + ' ↗</a></div></div></div>';
+            }
+            return;
+          }
+          bulunanlar.sort(function (a, b) {
+            var as = a.product.inStock !== false ? 0 : 1;
+            var bs = b.product.inStock !== false ? 0 : 1;
+            if (as !== bs) return as - bs;
+            return (toplamFiyat(a) || Infinity) - (toplamFiyat(b) || Infinity);
+          });
+          sonucAlani.hidden = false;
+          var enIyi = bulunanlar.find(function (x) { return x.product.inStock !== false; }) || bulunanlar[0];
+          var enIyiTutar = toplamFiyat(enIyi);
+          var enIyiPara = enIyi.product.currency || cur;
+          ozetEl.hidden = false;
+          ozetEl.innerHTML = '<div><div class="ozet-alt">' + esc(${JSON.stringify(c.ozetEnUcuz)}) + ' · ' + esc(enIyi.siteName || enIyi.site) + '</div><div style="font-size:20px;font-weight:800;margin-top:4px">' + esc(enIyi.product.title) + '</div></div><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><strong style="font-size:28px">' + esc(fmt(enIyiTutar, enIyiPara)) + '</strong><a class="kart-cta" href="' + esc(enIyi.product.afiliyeUrl || enIyi.product.url) + '" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="' + esc(enIyi.site) + '">' + esc(${JSON.stringify(c.git)}) + '</a></div>';
+
+          kartlarEl.innerHTML = bulunanlar.map(function (x, idx) {
+            var p = x.product;
+            var f = toplamFiyat(x);
+            var pKod = p.currency || cur;
+            var stoklu = p.inStock !== false;
+            var kargoNot = p.shipping && p.shipping.note ? '<div class="kart-kargo">' + esc(p.shipping.note) + '</div>' : '';
+            var imgHtml = p.image ? '<img class="kart-resim" src="' + esc(p.image) + '" alt="' + esc(p.title) + '" loading="lazy" />' : '<div class="kart-resim" style="display:grid;place-items:center;font-size:24px">🧵</div>';
+            return '<article class="kart' + (idx === 0 && stoklu ? ' en-ucuz' : '') + '"><div class="kart-ic">'
+              + imgHtml
+              + '<div class="kart-govde">'
+              + '<div class="kart-ust"><span class="kart-site">' + esc(x.siteName || x.site) + '</span>'
+              + '<span class="kart-rozet">' + esc(stoklu ? ${JSON.stringify(c.stoktaLabel)} : ${JSON.stringify(c.tukendiLabel)}) + '</span></div>'
+              + '<h3 class="kart-baslik">' + esc(p.title) + '</h3>'
+              + kargoNot
+              + '</div>'
+              + '<div class="kart-sag"><div class="kart-fiyat">' + esc(f != null ? fmt(f, pKod) : ${JSON.stringify(c.fiyatYokLabel)}) + '</div>'
+              + '<a class="kart-cta" href="' + esc(p.afiliyeUrl || p.url) + '" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="' + esc(x.site) + '">' + esc(${JSON.stringify(c.git)}) + '</a>'
+              + '</div></div></article>';
+          }).join('');
+        }
+
+        function temizleZamanlayici() {
+          if (timer) { clearTimeout(timer); timer = null; }
+        }
+
+        iptalBtn?.addEventListener('click', function () {
+          temizleZamanlayici();
+          if (aktifJobId) {
+            fetch('/api/compare/' + encodeURIComponent(aktifJobId) + '/cancel', { method: 'POST' }).catch(function () {});
+          }
+          durumAlani.hidden = true;
+        });
+
         function baslat(deger) {
           var q = String(deger || '').trim();
           if (q.length < 2) return;
-          if (timer) clearTimeout(timer);
-          alan.hidden = false;
-          alan.innerHTML = '<p style="margin:0">' + esc(${JSON.stringify(c.araniyor)}) + '</p>';
+          temizleZamanlayici();
+          if (hataEl) hataEl.hidden = true;
+          durumAlani.hidden = false;
+          if (durumBaslik) durumBaslik.textContent = ${JSON.stringify(c.durumBaslik)};
+          cizIlerleme({});
+          sonucAlani.hidden = true;
+          ozetEl.hidden = true;
+          kartlarEl.innerHTML = '';
+
           var isUrl = /^https?:\\/\\//i.test(q);
           fetch('/api/compare', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(isUrl ? { url: q, market: market } : { query: q, market: market }),
           }).then(function (r) { return r.json(); }).then(function (d) {
-            if (!d || !d.id) { alan.innerHTML = '<p>' + esc(d?.error || ${JSON.stringify(c.bulunamadi)}) + '</p>'; return; }
+            if (!d || !d.id) {
+              durumAlani.hidden = true;
+              if (hataEl) { hataEl.hidden = false; hataEl.textContent = d?.error || ${JSON.stringify(c.bulunamadi)}; }
+              return;
+            }
+            aktifJobId = d.id;
+            if (d.sonuc && Array.isArray(d.sonuc.sonuclar)) {
+              cizSonuclar(d.sonuc, true);
+            }
             var yokla = function () {
               fetch('/api/compare/' + encodeURIComponent(d.id)).then(function (r) { return r.json(); }).then(function (j) {
+                if (j.progress) cizIlerleme(j.progress);
+                if (Array.isArray(j.partialResults) && j.partialResults.length && j.status !== 'done') {
+                  cizSonuclar({ sonuclar: j.partialResults }, true);
+                }
                 if (j.status === 'done') {
-                  var res = j.result || {};
-                  var bulunlar = (res.sonuclar || []).filter(function (x) { return x.status === 'found' && x.product; });
-                  if (!bulunlar.length) { alan.innerHTML = '<p>' + esc(${JSON.stringify(c.bulunamadi)}) + '</p>'; return; }
-                  alan.innerHTML = bulunlar.map(function (x) {
-                    var p = x.product;
-                    var tutar = (p.pricing && p.pricing.toplam != null) ? p.pricing.toplam : p.sellingPrice;
-                    return '<div class="seo-fiyat-kutu" style="justify-content:space-between"><div><div style="font-weight:800">' + esc(p.title) + '</div><div style="font-size:13px;color:var(--gri-metin)">' + esc(x.siteName || x.site) + '</div></div><div style="display:flex;align-items:center;gap:12px"><b class="seo-fiyat-ana" style="font-size:22px">' + esc(fmt(tutar)) + '</b><a class="seo-cta" href="' + esc(p.afiliyeUrl || p.url) + '" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="' + esc(x.site) + '">' + esc(${JSON.stringify(c.git)}) + '</a></div></div>';
-                  }).join('');
+                  durumAlani.hidden = true;
+                  cizSonuclar(j.result || { sonuclar: j.partialResults || [] }, false);
                 } else if (j.status === 'error') {
-                  alan.innerHTML = '<p>' + esc(j.error || ${JSON.stringify(c.bulunamadi)}) + '</p>';
+                  durumAlani.hidden = true;
+                  cizSonuclar({ sonuclar: j.partialResults || [] }, false);
                 } else {
                   timer = setTimeout(yokla, 750);
                 }
               }).catch(function () { timer = setTimeout(yokla, 1000); });
             };
             yokla();
-          }).catch(function () { alan.innerHTML = '<p>' + esc(${JSON.stringify(c.bulunamadi)}) + '</p>'; });
+          }).catch(function () {
+            durumAlani.hidden = true;
+            cizSonuclar({ sonuclar: [] }, false);
+          });
         }
 
         form.addEventListener('submit', function (e) { e.preventDefault(); baslat(inp.value); });
@@ -914,6 +1205,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
     aktifNav: 'karsilastir',
     dil: kod,
     dilYolHaritasi: ANA_YOL_HARITASI,
+    anaKapsam: true,
   });
 }
 

@@ -503,12 +503,12 @@ const AKSESUAR_KELIMELERI = [
   'bltouch', 'crtouch', 'cr touch', 'sensor', 'sensoru', 'prob', 'probu', 'filament sensoru',
   'fan', 'fani', 'fanlari', 'salyangoz fan', 'radyal fan', 'aksiyel fan', 'sogutucu blok', 'heatsink',
   // İngilizce yedek parça / aksesuar terimleri
-  'spare part', 'spare parts', 'replacement', 'nozzles', 'hot end', 'build plate', 'pei sheet',
+  'spare', 'spare part', 'spare parts', 'hardware kit', 'repair kit', 'replacement', 'nozzles', 'hot end', 'build plate', 'pei sheet',
   'magnetic plate', 'magnetic sheet', 'heatbed', 'heated bed', 'heater cartridge', 'heating block',
   'silicone sock', 'silicone cover', 'ptfe tube', 'bowden tube', 'timing belt', 'stepper motor',
   'touchscreen', 'touch screen', 'ribbon cable', 'extruder gear', 'cooling fan', 'blower fan',
   'leveling sensor', 'proximity sensor', 'filament sensor', 'runout sensor', 'nozzle kit',
-  'extruder kit', 'spare parts kit', 'enclosure',
+  'extruder kit', 'spare parts kit', 'enclosure', 'front door', 'door kit', 'accessories hub',
   // Fransızca yedek parça / aksesuar terimleri
   'buse', 'buses', 'plateau', 'plateau pei', 'plateau magnetique', 'plaque pei', 'lit chauffant',
   'tete d impression', 'tete impression', 'corps de chauffe', 'bloc chauffant', 'thermistance',

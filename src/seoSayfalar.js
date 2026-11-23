@@ -826,7 +826,7 @@ export const FOOTER_HUB_HTML = `
         </div>
       </nav>`;
 
-export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr', dilYolHaritasi = null }) {
+export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr', dilYolHaritasi = null, anaKapsam = false }) {
   const sz = sozlukGetir(dil);
   const kokYol = sz.meta.dil === 'tr' ? '/' : `/${sz.meta.dil}`;
   const safeTitle = htmlKacis(title);
@@ -1059,7 +1059,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     </div>
   </header>
 
-  <main class="seo-kapsam">
+  <main class="${anaKapsam ? 'kap' : 'seo-kapsam'}">
     ${govdeHtml}
   </main>
 

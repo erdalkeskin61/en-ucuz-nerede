@@ -13,7 +13,7 @@
  */
 import { fetchPage } from '../scraper.js';
 import { afiliyeLink } from '../afiliye.js';
-import { decodeEntities, dominantColor, fiyatCikar, paraBirimiNormalize } from '../util.js';
+import { decodeEntities, dominantColor, fiyatCikar, paraBirimiNormalize, parcaMi } from '../util.js';
 import { kargoCikar } from '../kargo.js';
 
 const CREALITY_BASE = 'https://store.creality.com';
@@ -105,7 +105,7 @@ export function crealityAramaKartlariCikar(html, yolOnEk = '', currency = 'USD')
       brand: 'Creality',
       currency,
     });
-    if (sonuclar.length >= 12) break;
+    if (sonuclar.length >= 24) break;
   }
 
   // Yedek: `.product-item` yapısı değişirse `<main>` içindeki ürün linklerini al (header/promo hariç).
@@ -129,11 +129,62 @@ export function crealityAramaKartlariCikar(html, yolOnEk = '', currency = 'USD')
         brand: 'Creality',
         currency,
       });
-      if (sonuclar.length >= 12) break;
+      if (sonuclar.length >= 24) break;
     }
   }
 
   return sonuclar;
+}
+
+const _sitemapOnbellek = new Map();
+const SITEMAP_TTL_MS = 30 * 60 * 1000;
+
+async function crealitySitemapAra(onEk, query, currency, siteId, ctx) {
+  const anahtar = onEk || 'us';
+  let kayit = _sitemapOnbellek.get(anahtar);
+  if (!kayit || (Date.now() - kayit.ts) > SITEMAP_TTL_MS) {
+    try {
+      const r = await fetchPage(`${CREALITY_BASE}${onEk}/sitemap_products.xml`, { site: siteId, purpose: 'arama' });
+      ctx.spend += r.requestsSpent;
+      const urunler = [];
+      for (const m of String(r.body || '').matchAll(/<loc>\s*(https:\/\/store\.creality\.com[^<\s]*\/products\/([^<?#/\s]+))\s*<\/loc>/gi)) {
+        const url = m[1].trim();
+        const slug = decodeURIComponent(m[2]).replace(/[-_]+/g, ' ').trim();
+        const title = slug.toLowerCase().includes('creality') ? slug : `Creality ${slug}`;
+        urunler.push({ url, slug: slug.toLowerCase(), title });
+      }
+      kayit = { ts: Date.now(), urunler };
+      _sitemapOnbellek.set(anahtar, kayit);
+    } catch {
+      kayit = { ts: Date.now(), urunler: [] };
+    }
+  }
+  const kelimeler = String(query || '').toLowerCase().split(/\s+/).filter(w => w.length >= 2 && w !== 'creality');
+  if (!kelimeler.length) return [];
+  const sorguParca = parcaMi(query);
+  return kayit.urunler
+    .filter(u => kelimeler.every(w => u.slug.includes(w)))
+    .sort((a, b) => {
+      // Yazıcı/ana ürün sorgusunda aksesuarları alta at, ana ürün slug'larını öne al.
+      if (!sorguParca) {
+        const ap = parcaMi(a.title) ? 1 : 0;
+        const bp = parcaMi(b.title) ? 1 : 0;
+        if (ap !== bp) return ap - bp;
+      }
+      const ay = /\b(3d printer|imprimante 3d)\b/i.test(a.title) ? 0 : 1;
+      const by = /\b(3d printer|imprimante 3d)\b/i.test(b.title) ? 0 : 1;
+      if (ay !== by) return ay - by;
+      return a.slug.length - b.slug.length;
+    })
+    .slice(0, 12)
+    .map(u => ({
+      title: u.title,
+      url: u.url,
+      afiliyeUrl: afiliyeLink('creality', u.url),
+      price: null,
+      brand: 'Creality',
+      currency,
+    }));
 }
 
 /** HTML içindeki Creality ürün JSON-LD verisinden standart ürün nesnesi üretir. */
@@ -217,7 +268,16 @@ export function crealityGlobalSite(cfg) {
       const hedef = this.searchUrl(query);
       const r = await fetchPage(hedef, { site: this.id, purpose: 'arama' });
       ctx.spend += r.requestsSpent;
-      return crealityAramaKartlariCikar(r.body, onEk, cfg.currency);
+      const htmlAdaylar = crealityAramaKartlariCikar(r.body, onEk, cfg.currency);
+      const sitemapAdaylar = await crealitySitemapAra(onEk, query, cfg.currency, this.id, ctx);
+      const birlesik = [];
+      const goruldu = new Set();
+      for (const a of [...sitemapAdaylar, ...htmlAdaylar]) {
+        if (!a?.url || goruldu.has(a.url)) continue;
+        goruldu.add(a.url);
+        birlesik.push(a);
+      }
+      return birlesik.slice(0, 24);
     },
 
     async getProduct(url, ctx, opts = {}) {
