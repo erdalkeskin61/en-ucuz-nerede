@@ -8,13 +8,18 @@
  */
 import { fetchPage } from '../scraper.js';
 import { kargoCikar } from '../kargo.js';
-import { findJsonLdProduct, dominantColor, decodeEntities, parseNum, absUrl } from '../util.js';
+import { findJsonLdProduct, dominantColor, decodeEntities, parseNum, fiyatCikar, paraBirimiNormalize, absUrl } from '../util.js';
 
 export function prestashopSite(cfg) {
   const { id, name, hosts, base } = cfg;
+  const market = cfg.market || 'tr';
+  const currency = paraBirimiNormalize(cfg.currency || 'TRY');
+  const aramaYolu = cfg.aramaYolu || '/arama?controller=search&s=';
   return {
     id,
     name,
+    market,
+    currency,
     hosts,
 
     isProductUrl(url) {
@@ -24,7 +29,7 @@ export function prestashopSite(cfg) {
     },
 
     searchUrl(q) {
-      return base + '/arama?controller=search&s=' + encodeURIComponent(q);
+      return base + aramaYolu + encodeURIComponent(q);
     },
 
     async searchProducts(query, ctx) {
@@ -33,7 +38,7 @@ export function prestashopSite(cfg) {
       const html = r.body;
       const gorulen = new Map();
 
-      const kartRe = /<div[^>]+class="[^"]*\bjs-product-miniature\b[^"]*"[^>]*data-id-product="\d+"/gi;
+      const kartRe = /<(?:div|article)[^>]+class="[^"]*\bjs-product-miniature\b[^"]*"[^>]*data-id-product="\d+"/gi;
       const pozisyonlar = [];
       let km;
       while ((km = kartRe.exec(html))) pozisyonlar.push(km.index);
@@ -60,8 +65,8 @@ export function prestashopSite(cfg) {
         const title = decodeEntities(linkM[2]).replace(/\s+/g, ' ').trim();
         if (!title || gorulen.has(url)) continue;
 
-        const fm = blok.match(/class="[^"]*(?:product-price|price)[^"]*"[^>]*>\s*₺?\s*([\d.,]+)/i);
-        const price = fm ? parseNum(fm[1]) : undefined;
+        const fm = blok.match(/class="[^"]*(?:product-price|price)[^"]*"[^>]*>\s*[₺€$¥]?\s*([\d\s\u00a0.,]+)/i);
+        const price = fm ? fiyatCikar(fm[1], currency) : undefined;
         gorulen.set(url, price != null ? { title, url, price } : { title, url });
       }
       return [...gorulen.values()].slice(0, 30);
@@ -72,26 +77,29 @@ export function prestashopSite(cfg) {
       ctx.spend += r.requestsSpent;
       const p = findJsonLdProduct(r.body);
       if (!p?.name) throw new Error('PrestaShop ürün verisi (JSON-LD) sayfada bulunamadı.');
-      const price = parseNum(p.offers?.price);
+      const fiyatKodu = paraBirimiNormalize(p.offers?.priceCurrency || currency);
+      const rawPrice = p.offers?.price ?? p.offers?.lowPrice;
+      const price = typeof rawPrice === 'number' ? rawPrice : fiyatCikar(rawPrice, fiyatKodu);
       if (price == null || price <= 0) throw new Error('Ürün fiyatı alınamadı (ürün stokta olmayabilir).');
 
       return {
         site: this.id,
         siteName: this.name,
+        market,
         url,
-        title: p.name,
+        title: decodeEntities(p.name),
         brand: p.brand?.name || null,
         modelCode: p.sku || p.mpn || null,
         barcode: p.gtin13 || p.gtin || null,
         color: dominantColor(p.name),
         listPrice: null,
         sellingPrice: price,
-        currency: p.offers?.priceCurrency || 'TRY',
+        currency: fiyatKodu,
         inStock: /InStock/i.test(p.offers?.availability || '') || p.offers?.availability == null,
         seller: null,
         image: Array.isArray(p.image) ? (typeof p.image[0] === 'string' ? p.image[0] : p.image[0]?.url || null) : (p.image || null),
         campaigns: [],
-        shipping: kargoCikar(r.body, this.id),
+        shipping: kargoCikar(r.body, this.id, { currency: fiyatKodu }),
       };
     },
   };

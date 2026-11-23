@@ -37,6 +37,7 @@
  */
 import { dbBaglantisi } from './store.js';
 import { adapterById, marketSiteIds, normalizeMarket, PAZARLAR } from './sites/index.js';
+import { globalKatalogHedefleri } from './sites/global.js';
 import { httpIste } from './impitIstemci.js';
 import { titleSimilarity, toLowerTr, gercekMarkaBul } from './util.js';
 import { kdvDahilFiyat, kdvOraniBul } from './kdv.js';
@@ -96,6 +97,9 @@ export const KATALOG_HEDEFLERI = [
   { siteId: 'efilament', tur: 'sitemap', base: 'https://efilament.com', cocukDeseni: /product/i },
   { siteId: 'matersan', tur: 'sitemap', base: 'https://matersan.com.tr', cocukDeseni: /product/i },
   { siteId: 'robotizmo', tur: 'sitemap', base: 'https://www.robotizmo.net', cocukDeseni: /product/i },
+
+  // ---- Global US / FR / EU / JP mağazaları (Shopify + WooCommerce Store API) ----
+  ...globalKatalogHedefleri,
 ];
 
 /**
@@ -134,8 +138,8 @@ export function temizBaslik(metin) {
     // "PLA+" ↔ "PLA Plus" aynı üründür (mağazalar iki yazımı karışık kullanıyor).
     // `+` doğrudan tutulursa "eSun PLA+" sorgusu "eSun PLA Plus" kaydını bulamıyordu.
     .replace(/\+/g, ' plus ')
-    // `.` ölçü kimliğidir: "1.75mm" tek kelime kalmalı.
-    .replace(/[^a-z0-9.]/g, ' ')
+    // `.` ölçü kimliğidir: "1.75mm" tek kelime kalmalı; Japonca/Fransızca Unicode harfler korunur.
+    .replace(/[^\p{L}\p{N}.]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -507,10 +511,12 @@ export function katalogUrunleriAra(sorgu, opts = {}) {
     args.push(...parametreler);
 
     const satirlar = db.prepare(sql).all(...args);
-    const pazarFiltresi = (!opts.siteId && opts.market) ? marketSiteIds(normalizeMarket(opts.market)) : null;
-    const beklenenPara = (!opts.siteId && opts.market) ? PAZARLAR[normalizeMarket(opts.market)]?.currency : null;
+    const etkinMarket = opts.market ? normalizeMarket(opts.market) : null;
+    const pazarFiltresi = (!opts.siteId && etkinMarket) ? marketSiteIds(etkinMarket) : null;
+    const beklenenPara = (!opts.siteId && etkinMarket) ? PAZARLAR[etkinMarket]?.currency : null;
     const pazarSatirlari = pazarFiltresi
-      ? satirlar.filter(s => pazarFiltresi.has(s.siteId) && (!beklenenPara || !s.paraBirimi || s.paraBirimi === beklenenPara))
+      ? satirlar.filter(s => (pazarFiltresi.has(s.siteId) || (!adapterById(s.siteId) && etkinMarket === 'tr'))
+        && (!beklenenPara || !s.paraBirimi || s.paraBirimi === beklenenPara))
       : satirlar;
     const simdi = Date.now();
     const puanli = pazarSatirlari.map((s) => {

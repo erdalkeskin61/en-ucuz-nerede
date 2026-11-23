@@ -7,6 +7,8 @@ import vm from 'node:vm';
 import { formatPara, formatTL, paraBirimiNormalize, extractColors, dominantColor, renkAyni, parcaMi, fiyatCikar } from '../src/util.js';
 import { miktarCikar, birimFiyatHesapla } from '../src/birimFiyat.js';
 import { kargoCikar } from '../src/kargo.js';
+import { globalSiteler, globalKatalogHedefleri } from '../src/sites/global.js';
+import { katalogHedefleri } from '../src/katalogSync.js';
 import {
   adapters, PAZARLAR, normalizeMarket, adapterMarket, adapterCurrency,
   adaptersByMarket, marketSiteIds, detectSite, adapterById,
@@ -397,6 +399,49 @@ kontrol('Creality Store (US/FR/EU/JP) kendi ülke sayfalarında görünür, Tür
   && adaptersByMarket('tr').every(a => !a.id.startsWith('creality_'))
   && serverKaynak.includes("const hamPazar = String(req.query?.market || 'tr')")
   && serverKaynak.includes('adaptersByMarket(hamPazar)'));
+
+console.log('\n12) 🏭 Global Üretici & Bölgesel Mağaza Ağları (US / FR / EU / JP):');
+const tumIdler = adapters.map(a => a.id);
+kontrol('Tüm adaptör kimlikleri benzersizdir (TR + Global)',
+  new Set(tumIdler).size === tumIdler.length && globalSiteler.length >= 45,
+  `toplam=${tumIdler.length}, benzersiz=${new Set(tumIdler).size}`);
+
+const trSiteler = adaptersByMarket('tr');
+const usSiteler = adaptersByMarket('us');
+const frSiteler = adaptersByMarket('fr');
+const euSiteler = adaptersByMarket('eu');
+const jpSiteler = adaptersByMarket('jp');
+kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=20, FR>=10, EU>=12, JP>=6)',
+  trSiteler.length === 70
+  && usSiteler.length >= 20
+  && frSiteler.length >= 10
+  && euSiteler.length >= 12
+  && jpSiteler.length >= 6,
+  `tr=${trSiteler.length}, us=${usSiteler.length}, fr=${frSiteler.length}, eu=${euSiteler.length}, jp=${jpSiteler.length}`);
+
+kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce ve PrestaShop URL\'lerini tanır',
+  detectSite('https://us.polymaker.com/products/matte-pla')?.id === 'polymaker_us'
+  && detectSite('https://store.micro-swiss.com/products/ng-extruder')?.id === 'microswiss'
+  && detectSite('https://francofil.fr/product/pla-vert-irise-paillete/')?.id === 'francofil'
+  && detectSite('https://www.arianeplast.com/fr/pla-format-1-kg/100-pla-noir.html')?.id === 'arianeplast'
+  && detectSite('https://www.dasfilament.de/produkt/pla-filament')?.id === 'dasfilament_eu'
+  && detectSite('https://skhonpo.com/products/bambu-lab')?.id === 'skhonpo_jp');
+
+const dtUrunUrlKontrol = [
+  ['polymaker_us', 'https://us.polymaker.com/products/matte-pla'],
+  ['francofil', 'https://francofil.fr/product/pla-vert-irise-paillete/'],
+  ['arianeplast', 'https://www.arianeplast.com/fr/pla-format-1-kg/100-pla-noir.html'],
+  ['skhonpo_jp', 'https://skhonpo.com/products/bambu-lab'],
+];
+kontrol('Global adaptörler kendi ürün URL\'lerini (isProductUrl) ve para birimlerini doğrular',
+  dtUrunUrlKontrol.every(([id, u]) => adapterById(id)?.isProductUrl(new URL(u))));
+
+const hedefler = katalogHedefleri();
+kontrol('katalogHedefleri global Shopify & WooCommerce hedeflerini USD/EUR/JPY ile içerir',
+  globalKatalogHedefleri.length >= 40
+  && hedefler.some(h => h.siteId === 'polymaker_us' && h.paraBirimi === 'USD')
+  && hedefler.some(h => h.siteId === 'francofil' && h.paraBirimi === 'EUR')
+  && hedefler.some(h => h.siteId === 'skhonpo_jp' && h.paraBirimi === 'JPY'));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

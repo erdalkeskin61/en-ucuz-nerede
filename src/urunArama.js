@@ -377,7 +377,8 @@ export function katalogdanKaynakAdayi(sorgu, opts = {}) {
   if (!Array.isArray(adaylar) || !adaylar.length) return null;
 
   const puanli = adaylar
-    .filter(a => (!a.siteId || izinliSiteler.has(a.siteId)) && (!a.paraBirimi || a.paraBirimi === beklenenPara))
+    .filter(a => (!a.siteId || izinliSiteler.has(a.siteId) || (market === 'tr' && !adapterById(a.siteId)))
+      && (!a.paraBirimi || a.paraBirimi === beklenenPara))
     .map(a => ({ ...a, url: a.urunUrl, puan: sorguPuanla(a.baslik, temiz) + (a.fiyat != null ? 0.03 : 0) }))
     .filter(a => a.puan >= 0.35);
 
