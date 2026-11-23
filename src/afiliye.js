@@ -144,6 +144,8 @@ const VARSAYILAN_AYARLAR = {
 const VARSAYILAN_SITE_SABLONLARI = Object.freeze({
   overture_us: '?aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
   overture_fr: '?aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
+  sunlu_us: '?sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
+  sunlu_fr: '?sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
 });
 
 /** Kayıtlı ayarları varsayılanlarla birleştirir (eksik alanlar bozulmasın). */

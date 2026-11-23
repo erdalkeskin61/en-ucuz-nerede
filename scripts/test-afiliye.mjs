@@ -366,5 +366,16 @@ kontrol('overture_fr aff=322 ve utm_campaign=baskihesap ekler',
   overtureFrUrl === 'https://overture3d.com/en-eu/products/overture-pla?aff=322&utm_source=affiliate&utm_medium=referral&utm_campaign=baskihesap',
   overtureFrUrl);
 
+/* ---------- 21) SUNLU Store (US & FR) UpPromote Kalıcı Yönlendirmesi ---------- */
+const sunluUsUrl = afiliyeLink('sunlu_us', 'https://store.sunlu.com/products/sunlu-pla-plus?variant=123456');
+kontrol('sunlu_us varyant parametresini koruyarak sca_ref ekler',
+  sunluUsUrl === 'https://store.sunlu.com/products/sunlu-pla-plus?variant=123456&sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
+  sunluUsUrl);
+
+const sunluFrUrl = afiliyeLink('sunlu_fr', 'https://store.sunlu.com/fr/products/sunlu-pla-plus');
+kontrol('sunlu_fr sca_ref ekler',
+  sunluFrUrl === 'https://store.sunlu.com/fr/products/sunlu-pla-plus?sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
+  sunluFrUrl);
+
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);
