@@ -61,6 +61,9 @@ import {
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
 } from './src/rehberSayfalar.js';
+import {
+  globalAracSayfasiBul, globalAracSitemapKayitlari, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
+} from './src/globalAracSayfalar.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
@@ -522,7 +525,7 @@ app.get('/robots.txt', (req, res, next) => {
 app.get('/sitemap.xml', (req, res) => {
   try {
     const taban = yayinKoku(req);
-    const sayfalar = [...sitemapKayitlari(), ...rehberSitemapKayitlari()];
+    const sayfalar = [...sitemapKayitlari(), ...rehberSitemapKayitlari(), ...globalAracSitemapKayitlari()];
     const govde = sayfalar.map(s => [
       '  <url>',
       `    <loc>${xmlKacis(taban + s.yol)}</loc>`,
@@ -671,9 +674,22 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
           + '<meta property="og:image:alt"',
         );
       } else {
+        let ekAlternates = '';
+        if (req.path === '/maliyet.html' || req.path === '/slicer.html') {
+          const harita = req.path === '/maliyet.html'
+            ? { tr: '/maliyet.html', ...GLOBAL_MALIYET_YOLLARI }
+            : { tr: '/slicer.html', ...GLOBAL_SLICER_YOLLARI };
+          ekAlternates = '\n  ' + [
+            `<link rel="alternate" hreflang="tr" href="${tamKok}${harita.tr}" />`,
+            `<link rel="alternate" hreflang="en" href="${tamKok}${harita.en}" />`,
+            `<link rel="alternate" hreflang="fr" href="${tamKok}${harita.fr}" />`,
+            `<link rel="alternate" hreflang="ja" href="${tamKok}${harita.ja}" />`,
+            `<link rel="alternate" hreflang="x-default" href="${tamKok}${harita.en}" />`,
+          ].join('\n  ');
+        }
         cikti = cikti.replace(
           '</head>',
-          `  <link rel="canonical" href="${tamKok}${req.path}" />\n  <meta property="og:url" content="${tamKok}${req.path}" />\n</head>`,
+          `  <link rel="canonical" href="${tamKok}${req.path}" />\n  <meta property="og:url" content="${tamKok}${req.path}" />${ekAlternates}\n</head>`,
         );
       }
     }
@@ -691,6 +707,21 @@ app.get(['/', '/index.html'], (req, res, next) => statikHtmlSun(req, res, next, 
 app.get(['/maliyet.html', '/sepet.html', '/slicer.html'], (req, res, next) => (
   statikHtmlSun(req, res, next, path.basename(req.path))
 ));
+
+app.get([
+  '/en/cost-calculator',
+  '/fr/calculateur-cout',
+  '/ja/cost-calculator',
+  '/en/slicer',
+  '/fr/slicer',
+  '/ja/slicer',
+], (req, res) => {
+  const kayit = globalAracSayfasiBul(req.path);
+  if (!kayit) return res.redirect('/maliyet.html');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=120');
+  res.send(kayit.olustur(yayinKoku(req)));
+});
 
 app.get('/sepet-paylas.html', (req, res, next) => (
   statikHtmlSun(req, res, next, 'sepet-paylas.html', { canonicalEkle: false })

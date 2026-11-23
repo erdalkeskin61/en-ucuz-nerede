@@ -1024,9 +1024,9 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <a href="/">${htmlKacis(sz.nav.karsilastir)}</a>
         <a href="/urunler"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
         <a href="/rehber"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
-        <a href="/maliyet.html">🧮 ${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="${sz.meta.dil === 'en' ? '/en/cost-calculator' : (sz.meta.dil === 'fr' ? '/fr/calculateur-cout' : (sz.meta.dil === 'ja' ? '/ja/cost-calculator' : '/maliyet.html'))}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
         <a href="/sepet.html">🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
-        <a href="/slicer.html">🧩 ${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="${sz.meta.dil === 'tr' ? '/slicer.html' : `/${sz.meta.dil}/slicer`}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
         <a href="/ayarlar.html">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
