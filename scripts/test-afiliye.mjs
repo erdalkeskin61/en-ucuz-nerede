@@ -306,5 +306,30 @@ kontrol('rfturkiye kargo eşiği 2000 TL tanımlı',
 kontrol('HTML datalist #afiliyeSite üzerinde bağlı',
   /id="afiliyeSite"[^>]*list="adminSitelerDatalist"/.test(ayarHtml));
 
+/* ---------- 18) Impact.com + Creality Resmî Mağaza CTA ---------- */
+import { crealityResmiMagazaLink } from '../src/seoSayfalar.js';
+
+const aImpactKapali = { etkin: true, aglar: { impact: { etkin: false, parametre: '', token: '', sablon: '' } }, siteAg: {}, siteSablon: {} };
+kontrol('Impact kapalıyken Creality Global CTA dönmez', crealityResmiMagazaLink('Creality K3 Multi-Color', aImpactKapali) === null);
+
+const aImpactAcik = {
+  etkin: true,
+  aglar: { impact: { etkin: true, parametre: '', token: '', sablon: 'https://crealityofficialstore.sjv.io/Pzxrme?u={url}' } },
+  siteAg: {},
+  siteSablon: {},
+};
+const k3Link = crealityResmiMagazaLink('Creality K3 Multi-Color', aImpactAcik);
+kontrol('Impact açıkken Creality K3 Global CTA URL üretilir',
+  !!k3Link && k3Link.url === 'https://crealityofficialstore.sjv.io/Pzxrme?u=https%3A%2F%2Fstore.creality.com%2Fproducts%2Fk3-multi-material-multicolor-3d-printer',
+  JSON.stringify(k3Link));
+
+const k1cLink = crealityResmiMagazaLink({ marka: 'Creality', ad: 'Creality K1C 3D Yazıcı', sorgu: 'Creality K1C' }, aImpactAcik);
+kontrol('Impact açıkken Creality K1C Global CTA URL üretilir',
+  !!k1cLink && k1cLink.url.includes('creality-k1c-3d-printer'),
+  JSON.stringify(k1cLink));
+
+kontrol('Bambu Lab ürününde Creality CTA çıkmaz',
+  crealityResmiMagazaLink({ marka: 'Bambu Lab', ad: 'Bambu Lab P1S', sorgu: 'Bambu Lab P1S' }, aImpactAcik) === null);
+
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);

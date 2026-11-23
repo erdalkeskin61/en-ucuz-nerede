@@ -13,7 +13,7 @@
  * Dürüstlük ilkesi: hiçbir ürün/mağaza fiyatı uydurulmaz; yalnızca canlı
  * `seoUrunListesi()` sonuçları gösterilir, kayıt yoksa "Canlı Tara" sunulur.
  */
-import { htmlKacis, sayfaIskeleti } from './seoSayfalar.js';
+import { htmlKacis, sayfaIskeleti, crealityResmiMagazaLink } from './seoSayfalar.js';
 import { formatTL, parcaMi } from './util.js';
 
 function urunBul(tumUrunler, regex) {
@@ -146,6 +146,11 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
     ? `💰 Fark: <b>${formatTL(Math.abs(solUrun.enUcuzFiyat - sagUrun.enUcuzFiyat))}</b>`
     : '⚡ 60+ mağazada canlı kıyas';
 
+  const crealityTaraf = /creality|\bender|\bk1|\bk3/i.test(tanim.solAd)
+    ? tanim.solAd
+    : (/creality|\bender|\bk1|\bk3/i.test(tanim.sagAd) ? tanim.sagAd : '');
+  const globalCreality = crealityTaraf ? crealityResmiMagazaLink(crealityTaraf) : null;
+
   const sss = sssBolumu(tanim.sss);
   const govdeHtml = `
     <nav class="seo-yol" aria-label="İçerik yolu">
@@ -164,6 +169,7 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
     <section class="seo-kart">
       <h2 style="margin-top:0">Canlı Fiyat ve Stok Kıyaslaması</h2>
       ${canliKarsilastirmaKutusu(solUrun, sagUrun, tanim.solAd, tanim.sagAd, tanim.solAd, tanim.sagAd)}
+      ${globalCreality ? `<div class="seo-butonlar" style="margin-top:14px"><a class="seo-cta ikincil" href="${htmlKacis(globalCreality.url)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="creality">🌍 ${htmlKacis(crealityTaraf)} — Creality Resmî Mağaza (Global) ↗</a></div>` : ''}
     </section>
     <section class="seo-kart">
       <h2 style="margin-top:0">Teknik Özellikler ve Kullanım Farkları</h2>

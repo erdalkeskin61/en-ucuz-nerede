@@ -30,6 +30,7 @@ export const SITE_AGLARI = {
   trendyol: 'trendyol',
   hepsiburada: 'hepsiburada',
   amazon: 'amazon',
+  creality: 'impact',
 };
 
 /**

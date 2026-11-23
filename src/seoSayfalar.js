@@ -86,6 +86,32 @@ function guvenliAfiliyeUrl(siteId, hamUrl, ayarlar) {
   }
 }
 
+/** Creality ürünü/karşılaştırması için Impact yapılandırılmışsa Global Resmî Mağaza bağlantısı döndürür. */
+export function crealityResmiMagazaLink(urunVeyaMetin, ayarlar = null) {
+  const hamMetin = typeof urunVeyaMetin === 'string'
+    ? urunVeyaMetin
+    : [urunVeyaMetin?.marka, urunVeyaMetin?.ad, urunVeyaMetin?.sorgu, urunVeyaMetin?.slug].filter(Boolean).join(' ');
+  if (!hamMetin || !/creality|\bender\s*3|\bk1c?\b|\bk2\s*plus|\bk3\b|\bspace\s*pi|\bhalot/i.test(hamMetin)) {
+    return null;
+  }
+  let hedefUrl = '';
+  if (/\bk3\b|k3\s*multi/i.test(hamMetin)) {
+    hedefUrl = 'https://store.creality.com/products/k3-multi-material-multicolor-3d-printer';
+  } else if (/\bk1c\b/i.test(hamMetin)) {
+    hedefUrl = 'https://store.creality.com/products/creality-k1c-3d-printer';
+  } else if (/ender\s*3\s*v3\s*ke/i.test(hamMetin)) {
+    hedefUrl = 'https://store.creality.com/products/creality-ender-3-v3-ke';
+  } else {
+    const sorgu = String(
+      (typeof urunVeyaMetin === 'object' ? (urunVeyaMetin?.sorgu || urunVeyaMetin?.ad) : urunVeyaMetin) || 'Creality',
+    ).trim().slice(0, 80);
+    hedefUrl = `https://store.creality.com/search?q=${encodeURIComponent(sorgu)}`;
+  }
+  const bagli = guvenliAfiliyeUrl('creality', hedefUrl, ayarlar);
+  if (!bagli || bagli === hedefUrl) return null;
+  return { url: bagli, hamUrl: hedefUrl };
+}
+
 const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|lubricant|grease|glue|extruder|board|motherboard|anakart|toolhead|baffle|wiper|thermistor|termistör|heater|sock|silikon\s*çorap|stepper|motor)\b/i;
 
 function anaKategoriSlugBul(k) {
@@ -1437,6 +1463,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
 
   const { analizHtml, sssHtml, rehberKartlarHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl);
   jsonLdList.push(faqSchema);
+  const globalCreality = crealityResmiMagazaLink(urun);
 
   const ozetHtml = urun.enUcuzFiyat > 0
     ? `<div class="seo-fiyat-kutu">
@@ -1471,6 +1498,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = []) {
       <div class="seo-butonlar">
         <a class="seo-cta" href="${htmlKacis(canliTaraUrl)}">⚡ Canlı Fiyatları Şimdi Tara</a>
         ${urun.enUcuzUrl ? `<a class="seo-cta ikincil" href="${htmlKacis(urun.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">En Ucuz Mağazaya Git (${htmlKacis(urun.enUcuzSite || '')}) ↗</a>` : ''}
+        ${globalCreality ? `<a class="seo-cta ikincil" href="${htmlKacis(globalCreality.url)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="creality">🌍 Creality Resmî Mağaza (Global) ↗</a>` : ''}
       </div>
     </section>
 
