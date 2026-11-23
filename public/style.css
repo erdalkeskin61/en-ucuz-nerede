@@ -1931,6 +1931,8 @@ main.kap { padding-top: 8px; }
   .ustbar .kap { height: auto; flex-wrap: wrap; padding: 8px 14px; gap: 8px; }
   .logo-gorsel { width: 48px; height: 40px; border-radius: 9px; padding: 3px; }
   .ustbar .tema-degistir { margin-left: auto; order: 2; }
+  .ustbar .dil-secici { margin-left: auto; order: 2; }
+  .ustbar .dil-secici + .tema-degistir { margin-left: 0; order: 2; }
   .ustbar .menu {
     order: 3;
     flex: 1 0 100%;
@@ -1943,6 +1945,33 @@ main.kap { padding-top: 8px; }
   }
   .ustbar .menu a { padding: 5px 9px; font-size: 12px; margin-left: 0; }
 }
+
+.dil-secici { position: relative; flex: none; }
+.dil-secici > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  height: 38px; padding: 0 10px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12.5px; font-weight: 700; color: var(--metin);
+  background: var(--kart); border: 1px solid var(--cizgi); border-radius: 11px;
+  white-space: nowrap; transition: background .18s ease, border-color .18s ease;
+}
+.dil-secici > summary::-webkit-details-marker { display: none; }
+.dil-secici > summary:hover { background: var(--zemin-2); border-color: var(--cizgi-koyu); }
+.dil-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+  min-width: 152px; padding: 6px;
+  background: var(--kart); border: 1px solid var(--cizgi); border-radius: 14px;
+  box-shadow: 0 16px 36px -12px rgba(15, 23, 42, .25);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dil-menu a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 9px;
+  font-size: 13px; font-weight: 600; color: var(--metin);
+  text-decoration: none; white-space: nowrap;
+}
+.dil-menu a:hover { background: var(--zemin-2); }
+.dil-menu a.etkin { background: var(--ana-acik); color: var(--ana); font-weight: 700; }
 
 .tema-degistir {
   width: 38px; height: 38px; flex: none; cursor: pointer;

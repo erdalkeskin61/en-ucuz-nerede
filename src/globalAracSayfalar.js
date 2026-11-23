@@ -22,6 +22,12 @@ import { htmlKacis, sayfaIskeleti } from './seoSayfalar.js';
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 
+export const GLOBAL_ANA_YOLLARI = Object.freeze({
+  en: '/en',
+  fr: '/fr',
+  ja: '/ja',
+});
+
 export const GLOBAL_MALIYET_YOLLARI = Object.freeze({
   en: '/en/cost-calculator',
   fr: '/fr/calculateur-cout',
@@ -280,6 +286,11 @@ const SLICER_KOPYA = Object.freeze({
       'OrcaSlicer / Bambu Studio / PrusaSlicer では <i>Post-processing scripts</i> に <b>en_ucuz_slicer.py</b> を指定します。',
     ],
   },
+});
+
+const ANA_YOL_HARITASI = Object.freeze({
+  tr: '/',
+  ...GLOBAL_ANA_YOLLARI,
 });
 
 const MALIYET_YOL_HARITASI = Object.freeze({
@@ -598,6 +609,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     govdeHtml,
     aktifNav: 'maliyet',
     dil: kod,
+    dilYolHaritasi: MALIYET_YOL_HARITASI,
   });
 }
 
@@ -696,11 +708,209 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
     govdeHtml,
     aktifNav: 'eklenti',
     dil: kod,
+    dilYolHaritasi: SLICER_YOL_HARITASI,
+  });
+}
+
+const ANA_KOPYA = Object.freeze({
+  en: {
+    market: 'us',
+    currency: 'USD',
+    title: 'Baski Hesap Global — 3D Printer Price Search, STL Cost Calculator &amp; Cura Plugin',
+    desc: 'Search live Creality Official Store (USD) prices, calculate STL/3MF print costs privately in your browser, and download our free UltiMaker Cura plugin.',
+    rozet: '🌍 Global US / English Hub · USD',
+    h1: 'Smart tools for <b>3D printing</b> makers &amp; workshops',
+    alt: 'Check live global 3D printer & filament prices, calculate part cost from STL/3MF files privately, or automate filament checks inside Cura.',
+    placeholder: 'Search Creality K3, K1C, Ender 3 V3, Hyper PLA or paste store.creality.com URL...',
+    araBtn: 'Check Price →',
+    ornekler: ['Creality K3', 'Creality K1C', 'Ender 3 V3 KE', 'Hyper PLA'],
+    aracBaslik: 'Global Maker Toolkit',
+    kartMaliyetBaslik: '🧮 STL / 3MF Cost Calculator',
+    kartMaliyetMetin: 'Calculate filament weight, electricity, machine wear and suggested selling price in USD/EUR/JPY — 100% locally in your browser.',
+    kartSlicerBaslik: '🧩 UltiMaker Cura &amp; Slicer Plugin',
+    kartSlicerMetin: 'Automatically read filament usage right after slicing in Cura, OrcaSlicer, Bambu Studio or PrusaSlicer.',
+    kartStoreBaslik: '🛒 Creality Official Store (US)',
+    kartStoreMetin: 'Browse K3 Multi-Color, K1C, Ender 3 V3 series and official filaments directly on store.creality.com.',
+    araniyor: 'Scanning regional store...',
+    bulunamadi: 'No matching offer found for this query.',
+    git: 'Visit Store ↗',
+  },
+  fr: {
+    market: 'fr',
+    currency: 'EUR',
+    title: 'Baski Hesap France — Prix Imprimantes 3D, Calculateur STL &amp; Plugin Cura',
+    desc: 'Vérifiez les prix officiels Creality France (EUR), calculez vos coûts d’impression 3D depuis un fichier STL/3MF et téléchargez notre extension Cura gratuite.',
+    rozet: '🇫🇷 Espace France / Europe · EUR (€)',
+    h1: 'Outils intelligents pour l’<b>impression 3D</b> et les ateliers',
+    alt: 'Consultez les prix Creality France en euros, estimez vos coûts de fabrication à partir de fichiers STL/3MF et installez le plugin Cura.',
+    placeholder: 'Rechercher Creality K1C, Ender 3 V3, buse ou coller une URL store.creality.com/fr...',
+    araBtn: 'Vérifier le prix →',
+    ornekler: ['Creality K1C', 'Ender 3 V3', 'Unicorn Nozzle', 'PEI Plate'],
+    aracBaslik: 'Outils Gratuits Impression 3D',
+    kartMaliyetBaslik: '🧮 Calculateur de Coût STL / 3MF',
+    kartMaliyetMetin: 'Calculez poids, électricité, amortissement et prix de vente en € — 100 % local dans votre navigateur.',
+    kartSlicerBaslik: '🧩 Extension UltiMaker Cura &amp; Slicer',
+    kartSlicerMetin: 'Obtenez la consommation exacte dès le tranchage sur Cura, OrcaSlicer, Bambu Studio ou PrusaSlicer.',
+    kartStoreBaslik: '🛒 Boutique Officielle Creality FR',
+    kartStoreMetin: 'Découvrez les imprimantes, plateaux PEI, buses et filaments sur store.creality.com/fr.',
+    araniyor: 'Analyse en cours...',
+    bulunamadi: 'Aucune offre correspondante trouvée.',
+    git: 'Voir l’offre ↗',
+  },
+  ja: {
+    market: 'jp',
+    currency: 'JPY',
+    title: 'Baski Hesap 日本 — 3Dプリンター価格チェック・STL原価計算・Curaプラグイン',
+    desc: 'Creality公式ストア（日本・円建て）のリアルタイム価格確認、STL/3MF原価シミュレーター、UltiMaker Cura連携プラグインを無料で提供。',
+    rozet: '🇯🇵 日本マーケット / 日本語 · JPY (¥)',
+    h1: '3Dプリント造形のための<b>原価計算・価格チェック</b>ハブ',
+    alt: 'Creality公式ストアの最新価格（¥）検索、ブラウザ完結のSTL/3MF重量・原価計算、Curaスライサープラグインをすぐにお使いいただけます。',
+    placeholder: 'Creality K1C, Ender 3 V3, ノズル 等を入力、または store.creality.com/jp URL を貼付...',
+    araBtn: '価格を確認 →',
+    ornekler: ['K1C', 'Ender 3 V3', 'Unicorn', 'PLA'],
+    aracBaslik: '無料3Dプリントツール',
+    kartMaliyetBaslik: '🧮 STL / 3MF 原価シミュレーター',
+    kartMaliyetMetin: 'STL/3MFを読み込んでフィラメント代・電気代・償却費・推奨販売価格を円（¥）で即時計算します。',
+    kartSlicerBaslik: '🧩 UltiMaker Cura &amp; スライサープラグイン',
+    kartSlicerMetin: 'Cura、OrcaSlicer、Bambu Studio等でのスライス直後に使用グラム数を自動取得します。',
+    kartStoreBaslik: '🛒 Creality 公式ストア（日本）',
+    kartStoreMetin: 'store.creality.com/jp で3Dプリンター本体や純正ノズル・フィラメントを確認。',
+    araniyor: '公式ストアを確認中...',
+    bulunamadi: '該当する商品が見つかりませんでした。',
+    git: 'ショップへ ↗',
+  },
+});
+
+export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
+  const kod = ['en', 'fr', 'ja'].includes(normalizeDil(dil)) ? normalizeDil(dil) : 'en';
+  const c = ANA_KOPYA[kod];
+  const canonicalUrl = `${tabanUrl}${GLOBAL_ANA_YOLLARI[kod]}`;
+  const cr = crealityAracLinki(kod, '3D Printer');
+
+  const extraMeta = [
+    hreflangEtiketleri(tabanUrl, ANA_YOL_HARITASI),
+    '<script src="/para.js"></script>',
+  ].join('\n  ');
+
+  const govdeHtml = `
+    <section class="hero seo-hero" style="margin-bottom:22px">
+      <div class="hero-ic">
+        <span class="hero-rozet">${c.rozet}</span>
+        <h1>${c.h1}</h1>
+        <p>${c.alt}</p>
+        <form id="globalAraForm" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+          <input id="globalAraInput" type="search" placeholder="${htmlKacis(c.placeholder)}"
+                 style="flex:1;min-width:220px;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);font:inherit;font-size:14.5px;background:#fff;color:#0f172a" />
+          <button type="submit" class="seo-cta" style="border:none;cursor:pointer">${c.araBtn}</button>
+        </form>
+        <div class="seo-ic-linkler" style="margin-top:10px">
+          ${c.ornekler.map(o => `<button type="button" class="seo-ic-link global-ornek-btn" data-q="${htmlKacis(o)}" style="cursor:pointer">${htmlKacis(o)}</button>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <div id="globalSonucAlani" class="seo-kart" hidden></div>
+
+    <section class="seo-kart">
+      <h2 style="margin-top:0">${c.aracBaslik}</h2>
+      <div class="rehber-izgara">
+        <a class="rehber-kart" href="${htmlKacis(GLOBAL_MALIYET_YOLLARI[kod])}">
+          <h3 class="rehber-baslik">${c.kartMaliyetBaslik}</h3>
+          <p class="rehber-ozet">${c.kartMaliyetMetin}</p>
+          <span class="rehber-cta">→</span>
+        </a>
+        <a class="rehber-kart" href="${htmlKacis(GLOBAL_SLICER_YOLLARI[kod])}">
+          <h3 class="rehber-baslik">${c.kartSlicerBaslik}</h3>
+          <p class="rehber-ozet">${c.kartSlicerMetin}</p>
+          <span class="rehber-cta">→</span>
+        </a>
+        <a class="rehber-kart" href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">
+          <h3 class="rehber-baslik">${c.kartStoreBaslik}</h3>
+          <p class="rehber-ozet">${c.kartStoreMetin}</p>
+          <span class="rehber-cta">${c.git}</span>
+        </a>
+      </div>
+    </section>
+
+    <script>
+      (function () {
+        var form = document.getElementById('globalAraForm');
+        var inp = document.getElementById('globalAraInput');
+        var alan = document.getElementById('globalSonucAlani');
+        var market = ${JSON.stringify(c.market)};
+        var cur = ${JSON.stringify(c.currency)};
+        var timer = null;
+        if (!form || !inp || !alan) return;
+
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+          });
+        }
+        function fmt(n) {
+          return typeof window.formatPara === 'function' ? window.formatPara(n, cur) : (n + ' ' + cur);
+        }
+        function baslat(deger) {
+          var q = String(deger || '').trim();
+          if (q.length < 2) return;
+          if (timer) clearTimeout(timer);
+          alan.hidden = false;
+          alan.innerHTML = '<p style="margin:0">' + esc(${JSON.stringify(c.araniyor)}) + '</p>';
+          var isUrl = /^https?:\\/\\//i.test(q);
+          fetch('/api/compare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(isUrl ? { url: q, market: market } : { query: q, market: market }),
+          }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d || !d.id) { alan.innerHTML = '<p>' + esc(d?.error || ${JSON.stringify(c.bulunamadi)}) + '</p>'; return; }
+            var yokla = function () {
+              fetch('/api/compare/' + encodeURIComponent(d.id)).then(function (r) { return r.json(); }).then(function (j) {
+                if (j.status === 'done') {
+                  var res = j.result || {};
+                  var bulunlar = (res.sonuclar || []).filter(function (x) { return x.status === 'found' && x.product; });
+                  if (!bulunlar.length) { alan.innerHTML = '<p>' + esc(${JSON.stringify(c.bulunamadi)}) + '</p>'; return; }
+                  alan.innerHTML = bulunlar.map(function (x) {
+                    var p = x.product;
+                    var tutar = (p.pricing && p.pricing.toplam != null) ? p.pricing.toplam : p.sellingPrice;
+                    return '<div class="seo-fiyat-kutu" style="justify-content:space-between"><div><div style="font-weight:800">' + esc(p.title) + '</div><div style="font-size:13px;color:var(--gri-metin)">' + esc(x.siteName || x.site) + '</div></div><div style="display:flex;align-items:center;gap:12px"><b class="seo-fiyat-ana" style="font-size:22px">' + esc(fmt(tutar)) + '</b><a class="seo-cta" href="' + esc(p.afiliyeUrl || p.url) + '" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="' + esc(x.site) + '">' + esc(${JSON.stringify(c.git)}) + '</a></div></div>';
+                  }).join('');
+                } else if (j.status === 'error') {
+                  alan.innerHTML = '<p>' + esc(j.error || ${JSON.stringify(c.bulunamadi)}) + '</p>';
+                } else {
+                  timer = setTimeout(yokla, 750);
+                }
+              }).catch(function () { timer = setTimeout(yokla, 1000); });
+            };
+            yokla();
+          }).catch(function () { alan.innerHTML = '<p>' + esc(${JSON.stringify(c.bulunamadi)}) + '</p>'; });
+        }
+
+        form.addEventListener('submit', function (e) { e.preventDefault(); baslat(inp.value); });
+        document.querySelectorAll('.global-ornek-btn').forEach(function (b) {
+          b.addEventListener('click', function () { inp.value = b.dataset.q || ''; baslat(inp.value); });
+        });
+      })();
+    </script>
+  `;
+
+  return sayfaIskeleti({
+    title: c.title,
+    description: c.desc,
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    extraMeta,
+    govdeHtml,
+    aktifNav: 'karsilastir',
+    dil: kod,
+    dilYolHaritasi: ANA_YOL_HARITASI,
   });
 }
 
 export function globalAracSayfasiBul(yol) {
   const temiz = String(yol || '').replace(/\/+$/, '');
+  for (const [dil, rYol] of Object.entries(GLOBAL_ANA_YOLLARI)) {
+    if (rYol === temiz) return { dil, tur: 'ana', olustur: (tabanUrl) => globalAnaSayfaHtml(dil, tabanUrl) };
+  }
   for (const [dil, rYol] of Object.entries(GLOBAL_MALIYET_YOLLARI)) {
     if (rYol === temiz) return { dil, tur: 'maliyet', olustur: (tabanUrl) => globalMaliyetSayfasiHtml(dil, tabanUrl) };
   }
@@ -713,6 +923,7 @@ export function globalAracSayfasiBul(yol) {
 export function globalAracSitemapKayitlari() {
   const bugun = new Date().toISOString().slice(0, 10);
   return [
+    ...Object.values(GLOBAL_ANA_YOLLARI).map(yol => ({ yol, oncelik: '0.95', siklik: 'daily', lastmod: bugun })),
     ...Object.values(GLOBAL_MALIYET_YOLLARI).map(yol => ({ yol, oncelik: '0.85', siklik: 'weekly', lastmod: bugun })),
     ...Object.values(GLOBAL_SLICER_YOLLARI).map(yol => ({ yol, oncelik: '0.80', siklik: 'weekly', lastmod: bugun })),
   ];

@@ -57,4 +57,15 @@
       uygula(e.matches ? 'dark' : 'light');
     });
   } catch { /* eski tarayici */ }
+
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('details.dil-secici[open]').forEach((d) => {
+      if (!d.contains(e.target)) d.removeAttribute('open');
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('details.dil-secici[open]').forEach((d) => d.removeAttribute('open'));
+    }
+  });
 })();

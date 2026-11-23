@@ -62,7 +62,7 @@ import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
 } from './src/rehberSayfalar.js';
 import {
-  globalAracSayfasiBul, globalAracSitemapKayitlari, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
+  globalAracSayfasiBul, globalAracSitemapKayitlari, GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
@@ -667,10 +667,18 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
       const tamKok = yayinKoku(req);
       cikti = cikti.replace(/content="\/og-gorsel\.png"/g, `content="${tamKok}/og-gorsel.png"`);
       if (anaSayfa) {
+        const anaAlternates = [
+          `<link rel="alternate" hreflang="tr" href="${tamKok}/" />`,
+          `<link rel="alternate" hreflang="en" href="${tamKok}${GLOBAL_ANA_YOLLARI.en}" />`,
+          `<link rel="alternate" hreflang="fr" href="${tamKok}${GLOBAL_ANA_YOLLARI.fr}" />`,
+          `<link rel="alternate" hreflang="ja" href="${tamKok}${GLOBAL_ANA_YOLLARI.ja}" />`,
+          `<link rel="alternate" hreflang="x-default" href="${tamKok}/" />`,
+        ].join('\n  ');
         cikti = cikti.replace(
           '<meta property="og:image:alt"',
           `<meta property="og:url" content="${tamKok}/" />\n  `
           + `<link rel="canonical" href="${tamKok}/" />\n  `
+          + `${anaAlternates}\n  `
           + '<meta property="og:image:alt"',
         );
       } else {
@@ -709,6 +717,12 @@ app.get(['/maliyet.html', '/sepet.html', '/slicer.html'], (req, res, next) => (
 ));
 
 app.get([
+  '/en',
+  '/en/',
+  '/fr',
+  '/fr/',
+  '/ja',
+  '/ja/',
   '/en/cost-calculator',
   '/fr/calculateur-cout',
   '/ja/cost-calculator',

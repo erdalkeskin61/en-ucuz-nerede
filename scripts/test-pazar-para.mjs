@@ -16,7 +16,7 @@ import {
   sozlukGetir, t, sssSablonlari, dilParaFormati,
 } from '../src/i18n/index.js';
 import {
-  GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
+  GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
   globalAracSayfasiBul, globalAracSitemapKayitlari,
 } from '../src/globalAracSayfalar.js';
 import { seoUrunListesi, urunSayfasiHtml } from '../src/seoSayfalar.js';
@@ -240,24 +240,39 @@ const jaSayfa = urunSayfasiHtml(ornekJpyUrun, 'https://baskihesap.tech', [], { d
 kontrol('Japonca SSR ürün sayfası 在庫あり, ¥128,000 ve lang="ja" içerir',
   jaSayfa.includes('<html lang="ja"') && jaSayfa.includes('在庫あり') && jaSayfa.includes('¥128,000'));
 
-console.log('\n8) 🌍 Global STL Maliyet & Slicer sayfaları (/en /fr /ja)');
+console.log('\n8) 🌍 Global STL Maliyet, Slicer & Ana Sayfalar + Navbar Dil Seçici');
 const sitemapGlobal = globalAracSitemapKayitlari();
-kontrol('6 global araç rotası sitemap kaydı üretir', sitemapGlobal.length === 6);
+kontrol('9 global rota sitemap kaydı üretir (ana + maliyet + slicer)', sitemapGlobal.length === 9);
 
-for (const yol of [...Object.values(GLOBAL_MALIYET_YOLLARI), ...Object.values(GLOBAL_SLICER_YOLLARI)]) {
+for (const yol of [
+  ...Object.values(GLOBAL_ANA_YOLLARI),
+  ...Object.values(GLOBAL_MALIYET_YOLLARI),
+  ...Object.values(GLOBAL_SLICER_YOLLARI),
+]) {
   const kayit = globalAracSayfasiBul(yol);
   kontrol(`globalAracSayfasiBul(${yol}) bulunur`, !!kayit);
   if (kayit) {
     const html = kayit.olustur('https://baskihesap.tech');
-    kontrol(`${yol} hreflang, SoftwareApplication ve lang içerir`,
+    kontrol(`${yol} hreflang, lang ve dil-secici içerir`,
       html.includes(`lang="${kayit.dil}"`)
+      && html.includes('class="dil-secici"')
       && html.includes('hreflang="en"')
       && html.includes('hreflang="fr"')
       && html.includes('hreflang="ja"')
-      && html.includes('hreflang="x-default"')
-      && html.includes('SoftwareApplication')
       && html.includes('store.creality.com'));
   }
+}
+
+const enAna = globalAracSayfasiBul('/en').olustur('https://baskihesap.tech');
+const jaAna = globalAracSayfasiBul('/ja').olustur('https://baskihesap.tech');
+kontrol('/en ve /ja ana sayfaları kendi market ve dil menüsünü içerir',
+  enAna.includes('market = "us"') && enAna.includes('/en/cost-calculator')
+  && jaAna.includes('market = "jp"') && jaAna.includes('/ja/cost-calculator'));
+
+for (const dosya of ['public/index.html', 'public/maliyet.html', 'public/slicer.html', 'public/sepet.html', 'public/ayarlar.html']) {
+  const h = fs.readFileSync(dosya, 'utf8');
+  kontrol(`${dosya} üst menüde .dil-secici (TR/EN/FR/JA) içerir`,
+    h.includes('class="dil-secici"') && h.includes('hreflang="en"') && h.includes('hreflang="fr"') && h.includes('hreflang="ja"'));
 }
 
 const enMaliyet = globalAracSayfasiBul('/en/cost-calculator').olustur('https://baskihesap.tech');

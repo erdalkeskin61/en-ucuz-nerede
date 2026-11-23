@@ -24,7 +24,26 @@ import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
 import { siteNames, adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
-import { normalizeDil, dilByMarket, sozlukGetir, t, sssSablonlari } from './i18n/index.js';
+import { normalizeDil, dilByMarket, sozlukGetir, t, sssSablonlari, DIL_META } from './i18n/index.js';
+
+/** Üst bar için kompakt bölge + dil seçici HTML'i üretir (Googlebot tarafından taranabilir linkler). */
+export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
+  const kod = normalizeDil(aktifDil);
+  const harita = yolHaritasi || { tr: '/', en: '/en', fr: '/fr', ja: '/ja' };
+  const ogeler = [
+    { dil: 'tr', kisa: 'TR', bayrak: '🇹🇷', ad: 'Türkçe (TRY)' },
+    { dil: 'en', kisa: 'EN', bayrak: '🇺🇸', ad: 'English (USD)' },
+    { dil: 'fr', kisa: 'FR', bayrak: '🇫🇷', ad: 'Français (EUR)' },
+    { dil: 'ja', kisa: 'JA', bayrak: '🇯🇵', ad: '日本語 (JPY)' },
+  ];
+  const secili = ogeler.find(o => o.dil === kod) || ogeler[0];
+  return `<details class="dil-secici" id="dilSecici">
+        <summary aria-label="Bölge ve dil seçici (${htmlKacis(secili.ad)})">${secili.bayrak} ${secili.kisa} ▾</summary>
+        <div class="dil-menu" role="menu">
+          ${ogeler.map(o => `<a href="${htmlKacis(harita[o.dil] || DIL_META[o.dil].yolOnEk || '/')}" hreflang="${o.dil}"${o.dil === kod ? ' class="etkin"' : ''} role="menuitem">${o.bayrak} ${htmlKacis(o.ad)}</a>`).join('\n          ')}
+        </div>
+      </details>`;
+}
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
 const SEO_CACHE_TTL_MS = 60 * 1000;
@@ -807,8 +826,9 @@ export const FOOTER_HUB_HTML = `
         </div>
       </nav>`;
 
-export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr' }) {
+export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogType = 'website', extraMeta = '', jsonLdList = [], govdeHtml, aktifNav = 'katalog', dil = 'tr', dilYolHaritasi = null }) {
   const sz = sozlukGetir(dil);
+  const kokYol = sz.meta.dil === 'tr' ? '/' : `/${sz.meta.dil}`;
   const safeTitle = htmlKacis(title);
   const safeDesc = htmlKacis(description);
   const safeUrl = htmlKacis(canonicalUrl);
@@ -1017,11 +1037,11 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
 <body>
   <header class="ustbar">
     <div class="kap">
-      <a class="logo" href="/" aria-label="Baskı Hesap — ana sayfa">
-        <img class="logo-gorsel" src="/logo.png" alt="Baskı Hesap" width="36" height="30" decoding="async" />
+      <a class="logo" href="${htmlKacis(kokYol)}" aria-label="${htmlKacis(sz.meta.siteAdi)}">
+        <img class="logo-gorsel" src="/logo.png" alt="${htmlKacis(sz.meta.siteAdi)}" width="36" height="30" decoding="async" />
       </a>
       <nav class="menu">
-        <a href="/">${htmlKacis(sz.nav.karsilastir)}</a>
+        <a href="${htmlKacis(kokYol)}"${aktifNav === 'karsilastir' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.karsilastir)}</a>
         <a href="/urunler"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
         <a href="/rehber"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
         <a href="${sz.meta.dil === 'en' ? '/en/cost-calculator' : (sz.meta.dil === 'fr' ? '/fr/calculateur-cout' : (sz.meta.dil === 'ja' ? '/ja/cost-calculator' : '/maliyet.html'))}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
@@ -1029,6 +1049,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <a href="${sz.meta.dil === 'tr' ? '/slicer.html' : `/${sz.meta.dil}/slicer`}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
         <a href="/ayarlar.html">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
+      ${dilSeciciHtml(sz.meta.dil, dilYolHaritasi)}
       <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
     </div>
   </header>
