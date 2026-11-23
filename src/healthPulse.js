@@ -24,6 +24,7 @@
  * karşılaştırmasından (60 site) daha hafiftir.
  */
 import { adapters } from './sites/index.js';
+import { GLOBAL_MAGAZA_TANIMLARI } from './sites/global.js';
 import {
   addAdapterHealth, getAdapterHealthLatest, getAdapterHealthHistory,
   pruneAdapterHealth, getSettings,
@@ -77,8 +78,15 @@ export function sorguGrubu(siteId) {
     'urhanshop',
     // 2026-11-13: Yeni eklenen 3D / filament mağazaları
     'kirpilab', '3dteknobiz', 'makerpazar', 'efilament', 'zzrobot3d', 'sermenkreatif', 'metatechtr', 'rfturkiye',
+    // 2026-11-23: Global (US / FR / EU / JP) 3D yazıcı & filament mağazaları
+    ...GLOBAL_MAGAZA_TANIMLARI.map(m => m.id),
+    'creality_us', 'creality_fr', 'creality_eu', 'creality_jp',
+    'prusa_us', 'prusa_fr', 'prusa_ja', '3djake_fr', '3djake_de', 'matterhackers',
   ];
   if (d3.includes(t)) return SAGLIK_SORGULARI._3d;
+  if (t === 'amazon_us' || t === 'amazon_fr' || t === 'amazon_jp') {
+    return ['usb cable', 'pla filament'];
+  }
   // Pazaryerleri ve elektronik: genel bir ürün
   return ['kablo', 'kulaklık'];
 }
