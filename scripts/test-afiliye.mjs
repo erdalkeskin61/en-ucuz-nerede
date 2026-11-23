@@ -331,5 +331,25 @@ kontrol('Impact açıkken Creality K1C Global CTA URL üretilir',
 kontrol('Bambu Lab ürününde Creality CTA çıkmaz',
   crealityResmiMagazaLink({ marka: 'Bambu Lab', ad: 'Bambu Lab P1S', sorgu: 'Bambu Lab P1S' }, aImpactAcik) === null);
 
+/* ---------- 19) Amazon US / FR / JP Bölgesel Tag Desteği ---------- */
+const aAmazonGlobal = {
+  etkin: true,
+  aglar: {
+    amazon: { etkin: true, parametre: 'tag', token: 'tr-21', sablon: '' },
+    amazon_us: { etkin: true, parametre: 'tag', token: 'baskihesap-20', sablon: '' },
+    amazon_fr: { etkin: true, parametre: 'tag', token: 'baskihesapfr-21', sablon: '' },
+    amazon_jp: { etkin: false, parametre: 'tag', token: '', sablon: '' },
+  },
+  siteAg: {},
+  siteSablon: {},
+};
+kontrol('Amazon Global ağları AG_BILGILERI içinde tanımlı',
+  !!AG_BILGILERI.amazon_us && !!AG_BILGILERI.amazon_fr && !!AG_BILGILERI.amazon_jp);
+kontrol('amazon_us tag=baskihesap-20 uygular, TR ve FR tagları karışmaz',
+  afiliyeLink('amazon_us', 'https://www.amazon.com/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.com/dp/B0CXYZ?tag=baskihesap-20'
+  && afiliyeLink('amazon_fr', 'https://www.amazon.fr/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.fr/dp/B0CXYZ?tag=baskihesapfr-21'
+  && afiliyeLink('amazon', 'https://www.amazon.com.tr/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.com.tr/dp/B0CXYZ?tag=tr-21'
+  && afiliyeLink('amazon_jp', 'https://www.amazon.co.jp/dp/B0CXYZ', aAmazonGlobal) === 'https://www.amazon.co.jp/dp/B0CXYZ');
+
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);

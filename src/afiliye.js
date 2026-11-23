@@ -30,6 +30,9 @@ export const SITE_AGLARI = {
   trendyol: 'trendyol',
   hepsiburada: 'hepsiburada',
   amazon: 'amazon',
+  amazon_us: 'amazon_us',
+  amazon_fr: 'amazon_fr',
+  amazon_jp: 'amazon_jp',
   creality: 'impact',
   creality_us: 'impact',
   creality_fr: 'impact',
@@ -62,6 +65,24 @@ export const AG_BILGILERI = {
     komisyon: '%3 – %11',
     varsayilanParametre: 'tag',
     parametreIpucu: 'tag (ör. siteadi-21)',
+  },
+  amazon_us: {
+    ad: 'Amazon Associates US (amazon.com)',
+    komisyon: '%1 – %4,5',
+    varsayilanParametre: 'tag',
+    parametreIpucu: 'tag (ör. baskihesap-20)',
+  },
+  amazon_fr: {
+    ad: 'Amazon Partenaires FR / OneLink (amazon.fr)',
+    komisyon: '%1 – %5',
+    varsayilanParametre: 'tag',
+    parametreIpucu: 'tag (FR kimliği ya da OneLink bağlı US tag)',
+  },
+  amazon_jp: {
+    ad: 'Amazon Associates JP / OneLink (amazon.co.jp)',
+    komisyon: '%2 – %5',
+    varsayilanParametre: 'tag',
+    parametreIpucu: 'tag (JP kimliği ya da OneLink bağlı US tag)',
   },
   gelirortaklari: {
     ad: 'GelirOrtaklari.com (niş e-ticaret ağı)',
@@ -105,6 +126,9 @@ const VARSAYILAN_AYARLAR = {
     trendyol: { etkin: false, parametre: '', token: '', sablon: '' },
     hepsiburada: { etkin: false, parametre: '', token: '', sablon: '' },
     amazon: { etkin: false, parametre: 'tag', token: '', sablon: '' },
+    amazon_us: { etkin: false, parametre: 'tag', token: '', sablon: '' },
+    amazon_fr: { etkin: false, parametre: 'tag', token: '', sablon: '' },
+    amazon_jp: { etkin: false, parametre: 'tag', token: '', sablon: '' },
     gelirortaklari: { etkin: false, parametre: '', token: '', sablon: '' },
     reklamaction: { etkin: false, parametre: '', token: '', sablon: '' },
     admitad: { etkin: false, parametre: '', token: '', sablon: '' },
@@ -121,8 +145,19 @@ const VARSAYILAN_AYARLAR = {
 export function afiliyeAyarlari() {
   const kayitli = getSettings().afiliye || {};
   const aglar = {};
+  const envTagHarita = {
+    amazon_us: String(process.env.AMAZON_TAG_US || '').trim(),
+    amazon_fr: String(process.env.AMAZON_TAG_FR || '').trim(),
+    amazon_jp: String(process.env.AMAZON_TAG_JP || '').trim(),
+  };
   for (const [id, varsayilan] of Object.entries(VARSAYILAN_AYARLAR.aglar)) {
-    aglar[id] = { ...varsayilan, ...(kayitli.aglar?.[id] || {}) };
+    const birlesik = { ...varsayilan, ...(kayitli.aglar?.[id] || {}) };
+    if (!birlesik.token && envTagHarita[id]) {
+      birlesik.token = envTagHarita[id];
+      if (!birlesik.parametre) birlesik.parametre = 'tag';
+      birlesik.etkin = true;
+    }
+    aglar[id] = birlesik;
   }
 
   // Eski biçim uyumluluğu: siteSablon değeri düz metin (şablon) olabilir.
