@@ -377,5 +377,16 @@ kontrol('sunlu_fr sca_ref ekler',
   sunluFrUrl === 'https://store.sunlu.com/fr/products/sunlu-pla-plus?sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
   sunluFrUrl);
 
+/* ---------- 22) Proto-pasta Affiliatly Kalıcı Yönlendirmesi ---------- */
+const protoVaryantUrl = afiliyeLink('protopasta', 'https://www.proto-pasta.com/products/htpla?variant=998877');
+kontrol('protopasta varyant parametresini koruyarak aff=321 ekler',
+  protoVaryantUrl === 'https://www.proto-pasta.com/products/htpla?variant=998877&aff=321',
+  protoVaryantUrl);
+
+const protoSadeUrl = afiliyeLink('protopasta', 'https://www.proto-pasta.com/products/htpla');
+kontrol('protopasta aff=321 ekler',
+  protoSadeUrl === 'https://www.proto-pasta.com/products/htpla?aff=321',
+  protoSadeUrl);
+
 console.log(`AFILIYE ${gecen}/${toplam}${gecen === toplam ? ' ✓' : ''}`);
 process.exit(gecen === toplam ? 0 : 1);
