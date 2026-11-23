@@ -12,7 +12,7 @@ import './src/httpPool.js';
 import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
-import { detectSite, adapters, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
+import { detectSite, adapters, adaptersByMarket, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
 import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi } from './src/util.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
@@ -2826,13 +2826,23 @@ let healthCalisiyor = false;
 app.get('/api/durum', (req, res) => {
   let afiliyeAktif = false;
   try { afiliyeAktif = afiliyeOzet().durum === 'aktif'; } catch { afiliyeAktif = false; }
+  const hamPazar = String(req.query?.market || 'tr').trim().toLowerCase();
+  const piyasaAdaptorleri = (hamPazar === 'all' || hamPazar === 'tumu')
+    ? adapters
+    : adaptersByMarket(hamPazar);
   res.json({
     scraperApiHazir: !!config.scraperApiKey,
     yzHazir: !!config.ai.apiKey,
     yzModel: config.ai.model,
     afiliyeAktif,
-    desteklenenSiteler: adapters.map(a => a.id),
-    siteler: adapters.map(a => ({ id: a.id, ad: a.name })),
+    market: (hamPazar === 'all' || hamPazar === 'tumu') ? 'all' : normalizeMarket(hamPazar),
+    desteklenenSiteler: piyasaAdaptorleri.map(a => a.id),
+    siteler: piyasaAdaptorleri.map(a => ({
+      id: a.id,
+      ad: a.name,
+      market: adapterMarket(a),
+      currency: adapterCurrency(a),
+    })),
     kazimaSaglayicilari: saglayiciDurumu(),
     // 🗂️ Mağaza katalog indeksi (2026-11-17) — dış istek atmadan aday bulma.
     katalog: (() => {

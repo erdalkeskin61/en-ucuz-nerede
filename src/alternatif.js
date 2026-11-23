@@ -19,17 +19,18 @@
  *  - Muadil, kaynak ürünün kendisi olamaz (matchProducts / model kodu / barkod).
  *  - Muadil gerçekten daha ucuz değilse gösterilmez.
  */
-import { adapters, adapterById } from './sites/index.js';
+import { adaptersByMarket, adapterById } from './sites/index.js';
 import { alternatifSorgulari, alternatifSec } from './ai.js';
 import { matchProducts, normalizeModelCode, normalizeBarcode, formatTL } from './util.js';
 import { afiliyeLink } from './afiliye.js';
 import { getPriceAnalytics } from './store.js';
 
-/** Muadil aramasında taranacak siteler: pazaryerleri önce, sonra uzman mağazalar. */
+/** Muadil aramasında taranacak siteler: pazaryerleri önce, sonra seçili pazarın uzman mağazaları. */
 const ONCELIK = ['trendyol', 'hepsiburada', 'amazon', 'n11', 'mediamarkt', 'vatan', 'itopya', 'incehesap', 'pazarama', 'teknosa', 'koctas', 'pttavm', 'ciceksepeti'];
+const trAdapters = adaptersByMarket('tr');
 const ARAMA_SITELERI = [
-  ...ONCELIK.filter(id => adapters.some(a => a.id === id)),
-  ...adapters.map(a => a.id).filter(id => !ONCELIK.includes(id)),
+  ...ONCELIK.filter(id => trAdapters.some(a => a.id === id)),
+  ...trAdapters.map(a => a.id).filter(id => !ONCELIK.includes(id)),
 ];
 
 const FIYAT_YUKSEK_ORANI = 1.20; // son dip fiyatın %20 üzeri = "yüksek"

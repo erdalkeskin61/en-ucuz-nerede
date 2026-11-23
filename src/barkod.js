@@ -19,7 +19,7 @@
  *
  * Dürüstlük: hiçbir sitede bulunamazsa "bulunamadı" döner, tahmin üretilmez.
  */
-import { adapters, adapterById } from './sites/index.js';
+import { adaptersByMarket, adapterById } from './sites/index.js';
 import { computePricing } from './pricing.js';
 import { normalizeBarcode, formatTL, dominantColor, titleSimilarity } from './util.js';
 import { HIZLI_SITELER } from './basketOptimizer.js';
@@ -69,7 +69,7 @@ export async function barkodAra(girdiBarkod, opts = {}) {
   // Açıkça verilen boş dizi "site yok" demektir.
   const siteListesi = Array.isArray(opts.siteler)
     ? opts.siteler
-    : (hizliMod ? HIZLI_SITELER : adapters.map(a => a.id));
+    : (hizliMod ? HIZLI_SITELER : adaptersByMarket(opts.market || 'tr').map(a => a.id));
   const maxAday = Math.max(1, Math.min(opts.maxAday || 2, 4)); // site başına sayfa çekme sınırı
   // Site başına üst sınır (2026-10-28): bir mağaza yanıt vermezse tüm barkod işi
   // sonsuza kadar "29/30 site" ekranında kalıyordu ve kullanıcı HİÇ sonuç göremiyordu

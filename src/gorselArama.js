@@ -17,7 +17,7 @@
  *  - Stokta olmayan mağaza, fiyatı ucuz olsa da "en ucuz" olamaz (stokSirala).
  */
 import { config } from './config.js';
-import { adapters, adapterById } from './sites/index.js';
+import { adaptersByMarket, adapterById } from './sites/index.js';
 import { runComparison } from './pipeline.js';
 import { hizliKaynakUrunBul } from './urunArama.js';
 import { titleSimilarity, dominantColor, extractColors } from './util.js';
@@ -633,7 +633,7 @@ export async function gorselAra(analiz = {}, opts = {}) {
     not: 'Kanonik ürün yok; mağazalarda doğrudan aranıyor…',
   });
   const yedek = await gorselAra(analiz, { ...opts, siteler: opts.hizliMod === false
-    ? adapters.map(a => a.id) : HIZLI_SITELER });
+    ? adaptersByMarket(opts.market || 'tr').map(a => a.id) : HIZLI_SITELER });
   return {
     ...yedek,
     ozet: { ...yedek.ozet, yontem: 'site-taramasi', kanonikBulunamadi: true },

@@ -21,6 +21,7 @@
 import { htmlKacis, sayfaIskeleti } from './seoSayfalar.js';
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { adaptersByMarket } from './sites/index.js';
 
 export const GLOBAL_ANA_YOLLARI = Object.freeze({
   en: '/en',
@@ -734,6 +735,7 @@ const ANA_KOPYA = Object.freeze({
     araniyor: 'Scanning regional store...',
     bulunamadi: 'No matching offer found for this query.',
     git: 'Visit Store ↗',
+    magazaListeBaslik: 'Supported stores in this region',
   },
   fr: {
     market: 'fr',
@@ -756,6 +758,7 @@ const ANA_KOPYA = Object.freeze({
     araniyor: 'Analyse en cours...',
     bulunamadi: 'Aucune offre correspondante trouvée.',
     git: 'Voir l’offre ↗',
+    magazaListeBaslik: 'Boutiques suivies dans cette région',
   },
   ja: {
     market: 'jp',
@@ -778,6 +781,7 @@ const ANA_KOPYA = Object.freeze({
     araniyor: '公式ストアを確認中...',
     bulunamadi: '該当する商品が見つかりませんでした。',
     git: 'ショップへ ↗',
+    magazaListeBaslik: 'この地域の対応ストア',
   },
 });
 
@@ -786,6 +790,9 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   const c = ANA_KOPYA[kod];
   const canonicalUrl = `${tabanUrl}${GLOBAL_ANA_YOLLARI[kod]}`;
   const cr = crealityAracLinki(kod, '3D Printer');
+  const bolgeMagazalari = kod === 'fr'
+    ? [...adaptersByMarket('fr'), ...adaptersByMarket('eu')]
+    : adaptersByMarket(c.market);
 
   const extraMeta = [
     hreflangEtiketleri(tabanUrl, ANA_YOL_HARITASI),
@@ -829,6 +836,10 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
           <p class="rehber-ozet">${c.kartStoreMetin}</p>
           <span class="rehber-cta">${c.git}</span>
         </a>
+      </div>
+      <div class="seo-ic-linkler" style="margin-top:16px">
+        <span style="font-size:12.5px;color:var(--gri-metin);align-self:center">${c.magazaListeBaslik} (${bolgeMagazalari.length}):</span>
+        ${bolgeMagazalari.map(m => `<span class="seo-ic-link">${htmlKacis(m.name)}</span>`).join('')}
       </div>
     </section>
 

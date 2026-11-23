@@ -388,6 +388,16 @@ kontrol('kargoCikar US/FR/JP kargo eşiği ve kargo ücretini çözer',
   && kargoCikar('<p>¥10,000以上送料無料</p>', null, { currency: 'JPY' }).freeOver === 10000
   && kargoCikar('<p>送料 ¥800</p>', null, { currency: 'JPY' }).fee === 800);
 
+console.log('\n11) 🗺️ Bölgesel Mağaza Görünürlüğü (/api/durum & /en /fr /ja):');
+const frAna = globalAracSayfasiBul('/fr').olustur('https://baskihesap.tech');
+kontrol('Creality Store (US/FR/EU/JP) kendi ülke sayfalarında görünür, Türkiye listesinde yer almaz',
+  enAna.includes('Creality Store (US)') && !enAna.includes('Creality Store (JP)')
+  && frAna.includes('Creality Store (FR)') && frAna.includes('Creality Store (EU)') && !frAna.includes('Creality Store (US)')
+  && jaAna.includes('Creality Store (JP)') && !jaAna.includes('Creality Store (FR)')
+  && adaptersByMarket('tr').every(a => !a.id.startsWith('creality_'))
+  && serverKaynak.includes("const hamPazar = String(req.query?.market || 'tr')")
+  && serverKaynak.includes('adaptersByMarket(hamPazar)'));
+
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);

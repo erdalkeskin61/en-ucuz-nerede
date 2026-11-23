@@ -138,7 +138,7 @@ $('#adminCikisBtn')?.addEventListener('click', async () => {
 
 async function siteleriYukle() {
   try {
-    const res = await fetch('/api/durum');
+    const res = await fetch('/api/durum?market=all');
     if (!res.ok) return;
     const d = await res.json();
     tumSiteler = Array.isArray(d.siteler) ? d.siteler : [];
