@@ -837,6 +837,11 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   const jsonScripts = jsonLdList
     .map(o => `<script type="application/ld+json">${jsonLdMetni(o)}</script>`)
     .join('\n  ');
+  const otoHreflang = (!String(extraMeta || '').includes('hreflang=') && safeUrl)
+    ? `<link rel="alternate" hreflang="${htmlKacis(sz.meta.dil)}" href="${safeUrl}" />`
+      + (sz.meta.dil === 'tr' ? `\n  <link rel="alternate" hreflang="x-default" href="${safeUrl}" />` : '')
+    : '';
+  const birlesikExtraMeta = [otoHreflang, extraMeta].filter(Boolean).join('\n  ');
 
   const ga4Snip = ga4HeadSnip();
   return `<!DOCTYPE html>
@@ -854,7 +859,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   <meta property="og:title" content="${safeTitle}" />
   <meta property="og:description" content="${safeDesc}" />
   <meta property="og:url" content="${safeUrl}" />
-  <meta property="og:image" content="${safeImg}" />${extraMeta ? '\n  ' + extraMeta : ''}
+  <meta property="og:image" content="${safeImg}" />${birlesikExtraMeta ? '\n  ' + birlesikExtraMeta : ''}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${safeTitle}" />
   <meta name="twitter:description" content="${safeDesc}" />

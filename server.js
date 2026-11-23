@@ -62,7 +62,8 @@ import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
 } from './src/rehberSayfalar.js';
 import {
-  globalAracSayfasiBul, globalAracSitemapKayitlari, GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
+  globalAracSayfasiBul, globalAracSitemapKayitlari, globalAracAlternatifHaritasi,
+  GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
@@ -522,26 +523,67 @@ app.get('/robots.txt', (req, res, next) => {
   });
 });
 
-app.get('/sitemap.xml', (req, res) => {
-  try {
-    const taban = yayinKoku(req);
-    const sayfalar = [...sitemapKayitlari(), ...rehberSitemapKayitlari(), ...globalAracSitemapKayitlari()];
-    const govde = sayfalar.map(s => [
+const SITEMAP_DILLER = new Set(['tr', 'en', 'fr', 'ja']);
+
+function sitemapUrlSetXml(taban, sayfalar) {
+  const altHarita = globalAracAlternatifHaritasi();
+  const govde = sayfalar.map((s) => {
+    const alt = s.alternates || altHarita[s.yol];
+    const altSatirlar = alt
+      ? Object.entries(alt).map(([hreflang, yol]) => (
+        `    <xhtml:link rel="alternate" hreflang="${xmlKacis(hreflang)}" href="${xmlKacis(taban + yol)}" />`
+      ))
+      : [];
+    return [
       '  <url>',
       `    <loc>${xmlKacis(taban + s.yol)}</loc>`,
       `    <lastmod>${xmlKacis(s.lastmod)}</lastmod>`,
       `    <changefreq>${s.siklik}</changefreq>`,
       `    <priority>${s.oncelik}</priority>`,
+      ...altSatirlar,
       '  </url>',
+    ].join('\n');
+  }).join('\n');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+    + '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+    + govde + '\n</urlset>\n';
+}
+
+app.get('/sitemap.xml', (req, res) => {
+  try {
+    const taban = yayinKoku(req);
+    const bugun = new Date().toISOString().slice(0, 10);
+    const indeks = [...SITEMAP_DILLER].map(dil => [
+      '  <sitemap>',
+      `    <loc>${xmlKacis(`${taban}/sitemap-${dil}.xml`)}</loc>`,
+      `    <lastmod>${bugun}</lastmod>`,
+      '  </sitemap>',
     ].join('\n')).join('\n');
     const xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-      + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-      + govde + '\n</urlset>\n';
+      + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+      + indeks + '\n</sitemapindex>\n';
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(xml);
   } catch (e) {
-    res.status(500).type('text/plain').send('sitemap üretilemedi');
+    res.status(500).type('text/plain').send('sitemap indeksi üretilemedi');
+  }
+});
+
+app.get('/sitemap-:dil.xml', (req, res, next) => {
+  const dil = String(req.params.dil || '').toLowerCase();
+  if (!SITEMAP_DILLER.has(dil)) return next();
+  try {
+    const taban = yayinKoku(req);
+    const sayfalar = dil === 'tr'
+      ? [...sitemapKayitlari(), ...rehberSitemapKayitlari()]
+      : globalAracSitemapKayitlari(dil);
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    res.send(sitemapUrlSetXml(taban, sayfalar));
+  } catch (e) {
+    res.status(500).type('text/plain').send('alt sitemap üretilemedi');
   }
 });
 
@@ -693,6 +735,11 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
             `<link rel="alternate" hreflang="fr" href="${tamKok}${harita.fr}" />`,
             `<link rel="alternate" hreflang="ja" href="${tamKok}${harita.ja}" />`,
             `<link rel="alternate" hreflang="x-default" href="${tamKok}${harita.en}" />`,
+          ].join('\n  ');
+        } else if (req.path === '/sepet.html') {
+          ekAlternates = '\n  ' + [
+            `<link rel="alternate" hreflang="tr" href="${tamKok}/sepet.html" />`,
+            `<link rel="alternate" hreflang="x-default" href="${tamKok}/sepet.html" />`,
           ].join('\n  ');
         }
         cikti = cikti.replace(

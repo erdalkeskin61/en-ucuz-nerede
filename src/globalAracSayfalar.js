@@ -288,17 +288,17 @@ const SLICER_KOPYA = Object.freeze({
   },
 });
 
-const ANA_YOL_HARITASI = Object.freeze({
+export const ANA_YOL_HARITASI = Object.freeze({
   tr: '/',
   ...GLOBAL_ANA_YOLLARI,
 });
 
-const MALIYET_YOL_HARITASI = Object.freeze({
+export const MALIYET_YOL_HARITASI = Object.freeze({
   tr: '/maliyet.html',
   ...GLOBAL_MALIYET_YOLLARI,
 });
 
-const SLICER_YOL_HARITASI = Object.freeze({
+export const SLICER_YOL_HARITASI = Object.freeze({
   tr: '/slicer.html',
   ...GLOBAL_SLICER_YOLLARI,
 });
@@ -920,11 +920,42 @@ export function globalAracSayfasiBul(yol) {
   return null;
 }
 
-export function globalAracSitemapKayitlari() {
+/** Çok dilli alternatif haritası (TR + EN + FR + JA + x-default). */
+export function globalAracAlternatifHaritasi() {
+  const ana = { ...ANA_YOL_HARITASI, 'x-default': '/' };
+  const maliyet = { ...MALIYET_YOL_HARITASI, 'x-default': GLOBAL_MALIYET_YOLLARI.en };
+  const slicer = { ...SLICER_YOL_HARITASI, 'x-default': GLOBAL_SLICER_YOLLARI.en };
+  return {
+    '/': ana,
+    '/en': ana,
+    '/fr': ana,
+    '/ja': ana,
+    '/maliyet.html': maliyet,
+    '/en/cost-calculator': maliyet,
+    '/fr/calculateur-cout': maliyet,
+    '/ja/cost-calculator': maliyet,
+    '/slicer.html': slicer,
+    '/en/slicer': slicer,
+    '/fr/slicer': slicer,
+    '/ja/slicer': slicer,
+  };
+}
+
+export function globalAracSitemapKayitlari(dil = null) {
   const bugun = new Date().toISOString().slice(0, 10);
-  return [
-    ...Object.values(GLOBAL_ANA_YOLLARI).map(yol => ({ yol, oncelik: '0.95', siklik: 'daily', lastmod: bugun })),
-    ...Object.values(GLOBAL_MALIYET_YOLLARI).map(yol => ({ yol, oncelik: '0.85', siklik: 'weekly', lastmod: bugun })),
-    ...Object.values(GLOBAL_SLICER_YOLLARI).map(yol => ({ yol, oncelik: '0.80', siklik: 'weekly', lastmod: bugun })),
+  const altHarita = globalAracAlternatifHaritasi();
+  const gruplar = [
+    { yollar: GLOBAL_ANA_YOLLARI, oncelik: '0.95', siklik: 'daily' },
+    { yollar: GLOBAL_MALIYET_YOLLARI, oncelik: '0.85', siklik: 'weekly' },
+    { yollar: GLOBAL_SLICER_YOLLARI, oncelik: '0.80', siklik: 'weekly' },
   ];
+  const hepsi = [];
+  for (const g of gruplar) {
+    for (const [d, yol] of Object.entries(g.yollar)) {
+      hepsi.push({ dil: d, yol, oncelik: g.oncelik, siklik: g.siklik, lastmod: bugun, alternates: altHarita[yol] });
+    }
+  }
+  if (!dil) return hepsi;
+  const hedef = normalizeDil(dil);
+  return hepsi.filter(x => x.dil === hedef);
 }

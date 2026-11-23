@@ -17,9 +17,9 @@ import {
 } from '../src/i18n/index.js';
 import {
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
-  globalAracSayfasiBul, globalAracSitemapKayitlari,
+  globalAracSayfasiBul, globalAracSitemapKayitlari, globalAracAlternatifHaritasi,
 } from '../src/globalAracSayfalar.js';
-import { seoUrunListesi, urunSayfasiHtml } from '../src/seoSayfalar.js';
+import { seoUrunListesi, urunSayfasiHtml, sayfaIskeleti } from '../src/seoSayfalar.js';
 import { katalogUrunleriAra } from '../src/katalogSync.js';
 import { katalogdanKaynakAdayi } from '../src/urunArama.js';
 
@@ -292,7 +292,39 @@ kontrol('server.js tüm global maliyet ve slicer rotalarını tanımlar',
   && serverKaynak.includes("'/fr/calculateur-cout'")
   && serverKaynak.includes("'/ja/cost-calculator'")
   && serverKaynak.includes("'/en/slicer'")
-  && serverKaynak.includes('globalAracSitemapKayitlari()'));
+  && serverKaynak.includes('globalAracSitemapKayitlari(dil)'));
+
+console.log('\n9) Çok Dilli Hreflang & Bölgesel Sitemap İndeksi:');
+const trIskelet = sayfaIskeleti({
+  title: 'Test TR',
+  description: 'Açıklama',
+  canonicalUrl: 'https://baskihesap.tech/urun/test',
+  ogImage: 'https://baskihesap.tech/og-gorsel.png',
+  govdeHtml: '<p>Test</p>',
+});
+kontrol('sayfaIskeleti(tr) <html lang="tr"> ve otomatik self hreflang="tr" + x-default basar',
+  trIskelet.includes('<html lang="tr"')
+  && trIskelet.includes('<link rel="alternate" hreflang="tr" href="https://baskihesap.tech/urun/test" />')
+  && trIskelet.includes('<link rel="alternate" hreflang="x-default" href="https://baskihesap.tech/urun/test" />'));
+
+for (const dil of ['en', 'fr', 'ja']) {
+  const kayitlar = globalAracSitemapKayitlari(dil);
+  kontrol(`globalAracSitemapKayitlari(${dil}) tam 3 URL döndürür`,
+    kayitlar.length === 3 && kayitlar.every(k => k.dil === dil && k.yol.startsWith(`/${dil}`) && k.alternates?.tr));
+}
+
+const altHarita = globalAracAlternatifHaritasi();
+kontrol('globalAracAlternatifHaritasi tüm eşleştirilmiş TR/EN/FR/JA rotalarını kapsar',
+  altHarita['/']?.en === '/en'
+  && altHarita['/maliyet.html']?.fr === '/fr/calculateur-cout'
+  && altHarita['/slicer.html']?.ja === '/ja/slicer');
+
+kontrol('server.js /sitemap.xml sitemapindex ve /sitemap-:dil.xml (tr/en/fr/ja) sunar',
+  serverKaynak.includes('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+  && serverKaynak.includes("app.get('/sitemap-:dil.xml'")
+  && serverKaynak.includes("new Set(['tr', 'en', 'fr', 'ja'])")
+  && serverKaynak.includes('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
+  && serverKaynak.includes('<xhtml:link rel="alternate" hreflang='));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

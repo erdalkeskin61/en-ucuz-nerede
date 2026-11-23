@@ -342,8 +342,8 @@ if (CANLI) {
 
     const sm = await fetch(`${TABAN}/sitemap.xml`, { signal: AbortSignal.timeout(10000) });
     const smMetin = await sm.text();
-    kontrol('canlı: /sitemap.xml 200 + urlset',
-      sm.status === 200 && /<urlset/.test(smMetin), `HTTP ${sm.status}`);
+    kontrol('canlı: /sitemap.xml 200 + sitemapindex/urlset',
+      sm.status === 200 && /<(sitemapindex|urlset)/.test(smMetin), `HTTP ${sm.status}`);
     kontrol('canlı: sitemap Content-Type xml',
       String(sm.headers.get('content-type') || '').includes('xml'));
     kontrol('canlı: sitemap mutlak URL', /<loc>https?:\/\//.test(smMetin));
