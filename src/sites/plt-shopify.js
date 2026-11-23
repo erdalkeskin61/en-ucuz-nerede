@@ -28,8 +28,8 @@ import { miktarCikar } from '../birimFiyat.js';
 /** Marka adını başlığa yalnızca başlıkta geçmiyorsa ve mağaza kendi adını
  *  satıcı alanı olarak basmamışsa ekler ("Filamenthane eSUN PLA+" hatasını önler). */
 function markaliBaslik(vendor, title, siteId = null, siteName = null) {
-  const t = String(title || '').trim();
-  const v = String(vendor || '').trim();
+  const t = String(title || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const v = String(vendor || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   if (!v) return t;
   if (siteId && magazaAdiMarkaMi(v, siteId, siteName)) {
     const gercek = gercekMarkaBul(v, t, siteId, siteName);
@@ -187,9 +187,10 @@ export function enIyiVaryant(variants, kaynak = null) {
 }
 
 export function shopifySite(cfg) {
-  const { id, name, hosts, base } = cfg;
+  const { id, name, hosts, base, pathPrefix = null } = cfg;
   const market = cfg.market || 'tr';
   const currency = paraBirimiNormalize(cfg.currency || 'TRY');
+  const temizPrefix = pathPrefix ? '/' + String(pathPrefix).replace(/^\/+|\/+$/g, '') : '';
 
   const jsonFiyatOku = (ham, bolYuz = false) => {
     if (ham == null || ham === '') return null;
@@ -210,8 +211,14 @@ export function shopifySite(cfg) {
     hosts,
 
     isProductUrl(url) {
-      return /^\/products\/[^/]+/.test(url.pathname);
+      return /^(?:\/[a-z]{2}(?:-[a-z]{2})?)?\/products\/[^/]+/i.test(url.pathname);
     },
+
+    ...(temizPrefix ? {
+      matchesUrl(url) {
+        return url.pathname.toLowerCase().startsWith(temizPrefix.toLowerCase() + '/');
+      },
+    } : {}),
 
     searchUrl(q) {
       return base + '/search?q=' + encodeURIComponent(q);

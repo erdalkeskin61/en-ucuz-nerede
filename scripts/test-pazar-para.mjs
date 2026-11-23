@@ -420,16 +420,29 @@ const usSiteler = adaptersByMarket('us');
 const frSiteler = adaptersByMarket('fr');
 const euSiteler = adaptersByMarket('eu');
 const jpSiteler = adaptersByMarket('jp');
-kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=20, FR>=10, EU>=12, JP>=6)',
+kontrol('Her ülke kendi izole mağaza ağına sahiptir (TR=70, US>=26, FR>=16, EU>=12, JP>=8)',
   trSiteler.length === 70
-  && usSiteler.length >= 20
-  && frSiteler.length >= 10
+  && usSiteler.length >= 26
+  && frSiteler.length >= 16
   && euSiteler.length >= 12
-  && jpSiteler.length >= 6,
+  && jpSiteler.length >= 8,
   `tr=${trSiteler.length}, us=${usSiteler.length}, fr=${frSiteler.length}, eu=${euSiteler.length}, jp=${jpSiteler.length}`);
 
-kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce ve PrestaShop URL\'lerini tanır',
+kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop ve Prusa3D URL\'lerini tanır',
   detectSite('https://us.polymaker.com/products/matte-pla')?.id === 'polymaker_us'
+  && detectSite('https://shop.polymaker.com/products/polylite-pla')?.id === 'polymaker_us'
+  && detectSite('https://us.qidi3d.com/products/q1-pro-3d-printer')?.id === 'qidi_us'
+  && detectSite('https://store.sunlu.com/products/sunlu-pla')?.id === 'sunlu_us'
+  && detectSite('https://store.sunlu.com/fr/products/sunlu-pla')?.id === 'sunlu_fr'
+  && detectSite('https://us.snapmaker.com/products/snapmaker-artisan')?.id === 'snapmaker_us'
+  && detectSite('https://eu.snapmaker.com/fr/products/snapmaker-artisan')?.id === 'snapmaker_fr'
+  && detectSite('https://overture3d.com/en-eu/products/overture-pla')?.id === 'overture_fr'
+  && detectSite('https://eu.flashforge.com/fr/products/ad5x-3d-imprimante')?.id === 'flashforge_fr'
+  && detectSite('https://store.landu3d.com/fr/products/matte-pla-filament')?.id === 'landu_fr'
+  && detectSite('https://3dprintersdepot.com/en-jp/products/flashforge-creator-5-3d-printer')?.id === '3dprintersdepot_jp'
+  && detectSite('https://www.prusa3d.com/product/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_us'
+  && detectSite('https://www.prusa3d.com/fr/produit/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_fr'
+  && detectSite('https://www.prusa3d.com/ja/product/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_ja'
   && detectSite('https://store.micro-swiss.com/products/ng-extruder')?.id === 'microswiss'
   && detectSite('https://francofil.fr/product/pla-vert-irise-paillete/')?.id === 'francofil'
   && detectSite('https://www.arianeplast.com/fr/pla-format-1-kg/100-pla-noir.html')?.id === 'arianeplast'
@@ -437,7 +450,13 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce ve PrestaShop URL\'lerini t
   && detectSite('https://skhonpo.com/products/bambu-lab')?.id === 'skhonpo_jp');
 
 const dtUrunUrlKontrol = [
-  ['polymaker_us', 'https://us.polymaker.com/products/matte-pla'],
+  ['polymaker_us', 'https://shop.polymaker.com/products/polylite-pla'],
+  ['overture_fr', 'https://overture3d.com/en-eu/products/overture-pla'],
+  ['flashforge_fr', 'https://eu.flashforge.com/fr/products/ad5x-3d-imprimante'],
+  ['3dprintersdepot_jp', 'https://3dprintersdepot.com/en-jp/products/flashforge-creator-5-3d-printer'],
+  ['prusa_us', 'https://www.prusa3d.com/product/prusament-pla-prusa-galaxy-black-1kg/'],
+  ['prusa_fr', 'https://www.prusa3d.com/fr/produit/prusament-pla-prusa-galaxy-black-1kg/'],
+  ['prusa_ja', 'https://www.prusa3d.com/ja/product/prusament-pla-prusa-galaxy-black-1kg/'],
   ['francofil', 'https://francofil.fr/product/pla-vert-irise-paillete/'],
   ['arianeplast', 'https://www.arianeplast.com/fr/pla-format-1-kg/100-pla-noir.html'],
   ['skhonpo_jp', 'https://skhonpo.com/products/bambu-lab'],
