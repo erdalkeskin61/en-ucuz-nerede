@@ -28,7 +28,7 @@ import {
 } from './seoSayfalar.js';
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
-import { adaptersByMarket } from './sites/index.js';
+import { adaptersByMarket, taramaAdaptersByMarket } from './sites/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let _indexSablon = null;
@@ -912,10 +912,8 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   const c = ANA_KOPYA[kod];
   const sz = sozlukGetir(kod);
   const canonicalUrl = `${tabanUrl}${GLOBAL_ANA_YOLLARI[kod]}`;
-  const bolgeMagazalari = kod === 'fr'
-    ? [...adaptersByMarket('fr'), ...adaptersByMarket('eu')]
-    : adaptersByMarket(c.market);
-  const taramaMagazalari = adaptersByMarket(c.market);
+  const bolgeMagazalari = taramaAdaptersByMarket(c.market);
+  const taramaMagazalari = bolgeMagazalari;
   const ortakSiteler = taramaMagazalari.map(m => ({ id: m.id, ad: m.name }));
   const ortam = {
     market: c.market,

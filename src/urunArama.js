@@ -5,7 +5,7 @@
  * "iPhone 15", "Bambu Lab P1S"), en uygun kaynak ürün URL'sini 1-3 saniyede bulup
  * tek bir tam karş�laştırma akışına yönlendirmek.
  */
-import { adapterById, adaptersByMarket, marketSiteIds, normalizeMarket, PAZARLAR } from './sites/index.js';
+import { adapterById, adaptersByMarket, taramaAdaptersByMarket, marketSiteIds, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { katalogUrunleriAra } from './katalogSync.js';
 import {
   titleSimilarity, modelSerisiCakismasi, hatCakismasi, kapasiteCakismasi,
@@ -451,7 +451,7 @@ export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disS
       ? ['porima3d', 'robotistan', 'filamentdepom', '3dortgen', 'filamentsan', 'kirpilab', 'efilament', 'makerpazar', '3dmarketim', 'samm', 'filamentmarketim', 'domirobot', 'robolinkmarket', 'hepsiburada', 'trendyol', 'n11']
       : ['robotistan', 'samm', 'direnc', 'hepsiburada', 'vatan', 'mediamarkt', 'trendyol', 'amazon', 'n11']
     ).filter(id => izinliSiteler.has(id))
-    : adaptersByMarket(etkinMarket).map(a => a.id);
+    : taramaAdaptersByMarket(etkinMarket).map(a => a.id);
 
   // 🛑 2026-11-14: AbortController yayılımı. Zaman aşımında promise'i yalnızca
   // reddetmek yetmiyordu — altındaki fetch/tarayıcı isteği arka planda çalışmaya

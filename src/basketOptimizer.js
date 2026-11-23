@@ -19,7 +19,7 @@
  * Para: tüm ara hesaplar KURUŞ tam sayı (proje standardı — float hatası olmaz).
  */
 import { runComparison, runComparisonByQuery } from './pipeline.js';
-import { adapterById, detectSite, adaptersByMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
+import { adapterById, detectSite, adaptersByMarket, taramaAdaptersByMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { formatTL } from './util.js';
 import { grupKuponlari } from './kuponSepeti.js';
 
@@ -507,7 +507,7 @@ export async function sepetOptimize(urunler, opts = {}) {
   const siteler = Array.isArray(opts.siteler)
     ? opts.siteler
     : (market !== 'tr'
-      ? adaptersByMarket(market).map(a => a.id)
+      ? taramaAdaptersByMarket(market).map(a => a.id)
       : (hizliMod ? SEPET_SITELERI : null));
   const siteZamanAsimi = Math.max(5000, Number(opts.siteTimeoutMs) || SITE_ZAMAN_ASIMI_MS);
   const basladi = Date.now();

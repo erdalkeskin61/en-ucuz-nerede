@@ -58,6 +58,29 @@ export function adaptersByMarket(market = 'tr', havuz = adapters) {
   return havuz.filter(a => adapterMarket(a) === m);
 }
 
+/**
+ * Bir pazarın canlı tarama mağaza havuzunu döndürür.
+ * Fransa ('fr') ve Avrupa ('eu') aynı EUR pazarını paylaştığından aynı host'lu
+ * kopyaları tekilleştirerek birlikte taranır (ör. AzureFilm, Elegoo EU, E3D Online).
+ */
+export function taramaAdaptersByMarket(market = 'tr', havuz = adapters) {
+  const m = normalizeMarket(market);
+  if (m !== 'fr' && m !== 'eu') return adaptersByMarket(m, havuz);
+  const birincil = adaptersByMarket(m, havuz);
+  const ikincil = adaptersByMarket(m === 'fr' ? 'eu' : 'fr', havuz);
+  const gorulenHost = new Set(
+    birincil.map(a => String(a.hosts?.[0] || a.id).toLowerCase().replace(/^www\./, '')),
+  );
+  const sonuc = [...birincil];
+  for (const a of ikincil) {
+    const h = String(a.hosts?.[0] || a.id).toLowerCase().replace(/^www\./, '');
+    if (gorulenHost.has(h) && !a.id.startsWith('creality_')) continue;
+    gorulenHost.add(h);
+    sonuc.push(a);
+  }
+  return sonuc;
+}
+
 export function marketSiteIds(market = 'tr') {
   return new Set(adaptersByMarket(market).map(a => a.id));
 }

@@ -16,7 +16,7 @@ import { semanticMatch, explainCheapest } from './ai.js';
  *  6. Aynı renktekiler arasında en ucuz işaretlenir.
  */
 import { config } from './config.js';
-import { adapters, detectSite, adaptersByMarket, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
+import { adapters, detectSite, adaptersByMarket, taramaAdaptersByMarket, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { classifyCampaigns } from './ai.js';
 import {
   computePricing, enUcuzFiyatDegerlendir, sahteIndirimleriIsaretle, zamanlamaTahminiYap,
@@ -1043,7 +1043,7 @@ export async function runComparisonByQuery(sorgu, opts = {}) {
   const etkinMarket = normalizeMarket(opts.market || 'tr');
   const siteFiltresi = Array.isArray(opts.siteler) && opts.siteler.length ? new Set(opts.siteler) : null;
   const hizliKume = new Set(HIZLI_SITELER);
-  const others = adaptersByMarket(etkinMarket)
+  const others = taramaAdaptersByMarket(etkinMarket)
     .filter(a => (!siteFiltresi || siteFiltresi.has(a.id)))
     .sort((a, b) => {
       const ak = KIRILGAN_KAYNAK_SITELER.has(a.id) ? 1 : 0;
@@ -1143,7 +1143,7 @@ export async function runComparison(sourceUrl, opts = {}) {
   const kaynakMarket = opts.market ? normalizeMarket(opts.market) : adapterMarket(adapter);
   const siteFiltresi = Array.isArray(opts.siteler) && opts.siteler.length ? new Set(opts.siteler) : null;
   const hizliKume = new Set(HIZLI_SITELER);
-  const others = adaptersByMarket(kaynakMarket)
+  const others = taramaAdaptersByMarket(kaynakMarket)
     .filter(a => a.id !== adapter.id && (!siteFiltresi || siteFiltresi.has(a.id)))
     .sort((a, b) => (hizliKume.has(b.id) ? 1 : 0) - (hizliKume.has(a.id) ? 1 : 0));
 

@@ -11,7 +11,7 @@ import { globalSiteler, globalKatalogHedefleri } from '../src/sites/global.js';
 import { katalogHedefleri } from '../src/katalogSync.js';
 import {
   adapters, PAZARLAR, normalizeMarket, adapterMarket, adapterCurrency,
-  adaptersByMarket, marketSiteIds, detectSite, adapterById,
+  adaptersByMarket, taramaAdaptersByMarket, marketSiteIds, detectSite, adapterById,
 } from '../src/sites/index.js';
 import { crealityAramaKartlariCikar, crealityJsonLdUrunOku, parseGlobalFiyat } from '../src/sites/creality-global.js';
 import { afiliyeLink } from '../src/afiliye.js';
@@ -497,6 +497,8 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazo
   && detectSite('https://iiidmax.com/products/iiid-max-classic-pla')?.id === 'iiidmax'
   && detectSite('https://store.inslogic3d.com/products/pla-pro-filament-1-75mm')?.id === 'inslogic_us'
   && detectSite('https://store.inslogic3d.com/ja/products/spool-free-engineering-500g-sample')?.id === 'inslogic_jp'
+  && detectSite('https://azurefilm.com/product/refill-unset-pla-wood-lumberlay-1-75mm/')?.id === 'azurefilm_eu'
+  && taramaAdaptersByMarket('fr').some(a => a.id === 'azurefilm_eu')
   && detectSite('https://3dprintersdepot.com/en-jp/products/flashforge-creator-5-3d-printer')?.id === '3dprintersdepot_jp'
   && detectSite('https://www.prusa3d.com/product/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_us'
   && detectSite('https://www.prusa3d.com/fr/produit/prusament-pla-prusa-galaxy-black-1kg/')?.id === 'prusa_fr'
