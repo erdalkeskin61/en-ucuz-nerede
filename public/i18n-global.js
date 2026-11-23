@@ -372,8 +372,6 @@
       ['kaynak ürün', 'source item'],
       ['mağazadan canlı doğrulandı', 'stores verified live'],
       ['Az önce ', 'Just verified across '],
-      ['⏳ Son ', '⏳ Only '],
-      [' Ürün', ' left'],
       ['Kullanılan varsayımlar:', 'Assumptions used:'],
       ['yazıcı gücü', 'printer power'],
       ['elektrik ·', 'electricity ·'],
@@ -387,13 +385,39 @@
       ['Son 30 gün · fiyat geçmişi', 'Last 30 days · price history'],
       ['Son 7 gün · fiyat geçmişi', 'Last 7 days · price history'],
       [' mağaza · ', ' stores · '],
-      [' stokta', ' in stock'],
       [' mağazada stokta', ' stores in stock'],
       [' daha az öde', ' less'],
       [' fark', ' spread'],
       ['📈 Henüz yeterli fiyat geçmişi yok.', '📈 Not enough price history yet.'],
       ['Henüz yeterli fiyat geçmişi yok', 'Not enough price history yet'],
       ['Her karşılaştırma bir kayıt ekler; trend birkaç günde oluşur.', 'Each search adds an observation; price trends appear over a few days.'],
+      ['Canlı Filament & 3D Yazıcı Borsası', 'Live Filament & 3D Printer Deals'],
+      ['Otonom radarın son stoklu dip fiyatları', 'Latest in-stock low prices tracked regionally'],
+      ['📢 Fırsatlar', '📢 Live Deals'],
+      ['Borsa henüz açılmadı.', 'No regional deals cached yet.'],
+      ['Otonom radar ilk turunu tamamlayınca stoktaki en ucuz fiyatlar burada listelenir.', 'Once regional scanning completes, lowest in-stock prices appear here.'],
+      ['Fiyatlar otonom radarın son taramasından gelir', 'Prices reflect the latest regional live scan'],
+      ['⚡ Bu Filamenti Satın Al ➔', '⚡ Buy This Filament ➔'],
+      ['🧾 Baskı Teklif Fişi Çıkar', '🧾 Generate Print Quote'],
+      ['⚡ Kampanyayı İncele', '⚡ View Promotion'],
+      ['⏹️ Durdur & Bulunanları Göster', '⏹️ Stop & Show Found'],
+      ['↻ Sıfırdan Tara', '↻ Fresh Rescan'],
+      ['🎯 İndirim Oranı', '🎯 Discount %'],
+      ['✓ Gerçek fiyat = satış fiyatı − herkesin alabileceği indirimler + kargo', '✓ Real price = item price − public discounts + shipping'],
+      ['uygulama / kart / üyelik) fiyata dahil değildir', 'app / card / member-only) not included in base price'],
+      ['🚚 Kargo: ücreti bilinen sitelerde toplama eklenir; eşiği aşan ürünlerde bedava', '🚚 Shipping: included when known or free above threshold'],
+      ['🎨 Farklı renkli ürünler en ucuz yarışından çıkarılır', '🎨 Different color variants are excluded from lowest-price winner'],
+      ['🧾 3D BASKI TEKLİF FİŞİ', '🧾 3D PRINT QUOTE RECEIPT'],
+      ['3D Baskı Maliyet & Teklif Özeti', '3D Print Cost & Quote Summary'],
+      ['ÖNERİLEN SATIŞ FİYATI', 'RECOMMENDED SELLING PRICE'],
+      ['Atölye kâr marjı dahildir', 'Workshop margin included'],
+      ['📋 Fişi Kopyala', '📋 Copy Quote'],
+      ['🖨️ Yazdır / PDF', '🖨️ Print / PDF'],
+      ['📲 WhatsApp ile Gönder', '📲 Share on WhatsApp'],
+      ['Filament Maliyeti:', 'Filament Cost:'],
+      ['Elektrik Tüketimi:', 'Electricity:'],
+      ['Cihaz Amortismanı:', 'Machine Wear:'],
+      ['Net Üretim Maliyeti:', 'Net Print Cost:'],
     ],
     fr: [
       ['Bu ürün için henüz yeterli fiyat geçmişi yok (en az 3 gün gerekli). Yapay zeka yanıltıcı tahmin üretmemek için tarafsız kalmaktadır.', 'Historique de prix encore insuffisant (min. 3 jours requis).Statut neutre affiché sans estimation artificielle.'],
@@ -469,13 +493,39 @@
       ['Son 30 gün · fiyat geçmişi', '30 derniers jours · historique'],
       ['Son 7 gün · fiyat geçmişi', '7 derniers jours · historique'],
       [' mağaza · ', ' boutiques · '],
-      [' stokta', ' en stock'],
       [' mağazada stokta', ' boutiques en stock'],
       [' daha az öde', ' de moins'],
       [' fark', ' d’écart'],
       ['📈 Henüz yeterli fiyat geçmişi yok.', '📈 Historique de prix encore insuffisant.'],
       ['Henüz yeterli fiyat geçmişi yok', 'Historique insuffisant'],
       ['Her karşılaştırma bir kayıt ekler; trend birkaç günde oluşur.', 'Chaque recherche ajoute un relevé ; la tendance apparaît en quelques jours.'],
+      ['Canlı Filament & 3D Yazıcı Borsası', 'Offres Filaments & Imprimantes 3D en Direct'],
+      ['Otonom radarın son stoklu dip fiyatları', 'Derniers prix bas en stock relevés en Europe'],
+      ['📢 Fırsatlar', '📢 Bons plans'],
+      ['Borsa henüz açılmadı.', 'Aucune offre régionale en cache pour l’instant.'],
+      ['Otonom radar ilk turunu tamamlayınca stoktaki en ucuz fiyatlar burada listelenir.', 'Les meilleurs prix en stock apparaîtront ici après l’analyse régionale.'],
+      ['Fiyatlar otonom radarın son taramasından gelir', 'Prix issus de la dernière analyse régionale'],
+      ['⚡ Bu Filamenti Satın Al ➔', '⚡ Acheter ce filament ➔'],
+      ['🧾 Baskı Teklif Fişi Çıkar', '🧾 Générer un devis'],
+      ['⚡ Kampanyayı İncele', '⚡ Voir l’offre'],
+      ['⏹️ Durdur & Bulunanları Göster', '⏹️ Arrêter et afficher'],
+      ['↻ Sıfırdan Tara', '↻ Réanalyser'],
+      ['🎯 İndirim Oranı', '🎯 Remise %'],
+      ['✓ Gerçek fiyat = satış fiyatı − herkesin alabileceği indirimler + kargo', '✓ Prix réel = prix article − remises publiques + livraison'],
+      ['uygulama / kart / üyelik) fiyata dahil değildir', 'appli / carte / membre) hors prix de base'],
+      ['🚚 Kargo: ücreti bilinen sitelerde toplama eklenir; eşiği aşan ürünlerde bedava', '🚚 Livraison : ajoutée au total ou offerte dès le seuil'],
+      ['🎨 Farklı renkli ürünler en ucuz yarışından çıkarılır', '🎨 Les couleurs différentes sont exclues du classement du moins cher'],
+      ['🧾 3D BASKI TEKLİF FİŞİ', '🧾 DEVIS IMPRESSION 3D'],
+      ['3D Baskı Maliyet & Teklif Özeti', 'Résumé Coût & Devis 3D'],
+      ['ÖNERİLEN SATIŞ FİYATI', 'PRIX DE VENTE CONSEILLÉ'],
+      ['Atölye kâr marjı dahildir', 'Marge atelier incluse'],
+      ['📋 Fişi Kopyala', '📋 Copier le devis'],
+      ['🖨️ Yazdır / PDF', '🖨️ Imprimer / PDF'],
+      ['📲 WhatsApp ile Gönder', '📲 Envoyer sur WhatsApp'],
+      ['Filament Maliyeti:', 'Coût filament :'],
+      ['Elektrik Tüketimi:', 'Électricité :'],
+      ['Cihaz Amortismanı:', 'Amortissement :'],
+      ['Net Üretim Maliyeti:', 'Coût net de fabrication :'],
     ],
     ja: [
       ['Bu ürün için henüz yeterli fiyat geçmişi yok (en az 3 gün gerekli). Yapay zeka yanıltıcı tahmin üretmemek için tarafsız kalmaktadır.', '価格履歴データがまだ十分ではありません（最低3日分必要）。推測による誤表示を防ぐため中立としています。'],
@@ -546,19 +596,48 @@
       ['Son 30 gün · fiyat geçmişi', '過去30日間 · 価格履歴'],
       ['Son 7 gün · fiyat geçmişi', '過去7日間 · 価格履歴'],
       [' mağaza · ', ' 店舗 · '],
-      [' stokta', ' 在庫あり'],
       [' mağazada stokta', ' 店舗在庫あり'],
       [' daha az öde', ' 安く購入'],
       [' fark', ' 差額'],
       ['📈 Henüz yeterli fiyat geçmişi yok.', '📈 価格履歴データがまだ十分ではありません。'],
       ['Henüz yeterli fiyat geçmişi yok', '価格履歴データ不足'],
       ['Her karşılaştırma bir kayıt ekler; trend birkaç günde oluşur.', '検索ごとに価格が記録され、数日分の推移グラフが表示されます。'],
+      ['Canlı Filament & 3D Yazıcı Borsası', 'ライブ 3Dプリンター・フィラメント特価ボード'],
+      ['Otonom radarın son stoklu dip fiyatları', '日本向けストアで追跡中の最安値速報'],
+      ['📢 Fırsatlar', '📢 特価情報'],
+      ['Borsa henüz açılmadı.', 'この地域の特価キャッシュはまだありません。'],
+      ['Otonom radar ilk turunu tamamlayınca stoktaki en ucuz fiyatlar burada listelenir.', '地域スキャンが完了すると在庫ありの最安値がここに表示されます。'],
+      ['Fiyatlar otonom radarın son taramasından gelir', '最新の地域スキャン結果に基づく価格です'],
+      ['⚡ Bu Filamenti Satın Al ➔', '⚡ このフィラメントを購入 ➔'],
+      ['🧾 Baskı Teklif Fişi Çıkar', '🧾 見積書を作成'],
+      ['⚡ Kampanyayı İncele', '⚡ セールを見る'],
+      ['⏹️ Durdur & Bulunanları Göster', '⏹️ 停止して結果を表示'],
+      ['↻ Sıfırdan Tara', '↻ 再スキャン'],
+      ['🎯 İndirim Oranı', '🎯 割引率'],
+      ['✓ Gerçek fiyat = satış fiyatı − herkesin alabileceği indirimler + kargo', '✓ 実質価格 = 本体価格 − 一般割引 + 送料'],
+      ['uygulama / kart / üyelik) fiyata dahil değildir', 'アプリ/会員限定）は含まれません'],
+      ['🚚 Kargo: ücreti bilinen sitelerde toplama eklenir; eşiği aşan ürünlerde bedava', '🚚 送料：判明分・送料無料ラインを合計に自動反映'],
+      ['🎨 Farklı renkli ürünler en ucuz yarışından çıkarılır', '🎨 色違い商品は最安比較対象から除外されます'],
+      ['🧾 3D BASKI TEKLİF FİŞİ', '🧾 3Dプリントお見積書'],
+      ['3D Baskı Maliyet & Teklif Özeti', '3Dプリント原価・お見積り概要'],
+      ['ÖNERİLEN SATIŞ FİYATI', '推奨販売価格'],
+      ['Atölye kâr marjı dahildir', '工房マージン込み'],
+      ['📋 Fişi Kopyala', '📋 見積書をコピー'],
+      ['🖨️ Yazdır / PDF', '🖨️ 印刷 / PDF'],
+      ['📲 WhatsApp ile Gönder', '📲 WhatsAppで送る'],
+      ['Filament Maliyeti:', 'フィラメント代:'],
+      ['Elektrik Tüketimi:', '電気代:'],
+      ['Cihaz Amortismanı:', '機体償却費:'],
+      ['Net Üretim Maliyeti:', '製造原価合計:'],
     ],
   }[dil];
 
   if (!TAM_ESLESME || !DEYIMLER) return;
   const SIRALI_DEYIMLER = [...DEYIMLER].sort((a, b) => b[0].length - a[0].length);
   const KORUNAN = '.kart-baslik, #kaynakBaslik, .site-adi, #gecmisListe, #footerSiteler, #siteCipleri, #dilSecici, script, style';
+
+  const STOKTA_SOZ = dil === 'fr' ? 'en stock' : (dil === 'ja' ? '在庫あり' : 'in stock');
+  const SON_URUN_SAB = dil === 'fr' ? '⏳ Plus que $1' : (dil === 'ja' ? '⏳ 残り$1点' : '⏳ Only $1 left');
 
   let zamanli = null;
   function uygula(kok) {
@@ -568,19 +647,29 @@
     while ((node = walker.nextNode())) {
       const p = node.parentElement;
       if (!p || p.closest(KORUNAN)) continue;
-      let val = node.nodeValue;
-      if (!val || val.trim().length < 2) continue;
-      const kirpilmis = val.trim();
-      if (Object.prototype.hasOwnProperty.call(TAM_ESLESME, kirpilmis)) {
-        node.nodeValue = val.replace(kirpilmis, TAM_ESLESME[kirpilmis]);
+      const orig = node.nodeValue;
+      if (!orig || orig.trim().length < 2) continue;
+      const kirpilmis = orig.trim();
+      const norm = kirpilmis.replace(/\s+/g, ' ');
+      if (Object.prototype.hasOwnProperty.call(TAM_ESLESME, norm)) {
+        node.nodeValue = orig.replace(kirpilmis, TAM_ESLESME[norm]);
         continue;
       }
+      let val = orig.includes('\n') ? orig.replace(/\s+/g, ' ') : orig;
       let degisti = false;
+      if (/⏳\s*Son\s+\d+\s+Ürün/i.test(val)) {
+        val = val.replace(/⏳\s*Son\s+(\d+)\s+Ürün/gi, SON_URUN_SAB);
+        degisti = true;
+      }
       for (const [tr, hedef] of SIRALI_DEYIMLER) {
         if (val.includes(tr)) {
           val = val.split(tr).join(hedef);
           degisti = true;
         }
+      }
+      if (/(\d+\s*)stokta\b/i.test(val)) {
+        val = val.replace(/(\d+)\s*stokta\b/gi, `$1 ${STOKTA_SOZ}`);
+        degisti = true;
       }
       if (degisti) node.nodeValue = val;
     }

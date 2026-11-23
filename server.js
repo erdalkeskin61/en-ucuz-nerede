@@ -1311,8 +1311,14 @@ function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {
         // "Son aramalar" listesinde doğrudan mağaza linki verilebilsin.
         const enUcuzTeklif = (result.sonuclar || []).find(s =>
           s.enUcuz && s.status === 'found' && s.product && s.renkAyni !== false);
+        const gecmisPazar = job.market
+          ? normalizeMarket(job.market)
+          : (enUcuzTeklif?.site && adapterById(enUcuzTeklif.site)
+            ? adapterMarket(adapterById(enUcuzTeklif.site))
+            : (kayitUrl && detectSite(kayitUrl) ? adapterMarket(detectSite(kayitUrl)) : 'tr'));
         store.addHistory({
           url: kayitUrl,
+          market: gecmisPazar,
           urun: result.kaynak.urun,
           modelKodu: result.kaynak.modelKodu,
           enUcuzSite: result.ozet.enUcuzSite,
@@ -2862,7 +2868,23 @@ app.post('/api/tracked/:id/check', async (req, res) => {
 // Son aramalar: her kayda ürün linki + (varsa) en ucuz mağaza linki eklenir.
 // Eski kayıtlarda `enUcuzUrl` yoksa güncel snapshot'tan tamamlanır (diskten okuma).
 app.get('/api/history', (req, res) => {
-  const liste = store.getHistory();
+  const istenenPazar = req.query?.market ? normalizeMarket(String(req.query.market)) : null;
+  let liste = store.getHistory(istenenPazar ? 50 : 20);
+  if (istenenPazar) {
+    const kayitPazari = (h) => {
+      if (h?.market) return normalizeMarket(h.market);
+      if (h?.enUcuzSiteId) {
+        const adp = adapterById(h.enUcuzSiteId);
+        if (adp) return adapterMarket(adp);
+      }
+      if (h?.url) {
+        const adp = detectSite(h.url);
+        if (adp) return adapterMarket(adp);
+      }
+      return 'tr';
+    };
+    liste = liste.filter(h => kayitPazari(h) === istenenPazar).slice(0, 20);
+  }
   const normalize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   for (const h of liste) {
     if (h.enUcuzUrl) continue;

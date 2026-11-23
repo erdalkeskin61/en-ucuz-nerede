@@ -907,6 +907,814 @@ const ANA_KOPYA = Object.freeze({
   },
 });
 
+function anaSeoRehberKartHtml(kod) {
+  const nav = navYollariGetir(kod);
+  const k = {
+    en: {
+      aria: 'Categories and Frequently Asked Questions',
+      baslik: '3D Printer &amp; Filament Categories',
+      alt: 'Browse tracked 3D printer, filament, resin &amp; part category pages with shipping included:',
+      tum: 'Full Catalog →',
+      y: '🖨️ 3D Printer Prices',
+      pla: '🧵 PLA &amp; PLA+ Filament',
+      petg: '🦾 PETG, TPU &amp; ABS Filament',
+      yedek: '⚙️ Spare Parts (Nozzle, Hotend, Board)',
+      recine: '🧪 UV Resin &amp; Dryers',
+      mal: '🧮 3D Print Cost Calculator',
+      sep: '🧺 Smart Basket Optimizer',
+      reh: '📖 Guides &amp; Versus',
+      ucuzPla: '🏷️ Cheapest PLA ($/kg)',
+      vs: '⚖️ P1S vs K1C',
+      q1: 'Is shipping included in shown prices?',
+      a1: 'Yes. For stores with known shipping fees or free-shipping thresholds, delivery costs are automatically factored into the total; stores that calculate shipping only at checkout are clearly marked "+Shipping calculated at checkout".',
+      q2: 'How is filament unit price ($/kg) compared?',
+      a2: 'Spool weight and resin volume (500 g, 1 kg, 2.5 kg, 1 L) are parsed automatically from listings to rank offers by $/kg and $/L so smaller spools never look artificially cheaper.',
+    },
+    fr: {
+      aria: 'Catégories et Questions Fréquentes',
+      baslik: 'Catégories Imprimantes 3D &amp; Filaments',
+      alt: 'Parcourez tous nos comparatifs produits et catégories livraison incluse en EUR (€) :',
+      tum: 'Catalogue complet →',
+      y: '🖨️ Prix Imprimantes 3D',
+      pla: '🧵 Filament PLA &amp; PLA+',
+      petg: '🦾 Filament PETG, TPU &amp; ABS',
+      yedek: '⚙️ Pièces Détachées (Buses, Hotends)',
+      recine: '🧪 Résine UV &amp; Séchoirs',
+      mal: '🧮 Calculateur de Coût STL',
+      sep: '🧺 Panier Intelligent',
+      reh: '📖 Guides &amp; Comparatifs',
+      ucuzPla: '🏷️ PLA le moins cher (€/kg)',
+      vs: '⚖️ P1S vs K1C',
+      q1: 'Les frais de livraison sont-ils inclus dans les prix ?',
+      a1: 'Oui. Dès que les frais ou seuils de gratuité sont connus, la livraison est intégrée au total ; les boutiques qui calculent le port uniquement au panier affichent clairement « +Frais de port calculés au panier ».',
+      q2: 'Comment le prix au kilo (€/kg) est-il calculé ?',
+      a2: 'Le poids net ou volume (500 g, 1 kg, 2,5 kg, 1 L) est extrait automatiquement pour classer les offres par €/kg et €/L afin qu’une bobine de 500 g ne paraisse pas faussement moins chère.',
+    },
+    ja: {
+      aria: 'カテゴリーとよくある質問',
+      baslik: '3Dプリンター・フィラメント カテゴリー',
+      alt: '送料込みの実勢価格を追跡している製品カテゴリー・購入ガイドをご覧ください:',
+      tum: '製品カタログ一覧 →',
+      y: '🖨️ 3Dプリンター価格',
+      pla: '🧵 PLA・PLA+ フィラメント',
+      petg: '🦾 PETG・TPU・ABS フィラメント',
+      yedek: '⚙️ 交換パーツ（ノズル・ホットエンド）',
+      recine: '🧪 UVレジン＆乾燥機',
+      mal: '🧮 3Dプリント原価計算',
+      sep: '🧺 スマートカート＆送料最適化',
+      reh: '📖 比較ガイド＆記事一覧',
+      ucuzPla: '🏷️ 最安PLA (¥/kg)',
+      vs: '⚖️ P1S vs K1C',
+      q1: '表示価格に送料は含まれていますか？',
+      a1: 'はい。送料や送料無料ラインが公開されているストアでは送料込みの実質総額を計算して比較し、レジ計算のみ対応のストアには「レジ計算（送料別途）」と明記しています。',
+      q2: 'フィラメントのkg単価（¥/kg）はどう比較されますか？',
+      a2: '商品名から容量（500g・1kg・2.5kg・1L等）を自動判別し ¥/kg・¥/L 単位で正規化して並び替えるため、少容量スプールが見かけ上安く見えることはありません。',
+    },
+  }[kod];
+  return `<section class="seo-rehber-kart" aria-label="${htmlKacis(k.aria)}">
+      <div class="seo-rehber-ust">
+        <div>
+          <h2 class="bolum-baslik" style="margin:0 0 6px">${k.baslik}</h2>
+          <p class="ipucu" style="margin:0">${k.alt}</p>
+        </div>
+        <a class="seo-tum-link" href="${htmlKacis(nav.katalog)}">${k.tum}</a>
+      </div>
+      <div class="seo-rehber-baglar">
+        <a href="${htmlKacis(nav.kategoriOnEk)}/3d-yazici">${k.y}</a>
+        <a href="${htmlKacis(nav.kategoriOnEk)}/pla-filament">${k.pla}</a>
+        <a href="${htmlKacis(nav.kategoriOnEk)}/petg-tpu-filament">${k.petg}</a>
+        <a href="${htmlKacis(nav.kategoriOnEk)}/3d-yazici-yedek-parca">${k.yedek}</a>
+        <a href="${htmlKacis(nav.kategoriOnEk)}/recine-ve-sarf">${k.recine}</a>
+        <a href="${htmlKacis(nav.maliyet)}">${k.mal}</a>
+        <a href="${htmlKacis(nav.sepet)}">${k.sep}</a>
+        <a href="${htmlKacis(nav.rehber)}">${k.reh}</a>
+        <a href="${htmlKacis(nav.rehber)}#guide-pla">${k.ucuzPla}</a>
+        <a href="${htmlKacis(nav.rehber)}#vs-p1s-k1c">${k.vs}</a>
+      </div>
+      <div class="seo-sss">
+        <details>
+          <summary>${htmlKacis(k.q1)}</summary>
+          <p>${htmlKacis(k.a1)}</p>
+        </details>
+        <details>
+          <summary>${htmlKacis(k.q2)}</summary>
+          <p>${htmlKacis(k.a2)}</p>
+        </details>
+      </div>
+    </section>`;
+}
+
+const ANA_BOLUM_KOPYA = Object.freeze({
+  en: {
+    vitrinBaslik: 'Live Filament &amp; 3D Printer Deals',
+    vitrinAlt: 'Latest in-stock low prices tracked regionally',
+    vitrinKatalog: '🗂️ Full Catalog',
+    vitrinFirsat: '📢 Deals',
+    vitrinYenileAria: 'Refresh deals board',
+    vitrinYenileTitle: 'Refresh',
+    vitrinKatAria: 'Deal categories',
+    vitrinHepsi: 'All',
+    vitrinFilament: '🧵 Filament',
+    vitrinYazici: '🖨️ 3D Printers',
+    vitrinParca: '⚙️ Parts &amp; Resin',
+    vitrinBosBaslik: 'No regional deals cached yet.',
+    vitrinBosAlt: 'Once regional scanning completes, the lowest in-stock prices appear here.',
+    vitrinDipnot: 'Prices come from the latest regional scan',
+    sepetBaslik: 'Split your basket — pay less',
+    sepetAciklama: 'Paste 2–10 product links. Our engine checks each item across stores, <b>calculates shipping thresholds</b>, and builds three scenarios: single-store convenience, smart split basket, and maximum savings.',
+    sepetIpucu: 'Each product is scanned individually: 2 items ≈ 2–4 min, 5 items ≈ 8–10 min. Track progress below or cancel anytime.',
+    sepetPh: 'One product link per line\nhttps://www.amazon.com/...\nhttps://us.store.bambulab.com/...',
+    sepetBtn: 'Optimize basket',
+    sepetHizliTitle: 'Fast mode checks ~30 top stores; disable to scan all stores in this region.',
+    sepetHizliEtiket: 'Fast mode (30 sites)',
+    sepetSayac: '0/10 items',
+    sepetDurumBaslik: 'Calculating basket…',
+    sepetSonucBaslik: 'Basket scenarios',
+    sepetKuponBaslik: '🎟️ Matching coupons',
+    sepetKuponAlt: 'Copy code in one click and paste at checkout',
+    sepetPaylasBaslik: '📤 Share basket',
+    sepetPaylasAlt: 'Send list via WhatsApp or create a shareable link',
+    sepetWaBtn: '💬 Share via WhatsApp',
+    sepetLinkBtn: '🔗 Create Share Link',
+    sepetKopyaBtn: '📋 Copy Link',
+    sepetNot: 'Prices reflect item totals before shipping; each scenario calculates the store free-shipping threshold separately. Coupon discounts appear in the panel above.',
+    tarayiciBaslik: 'In-store? Scan the barcode',
+    tarayiciAciklama: 'Point your camera at the product barcode (EAN-13/UPC) to check live online prices in seconds. Enter the shelf price to see <b>how much you save</b>.',
+    sekmeBarkod: '📷 Scan barcode',
+    sekmeGorsel: '🖼️ Search by photo',
+    sekmeElle: '⌨️ Enter barcode',
+    kameraBaslat: 'Start camera',
+    kameraDurdur: 'Stop camera',
+    rafEtiket: 'Shelf price ($):',
+    rafPh: 'e.g. 24.99',
+    kameraNot: 'Camera permission required. Must run over HTTPS or localhost.',
+    gorselSecHtml: '<b>Take a photo</b>, drag &amp; drop, or paste with <kbd>Ctrl</kbd>+<kbd>V</kbd>',
+    gorselAltIpucu: '3D part, hotend, nozzle, stepper motor, or filament spool (max 4 MB)',
+    gorselBirak: '📥 Drop photo here',
+    gorselOnizlemeAlt: 'Selected part photo',
+    gorselIpucuEtiket: 'Hint (optional):',
+    gorselIpucuPh: 'e.g. Bambu P1S hotend 0.4mm, Polymaker PLA black',
+    gorselAraBtn: 'Search by photo',
+    ellePh: '6938936709664',
+    elleAraBtn: 'Search',
+    elleIpucu: 'Barcodes are on the back/bottom of the box (usually 12–13 digits). Enter manually if you cannot use the camera.',
+    barkodDurum: 'Searching barcode…',
+    gorselDurum: 'Analyzing photo…',
+    gecmisBaslik: 'Recent searches',
+    altNavAria: 'Quick navigation',
+    altAra: 'Search &amp; Compare',
+    altBorsa: 'Live Deals',
+    altBorsaAria: 'Daily lowest prices — live deals board',
+    altAlarm: 'Price Alerts',
+    altAlarmAria: 'My price alerts — tracked products',
+    altTercih: 'Preferences',
+    modalKapatAria: 'Close',
+    fisRozet: '🧾 3D PRINT QUOTE RECEIPT',
+    fisKapatAria: 'Close quote receipt',
+    fisBaslik: '3D Print Cost &amp; Quote Summary',
+    fisModel: '📦 Model:',
+    fisEbat: '📐 Dimensions:',
+    fisGramaj: '⚖️ Weight:',
+    fisMalzeme: '🧵 Material:',
+    fisSure: '⏱️ Est. Time:',
+    fisFilament: 'Filament Cost:',
+    fisElektrik: 'Electricity Cost:',
+    fisAmortisman: 'Printer Depreciation:',
+    fisNet: 'Net Production Cost:',
+    fisOnerilen: 'RECOMMENDED SELLING PRICE',
+    fisKarNot: 'Includes workshop profit margin',
+    fisDipnot: '⚡ Price Verification: <b>Baskı Hesap</b> · live multi-store radar',
+    fisWa: '📲 Send via WhatsApp',
+    fisKopyala: '📋 Copy Receipt',
+    fisYazdir: '🖨️ Print / PDF',
+    oneriBaslik: 'Recommended models for you',
+    oneriDurdur: '⏹️ Stop &amp; Show Found',
+    sifirdanTara: '↻ Fresh Rescan',
+    dogrulama: '🕒 Just verified live across regional stores',
+    nedenUcuz: '💡 Why Is It Cheaper? (AI Analysis)',
+    birimBaslik: 'Price per kilogram',
+    muadilBaslik: 'Alternative product suggestions',
+    muadilBtn: 'Search alternatives',
+    trendBaslik: '30-Day Price Trend &amp; Discount Analysis',
+    trendAlt: 'Price fluctuations and market analytics',
+    trendRozet: '🔥 At Lowest Level',
+    trendDusuk: '🟢 30-Day Low',
+    trendDusukAlt: 'Market floor',
+    trendOrt: '📊 30-Day Average',
+    trendYuksek: '🔴 30-Day High',
+    trendYuksekAlt: 'Market ceiling',
+    trendIndirim: '🎯 Discount Rate',
+    trendIndirimAlt: 'Vs. 30-day average',
+    filtreEtiket: 'Filter:',
+    filtreTumu: 'All',
+    filtreStokta: '🟢 In Stock',
+    filtreYok: '🔴 Out of Stock',
+    filtreKargo: '📦 Free Shipping',
+    filtreResmi: '🏢 Official Store',
+    filtreTaksit: '💳 0% APR Installments',
+    filtreBirim: '🏷️ Lowest $/kg',
+    lejant1: '<span class="ok-isaret">✓</span> <b>Real price</b> = list price − universal discounts + shipping',
+    lejant2: '<span class="uyari-isaret">⚠</span> <b>Conditional promos</b> (app / card / membership) are excluded',
+    lejant3: '<span class="uyari-isaret">🚚</span> Shipping: known rates &amp; free-shipping thresholds are factored in',
+    lejant4: '<span class="uyari-isaret">🎨</span> Different colors are excluded from the lowest-price comparison',
+    tabloOzet: 'Summary table (store, item, color, stock, total, promos, shipping, requests)',
+    thSite: 'Store', thUrun: 'Found Item', thRenk: 'Color', thStok: 'Stock', thToplam: 'Total (incl. shipping)', thKamp: 'Promos', thKargo: 'Shipping', thIstek: 'Req',
+    alarmBaslik: 'Set a price alert',
+    alarmHedef: 'Target price ($):',
+    alarmPh: 'e.g. 25.00',
+    alarmBtn: 'Track this product',
+    alarmIpucu: 'Configure notification email or Telegram in Alerts.',
+    pushBtn: '🔔 Send Alert to This Device',
+    stlDoluluk: 'Infill',
+    stlMalzeme: 'Material',
+    stlEbatKucuk: 'size (mm)',
+    stlHacimKucuk: 'volume',
+    stlGramKucuk: 'filament',
+    stlCta: '⚡ Buy This Filament ➔',
+    stlTeklif: '🧾 Generate Print Quote',
+    sponsorRozet: '⭐ FEATURED DEAL OF THE WEEK',
+    sponsorCta: '⚡ View Deal',
+  },
+  fr: {
+    vitrinBaslik: 'Offres Filaments &amp; Imprimantes 3D en Direct',
+    vitrinAlt: 'Derniers prix bas en stock relevés en Europe',
+    vitrinKatalog: '🗂️ Catalogue complet',
+    vitrinFirsat: '📢 Bons plans',
+    vitrinYenileAria: 'Actualiser les offres',
+    vitrinYenileTitle: 'Actualiser',
+    vitrinKatAria: 'Catégories d’offres',
+    vitrinHepsi: 'Tout',
+    vitrinFilament: '🧵 Filaments',
+    vitrinYazici: '🖨️ Imprimantes 3D',
+    vitrinParca: '⚙️ Pièces &amp; Résine',
+    vitrinBosBaslik: 'Aucune offre régionale en cache pour l’instant.',
+    vitrinBosAlt: 'Les meilleurs prix en stock apparaîtront ici dès la fin de l’analyse régionale.',
+    vitrinDipnot: 'Prix issus de la dernière analyse régionale',
+    sepetBaslik: 'Divisez votre panier — payez moins',
+    sepetAciklama: 'Ajoutez 2 à 10 liens produits. Le moteur compare chaque article, <b>calcule les seuils de port gratuit</b> et propose trois scénarios : boutique unique, panier divisé intelligent et économie maximale.',
+    sepetIpucu: 'Chaque article est vérifié séparément : 2 articles ≈ 2–4 min, 5 articles ≈ 8–10 min. Suivez l’avancement ou annulez à tout moment.',
+    sepetPh: 'Une URL produit par ligne\nhttps://www.amazon.fr/...\nhttps://eu.store.bambulab.com/...',
+    sepetBtn: 'Optimiser le panier',
+    sepetHizliTitle: 'Le mode rapide vérifie ~30 boutiques phares ; désactivez pour analyser toute la région.',
+    sepetHizliEtiket: 'Mode rapide (30 sites)',
+    sepetSayac: '0/10 produits',
+    sepetDurumBaslik: 'Calcul du panier…',
+    sepetSonucBaslik: 'Scénarios de panier',
+    sepetKuponBaslik: '🎟️ Codes promo compatibles',
+    sepetKuponAlt: 'Copiez le code en un clic et collez-le au paiement',
+    sepetPaylasBaslik: '📤 Partager le panier',
+    sepetPaylasAlt: 'Envoyez la liste sur WhatsApp ou créez un lien public',
+    sepetWaBtn: '💬 Partager sur WhatsApp',
+    sepetLinkBtn: '🔗 Créer un lien de partage',
+    sepetKopyaBtn: '📋 Copier le lien',
+    sepetNot: 'Prix hors frais de port ; chaque scénario calcule le seuil de livraison gratuite de chaque boutique séparément. Les codes promo sont affichés à part.',
+    tarayiciBaslik: 'En magasin ? Scannez le code-barres',
+    tarayiciAciklama: 'Visez le code-barres (EAN-13/UPC) avec votre caméra pour voir le prix en ligne en quelques secondes. Indiquez le prix en rayon pour calculer <b>vos économies</b>.',
+    sekmeBarkod: '📷 Scanner code-barres',
+    sekmeGorsel: '🖼️ Chercher par photo',
+    sekmeElle: '⌨️ Saisir le code',
+    kameraBaslat: 'Activer la caméra',
+    kameraDurdur: 'Arrêter la caméra',
+    rafEtiket: 'Prix rayon (€) :',
+    rafPh: 'ex. 24,90',
+    kameraNot: 'Autorisation caméra requise. Doit fonctionner en HTTPS ou localhost.',
+    gorselSecHtml: '<b>Prenez une photo</b>, glissez-déposez ou collez avec <kbd>Ctrl</kbd>+<kbd>V</kbd>',
+    gorselAltIpucu: 'Pièce 3D, buse, hotend, moteur pas à pas ou bobine de filament (max 4 Mo)',
+    gorselBirak: '📥 Déposez la photo ici',
+    gorselOnizlemeAlt: 'Photo sélectionnée',
+    gorselIpucuEtiket: 'Indice (facultatif) :',
+    gorselIpucuPh: 'ex. Buse Bambulab 0.4mm, Polymaker PLA noir',
+    gorselAraBtn: 'Rechercher par photo',
+    ellePh: '6938936709664',
+    elleAraBtn: 'Rechercher',
+    elleIpucu: 'Le code-barres figure au dos/dessous de la boîte (souvent 13 chiffres). Saisissez-le si vous n’utilisez pas la caméra.',
+    barkodDurum: 'Recherche du code-barres…',
+    gorselDurum: 'Analyse de l’image…',
+    gecmisBaslik: 'Recherches récentes',
+    altNavAria: 'Navigation rapide',
+    altAra: 'Rechercher &amp; Comparer',
+    altBorsa: 'Bons plans',
+    altBorsaAria: 'Meilleurs prix du jour — offres en direct',
+    altAlarm: 'Mes alertes',
+    altAlarmAria: 'Mes alertes prix — produits suivis',
+    altTercih: 'Préférences',
+    modalKapatAria: 'Fermer',
+    fisRozet: '🧾 DEVIS D’IMPRESSION 3D',
+    fisKapatAria: 'Fermer le devis',
+    fisBaslik: 'Résumé Coût &amp; Devis 3D',
+    fisModel: '📦 Modèle :',
+    fisEbat: '📐 Dimensions :',
+    fisGramaj: '⚖️ Masse :',
+    fisMalzeme: '🧵 Matériau :',
+    fisSure: '⏱️ Durée est. :',
+    fisFilament: 'Coût filament :',
+    fisElektrik: 'Électricité :',
+    fisAmortisman: 'Amortissement :',
+    fisNet: 'Coût de revient net :',
+    fisOnerilen: 'PRIX DE VENTE RECOMMANDÉ',
+    fisKarNot: 'Inclut la marge de l’atelier',
+    fisDipnot: '⚡ Vérification : <b>Baskı Hesap</b> · radar boutiques Europe',
+    fisWa: '📲 Envoyer sur WhatsApp',
+    fisKopyala: '📋 Copier le devis',
+    fisYazdir: '🖨️ Imprimer / PDF',
+    oneriBaslik: 'Modèles recommandés pour vous',
+    oneriDurdur: '⏹️ Arrêter &amp; Afficher',
+    sifirdanTara: '↻ Nouvelle analyse',
+    dogrulama: '🕒 Vérifié en direct auprès des boutiques européennes',
+    nedenUcuz: '💡 Pourquoi est-ce moins cher ? (Analyse IA)',
+    birimBaslik: 'Prix au kilogramme',
+    muadilBaslik: 'Alternatives en stock',
+    muadilBtn: 'Chercher des alternatives',
+    trendBaslik: 'Tendance sur 30 jours &amp; Analyse',
+    trendAlt: 'Variations de prix et historique du marché',
+    trendRozet: '🔥 Au plus bas',
+    trendDusuk: '🟢 Plus bas (30j)',
+    trendDusukAlt: 'Plancher du marché',
+    trendOrt: '📊 Moyenne (30j)',
+    trendYuksek: '🔴 Plus haut (30j)',
+    trendYuksekAlt: 'Plafond du marché',
+    trendIndirim: '🎯 Remise',
+    trendIndirimAlt: 'Par rapport à la moyenne',
+    filtreEtiket: 'Filtrer :',
+    filtreTumu: 'Tout',
+    filtreStokta: '🟢 En stock',
+    filtreYok: '🔴 Rupture',
+    filtreKargo: '📦 Port gratuit',
+    filtreResmi: '🏢 Boutique officielle',
+    filtreTaksit: '💳 Paiement sans frais',
+    filtreBirim: '🏷️ €/kg le moins cher',
+    lejant1: '<span class="ok-isaret">✓</span> <b>Prix réel</b> = prix affiché − remises publiques + livraison',
+    lejant2: '<span class="uyari-isaret">⚠</span> <b>Offres conditionnelles</b> (appli / carte / membre) exclues',
+    lejant3: '<span class="uyari-isaret">🚚</span> Livraison : tarifs connus et seuils de gratuité intégrés au total',
+    lejant4: '<span class="uyari-isaret">🎨</span> Les coloris différents sont exclus de la comparaison directe',
+    tabloOzet: 'Tableau récapitulatif (boutique, article, couleur, stock, total, promos, livraison, req.)',
+    thSite: 'Boutique', thUrun: 'Article trouvé', thRenk: 'Couleur', thStok: 'Stock', thToplam: 'Total (port inclus)', thKamp: 'Promos', thKargo: 'Livraison', thIstek: 'Req',
+    alarmBaslik: 'Créer une alerte prix',
+    alarmHedef: 'Prix cible (€) :',
+    alarmPh: 'ex. 24,00',
+    alarmBtn: 'Suivre ce produit',
+    alarmIpucu: 'Configurez votre e-mail ou Telegram dans Alertes.',
+    pushBtn: '🔔 Recevoir une alerte sur cet appareil',
+    stlDoluluk: 'Remplissage',
+    stlMalzeme: 'Matériau',
+    stlEbatKucuk: 'taille (mm)',
+    stlHacimKucuk: 'volume',
+    stlGramKucuk: 'filament',
+    stlCta: '⚡ Acheter ce filament ➔',
+    stlTeklif: '🧾 Générer un devis',
+    sponsorRozet: '⭐ OFFRE SPONSORISÉE DE LA SEMAINE',
+    sponsorCta: '⚡ Voir l’offre',
+  },
+  ja: {
+    vitrinBaslik: 'ライブ 3Dプリンター・フィラメント特価ボード',
+    vitrinAlt: '日本向けストアで追跡中の最安値速報',
+    vitrinKatalog: '🗂️ カタログ一覧',
+    vitrinFirsat: '📢 特価情報',
+    vitrinYenileAria: '特価ボードを更新',
+    vitrinYenileTitle: '更新',
+    vitrinKatAria: '特価カテゴリ',
+    vitrinHepsi: 'すべて',
+    vitrinFilament: '🧵 フィラメント',
+    vitrinYazici: '🖨️ 3Dプリンター',
+    vitrinParca: '⚙️ パーツ・レジン',
+    vitrinBosBaslik: 'この地域の特価キャッシュはまだありません。',
+    vitrinBosAlt: '地域スキャンが完了すると在庫ありの最安値がここに表示されます。',
+    vitrinDipnot: '最新の地域スキャン結果に基づく価格です',
+    sepetBaslik: '複数ショップ分割で最安購入',
+    sepetAciklama: '2〜10件の商品リンクを入力。各ショップの価格と<b>送料無料ライン</b>を計算し、1店舗まとめ・分割購入・最安プランを比較します。',
+    sepetIpucu: '商品ごとにライブ検索します（2件≈2〜4分、5件≈8〜10分）。進行状況は下に表示され、いつでも中断できます。',
+    sepetPh: '1行に1つの商品URL\nhttps://www.amazon.co.jp/...\nhttps://jp.store.bambulab.com/...',
+    sepetBtn: 'カート最適化',
+    sepetHizliTitle: '高速モードは主要ショップを優先スキャンします。オフにすると地域の全店舗を検索します。',
+    sepetHizliEtiket: '高速モード (主要店舗)',
+    sepetSayac: '0/10 件',
+    sepetDurumBaslik: 'カートを計算中…',
+    sepetSonucBaslik: 'カート購入プラン',
+    sepetKuponBaslik: '🎟️ 利用可能なクーポン',
+    sepetKuponAlt: 'ワンクリックでコピーして決済画面で入力',
+    sepetPaylasBaslik: '📤 カートを共有',
+    sepetPaylasAlt: 'WhatsAppで送信または共有リンクを作成',
+    sepetWaBtn: '💬 WhatsAppで共有',
+    sepetLinkBtn: '🔗 共有リンクを作成',
+    sepetKopyaBtn: '📋 リンクをコピー',
+    sepetNot: '価格は送料込み条件計算前の商品合計です。送料無料ラインは各プランで自動計算され、クーポン割引は別枠で表示されます。',
+    tarayiciBaslik: '店頭でお買い物中？バーコードをスキャン',
+    tarayiciAciklama: 'パッケージのバーコード（JAN/EAN/UPC）をカメラにかざすと数秒でネット最安値を表示。店頭価格を入力すると<b>節約額</b>も計算できます。',
+    sekmeBarkod: '📷 バーコードスキャン',
+    sekmeGorsel: '🖼️ 写真から検索',
+    sekmeElle: '⌨️ コード手入力',
+    kameraBaslat: 'カメラを起動',
+    kameraDurdur: 'カメラを停止',
+    rafEtiket: '店頭価格 (¥):',
+    rafPh: '例: 3980',
+    kameraNot: 'カメラの許可が必要です。HTTPS または localhost で動作します。',
+    gorselSecHtml: '<b>写真を撮影</b>、ドラッグ＆ドロップ、または <kbd>Ctrl</kbd>+<kbd>V</kbd> で貼り付け',
+    gorselAltIpucu: '3Dパーツ・ホットエンド・ノズル・ステッピングモーター・スプール等（最大4MB）',
+    gorselBirak: '📥 ここに写真をドロップ',
+    gorselOnizlemeAlt: '選択した写真',
+    gorselIpucuEtiket: 'ヒント (任意):',
+    gorselIpucuPh: '例: Bambu P1S ノズル 0.4mm, PLA ブラック',
+    gorselAraBtn: '写真から検索',
+    ellePh: '6938936709664',
+    elleAraBtn: '検索',
+    elleIpucu: '箱の裏面・底面の12〜13桁のバーコード番号を入力してください。',
+    barkodDurum: 'バーコードを検索中…',
+    gorselDurum: '画像を解析中…',
+    gecmisBaslik: '最近の検索',
+    altNavAria: 'クイックナビ',
+    altAra: '検索・比較',
+    altBorsa: 'ライブ特価',
+    altBorsaAria: '本日の最安値ボード',
+    altAlarm: '価格アラート',
+    altAlarmAria: '追跡中の価格アラート',
+    altTercih: '設定',
+    modalKapatAria: '閉じる',
+    fisRozet: '🧾 3Dプリントお見積書',
+    fisKapatAria: '見積書を閉じる',
+    fisBaslik: '3Dプリント原価・お見積り概要',
+    fisModel: '📦 モデル:',
+    fisEbat: '📐 サイズ:',
+    fisGramaj: '⚖️ 重量:',
+    fisMalzeme: '🧵 素材:',
+    fisSure: '⏱️ 予想時間:',
+    fisFilament: 'フィラメント代:',
+    fisElektrik: '電気代:',
+    fisAmortisman: '機体償却費:',
+    fisNet: '製造原価合計:',
+    fisOnerilen: '推奨販売価格',
+    fisKarNot: '工房マージン込み',
+    fisDipnot: '⚡ 価格参照: <b>Baskı Hesap</b> · 日本ストアライブスキャン',
+    fisWa: '📲 WhatsAppで送る',
+    fisKopyala: '📋 見積書をコピー',
+    fisYazdir: '🖨️ 印刷 / PDF',
+    oneriBaslik: 'おすすめモデル',
+    oneriDurdur: '⏹️ 停止して結果を表示',
+    sifirdanTara: '↻ 再スキャン',
+    dogrulama: '🕒 地域ストアからライブ確認済み',
+    nedenUcuz: '💡 安い理由（AI分析）',
+    birimBaslik: '1kgあたりの単価',
+    muadilBaslik: '在庫ありの代替モデル',
+    muadilBtn: '代替品を探す',
+    trendBaslik: '30日間の価格推移・割引分析',
+    trendAlt: '価格変動と相場分析',
+    trendRozet: '🔥 最安水準',
+    trendDusuk: '🟢 30日間最安値',
+    trendDusukAlt: '市場最安水準',
+    trendOrt: '📊 30日間平均価格',
+    trendYuksek: '🔴 30日間最高値',
+    trendYuksekAlt: '市場最高水準',
+    trendIndirim: '🎯 割引率',
+    trendIndirimAlt: '平均比',
+    filtreEtiket: '絞り込み:',
+    filtreTumu: 'すべて',
+    filtreStokta: '🟢 在庫あり',
+    filtreYok: '🔴 在庫切れ',
+    filtreKargo: '📦 送料無料',
+    filtreResmi: '🏢 公式ストア',
+    filtreTaksit: '💳 分割払い対応',
+    filtreBirim: '🏷️ ¥/kg 最安値順',
+    lejant1: '<span class="ok-isaret">✓</span> <b>実質価格</b> = 本体価格 − 一般割引 + 送料',
+    lejant2: '<span class="uyari-isaret">⚠</span> <b>条件付き特典</b>（アプリ・カード・会員限定）は含まれません',
+    lejant3: '<span class="uyari-isaret">🚚</span> 送料：判明分・送料無料ラインを合計に自動反映',
+    lejant4: '<span class="uyari-isaret">🎨</span> 色違い商品は最安比較対象から除外されます',
+    tabloOzet: '比較一覧表（ストア・商品名・色・在庫・送料込み合計・キャンペーン・送料・リクエスト）',
+    thSite: 'ストア', thUrun: '商品', thRenk: '色', thStok: '在庫', thToplam: '送料込み合計', thKamp: '特典', thKargo: '送料', thIstek: '回数',
+    alarmBaslik: '価格アラートを設定',
+    alarmHedef: '目標価格 (¥):',
+    alarmPh: '例: 3500',
+    alarmBtn: 'この商品を追跡',
+    alarmIpucu: '通知先メール・Telegramはアラート設定画面で管理できます。',
+    pushBtn: '🔔 この端末へ通知',
+    stlDoluluk: '充填率',
+    stlMalzeme: '素材',
+    stlEbatKucuk: 'サイズ (mm)',
+    stlHacimKucuk: '体積',
+    stlGramKucuk: 'フィラメント',
+    stlCta: '⚡ このフィラメントを購入 ➔',
+    stlTeklif: '🧾 見積書を作成',
+    sponsorRozet: '⭐ 今週の注目プロモーション',
+    sponsorCta: '⚡ セールを見る',
+  },
+});
+
+function anaBolumleriYerellestirHtml(kod, nav, cikti) {
+  const b = ANA_BOLUM_KOPYA[kod] || ANA_BOLUM_KOPYA.en;
+  const fPara = kod === 'ja' ? '¥0' : (kod === 'fr' ? '0,00 €' : '$0.00');
+  return cikti
+    .replace(
+      /<section id="vitrinAlani"[\s\S]*?<\/section>/,
+      `<section id="vitrinAlani" class="vitrin" aria-labelledby="vitrinBaslik" hidden>
+      <div class="vitrin-ust">
+        <div class="vitrin-baslik-grup">
+          <h2 id="vitrinBaslik" class="bolum-baslik">
+            <span class="vitrin-nabiz" aria-hidden="true"></span>
+            ${b.vitrinBaslik}
+          </h2>
+          <p class="vitrin-alt" id="vitrinGuncelleme">${b.vitrinAlt}</p>
+        </div>
+        <div class="vitrin-eylemler">
+          <a class="vitrin-cip" href="${htmlKacis(nav.katalog)}" style="text-decoration:none">${b.vitrinKatalog}</a>
+          <button type="button" class="vitrin-cip" data-firsat-ac>${b.vitrinFirsat}</button>
+          <button type="button" class="vitrin-yenile" id="vitrinYenile"
+            aria-label="${htmlKacis(b.vitrinYenileAria)}" title="${htmlKacis(b.vitrinYenileTitle)}">↻</button>
+        </div>
+      </div>
+      <div id="vitrinCipleri" class="vitrin-filtre" role="tablist" aria-label="${htmlKacis(b.vitrinKatAria)}" hidden>
+        <button type="button" class="vitrin-filtre-cip aktif" data-vitrin-kategori="hepsi" role="tab" aria-selected="true">
+          ${b.vitrinHepsi} <span class="vitrin-filtre-sayi" data-sayi="hepsi">0</span>
+        </button>
+        <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="filament" role="tab" aria-selected="false">
+          ${b.vitrinFilament} <span class="vitrin-filtre-sayi" data-sayi="filament">0</span>
+        </button>
+        <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="yazici" role="tab" aria-selected="false">
+          ${b.vitrinYazici} <span class="vitrin-filtre-sayi" data-sayi="yazici">0</span>
+        </button>
+        <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="genel" role="tab" aria-selected="false">
+          ${b.vitrinParca} <span class="vitrin-filtre-sayi" data-sayi="genel">0</span>
+        </button>
+      </div>
+      <div id="vitrinGrid" class="vitrin-grid" aria-busy="true" aria-live="polite"></div>
+      <div id="vitrinBos" class="vitrin-bos" hidden>
+        <span class="vitrin-bos-ikon" aria-hidden="true">📡</span>
+        <div>
+          <b>${b.vitrinBosBaslik}</b>
+          <div class="vitrin-bos-alt">${b.vitrinBosAlt}</div>
+        </div>
+      </div>
+      <p class="vitrin-dipnot">
+        ${b.vitrinDipnot} · <span id="vitrinSayac">—</span>
+      </p>
+    </section>`,
+    )
+    .replace(
+      /<section class="giris-kart sepet-kart">[\s\S]*?<\/section>/,
+      `<section class="giris-kart sepet-kart">
+      <h2 class="kart-ana-baslik"><span class="kart-ikon">🛒</span> ${b.sepetBaslik}</h2>
+      <p class="aciklama">${b.sepetAciklama}
+        <br><span class="ipucu">${b.sepetIpucu}</span></p>
+      <div class="sepet-giris">
+        <textarea id="sepetUrls" rows="4" autocomplete="off"
+          placeholder="${htmlKacis(b.sepetPh)}"></textarea>
+        <div class="sepet-butonlar">
+          <button type="button" id="sepetBtn">${b.sepetBtn}</button>
+          <button type="button" id="sepetIptalBtn" class="iptal-btn" hidden>✕</button>
+          <label class="sepet-hizli" title="${htmlKacis(b.sepetHizliTitle)}">
+            <input type="checkbox" id="sepetHizli" checked /> ${b.sepetHizliEtiket}
+          </label>
+          <span id="sepetSayac" class="ipucu">${b.sepetSayac}</span>
+        </div>
+      </div>
+      <div id="sepetHata" class="hata-kutusu" hidden></div>
+    </section>`,
+    )
+    .replace(
+      /<section id="sepetDurumAlani"[\s\S]*?<\/section>/,
+      `<section id="sepetDurumAlani" hidden>
+      <div class="durum-baslik-satiri">
+        <h2 class="bolum-baslik">${b.sepetDurumBaslik}</h2>
+      </div>
+      <div id="sepetDurumNotu" class="faz-notu"></div>
+      <div id="sepetIlerleme" class="sepet-ilerleme"></div>
+    </section>`,
+    )
+    .replace(
+      /<section id="sepetSonuc"[\s\S]*?<\/section>/,
+      `<section id="sepetSonuc" hidden>
+      <h2 class="bolum-baslik">${b.sepetSonucBaslik}</h2>
+      <div id="sepetKazanc" class="sepet-kazanc"></div>
+      <div id="sepetSenaryolar" class="sepet-izgara"></div>
+      <div id="sepetKuponAlani" class="sepet-kupon-kart" hidden>
+        <div class="sepet-kupon-ust">
+          <h3 class="sepet-kupon-baslik">${b.sepetKuponBaslik}</h3>
+          <span class="sepet-kupon-alt">${b.sepetKuponAlt}</span>
+        </div>
+        <div id="sepetKuponIcerik"></div>
+      </div>
+      <div id="sepetPaylasAlani" class="sepet-paylas-kart">
+        <div class="sepet-paylas-ust">
+          <h3 class="sepet-paylas-baslik">${b.sepetPaylasBaslik}</h3>
+          <span class="sepet-paylas-alt">${b.sepetPaylasAlt}</span>
+        </div>
+        <div class="sepet-paylas-butonlar">
+          <button type="button" id="sepetWhatsappBtn" class="paylas-btn wa">${b.sepetWaBtn}</button>
+          <button type="button" id="sepetLinkBtn" class="paylas-btn link">${b.sepetLinkBtn}</button>
+          <button type="button" id="sepetKopyaBtn" class="paylas-btn kopya" hidden>${b.sepetKopyaBtn}</button>
+        </div>
+        <div id="sepetPaylasSonuc" class="sepet-paylas-sonuc" aria-live="polite"></div>
+      </div>
+      <p class="sepet-not">${b.sepetNot}</p>
+    </section>`,
+    )
+    .replace(
+      /<section class="giris-kart tarayici-kart">[\s\S]*?<\/section>/,
+      `<section class="giris-kart tarayici-kart">
+      <h2 class="kart-ana-baslik"><span class="kart-ikon">📱</span> ${b.tarayiciBaslik}</h2>
+      <p class="aciklama">${b.tarayiciAciklama}</p>
+      <div class="tarayici-sekmeler">
+        <button type="button" class="tarayici-sekme aktif" data-tarayici-sekme="barkod">${b.sekmeBarkod}</button>
+        <button type="button" class="tarayici-sekme" data-tarayici-sekme="gorsel">${b.sekmeGorsel}</button>
+        <button type="button" class="tarayici-sekme" data-tarayici-sekme="elle">${b.sekmeElle}</button>
+      </div>
+      <div id="barkodKameraAlani" class="tarayici-panel">
+        <div id="barkodOkuyucu" class="barkod-okuyucu"></div>
+        <div class="tarayici-butonlar">
+          <button type="button" id="kameraBaslatBtn">${b.kameraBaslat}</button>
+          <button type="button" id="kameraDurdurBtn" class="ikincil" hidden>${b.kameraDurdur}</button>
+          <label class="raf-fiyat-alani">
+            ${b.rafEtiket}
+            <input type="text" id="rafFiyatBarkod" inputmode="decimal" maxlength="14"
+              placeholder="${htmlKacis(b.rafPh)}" autocomplete="off" />
+          </label>
+        </div>
+        <div id="barkodKameraNot" class="ipucu">${b.kameraNot}</div>
+      </div>
+      <div id="gorselPanel" class="tarayici-panel" hidden>
+        <div class="gorsel-yukle-alani" id="gorselBirak">
+          <input type="file" id="gorselDosya" accept="image/*" capture="environment" hidden />
+          <button type="button" id="gorselSecBtn" class="gorsel-sec-btn">
+            <span class="gorsel-ikon">📸</span>
+            <span>${b.gorselSecHtml}</span>
+            <span class="ipucu">${b.gorselAltIpucu}</span>
+          </button>
+          <div class="gorsel-birak-ipucu" id="gorselBirakIpucu" hidden>${b.gorselBirak}</div>
+          <img id="gorselOnizleme" class="gorsel-onizleme"
+               src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+               hidden alt="${htmlKacis(b.gorselOnizlemeAlt)}" />
+        </div>
+        <label class="gorsel-ipucu-alani">
+          ${b.gorselIpucuEtiket}
+          <input type="text" id="gorselIpucu" placeholder="${htmlKacis(b.gorselIpucuPh)}" maxlength="120" />
+        </label>
+        <div class="tarayici-butonlar">
+          <button type="button" id="gorselAraBtn" disabled>${b.gorselAraBtn}</button>
+          <button type="button" id="gorselIptalBtn" class="ikincil" hidden>✕</button>
+        </div>
+        <div id="gorselNot" class="ipucu"></div>
+      </div>
+      <div id="ellePanel" class="tarayici-panel" hidden>
+        <div class="elle-barkod">
+          <input type="text" id="barkodElle" inputmode="numeric" pattern="[0-9]*" maxlength="14"
+            placeholder="${htmlKacis(b.ellePh)}" autocomplete="off" />
+          <label class="raf-fiyat-alani">
+            ${b.rafEtiket}
+            <input type="text" id="rafFiyatElle" inputmode="decimal" maxlength="14"
+              placeholder="${htmlKacis(b.rafPh)}" autocomplete="off" />
+          </label>
+          <button type="button" id="barkodAraBtn">${b.elleAraBtn}</button>
+        </div>
+        <div class="ipucu">${b.elleIpucu}</div>
+      </div>
+      <div id="tarayiciHata" class="hata-kutusu" hidden></div>
+    </section>`,
+    )
+    .replace('<h2 class="bolum-baslik" id="barkodDurumBaslik">Barkod aranıyor…</h2>', `<h2 class="bolum-baslik" id="barkodDurumBaslik">${b.barkodDurum}</h2>`)
+    .replace('<h2 class="bolum-baslik" id="gorselDurumBaslik">Görsel inceleniyor…</h2>', `<h2 class="bolum-baslik" id="gorselDurumBaslik">${b.gorselDurum}</h2>`)
+    .replace('<h2 class="bolum-baslik">Son aramalar</h2>', `<h2 class="bolum-baslik">${b.gecmisBaslik}</h2>`)
+    .replace(
+      /<nav id="altNav"[\s\S]*?<\/nav>/,
+      `<nav id="altNav" class="alt-nav" aria-label="${htmlKacis(b.altNavAria)}">
+    <button type="button" class="alt-nav-oge aktif" data-nav="karsilastir" aria-current="page">
+      <span class="alt-nav-ikon" aria-hidden="true">🔍</span><span>${b.altAra}</span>
+    </button>
+    <button type="button" class="alt-nav-oge" data-nav="borsa" aria-label="${htmlKacis(b.altBorsaAria)}">
+      <span class="alt-nav-ikon" aria-hidden="true">🔥</span><span>${b.altBorsa}</span>
+    </button>
+    <button type="button" class="alt-nav-oge" data-nav="takipler" aria-label="${htmlKacis(b.altAlarmAria)}">
+      <span class="alt-nav-ikon" aria-hidden="true">🔔</span><span>${b.altAlarm}</span>
+    </button>
+    <a class="alt-nav-oge" data-nav="ayarlar" href="${htmlKacis(nav.ayarlar)}">
+      <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>${b.altTercih}</span>
+    </a>
+  </nav>`,
+    )
+    .replace(
+      /<div id="teklifFisModal" class="teklif-modal" hidden>[\s\S]*?<div class="fis-alt-butonlar">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/,
+      `<div id="teklifFisModal" class="teklif-modal" hidden>
+    <div class="teklif-modal-perde" id="teklifModalKapat"></div>
+    <div class="teklif-fis-kutu" role="dialog" aria-modal="true" aria-labelledby="fisBaslik">
+      <div class="fis-ust-eylemler">
+        <span class="fis-rozet">${b.fisRozet}</span>
+        <button type="button" class="fis-kapat-btn" id="fisKapatBtn" aria-label="${htmlKacis(b.fisKapatAria)}">✕</button>
+      </div>
+      <div class="fis-govde" id="fisYazdirAlani">
+        <div class="fis-baslik-satiri">
+          <h3 id="fisBaslik" class="fis-baslik">${b.fisBaslik}</h3>
+          <span class="fis-tarih" id="fisTarih">—</span>
+        </div>
+        <div class="fis-model-bilgi">
+          <div class="fis-satir"><span>${b.fisModel}</span> <b id="fisModelAd">—</b></div>
+          <div class="fis-satir"><span>${b.fisEbat}</span> <b id="fisEbat">—</b></div>
+          <div class="fis-satir"><span>${b.fisGramaj}</span> <b id="fisGramaj">—</b></div>
+          <div class="fis-satir"><span>${b.fisMalzeme}</span> <b id="fisMalzeme">—</b></div>
+          <div class="fis-satir"><span>${b.fisSure}</span> <b id="fisSure">—</b></div>
+        </div>
+        <div class="fis-cizgi"></div>
+        <div class="fis-kalemler">
+          <div class="fis-satir"><span>${b.fisFilament}</span> <b id="fisFilamentMaliyet">—</b></div>
+          <div class="fis-satir"><span>${b.fisElektrik}</span> <b id="fisElektrikMaliyet">—</b></div>
+          <div class="fis-satir"><span>${b.fisAmortisman}</span> <b id="fisYipranmaMaliyet">—</b></div>
+          <div class="fis-satir fis-toplam-maliyet"><span>${b.fisNet}</span> <b id="fisNetMaliyet">—</b></div>
+        </div>
+        <div class="fis-cizgi-cift"></div>
+        <div class="fis-fiyat-alani">
+          <div class="fis-fiyat-etiket">${b.fisOnerilen}</div>
+          <div class="fis-fiyat-tutar" id="fisSatisFiyat">${fPara}</div>
+          <div class="fis-fiyat-not" id="fisKarNotu">${b.fisKarNot}</div>
+        </div>
+        <div class="fis-dipnot">
+          <span>${b.fisDipnot}</span>
+        </div>
+      </div>
+      <div class="fis-alt-butonlar">
+        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">${b.fisWa}</button>
+        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">${b.fisKopyala}</button>
+        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">${b.fisYazdir}</button>
+      </div>
+    </div>
+  </div>`,
+    )
+    .replace('<h2 class="bolum-baslik" id="oneriBaslik">Sana uygun modeller</h2>', `<h2 class="bolum-baslik" id="oneriBaslik">${b.oneriBaslik}</h2>`)
+    .replace(/<button type="button" id="oneriDurdurBtn"[^>]*>[\s\S]*?<\/button>/, `<button type="button" id="oneriDurdurBtn" class="oneri-durdur-btn" hidden>${b.oneriDurdur}</button>`)
+    .replace('<button type="button" id="sifirdanTaraBtn" class="sifirdan-tara-btn" hidden>↻ Sıfırdan Tara</button>', `<button type="button" id="sifirdanTaraBtn" class="sifirdan-tara-btn" hidden>${b.sifirdanTara}</button>`)
+    .replace('<span id="dogrulamaMetin">🕒 Az önce 62 mağazadan canlı doğrulandı</span>', `<span id="dogrulamaMetin">${b.dogrulama}</span>`)
+    .replace('<div class="neden-ucuz-baslik">💡 Neden Daha Ucuz? (Yapay Zeka Analizi)</div>', `<div class="neden-ucuz-baslik">${b.nedenUcuz}</div>`)
+    .replace('<h3 class="birim-baslik" id="birimBaslik">Kilogram başına fiyat</h3>', `<h3 class="birim-baslik" id="birimBaslik">${b.birimBaslik}</h3>`)
+    .replace('<h3 class="muadil-baslik" id="muadilBaslik">Muadil ürün önerileri</h3>', `<h3 class="muadil-baslik" id="muadilBaslik">${b.muadilBaslik}</h3>`)
+    .replace('<button type="button" class="ikincil-btn" id="muadilYenileBtn">Muadili ara</button>', `<button type="button" class="ikincil-btn" id="muadilYenileBtn">${b.muadilBtn}</button>`)
+    .replace('<h3 class="fiyat-gecmisi-baslik">30 Günlük Fiyat Trendi & İndirim Analizi</h3>', `<h3 class="fiyat-gecmisi-baslik">${b.trendBaslik}</h3>`)
+    .replace('<span id="fiyatTrendOzetMetin" class="fiyat-trend-altmetin">Fiyat dalgalanmaları ve piyasa analizi</span>', `<span id="fiyatTrendOzetMetin" class="fiyat-trend-altmetin">${b.trendAlt}</span>`)
+    .replace('<div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">🔥 En Düşük Seviyede</div>', `<div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">${b.trendRozet}</div>`)
+    .replace('<div class="istatistik-etiket" id="istatistikEtiketDusuk">🟢 Son 30 Günün En Düşüğü</div>', `<div class="istatistik-etiket" id="istatistikEtiketDusuk">${b.trendDusuk}</div>`)
+    .replace('<div class="istatistik-alt">Piyasa dip noktası</div>', `<div class="istatistik-alt">${b.trendDusukAlt}</div>`)
+    .replace('<div class="istatistik-etiket" id="istatistikEtiketOrtalama">📊 Son 30 Günün Ortalaması</div>', `<div class="istatistik-etiket" id="istatistikEtiketOrtalama">${b.trendOrt}</div>`)
+    .replace('<div class="istatistik-etiket" id="istatistikEtiketYuksek">🔴 Son 30 Günün En Yükseği</div>', `<div class="istatistik-etiket" id="istatistikEtiketYuksek">${b.trendYuksek}</div>`)
+    .replace('<div class="istatistik-alt">Piyasa tavanı</div>', `<div class="istatistik-alt">${b.trendYuksekAlt}</div>`)
+    .replace('<div class="istatistik-etiket">🎯 İndirim Oranı</div>', `<div class="istatistik-etiket">${b.trendIndirim}</div>`)
+    .replace('<div class="istatistik-alt">Ortalamaya göre</div>', `<div class="istatistik-alt">${b.trendIndirimAlt}</div>`)
+    .replace('<span class="filtre-etiket">Filtrele:</span>', `<span class="filtre-etiket">${b.filtreEtiket}</span>`)
+    .replace('<button type="button" class="filtre-chip aktif" data-filtre="hepsi">Tümü</button>', `<button type="button" class="filtre-chip aktif" data-filtre="hepsi">${b.filtreTumu}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="stokta_var">🟢 Stokta Var</button>', `<button type="button" class="filtre-chip" data-filtre="stokta_var">${b.filtreStokta}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="stokta_yok">🔴 Stokta Yok</button>', `<button type="button" class="filtre-chip" data-filtre="stokta_yok">${b.filtreYok}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="kargo">📦 Kargo Bedava</button>', `<button type="button" class="filtre-chip" data-filtre="kargo">${b.filtreKargo}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="resmi">🏢 Resmi Satıcı</button>', `<button type="button" class="filtre-chip" data-filtre="resmi">${b.filtreResmi}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="taksit">💳 Vade Farksız Taksit</button>', `<button type="button" class="filtre-chip" data-filtre="taksit">${b.filtreTaksit}</button>`)
+    .replace('<button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">🏷️ ₺/kg En Ucuz</button>', `<button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">${b.filtreBirim}</button>`)
+    .replace(
+      /<div class="sonuc-lejant">[\s\S]*?<\/div>/,
+      `<div class="sonuc-lejant">
+        <span>${b.lejant1}</span>
+        <span>${b.lejant2}</span>
+        <span>${b.lejant3}</span>
+        <span>${b.lejant4}</span>
+      </div>`,
+    )
+    .replace(
+      /<details class="tablo-sarma">[\s\S]*?<\/details>/,
+      `<details class="tablo-sarma">
+        <summary>${b.tabloOzet}</summary>
+        <div class="tablo-kaydir">
+          <table id="ozetTablo">
+            <thead>
+              <tr>
+                <th>${b.thSite}</th><th>${b.thUrun}</th><th>${b.thRenk}</th><th>${b.thStok}</th><th>${b.thToplam}</th>
+                <th>${b.thKamp}</th><th>${b.thKargo}</th><th>${b.thIstek}</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>`,
+    )
+    .replace(
+      /<div class="takip-alani" id="takipAlani">[\s\S]*?<\/div>\s*<\/section>/,
+      `<div class="takip-alani" id="takipAlani">
+        <h3 class="bolum-baslik">${b.alarmBaslik}</h3>
+        <div class="takip-satir">
+          <label>${b.alarmHedef} <input type="number" id="hedefFiyat" min="1" step="0.01" placeholder="${htmlKacis(b.alarmPh)}" /></label>
+          <button id="takipBtn">${b.alarmBtn}</button>
+          <span class="ipucu">${b.alarmIpucu}</span>
+        </div>
+        <div class="push-satir">
+          <button type="button" id="pushBtn" class="push-btn">${b.pushBtn}</button>
+          <span id="pushDurum" class="push-durum" aria-live="polite"></span>
+        </div>
+        <div id="takipMesaj" class="takip-mesaj"></div>
+      </div>
+    </section>`,
+    )
+    .replace('<small>ebat (mm)</small>', `<small>${b.stlEbatKucuk}</small>`)
+    .replace('<small>hacim</small>', `<small>${b.stlHacimKucuk}</small>`)
+    .replace('<small>filament</small>', `<small>${b.stlGramKucuk}</small>`)
+    .replace('<label>Doluluk', `<label>${b.stlDoluluk}`)
+    .replace('<label>Malzeme', `<label>${b.stlMalzeme}`)
+    .replace(/⚡ Bu Filamenti Satın Al ➔/g, b.stlCta)
+    .replace(/🧾 Baskı Teklif Fişi Çıkar/g, b.stlTeklif)
+    .replace('⭐ HAFTANIN SPONSORLU FIRSATI', b.sponsorRozet)
+    .replace('⚡ Kampanyayı İncele', b.sponsorCta)
+    .replace('<a class="stl-hizli-detay" id="stlHizliDetay" href="/maliyet.html">', `<a class="stl-hizli-detay" id="stlHizliDetay" href="${htmlKacis(nav.maliyet)}">`)
+    .replace('<button type="button" class="alt-modal-kapat" data-modal-kapat aria-label="Kapat">✕</button>', `<button type="button" class="alt-modal-kapat" data-modal-kapat aria-label="${htmlKacis(b.modalKapatAria)}">✕</button>`);
+}
+
 export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   const kod = ['en', 'fr', 'ja'].includes(normalizeDil(dil)) ? normalizeDil(dil) : 'en';
   const c = ANA_KOPYA[kod];
@@ -998,7 +1806,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   cikti = cikti
     .replace('✨ Otomatik', c.modOto)
     .replaceAll('🔗 Linkte ara', c.modLink)
-    .replace('💬 Ürün adıyla ara', c.modAd)
+    .replaceAll('💬 Ürün adıyla ara', c.modAd)
     .replace(
       'placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;Bambu Lab A1 Mini&quot;"',
       `placeholder="${htmlKacis(c.placeholderOto)}"`,
@@ -1026,10 +1834,22 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
     .replace(/📊 Kâr, elektrik ve amortismanla tam maliyet hesabı ➔/g, c.stlDetay)
     .replace('<h2 class="bolum-baslik">Siteler araştırılıyor…</h2>', `<h2 class="bolum-baslik">${c.durumBaslik}</h2>`)
     .replace('<button type="button" id="iptalBtn" class="iptal-btn">✕ İptal</button>', `<button type="button" id="iptalBtn" class="iptal-btn">${c.iptalBtn}</button>`)
+    .replace(/<section class="seo-rehber-kart"[\s\S]*?<\/section>/, anaSeoRehberKartHtml(kod))
+    .replace(/<p>\s*Fiyatlar sitelerden anlık okunur;[\s\S]*?<\/p>/, `<p>${htmlKacis(sz.baslik.footerNot)}</p>`)
+    .replace(/<p class="afiliye-bildirim" id="afiliyeBildirim" hidden>[\s\S]*?<\/p>/, `<p class="afiliye-bildirim" id="afiliyeBildirim" hidden>${
+      kod === 'fr'
+        ? '<b>Transparence :</b> Les liens « Voir l’offre » peuvent contenir un paramètre d’affiliation. Cela <b>ne modifie jamais le prix, le classement ni le choix du moins cher</b> et n’entraîne <b>aucun surcoût</b>.'
+        : (kod === 'ja'
+          ? '<b>透明性ポリシー:</b> 「ショップへ」リンクにはアフィリエイト紹介パラメータが含まれる場合がありますが、<b>価格・順位・最安判定には一切影響せず</b>、購入者への<b>追加費用もありません</b>。'
+          : '<b>Transparency:</b> Outbound store links may contain affiliate referral parameters. This <b>never changes prices, rankings, or lowest-price selection</b> and adds <b>zero extra cost</b> to you.')
+    }</p>`)
     .replace('Karşılaştırılan siteler (<span id="footerSiteSayisi">—</span>):', `${c.magazaListeBaslik} (<span id="footerSiteSayisi">${taramaMagazalari.length}</span>):`)
     .replace('<a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>', `<a class="footer-marka-alan" href="${htmlKacis(GLOBAL_ANA_YOLLARI[kod])}" rel="home">baskihesap.tech</a>`)
     .replace(/<nav class="footer-hub"[\s\S]*?<\/nav>/, footerHubHtml(kod))
+    .replace('<span id="genelToastMetin" class="mikro-toast-metin">Bağlantı kopyalandı!</span>', `<span id="genelToastMetin" class="mikro-toast-metin">${kod === 'fr' ? 'Lien copié !' : (kod === 'ja' ? 'リンクをコピーしました！' : 'Link copied!')}</span>`)
     .replace('<ul id="footerSiteler" class="footer-siteler"></ul>', `<ul id="footerSiteler" class="footer-siteler">${bolgeMagazalari.map(m => `<li>${htmlKacis(m.name)}</li>`).join('')}</ul>`);
+
+  cikti = anaBolumleriYerellestirHtml(kod, nav, cikti);
 
   // 5) Gerçek app.js ortam nesnesi + dinamik UI çevirmeni
   cikti = cikti.replace(

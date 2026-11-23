@@ -3912,7 +3912,17 @@ function linkEtiketi(url) {
  */
 async function gecmisiYukle() {
   try {
-    const res = await fetch('/api/history');
+    const dil = window.BASKI_HESAP_ORTAM?.dil || 'tr';
+    const pazar = window.BASKI_HESAP_ORTAM?.market || 'tr';
+    const locale = dil === 'ja' ? 'ja-JP' : (dil === 'fr' ? 'fr-FR' : (dil === 'en' ? 'en-US' : 'tr-TR'));
+    const txt = dil === 'en'
+      ? { noLink: 'no link', cheapest: 'cheapest', shop: 'store', cheapestBadge: 'Cheapest', times: 'searches', again: '↻ Search again' }
+      : (dil === 'fr'
+        ? { noLink: 'aucun lien', cheapest: 'moins cher', shop: 'boutique', cheapestBadge: 'Moins cher', times: 'recherches', again: '↻ Rechercher' }
+        : (dil === 'ja'
+          ? { noLink: 'リンクなし', cheapest: '最安値', shop: 'ショップ', cheapestBadge: '最安値', times: '回検索', again: '↻ 再検索' }
+          : { noLink: 'link yok', cheapest: 'en ucuz', shop: 'mağaza', cheapestBadge: 'En ucuz', times: 'kez arandı', again: '↻ Tekrar ara' }));
+    const res = await fetch('/api/history?market=' + encodeURIComponent(pazar));
     const list = await res.json();
     if (!Array.isArray(list) || !list.length) return;
 
@@ -3935,10 +3945,10 @@ async function gecmisiYukle() {
       const urunLinki = h.url
         ? `<a class="gecmis-link" href="${esc(h.url)}" target="_blank" rel="noopener"
              title="${esc(h.url)}">🔗 ${esc(linkEtiketi(h.url))}</a>`
-        : '<span class="gecmis-link yok">link yok</span>';
+        : `<span class="gecmis-link yok">${txt.noLink}</span>`;
       const enUcuzLinki = h.enUcuzUrl
         ? `<a class="gecmis-link en-ucuz-link" href="${esc(h.enUcuzUrl)}" target="_blank"
-             rel="noopener sponsored" title="${esc(h.enUcuzUrl)}">🏪 En ucuz: ${esc(h.enUcuzSite || 'mağaza')} ↗</a>`
+             rel="noopener sponsored" title="${esc(h.enUcuzUrl)}">🏪 ${txt.cheapestBadge}: ${esc(h.enUcuzSite || txt.shop)} ↗</a>`
         : '';
       return `<li class="gecmis-oge">
         <div class="gecmis-sol">
@@ -3946,16 +3956,16 @@ async function gecmisiYukle() {
             ${h.url
               ? `<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.urun || h.url)}</a>`
               : `<b>${esc(h.urun || '?')}</b>`}
-            ${h.adet > 1 ? `<span class="gecmis-adet" title="${h.adet} kez arandı">×${h.adet}</span>` : ''}
+            ${h.adet > 1 ? `<span class="gecmis-adet" title="${h.adet} ${txt.times}">×${h.adet}</span>` : ''}
           </div>
           <div class="gecmis-meta">
-            en ucuz: <b>${esc(h.enUcuzSite || '—')}</b> (${tl(h.enUcuzFiyat)})
-            <span class="gecmis-nokta">·</span> ${new Date(h.ts).toLocaleString('tr-TR')}
+            ${txt.cheapest}: <b>${esc(h.enUcuzSite || '—')}</b> (${tl(h.enUcuzFiyat)})
+            <span class="gecmis-nokta">·</span> ${new Date(h.ts).toLocaleString(locale)}
           </div>
           <div class="gecmis-linkler">${urunLinki}${enUcuzLinki}</div>
         </div>
         <div class="gecmis-sag">
-          ${h.url ? `<button type="button" class="gecmis-tekrar" data-url="${esc(h.url)}">↻ Tekrar ara</button>` : ''}
+          ${h.url ? `<button type="button" class="gecmis-tekrar" data-url="${esc(h.url)}">${txt.again}</button>` : ''}
         </div>
       </li>`;
     }).join('');

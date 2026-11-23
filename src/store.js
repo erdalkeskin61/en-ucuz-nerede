@@ -896,8 +896,9 @@ export function addHistory(entry) {
   `);
 }
 
-export function getHistory() {
-  const rows = db.prepare('SELECT data FROM history ORDER BY id DESC LIMIT 20').all();
+export function getHistory(limit = 20) {
+  const sinir = Math.max(1, Math.min(50, Number(limit) || 20));
+  const rows = db.prepare('SELECT data FROM history ORDER BY id DESC LIMIT ?').all(sinir);
   return rows.map(r => {
     try {
       return JSON.parse(r.data);
