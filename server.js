@@ -13,7 +13,7 @@ import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
 import { detectSite, adapters, adaptersByMarket, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
-import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi } from './src/util.js';
+import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi, dominantColor, renkAyni } from './src/util.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
 import { sepetOptimize } from './src/basketOptimizer.js';
@@ -1229,10 +1229,12 @@ app.get('/api/jobs', (req, res) => {
  * normal tarama ve arka plan tazelemesi aynı yolu kullanır).
  */
 function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {}) {
+  const etkinSorgu = arananSorgu || job.arananSorgu || null;
   const secenekler = {
     signal: job.iptalKontrolu.signal,
     // Tazeleme modunda veya taze:true istendiğinde sayfa önbelleği atlanır → fiyat gerçekten siteden okunur.
     taze: job.mod === 'tazeleme' || job.taze === true,
+    ...(etkinSorgu ? { arananSorgu: etkinSorgu } : {}),
     ...(job.market ? { market: job.market } : {}),
     // Opsiyonel site alt kümesi (teşhis/test). Verilmezse tüm siteler taranır —
     // varsayılan davranış değişmez (2026-10-29).
@@ -1538,11 +1540,17 @@ app.post('/api/compare', async (req, res) => {
    * ("2 gün önce tarandı · canlı güncelleniyor") ve arka planda tazelenir.
    */
   if (arananSorgu) {
+    const sorguRengi = dominantColor(arananSorgu) || null;
+    const renkUyumluAnlik = (kayit) => {
+      if (!sorguRengi) return true;
+      const kayitRenk = kayit?.payload?.kaynak?.color;
+      return !kayitRenk || renkAyni(kayitRenk, sorguRengi);
+    };
     const sorguAnlikHam = tazeZorla ? null : sorgudanAnlikAl(arananSorgu, { maxYasMs: swrMaxYasMs });
     const anlikMarket = sorguAnlikHam?.kaynakUrl && detectSite(sorguAnlikHam.kaynakUrl)
       ? adapterMarket(detectSite(sorguAnlikHam.kaynakUrl))
       : 'tr';
-    if (sorguAnlikHam?.kaynakUrl && anlikMarket === secilenMarket) {
+    if (sorguAnlikHam?.kaynakUrl && anlikMarket === secilenMarket && renkUyumluAnlik(sorguAnlikHam)) {
       const anlik = { ...sorguAnlikHam, payload: baskiZenginlestir(sorguAnlikHam.payload) };
       const hedefSite = detectSite(sorguAnlikHam.kaynakUrl);
       const job = yeniKarsilastirma({
@@ -1669,9 +1677,11 @@ app.post('/api/compare', async (req, res) => {
           job.katalogYasMs = bulunan.katalogYasMs ?? null;
           if (job.kaynakKatmani === 'katalog') job.katman = 0;
 
-          // Anlık (SWR) sonuç varsa hemen sun, arka planda tazele.
+          // Anlık (SWR) sonuç varsa (ve aranan renkle çelişmiyorsa) hemen sun, arka planda tazele.
           const anlikHam = tazeZorla ? null : anlikAl(bulunan.url, { maxYasMs: swrMaxYasMs });
-          const anlik = anlikHam ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) } : null;
+          const anlik = (anlikHam && renkUyumluAnlik(anlikHam))
+            ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) }
+            : null;
           if (anlik) {
             arkaPlanTazelemeBaslat(bulunan.url, anlik, job);
             return;
@@ -1694,7 +1704,7 @@ app.post('/api/compare', async (req, res) => {
             idx === 0 ? 'Mağazalar taranıyor…' : `${adaySite?.name || 'Alternatif mağaza'} üzerinden okunuyor…`
           );
           try {
-            result = await karsilastirmaCalistir(aday.url, job, formatSonuc);
+            result = await karsilastirmaCalistir(aday.url, job, formatSonuc, { arananSorgu });
             break;
           } catch (e) {
             if (job.iptalKontrolu?.signal?.aborted) throw e;

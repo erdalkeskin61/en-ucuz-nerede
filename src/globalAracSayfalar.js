@@ -997,7 +997,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
 
   cikti = cikti
     .replace('✨ Otomatik', c.modOto)
-    .replace('🔗 Linkte ara', c.modLink)
+    .replaceAll('🔗 Linkte ara', c.modLink)
     .replace('💬 Ürün adıyla ara', c.modAd)
     .replace(
       'placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;Bambu Lab A1 Mini&quot;"',

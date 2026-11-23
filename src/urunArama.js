@@ -327,6 +327,8 @@ export function sorguKademeleriUret(sorgu) {
 export const KIRILGAN_KAYNAK_SITELER = new Set([
   'trendyol', 'amazon', 'n11', 'hepsiburada', 'ciceksepeti',
   'teknosa', 'pttavm', 'vatan', 'mediamarkt', 'itopya',
+  'amazon_us', 'amazon_fr', 'amazon_jp', 'walmart_us', 'bestbuy_us', 'target_us',
+  'ebay_us', 'ebay_fr', 'rakuten_jp', 'yodobashi', 'boulanger',
 ]);
 
 function kaynakOncelikSirala(liste) {

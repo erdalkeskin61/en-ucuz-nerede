@@ -1098,6 +1098,12 @@ export async function runComparison(sourceUrl, opts = {}) {
   onProgress(adapter.id, { site: adapter.id, status: 'running', note: 'Kaynak ürün okunuyor...' });
   const srcCtx = { spend: 0 };
   const kaynakOpts = (opts.tazeKaynak || opts.taze) ? { fresh: true } : {};
+  if (opts.arananSorgu) {
+    kaynakOpts.kaynak = {
+      title: String(opts.arananSorgu),
+      color: dominantColor(opts.arananSorgu) || null,
+    };
+  }
   let srcProduct;
   try {
     srcProduct = await adapter.getProduct(sourceUrl, srcCtx, kaynakOpts);
@@ -1106,7 +1112,7 @@ export async function runComparison(sourceUrl, opts = {}) {
     await new Promise((r) => setTimeout(r, 1200 + Math.floor(Math.random() * 1300)));
     try {
       onProgress(adapter.id, { site: adapter.id, status: 'running', note: 'Kaynak ürün yeniden okunuyor...' });
-      srcProduct = await adapter.getProduct(sourceUrl, srcCtx, { fresh: true });
+      srcProduct = await adapter.getProduct(sourceUrl, srcCtx, { ...kaynakOpts, fresh: true });
     } catch (e2) {
       console.error('[pipeline] kaynak okunamadı', adapter.id,
         '| 1. deneme:', (ilkHata.message || '').slice(0, 90),

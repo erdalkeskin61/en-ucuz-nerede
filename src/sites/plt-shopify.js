@@ -327,12 +327,20 @@ export function shopifySite(cfg) {
       const tamBaslik = (markaliBaslik(js.vendor, js.title, this.id, this.name)
         + (varyantAdi && !/^default title$/i.test(varyantAdi) ? ' - ' + varyantAdi : '')).trim();
       const fiyatKodu = paraBirimiNormalize(v.currency || currency);
+      let sonucUrl = url;
+      if (kaynakSecim === 'kaynak-eşleşmesi' && v?.id && !u.searchParams.has('variant')) {
+        try {
+          const nu = new URL(u.href);
+          nu.searchParams.set('variant', String(v.id));
+          sonucUrl = nu.href;
+        } catch { /* ham url */ }
+      }
 
       return {
         site: this.id,
         siteName: this.name,
         market,
-        url,
+        url: sonucUrl,
         title: tamBaslik,
         brand: gercekMarkaBul(js.vendor, js.title, this.id, this.name),
         modelCode: v.sku || null,
