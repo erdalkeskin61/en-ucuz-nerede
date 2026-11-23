@@ -4,7 +4,9 @@
  */
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { formatPara, formatTL, paraBirimiNormalize } from '../src/util.js';
+import { formatPara, formatTL, paraBirimiNormalize, extractColors, dominantColor, renkAyni, parcaMi, fiyatCikar } from '../src/util.js';
+import { miktarCikar, birimFiyatHesapla } from '../src/birimFiyat.js';
+import { kargoCikar } from '../src/kargo.js';
 import {
   adapters, PAZARLAR, normalizeMarket, adapterMarket, adapterCurrency,
   adaptersByMarket, marketSiteIds, detectSite, adapterById,
@@ -325,6 +327,66 @@ kontrol('server.js /sitemap.xml sitemapindex ve /sitemap-:dil.xml (tr/en/fr/ja) 
   && serverKaynak.includes("new Set(['tr', 'en', 'fr', 'ja'])")
   && serverKaynak.includes('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
   && serverKaynak.includes('<xhtml:link rel="alternate" hreflang='));
+
+console.log('\n10) 🌐 Bölgesel Parsing Kuralları (EN / FR / JA renk, ağırlık, parça, fiyat, kargo):');
+kontrol('extractColors / dominantColor EN/FR/JA renkleri Türkçe kanonik ada indirger',
+  dominantColor('Creality Hyper PLA 1kg Black') === 'siyah'
+  && dominantColor('Filament PLA Noir 1kg') === 'siyah'
+  && dominantColor('Creality Hyper PLA フィラメント 1kg ブラック') === 'siyah'
+  && dominantColor('Filament PLA Blanc 1000g') === 'beyaz'
+  && dominantColor('PLA ホワイト 1000g') === 'beyaz'
+  && dominantColor('Filament Gris foncé 1kg') === 'gri');
+
+kontrol('renkAyni diller arası aynı ve farklı renkleri doğru ayırt eder',
+  renkAyni('Black', 'Noir') === true
+  && renkAyni('Black', 'ブラック') === true
+  && renkAyni('White', 'Blanc') === true
+  && renkAyni('White', 'ホワイト') === true
+  && renkAyni('Black', 'White') === false
+  && renkAyni('Noir', 'ホワイト') === false);
+
+kontrol('parcaMi EN/FR/JA yedek parçaları yakalar, ana yazıcı ve filamentleri elemez',
+  parcaMi('Creality K1C 0.4mm Nozzle') === true
+  && parcaMi('Creality Hotend Kit') === true
+  && parcaMi('Buse 0.4mm pour Creality K1C') === true
+  && parcaMi('Plateau PEI magnétique 235x235mm') === true
+  && parcaMi('Creality K1C ノズル 0.4mm') === true
+  && parcaMi('Creality K1C ビルドプレート') === true
+  && parcaMi('Creality K1C 3D Printer') === false
+  && parcaMi('Creality Hyper PLA フィラメント 1kg ブラック') === false);
+
+kontrol('miktarCikar ve birimFiyatHesapla EN/FR/JA ağırlık ve birim fiyatı çözer',
+  miktarCikar('Creality Hyper PLA Filament 1kg Black').gram === 1000
+  && miktarCikar('Filament PLA Noir 1000g').gram === 1000
+  && miktarCikar('Creality Hyper PLA フィラメント 1kg ブラック').gram === 1000
+  && miktarCikar('PLA フィラメント 1000g ホワイト').gram === 1000
+  && miktarCikar('フィラメント 1キロ').gram === 1000
+  && miktarCikar('Lot de 2 bobines PLA 1kg').gram === 2000
+  && birimFiyatHesapla('Creality Hyper PLA フィラメント 1kg ブラック', 3200, 'JPY')?.birimFiyat === 3200
+  && birimFiyatHesapla('Creality K1C 0.4mm Nozzle', 15, 'USD') === null
+  && birimFiyatHesapla('Buse 0.4mm 1000g', 15, 'EUR') === null);
+
+kontrol('fiyatCikar USD / EUR / JPY / TRY virgül-nokta ayrımını bölgeye göre çözer',
+  fiyatCikar('849.00', 'USD') === 849
+  && fiyatCikar('$1,299.90', 'USD') === 1299.9
+  && fiyatCikar('849,00', 'EUR') === 849
+  && fiyatCikar('1 299,90 €', 'EUR') === 1299.9
+  && fiyatCikar('1.299,90 €', 'EUR') === 1299.9
+  && fiyatCikar('128,000', 'JPY') === 128000
+  && fiyatCikar('¥128,000', 'JPY') === 128000
+  && fiyatCikar('128000.00', 'JPY') === 128000
+  && Number.isInteger(fiyatCikar('12,800.40', 'JPY'))
+  && fiyatCikar('34.990,00 TL', 'TRY') === 34990
+  && fiyatCikar('500g Filament - $29.99', 'USD') === 29.99);
+
+kontrol('kargoCikar US/FR/JP kargo eşiği ve kargo ücretini çözer',
+  kargoCikar('<p>Free shipping on all orders over $99</p>', null, { currency: 'USD' }).freeOver === 99
+  && kargoCikar('<p>Free shipping on all orders over $99</p>', null, { currency: 'USD' }).fee === null
+  && kargoCikar('<p>Shipping: $9.99</p>', null, { currency: 'USD' }).fee === 9.99
+  && kargoCikar('<p>Livraison gratuite dès 59,00 €</p>', null, { currency: 'EUR' }).freeOver === 59
+  && kargoCikar('<p>Frais de port: 6,90 €</p>', null, { currency: 'EUR' }).fee === 6.9
+  && kargoCikar('<p>¥10,000以上送料無料</p>', null, { currency: 'JPY' }).freeOver === 10000
+  && kargoCikar('<p>送料 ¥800</p>', null, { currency: 'JPY' }).fee === 800);
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

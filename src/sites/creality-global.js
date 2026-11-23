@@ -13,41 +13,16 @@
  */
 import { fetchPage } from '../scraper.js';
 import { afiliyeLink } from '../afiliye.js';
-import { decodeEntities, paraBirimiNormalize } from '../util.js';
+import { decodeEntities, dominantColor, fiyatCikar, paraBirimiNormalize } from '../util.js';
+import { kargoCikar } from '../kargo.js';
 
 const CREALITY_BASE = 'https://store.creality.com';
 const CREALITY_HOSTS = ['store.creality.com', 'www.store.creality.com'];
 
 /** Bölgesel metinden sayısal fiyat ayıklar ($849.00, €29,99, ¥4,200). */
 export function parseGlobalFiyat(metin, currency = 'USD') {
-  if (metin == null) return null;
-  if (typeof metin === 'number') return Number.isFinite(metin) && metin > 0 ? metin : null;
-  let temiz = String(metin)
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\u00a0|\s+/g, '')
-    .replace(/[^\d.,]/g, '');
-  if (!temiz) return null;
-
-  const kod = paraBirimiNormalize(currency);
-  if (kod === 'JPY') {
-    const tam = Number(temiz.replace(/[.,]/g, ''));
-    return Number.isFinite(tam) && tam > 0 ? tam : null;
-  }
-
-  const sonVirgul = temiz.lastIndexOf(',');
-  const sonNokta = temiz.lastIndexOf('.');
-  if (sonVirgul !== -1 && sonNokta !== -1) {
-    temiz = sonVirgul > sonNokta
-      ? temiz.replace(/\./g, '').replace(',', '.')
-      : temiz.replace(/,/g, '');
-  } else if (sonVirgul !== -1) {
-    const ondalikUzunluk = temiz.length - sonVirgul - 1;
-    temiz = (ondalikUzunluk === 1 || ondalikUzunluk === 2)
-      ? temiz.replace(',', '.')
-      : temiz.replace(/,/g, '');
-  }
-  const n = parseFloat(temiz);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  const deger = fiyatCikar(metin, currency);
+  return deger != null && deger > 0 ? deger : null;
 }
 
 function etiketMetni(html) {
@@ -184,6 +159,11 @@ export function crealityJsonLdUrunOku(html, url, cfg = {}) {
   const inStock = avail ? !/OutOfStock|SoldOut|Discontinued/i.test(avail) : true;
   const sku = String(ld.sku || secilenTeklif?.sku || '').trim() || null;
 
+  const kargo = kargoCikar(html, cfg.id || 'creality_us', { currency });
+  const shipping = (kargo.fee != null || kargo.freeOver != null || kargo.applies === false)
+    ? kargo
+    : { fee: null, freeOver: null, applies: null, note: 'Shipping calculated at checkout' };
+
   return {
     site: cfg.id || 'creality_us',
     siteName: cfg.name || 'Creality Store (US)',
@@ -194,7 +174,7 @@ export function crealityJsonLdUrunOku(html, url, cfg = {}) {
     brand: 'Creality',
     modelCode: sku,
     barcode: ld.gtin13 || ld.gtin || null,
-    color: null,
+    color: dominantColor(ld.color || ld.name) || null,
     listPrice: null,
     sellingPrice: price,
     currency,
@@ -202,7 +182,7 @@ export function crealityJsonLdUrunOku(html, url, cfg = {}) {
     seller: 'Creality Official',
     image,
     campaigns: [],
-    shipping: { fee: null, freeOver: null, applies: null, note: 'Shipping calculated at checkout' },
+    shipping,
   };
 }
 

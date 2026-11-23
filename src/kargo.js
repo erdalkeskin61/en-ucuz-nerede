@@ -13,19 +13,31 @@
  * Eşik kararı fiyat hesaplama sırasında (pricing.js) ürün fiyatıyla karşılaştırılarak
  * verilir: fiyat eşiği aşarsa kargo bedava sayılır, aşmıyasa bilinen ücret uygulanır.
  */
-import { parseNum, formatTL, decodeEntities } from './util.js';
+import { parseNum, fiyatCikar, formatTL, formatPara, paraBirimiNormalize, decodeEntities } from './util.js';
 
 // "1.500 TL ve Üzeri Alışverişlerinizde Kargo Bedava" / "2.000₺ üzeri ücretsiz kargo"
 // / "1000 TL ve üzeri ... kargo ücreti bizden" biçimleri (etiketleri atılmış metinde).
 const ESIK_RE = [
-  /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü|alışveriş(?:leriniz)?de)[^{}]{0,100}?(?:kargo|gönderim)[^{}]{0,40}?(?:bedava|ücretsiz|bizden)/,
-  /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü|alışveriş(?:leriniz)?de)[^{}]{0,100}?(?:bedava|ücretsiz)[^{}]{0,40}?(?:kargo|gönderim)/,
+  { para: 'TRY', re: /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü|alışveriş(?:leriniz)?de)[^{}]{0,100}?(?:kargo|gönderim)[^{}]{0,40}?(?:bedava|ücretsiz|bizden)/ },
+  { para: 'TRY', re: /([\d][\d.,]*)\s*(?:tl|₺)\s*(?:ve\s*)?(?:üzeri|üstü|alışveriş(?:leriniz)?de)[^{}]{0,100}?(?:bedava|ücretsiz)[^{}]{0,40}?(?:kargo|gönderim)/ },
+  // EN / US ($)
+  { para: 'USD', re: /free\s+(?:standard\s+)?shipping\s+(?:on\s+)?(?:all\s+)?orders?\s+(?:over|above)\s*\$\s*([\d][\d.,]*)/ },
+  { para: 'USD', re: /orders?\s+(?:over|above)\s*\$\s*([\d][\d.,]*)\s+(?:ship\s+free|qualify\s+for\s+free\s+shipping)/ },
+  // FR / EU (€)
+  { para: 'EUR', re: /livraison\s*(?:gratuite|offerte)\s*(?:d[èe]s|[àa]\s*partir\s*de)\s*([\d][\d\s\u00a0.,]*)\s*(?:€|eur)/ },
+  { para: 'EUR', re: /d[èe]s\s*([\d][\d\s\u00a0.,]*)\s*(?:€|eur)[^{}]{0,40}?livraison\s*(?:gratuite|offerte)/ },
+  // JP (¥ / 円)
+  { para: 'JPY', re: /(?:¥\s*([\d][\d,]*)|([\d][\d,]*)\s*円)\s*(?:以上|から)[^{}]{0,25}?送料\s*無料/ },
+  { para: 'JPY', re: /送料\s*無料[^{}]{0,25}?(?:¥\s*([\d][\d,]*)|([\d][\d,]*)\s*円)\s*(?:以上|から)/ },
 ];
 
-// "Kargo 149 TL" / "kargo ücreti: 79,90 TL" / "Yurtiçi Kargo 139TL".
-// Kargo kelimesiyle tutar arasında yalnızca ücret sözcükleri/ayraçlara izin verilir;
-// "Kargo Bedava" gibi metinler eşleşmez.
-const UCRET_RE = /(?:kargo|gönderim|teslimat)\s*(?:ücreti|bedeli|fiyatı)?\s*[:\-–]?\s*([\d][\d.,]*)\s*(?:tl|₺)/g;
+// "Kargo 149 TL" / "Shipping: $9.99" / "Livraison: 7,90 €" / "送料 ¥800".
+const UCRET_RE = [
+  { para: 'TRY', re: /(?:kargo|gönderim|teslimat)\s*(?:ücreti|bedeli|fiyatı)?\s*[:\-–]?\s*([\d][\d.,]*)\s*(?:tl|₺)/g },
+  { para: 'USD', re: /(?:shipping|delivery)\s*(?:fee|cost)?\s*[:\-–]?\s*\$\s*([\d][\d.,]*)/g },
+  { para: 'EUR', re: /(?:frais\s*de\s*port|livraison)\s*[:\-–]?\s*([\d][\d\s\u00a0.,]*)\s*(?:€|eur)/g },
+  { para: 'JPY', re: /送料\s*[:\-–]?\s*(?:¥\s*([\d][\d,]*)|([\d][\d,]*)\s*円)/g },
+];
 
 // "Kargo 109 TL'den başlar" — alt sınır ücreti (Hepsijet/DHL başlangıç tarifesi).
 const UCRET_BASLAR_RE = /kargo\s*(?:ücreti)?\s*[:\-]?\s*([\d][\d.,]*)\s*(?:tl|₺)\s*['’]?\s*(?:den|dan)\s*başlar/;
@@ -33,17 +45,23 @@ const UCRET_BASLAR_RE = /kargo\s*(?:ücreti)?\s*[:\-]?\s*([\d][\d.,]*)\s*(?:tl|�
 // "1000 TL altı siparişlerinizde 49.90 TL" — eşik altı sabit ücret beyanı.
 const UCRET_ALTI_RE = /([\d][\d.,]*)\s*(?:tl|₺)\s*alt[ıi][^{}]{0,60}?([\d][\d.,]*)\s*(?:tl|₺)/;
 
-// "Tüm siparişlerde ücretsiz kargo" — eşiksiz, site geneli bedava beyanı.
-const TAMAMEN_BEDAVA_RE = /t[üu]m\s+sipari[şs]ler(?:inizde|de)[^{}]{0,80}?(?:ücretsiz\s*kargo|kargo\s*(?:bedava|ücretsiz))/;
+// Eşiksiz, site geneli bedava beyanı (TR / EN / FR / JP — eşik koşulu varsa hariç tutar).
+const TAMAMEN_BEDAVA_RE = /(?:t[üu]m\s+sipari[şs]ler(?:inizde|de)[^{}]{0,80}?(?:ücretsiz\s*kargo|kargo\s*(?:bedava|ücretsiz))|free\s+(?:standard\s+)?shipping\s+on\s+all\s+orders(?![^{}]{0,25}(?:over|above|\$))|livraison\s+(?:gratuite|offerte)\s+(?:sur\s+)?toutes?\s+(?:les\s+)?commandes?(?![^{}]{0,25}(?:d[èe]s|partir|€))|(?:全品|全商品)\s*送料\s*無料(?![^{}]{0,15}以上))/;
 
 // Ürün kartında kargo-bedava işaret sınıfı: class="kargo_bedavali_urun_ikon",
 // class="ucretsiz-kargo-badge" vb. (CSS tanımları değil — yalnız etiket kullanımı)
-const BEDAVA_SINIF_RE = /class="[^"]*(?:kargo[_-]?bedava(?:li)?|bedava[_-]?kargo|ucretsiz[_-]?kargo|kargo[_-]?ucretsiz)[^"]*"/;
+const BEDAVA_SINIF_RE = /class="[^"]*(?:kargo[_-]?bedava(?:li)?|bedava[_-]?kargo|ucretsiz[_-]?kargo|kargo[_-]?ucretsiz|free[_-]?shipping)[^"]*"/;
 
-const MAKUL_UCRET_MIN = 5;   // TL — altındaki tutarlar muhtemelen eşik/para birimi hatası
-const MAKUL_UCRET_MAX = 500; // TL — üzerindeki tutarlar eşik metni yanlış eşleşmesidir
-const MAKUL_ESIK_MIN = 50;
-const MAKUL_ESIK_MAX = 20000;
+const KARGO_SINIRLARI = {
+  TRY: { ucretMin: 5, ucretMax: 500, esikMin: 50, esikMax: 20000 },
+  USD: { ucretMin: 1, ucretMax: 150, esikMin: 15, esikMax: 2000 },
+  EUR: { ucretMin: 1, ucretMax: 150, esikMin: 15, esikMax: 2000 },
+  JPY: { ucretMin: 100, ucretMax: 15000, esikMin: 1500, esikMax: 200000 },
+};
+
+function tutarBicimle(tutar, paraBirimi = 'TRY') {
+  return paraBirimi === 'TRY' ? formatTL(tutar) : formatPara(tutar, paraBirimi);
+}
 
 /**
  * Metni kargo desenleri için hazırlar: HTML yorumlarını atar, varlıkları çözer
@@ -314,8 +332,9 @@ export const SITE_KARGO_VARSAYILANLARI = {
  * @param {string|null} siteId site kimliği (varsayılan kargo kuralları için)
  * @returns {{fee:number|null, freeOver:number|null, applies:boolean|null, note:string}}
  */
-export function kargoCikar(html, siteId = null) {
+export function kargoCikar(html, siteId = null, opts = {}) {
   const siteDef = siteId ? SITE_KARGO_VARSAYILANLARI[siteId] : null;
+  let etkinPara = opts?.currency ? paraBirimiNormalize(opts.currency) : 'TRY';
   const bos = siteDef ? { ...siteDef } : { fee: null, freeOver: null, applies: null, note: 'Kargo bilgisi ürün sayfasında bulunamadı' };
   if (!html) return bos;
   const ham = temizle(html);
@@ -323,29 +342,44 @@ export function kargoCikar(html, siteId = null) {
 
   // 1) Ücretsiz kargo eşiği
   let freeOver = null;
-  for (const re of ESIK_RE) {
+  for (const { para, re } of ESIK_RE) {
     const m = metin.match(re);
     if (m) {
-      const esik = parseNum(m[1]);
-      if (esik != null && esik >= MAKUL_ESIK_MIN && esik <= MAKUL_ESIK_MAX) { freeOver = esik; break; }
+      const eslesmePara = opts?.currency ? etkinPara : para;
+      const sinir = KARGO_SINIRLARI[eslesmePara] || KARGO_SINIRLARI.TRY;
+      const raw = m[1] || m[2];
+      const esik = fiyatCikar(raw, eslesmePara);
+      if (esik != null && esik >= sinir.esikMin && esik <= sinir.esikMax) {
+        freeOver = esik;
+        if (!opts?.currency) etkinPara = para;
+        break;
+      }
     }
   }
 
   // 2) Açık kargo ücreti — eşik tutarıyla aynı olanlar atlanır
   let fee = null;
   let feeNot = null;
-  for (const m of metin.matchAll(UCRET_RE)) {
-    const tutar = parseNum(m[1]);
-    if (tutar == null || tutar < MAKUL_UCRET_MIN || tutar > MAKUL_UCRET_MAX) continue;
-    if (freeOver != null && Math.abs(tutar - freeOver) < 0.01) continue;
-    fee = tutar;
-    break;
+  for (const { para, re } of UCRET_RE) {
+    const eslesmePara = opts?.currency ? etkinPara : para;
+    const sinir = KARGO_SINIRLARI[eslesmePara] || KARGO_SINIRLARI.TRY;
+    for (const m of metin.matchAll(re)) {
+      const raw = m[1] || m[2];
+      const tutar = fiyatCikar(raw, eslesmePara);
+      if (tutar == null || tutar < sinir.ucretMin || tutar > sinir.ucretMax) continue;
+      if (freeOver != null && Math.abs(tutar - freeOver) < 0.01) continue;
+      fee = tutar;
+      if (!opts?.currency) etkinPara = para;
+      break;
+    }
+    if (fee != null) break;
   }
+  const trySinir = KARGO_SINIRLARI.TRY;
   // "Kargo N TL'den başlar" (alt sınır tarifesi)
   if (fee == null) {
     const m = metin.match(UCRET_BASLAR_RE);
     const tutar = m ? parseNum(m[1]) : null;
-    if (tutar != null && tutar >= MAKUL_UCRET_MIN && tutar <= MAKUL_UCRET_MAX) {
+    if (tutar != null && tutar >= trySinir.ucretMin && tutar <= trySinir.ucretMax) {
       fee = tutar;
       feeNot = `Kargo ${formatTL(tutar)}'den başlar (alt sınır, sepette netleşir)`;
     }
@@ -356,26 +390,22 @@ export function kargoCikar(html, siteId = null) {
     if (m) {
       const esik = parseNum(m[1]);
       const tutar = parseNum(m[2]);
-      if (esik != null && tutar != null && tutar >= MAKUL_UCRET_MIN && tutar <= MAKUL_UCRET_MAX
-          && esik >= MAKUL_ESIK_MIN && esik <= MAKUL_ESIK_MAX) {
+      if (esik != null && tutar != null && tutar >= trySinir.ucretMin && tutar <= trySinir.ucretMax
+          && esik >= trySinir.esikMin && esik <= trySinir.esikMax) {
         fee = tutar;
         if (freeOver == null) freeOver = esik;
       }
     }
   }
 
-  // 3) Eşiksiz, site geneli bedava beyanı ("tüm siparişlerde ücretsiz kargo")
+  // 3) Eşiksiz, site geneli bedava beyanı ("tüm siparişlerde ücretsiz kargo" / "free shipping on all orders")
   const tamamenBedava = TAMAMEN_BEDAVA_RE.test(metin);
   // Ürün kartında kargo-bedava işareti (class kullanımı — etiketli metinde)
   const bedavaIsaret = BEDAVA_SINIF_RE.test(ham);
 
-  // 4) SİTE KURALI ÖNCELİĞİ (2026-10-26): kullanıcı tarafından doğrulanmış gerçek
-  //    tarife, "bedava" işaretlerinden DAHA güvenilirdir. Sayfadaki işaretler çeviri
-  //    sözlüğüne takılıp yanlış pozitif verebiliyor (3dultra/robitshop'ta her ürün
-  //    "kargo bedava" çıkıyordu). Açık bir ücret okunduysa o yine önceliklidir.
+  // 4) SİTE KURALI ÖNCELİĞİ
   if (siteDef) {
     if (fee != null) {
-      // HTML'den net ücret okundu → eşiği ve sınır kuralını site tarifesinden tamamla
       if (freeOver == null) freeOver = siteDef.freeOver;
       return {
         fee,
@@ -383,11 +413,10 @@ export function kargoCikar(html, siteId = null) {
         freeOverExclusive: siteDef.freeOverExclusive === true,
         applies: true,
         note: feeNot || (freeOver != null
-          ? `Kargo ${formatTL(fee)} · ${formatTL(freeOver)} ${siteDef.freeOverExclusive ? 'üzeri' : 've üzeri'} ücretsiz`
-          : `Kargo ${formatTL(fee)}`),
+          ? `Kargo ${tutarBicimle(fee, etkinPara)} · ${tutarBicimle(freeOver, etkinPara)} ${siteDef.freeOverExclusive ? 'üzeri' : 've üzeri'} ücretsiz`
+          : `Kargo ${tutarBicimle(fee, etkinPara)}`),
       };
     }
-    // Ücret okunamadı → doğrulanmış site tarifesi
     return { ...siteDef };
   }
 
@@ -399,13 +428,13 @@ export function kargoCikar(html, siteId = null) {
   }
 
   if (fee != null && freeOver != null) {
-    return { fee, freeOver, applies: true, note: feeNot || `Kargo ${formatTL(fee)} · ${formatTL(freeOver)} üzeri ücretsiz` };
+    return { fee, freeOver, applies: true, note: feeNot || `Kargo ${tutarBicimle(fee, etkinPara)} · ${tutarBicimle(freeOver, etkinPara)} üzeri ücretsiz` };
   }
   if (fee != null) {
-    return { fee, freeOver: null, applies: true, note: feeNot || `Kargo ${formatTL(fee)} (site bilgisi)` };
+    return { fee, freeOver: null, applies: true, note: feeNot || `Kargo ${tutarBicimle(fee, etkinPara)} (site bilgisi)` };
   }
   if (freeOver != null) {
-    return { fee: null, freeOver, applies: null, note: `${formatTL(freeOver)} üzeri ücretsiz kargo (ürün eşiğin altındaysa ücret sepette netleşir)` };
+    return { fee: null, freeOver, applies: null, note: `${tutarBicimle(freeOver, etkinPara)} üzeri ücretsiz kargo (ürün eşiğin altındaysa ücret sepette netleşir)` };
   }
   return bos;
 }

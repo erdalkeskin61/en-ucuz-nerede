@@ -21,12 +21,16 @@
  * kontrolü için buradan fonksiyon çağırır; ters yönde import döngü yaratırdı.
  */
 
-/** Türkçe küçük harfe çevirir (util.toLowerTr ile aynı davranış, döngüyü kırmak için yerel). */
+/** Tam genişlikli (JP) rakam/noktalama ve aksanları normalize edip küçültür. */
 function kucult(s) {
   return String(s ?? '')
+    .replace(/[０-９Ａ-Ｚａ-ｚ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+    .replace(/．/g, '.').replace(/，/g, ',')
     .replace(/İ/g, 'i')
     .replace(/I/g, 'ı')
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[éèêë]/g, 'e').replace(/[àâä]/g, 'a').replace(/[îï]/g, 'i')
+    .replace(/[ô]/g, 'o').replace(/[ùû]/g, 'u');
 }
 
 /** Nominal yoğunluklar (g/cm³ = g/ml). Kaynak: yaygın filament üreticilerinin veri sayfaları. */
@@ -52,14 +56,15 @@ export const NOMINAL_YOGUNLUK = {
   rezine: 1.10,
 };
 
-/** Malzeme adını başlıktan çıkarır (yoğunluk için). */
+/** Malzeme adını başlıktan çıkarır (yoğunluk için; TR / EN / FR / JA). */
 export function malzemeBul(title) {
   const t = kucult(title);
-  // Özel/uzun adlar önce
-  const adaylar = ['pa12', 'pa6', 'pla+', 'petg', 'abs', 'asa', 'tpu', 'pva', 'hips', 'pei', 'pekk', 'peek', 'pc', 'pa', 'pla', 'reçine', 'rezine', 'resin'];
+  if (t.includes('レジン')) return 'resin';
+  // Özel/uzun adlar önce (Japonca "PLAフィラメント" gibi bitişik yazımlara da izin verir)
+  const adaylar = ['pa12', 'pa6', 'pla+', 'petg', 'abs', 'asa', 'tpu', 'pva', 'hips', 'pei', 'pekk', 'peek', 'pc', 'pa', 'pla', 'reçine', 'rezine', 'resine', 'resin'];
   for (const m of adaylar) {
-    const re = new RegExp('(?:^|[^\\p{L}])' + m.replace('+', '\\+') + '(?:[^\\p{L}]|$)', 'u');
-    if (re.test(t)) return m;
+    const re = new RegExp('(?:^|[^a-zçğıöşü0-9])' + m.replace('+', '\\+') + '(?:[^a-zçğıöşü0-9]|$)', 'u');
+    if (re.test(t)) return m === 'resine' ? 'resin' : m;
   }
   return null;
 }
@@ -73,17 +78,16 @@ export function yogunlukBul(title) {
 
 /**
  * Başlıktaki çap/ölçü ifadelerini metinden çıkarır ki miktar sanılmasın.
- * "1.75mm", "2,85 mm", "175mm", "0.4mm nozzle" gibi.
+ * "1.75mm", "2,85 mm", "175mm", "0.4mm nozzle", "buse 0.4mm", "0.4mmノズル" gibi.
  */
 function caplariTemizle(metin) {
   return metin
-    .replace(/(\d+(?:[.,]\d+)?)\s*(?:mm|milimetre)\b/gi, ' ')
-    .replace(/\b(?:nozzle|nozul|çap|cap)\b[^.,]{0,12}/gi, ' ');
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:mm|milimetre|millimetre|millimeter)(?![a-zçğıöşü])/gi, ' ')
+    .replace(/(?:^|[^a-zçğıöşü])(?:nozzle|nozul|buse|ノズル|çap|cap)(?![a-zçğıöşü])[^.,]{0,12}/gi, ' ');
 }
 
 /**
- * Çoklu paket çarpanını bulur: "10'lu kutu 1 kg" → 10, "2x1kg" → 2, "ikili" → 2.
- * Yalnızca paket/kutu/set gibi bir sözcük varsa çarpan sayılır (yanlış pozitif olmasın).
+ * Çoklu paket çarpanını bulur: "10'lu kutu 1 kg" → 10, "2x1kg" → 2, "2 pack", "lot de 2", "2個セット".
  */
 function paketCarpani(metin) {
   // "10'lu Kutu", "3'lü paket", "2 li set"
@@ -92,6 +96,13 @@ function paketCarpani(metin) {
     const n = parseInt(m1[1], 10);
     if (n >= 2 && n <= 50) return { adet: n, ham: m1[0].trim() };
   }
+  // EN / FR / JA çoklu paket: "2 pack", "2 rolls", "pack of 2", "lot de 2", "2 bobines", "2個セット"
+  const mIntl = metin.match(/(\d+)\s*[-]?\s*(?:packs?|rolls?|spools?|bobines?|rouleaux|個セット|本組|巻セット|巻)\b/i)
+    || metin.match(/\b(?:pack of|lot de)\s*(\d+)\b/i);
+  if (mIntl) {
+    const n = parseInt(mIntl[1], 10);
+    if (n >= 2 && n <= 50) return { adet: n, ham: mIntl[0].trim() };
+  }
   // "2x1kg", "3 x 1 kg", "2×1kg"
   const m2 = metin.match(/(\d+)\s*[x×]\s*(?=\d)/i);
   if (m2) {
@@ -99,7 +110,7 @@ function paketCarpani(metin) {
     if (n >= 2 && n <= 50) return { adet: n, ham: m2[0].trim() };
   }
   // "1kg x2"
-  const m3 = metin.match(/\d+(?:[.,]\d+)?\s*(?:kg|g|gr)\s*[x×]\s*(\d+)\b/i);
+  const m3 = metin.match(/\d+(?:[.,]\d+)?\s*(?:kg|g|gr|キロ|グラム)\s*[x×]\s*(\d+)(?![a-zçğıöşü])/i);
   if (m3) {
     const n = parseInt(m3[1], 10);
     if (n >= 2 && n <= 50) return { adet: n, ham: m3[0].trim(), sondan: true };
@@ -140,30 +151,29 @@ export function miktarCikar(title) {
   const t = caplariTemizle(kucult(hamBaslik));
   const paket = paketCarpani(t);
 
-  // --- Ağırlık ---
-  // Sayıdan ÖNCE harf olmamalı ("A2L" gibi model kodları elenir) — ancak çoklu paket
-  // çarpanı "2x1kg" biçiminde sayıdan hemen önce "x"/"×" gelebilir.
-  const agirlikRe = /(?:^|[^\p{L}\d]|[x×])(\d+(?:[.,]\d+)?)\s*(kg|kgs|kilo|kilogram|gr|g|gram)(?![\p{L}])/giu;
+  // --- Ağırlık (TR / EN / FR / JA) ---
+  // Sayıdan ÖNCE ASCII/Türkçe harf olmamalı ("A2L" gibi model kodları elenir) — ancak "2x1kg" veya "ブラック1kg" kabul edilir.
+  const agirlikRe = /(?:^|[^a-zçğıöşü\d]|[x×])(\d+(?:[.,]\d+)?)\s*(kg|kgs|kilo|kilogram|kilogramme|kilogrammes|gr|g|gram|grams|gramme|grammes|キログラム|キロ|グラム)(?![a-zçğıöşü])/giu;
   const agirliklar = [];
   for (const m of t.matchAll(agirlikRe)) {
     const sayi = parseFloat(String(m[1]).replace(',', '.'));
     if (!Number.isFinite(sayi) || sayi <= 0) continue;
     const birim = m[2].toLowerCase();
-    const kgMi = /^(kg|kgs|kilo|kilogram)$/.test(birim);
+    const kgMi = /^(kg|kgs|kilo|kilogram|kilogramme|kilogrammes|キログラム|キロ)$/.test(birim);
     const gram = kgMi ? sayi * 1000 : sayi;
     // Makul aralık: 5 g – 50 kg (5 g altı = vida/nozul vb., 50 kg üstü = hatalı okuma)
     if (gram < 5 || gram > 50000) continue;
     agirliklar.push({ gram: Math.round(gram), ham: m[0].replace(/^\D+/, '').trim(), konum: m.index });
   }
 
-  // --- Hacim ---
-  const hacimRe = /(?:^|[^\p{L}\d])(\d+(?:[.,]\d+)?)\s*(ml|cl|lt|l|litre|liter)(?![\p{L}])/gu;
+  // --- Hacim (TR / EN / FR / JA) ---
+  const hacimRe = /(?:^|[^a-zçğıöşü\d]|[x×])(\d+(?:[.,]\d+)?)\s*(ml|cl|lt|l|litre|litres|liter|liters|ミリリットル|リットル)(?![a-zçğıöşü])/giu;
   const hacimler = [];
   for (const m of t.matchAll(hacimRe)) {
     const sayi = parseFloat(String(m[1]).replace(',', '.'));
     if (!Number.isFinite(sayi) || sayi <= 0) continue;
     const birim = m[2].toLowerCase();
-    const ml = (birim === 'l' || birim === 'lt' || birim === 'litre' || birim === 'liter')
+    const ml = (birim === 'l' || birim === 'lt' || birim === 'litre' || birim === 'litres' || birim === 'liter' || birim === 'liters' || birim === 'リットル')
       ? sayi * 1000
       : (birim === 'cl' ? sayi * 10 : sayi);
     if (ml < 10 || ml > 100000) continue;
@@ -297,7 +307,7 @@ export function birimFiyat(product) {
  *   rozetMetni:string, rozetIkonu:string
  * }}
  */
-export function birimFiyatHesapla(baslik, fiyat) {
+export function birimFiyatHesapla(baslik, fiyat, paraBirimi = 'TRY') {
   const f = Number(fiyat);
   if (!Number.isFinite(f) || f <= 0) return null;
 
@@ -310,26 +320,34 @@ export function birimFiyatHesapla(baslik, fiyat) {
   if (m.gram == null && m.ml == null) return null;
 
   const t = kucult(bas);
-  const recineMi = /re[çc]ine|rezine|\bresin\b|\bsla\b|photopolymer|fotopolimer/.test(t);
-  const filamentMi = /filament|filaman|makara|spool/.test(t) || !!m.malzeme;
+  const recineMi = /re[çc]ine|rezine|resine|\bresin\b|レジン|\bsla\b|photopolymer|fotopolimer/.test(t);
+  const filamentMi = /filament|filaman|makara|spool|bobine|フィラメント/.test(t) || !!m.malzeme;
   // Ne reçine ne filament → aksesuar/yazıcı: birim fiyat üretilmez.
   if (!recineMi && !filamentMi) return null;
-  // Aksesuar sözcükleri (kurutucu, nozul, ağız, anakart…) yanlış pozitif üretmesin.
-  if (/(kurutucu|dryer|nozul|nozzle|a[ğg][ıi]z|anakart|mainboard|yatak|bed|vida|sens[öo]r|kablo|adapt[öo]r)/.test(t)
-    && !/re[çc]ine|\bresin\b/.test(t)) {
+  // Aksesuar sözcükleri (kurutucu, nozul, buse, plateau, anakart…) yanlış pozitif üretmesin.
+  if (/(kurutucu|dryer|secheur|nozul|nozzle|buse|ノズル|hotend|ホットエンド|plateau|ヒートベッド|ビルドプレート|a[ğg][ıi]z|anakart|mainboard|yatak|bed|vida|sens[öo]r|kablo|adapt[öo]r)/.test(t)
+    && !recineMi) {
     return null;
   }
 
   const kg = m.gram != null ? m.gram / 1000 : null;
   const litre = m.ml != null ? m.ml / 1000 : null;
 
-  const yuvarla = (n) => Math.round(n * 100) / 100;
-  const bicim = (n) => n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const kod = String(paraBirimi || 'TRY').trim().toUpperCase();
+  const simge = kod === 'USD' ? '$' : (kod === 'EUR' ? '€' : (kod === 'JPY' ? '¥' : 'TL'));
+  const yerel = kod === 'USD' ? 'en-US' : (kod === 'EUR' ? 'fr-FR' : (kod === 'JPY' ? 'ja-JP' : 'tr-TR'));
+  const yuvarla = (n) => kod === 'JPY' ? Math.round(n) : (Math.round(n * 100) / 100);
+  const bicim = (n) => kod === 'JPY'
+    ? n.toLocaleString(yerel, { maximumFractionDigits: 0 })
+    : n.toLocaleString(yerel, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // Reçine: hacim varsa ₺/L esas alınır.
+  // Reçine: hacim varsa birim / L esas alınır.
   if (recineMi && litre != null && litre > 0) {
     const birimFiyat = yuvarla(f / litre);
     const tahminiKg = m.yogunluk ? yuvarla(f / (litre * m.yogunluk)) : null;
+    const rozetMetni = kod === 'TRY'
+      ? `🧪 ${bicim(birimFiyat)} TL / L`
+      : `🧪 ${simge}${bicim(birimFiyat)} / L`;
     return {
       tur: 'resin',
       birim: 'L',
@@ -341,14 +359,17 @@ export function birimFiyatHesapla(baslik, fiyat) {
       ml: m.ml,
       tahmini: true, // yoğunluk nominal
       malzeme: m.malzeme,
-      rozetMetni: `🧪 ${bicim(birimFiyat)} TL / L`,
+      rozetMetni,
       rozetIkonu: '🧪',
     };
   }
 
-  // Filament (veya ağırlıkla satılan reçine): ₺/kg.
+  // Filament (veya ağırlıkla satılan reçine): birim / kg.
   if (kg != null && kg > 0) {
     const birimFiyat = yuvarla(f / kg);
+    const rozetMetni = kod === 'TRY'
+      ? `🏷️ ${bicim(birimFiyat)} TL / kg`
+      : `🏷️ ${simge}${bicim(birimFiyat)} / kg`;
     return {
       tur: recineMi ? 'resin' : 'filament',
       birim: 'kg',
@@ -360,7 +381,7 @@ export function birimFiyatHesapla(baslik, fiyat) {
       ml: m.ml,
       tahmini: false,
       malzeme: m.malzeme,
-      rozetMetni: `🏷️ ${bicim(birimFiyat)} TL / kg`,
+      rozetMetni,
       rozetIkonu: '🏷️',
     };
   }

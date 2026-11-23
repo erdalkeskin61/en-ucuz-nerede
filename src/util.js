@@ -39,6 +39,43 @@ const EN_TO_TR = {
   marble: 'mermer', wood: 'ahşap', silk: 'ipek', glitter: 'simli',
 };
 
+const FR_TO_TR = {
+  noir: 'siyah', noire: 'siyah',
+  blanc: 'beyaz', blanche: 'beyaz', ivoire: 'beyaz',
+  rouge: 'kırmızı', bordeaux: 'bordo',
+  bleu: 'mavi', bleue: 'mavi', 'bleu marine': 'lacivert', turquoise: 'turkuaz',
+  gris: 'gri', grise: 'gri', anthracite: 'antrasit', argent: 'gümüş', argente: 'gümüş',
+  dore: 'altın', doree: 'altın', 'couleur or': 'altın',
+  vert: 'yeşil', verte: 'yeşil',
+  jaune: 'sarı',
+  orange: 'turuncu',
+  rose: 'pembe',
+  violet: 'mor', violette: 'mor', lavande: 'mor', lilas: 'mor',
+  marron: 'kahverengi', brun: 'kahverengi', brune: 'kahverengi', bronze: 'kahverengi',
+  beige: 'bej', creme: 'krem',
+  transparent: 'şeffaf', transparente: 'şeffaf', translucide: 'şeffaf', clair: 'şeffaf', claire: 'şeffaf',
+  naturel: 'naturel', naturelle: 'naturel',
+  soie: 'ipek', bois: 'ahşap', marbre: 'mermer', paillete: 'simli', pailletee: 'simli',
+};
+
+const JA_TO_TR = {
+  ブラック: 'siyah', 黒色: 'siyah', 黒: 'siyah',
+  ホワイト: 'beyaz', 白色: 'beyaz', 白: 'beyaz',
+  レッド: 'kırmızı', 赤色: 'kırmızı', 赤: 'kırmızı', ワインレッド: 'bordo',
+  ブルー: 'mavi', 青色: 'mavi', 青: 'mavi', ネイビー: 'lacivert', シアン: 'mavi',
+  グレー: 'gri', グレイ: 'gri', 灰色: 'gri', シルバー: 'gümüş',
+  グリーン: 'yeşil', 緑色: 'yeşil', 緑: 'yeşil',
+  イエロー: 'sarı', 黄色: 'sarı', 黄: 'sarı', ゴールド: 'altın',
+  オレンジ: 'turuncu',
+  ピンク: 'pembe',
+  パープル: 'mor', 紫色: 'mor', 紫: 'mor',
+  ブラウン: 'kahverengi', 茶色: 'kahverengi',
+  ベージュ: 'bej',
+  クリア: 'şeffaf', 透明: 'şeffaf',
+  ナチュラル: 'naturel',
+  シルク: 'ipek', マーブル: 'mermer', ウッド: 'ahşap',
+};
+
 const COLOR_CANON = {
   kirmizi: 'kırmızı', gumus: 'gümüş', altin: 'altın', yesil: 'yeşil', yesim: 'yeşil', 'yeşim': 'yeşil', sari: 'sarı',
   seffaf: 'şeffaf', 'gok mavisi': 'mavi', 'acik gri': 'gri', 'koyu gri': 'gri',
@@ -54,6 +91,9 @@ const COLOR_CANON = {
   bronze: 'kahverengi', cocoa: 'kahverengi', chocolate: 'kahverengi', coffee: 'kahverengi',
   ivory: 'beyaz', bone: 'beyaz', clear: 'şeffaf', transparent: 'şeffaf',
   marble: 'mermer', wood: 'ahşap', silk: 'ipek', glitter: 'simli',
+  // Fransızca & Japonca kanonik eşlemeler
+  ...FR_TO_TR,
+  ...JA_TO_TR,
   // Türkçe ton adları → temel renk
   eflatun: 'mor', lila: 'mor', fuşya: 'pembe', fusya: 'pembe', haki: 'yeşil',
   hardal: 'sarı', vişne: 'kırmızı', visne: 'kırmızı', mercan: 'turuncu',
@@ -64,14 +104,23 @@ const COLOR_CANON = {
   beyazımsı: 'beyaz', 'kum rengi': 'bej', 'taş rengi': 'gri', 'tas rengi': 'gri',
 };
 
+/** Fransızca vb. Latin aksanlarını (é, è, ê, à, ô…) eşleştirme için düzleştirir. */
+function aksanDuzlestir(s) {
+  return String(s || '')
+    .replace(/[éèêë]/g, 'e').replace(/[àâä]/g, 'a').replace(/[îï]/g, 'i')
+    .replace(/[ô]/g, 'o').replace(/[ùû]/g, 'u').replace(/[ÿ]/g, 'y')
+    .replace(/œ/g, 'oe').replace(/æ/g, 'ae');
+}
+
 export function toLowerTr(s) {
   return String(s || '').toLocaleLowerCase('tr-TR');
 }
 
-/** Metindeki renk adlarını bulur, standart Türkçe adlara çevirir. */
+/** Metindeki renk adlarını (TR / EN / FR / JA) bulur, standart Türkçe adlara çevirir. */
 export function extractColors(text) {
   if (!text) return [];
-  const t = ' ' + toLowerTr(text).replace(/[^a-zçğıöşü0-9\s-]/gi, ' ').replace(/\s+/g, ' ') + ' ';
+  const norm = aksanDuzlestir(toLowerTr(text));
+  const t = ' ' + norm.replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ') + ' ';
   const found = new Set();
   for (const c of TR_COLORS) {
     if (t.includes(' ' + c + ' ') || t.includes(' ' + c + '-') || t.includes('-' + c)) {
@@ -86,8 +135,18 @@ export function extractColors(text) {
       if (t.includes(' ' + c + ek + ' ')) { found.add(c); break; }
     }
   }
-  for (const [en, tr] of Object.entries(EN_TO_TR)) {
-    if (t.includes(' ' + en + ' ')) found.add(en);
+  for (const en of Object.keys(EN_TO_TR)) {
+    if (t.includes(' ' + en + ' ') || t.includes(' ' + en + '-') || t.includes('-' + en)) found.add(en);
+  }
+  for (const fr of Object.keys(FR_TO_TR)) {
+    if (t.includes(' ' + fr + ' ') || t.includes(' ' + fr + '-') || t.includes('-' + fr)) found.add(fr);
+  }
+  for (const ja of Object.keys(JA_TO_TR)) {
+    if (ja.length === 1) {
+      if (new RegExp(`(?:^|[^\\p{Script=Han}])${ja}(?=$|[^\\p{Script=Han}])`, 'u').test(norm)) found.add(ja);
+    } else if (norm.includes(ja)) {
+      found.add(ja);
+    }
   }
   return [...found].map(c => COLOR_CANON[c] || c);
 }
@@ -100,15 +159,30 @@ export function dominantColor(text) {
 }
 
 /** Genel (kesin olmayan) renk tanımları: bunlar renk farkı sayılmaz. */
-const GENERIC_COLORS = new Set(['çok renkli', 'cok renkli', 'renkli', 'karışık', 'karisik', 'karma', 'multicolor', 'multi color', 'rgb', 'tüm renkler', 'tum renkler', 'ana renk']);
+const GENERIC_COLORS = new Set([
+  'çok renkli', 'cok renkli', 'renkli', 'karışık', 'karisik', 'karma',
+  'multicolor', 'multi color', 'multicolore', 'multicouleur', 'rgb',
+  'tüm renkler', 'tum renkler', 'ana renk', 'マルチカラー', '複数色',
+]);
 
-/** İki renk bilgisi aynı mı? (Bilinmeyen ya da genel renk tanımı kararsız döner.) */
+const FOREIGN_TO_TR = { ...EN_TO_TR, ...FR_TO_TR, ...JA_TO_TR };
+
+/** İki renk bilgisi aynı mı? (TR/EN/FR/JA çevirisi yapar, Türkçe ton farklarını korur; belirsizde null döner.) */
 export function sameColor(a, b) {
   if (!a || !b) return null;
-  const la = sadelestir(a).trim(), lb = sadelestir(b).trim();
-  if (GENERIC_COLORS.has(la) || GENERIC_COLORS.has(lb)) return null;
-  return la === lb;
+  const norm = (x) => {
+    const ham = aksanDuzlestir(toLowerTr(x)).trim();
+    const sade = sadelestir(ham).trim();
+    const ceviri = FOREIGN_TO_TR[ham] || FOREIGN_TO_TR[sade];
+    return ceviri ? sadelestir(ceviri).trim() : sade;
+  };
+  const sa = norm(a);
+  const sb = norm(b);
+  if (GENERIC_COLORS.has(sa) || GENERIC_COLORS.has(sb)) return null;
+  return sa === sb;
 }
+
+export { sameColor as renkAyni };
 
 /**
  * Renk aileleri: kullanıcı "gri" derse gri tonları da (gümüş, antrasit, füme,
@@ -258,6 +332,7 @@ const TITLE_STOPWORDS_TR = new Set([
   'tuş', 'tus', 'optik', 'dpi', 'mm', 'hz', 'ghz', 'editions', 'bas', 'mekanik', 'switch',
   // 3D baskı alanı: genel tür kelimeleri gürültüdür (ürün kimliği marka + seri + malzeme)
   'filament', 'yazıcı', 'yazici', 'printer', 'yazdırma', 'baskı',
+  'imprimante', 'impression', 'bobine', 'フィラメント', 'プリンター', '3dプリンター',
 ]);
 
 /** Karşılaştırma için Türkçe diakritikleri sadeleştirir (tuş=tus, aydınlatma=aydinlatma). */
@@ -269,7 +344,7 @@ export function sadelestir(s) {
 const SADE_COLORS = TR_COLORS.map(sadelestir);
 
 export function titleTokens(title, brand, { stripColors = false } = {}) {
-  let t = sadelestir(title)
+  let t = aksanDuzlestir(sadelestir(title))
     // Malzeme çizgisi normalizasyonu: "PLA+" = "PLA Plus" = "plaplus" (aynı ürün çizgisi)
     // "X PLA" = "xPLA": bazı satıcılar bitişik, bazıları ayrı yazar (2026-11-03).
     // Ürün HATTI kimliğini yine hatCakismasi denetler; burada yalnızca yazım farkı
@@ -280,24 +355,21 @@ export function titleTokens(title, brand, { stripColors = false } = {}) {
     // Ölçü normalizasyonu (2026-10-25): satıcılar aynı çapı farklı yazar —
     // "1.75mm", "1,75 mm", "175mm" aynı üründür. Virgül/nokta ve boşluk farkı
     // benzerliği yanlışlıkla düşürmesin diye tek token'a indirilir.
-    .replace(/(\d+)[.,](\d+)\s*(mm|cm|mt)\b/g, '$1$2$3')
-    .replace(/(\d)\s+(mm|cm|mt)\b/g, '$1$2')
+    .replace(/(\d+)[.,](\d+)\s*(mm|cm|mt)(?![a-zçğıöşü])/gi, '$1$2$3')
+    .replace(/(\d)\s+(mm|cm|mt)(?![a-zçğıöşü])/gi, '$1$2')
     .replace(/(\d+)\s*(gb|tb|mb)\b/gi, (m, n, u) => n + u.toLowerCase())
-    // Ağırlık/hacim eşdeğerliği: "1kg" = "1 kg" = "1000gr" = "1000 g" → gram
-    .replace(/(\d+(?:[.,]\d+)?)\s*(kg|kgs)\b/g, (_, n) => String(Math.round(parseFloat(String(n).replace(',', '.')) * 1000)) + 'gr')
-    .replace(/(\d+(?:[.,]\d+)?)\s*(gr|g)\b/g, (_, n) => String(Math.round(parseFloat(String(n).replace(',', '.')))) + 'gr')
+    // Ağırlık/hacim eşdeğerliği: "1kg" = "1 kg" = "1000gr" = "1000 g" = "1キロ" = "1000グラム" → gram
+    .replace(/(\d+(?:[.,]\d+)?)\s*(kg|kgs|kilogram|kilogramme|kilogrammes|キログラム|キロ)(?![a-zçğıöşü])/giu, (_, n) => String(Math.round(parseFloat(String(n).replace(',', '.')) * 1000)) + 'gr')
+    .replace(/(\d+(?:[.,]\d+)?)\s*(gr|g|gram|grams|gramme|grammes|グラム)(?![a-zçğıöşü])/giu, (_, n) => String(Math.round(parseFloat(String(n).replace(',', '.')))) + 'gr')
     .replace(/[^\p{L}\p{N}\s-]/gu, ' ').split(/[\s-]+/).filter(w => w.length > 1);
   let stop = new Set([...TITLE_STOPWORDS_TR].map(sadelestir));
   const b = sadelestir(brand || '');
   for (const w of b.split(/\s+/)) if (w) stop.add(w);
   if (stripColors) {
-    // Renk kelimeleri (Türkçe + İngilizce) benzerlik hesabından ayıklanır.
-    // Çok kelimeli renkler ("açık gri", "rose gold") kelime bazında eklenir:
-    // "Açık Gri" ile "Beton Gri" karşılaştırmasında "açık"/"beton" nüans
-    // sözcükleri kalıntı bırakıp benzerliği yanlışlıkla düşürmesin.
+    // Renk kelimeleri (Türkçe + İngilizce + Fransızca + Japonca) benzerlik hesabından ayıklanır.
     const renkler = new Set();
-    for (const c of [...TR_COLORS, ...Object.keys(EN_TO_TR)]) {
-      for (const w of sadelestir(c).split(/[\s-]+/)) if (w.length > 2) renkler.add(w);
+    for (const c of [...TR_COLORS, ...Object.keys(EN_TO_TR), ...Object.keys(FR_TO_TR), ...Object.keys(JA_TO_TR)]) {
+      for (const w of aksanDuzlestir(sadelestir(c)).split(/[\s-]+/)) if (w.length > 1) renkler.add(w);
     }
     for (const c of renkler) stop.add(c);
   }
@@ -430,23 +502,49 @@ const AKSESUAR_KELIMELERI = [
   'ekstruderi', 'extruderi', 'hotendi', 'hotend kiti',
   'bltouch', 'crtouch', 'cr touch', 'sensor', 'sensoru', 'prob', 'probu', 'filament sensoru',
   'fan', 'fani', 'fanlari', 'salyangoz fan', 'radyal fan', 'aksiyel fan', 'sogutucu blok', 'heatsink',
+  // İngilizce yedek parça / aksesuar terimleri
+  'spare part', 'spare parts', 'replacement', 'nozzles', 'hot end', 'build plate', 'pei sheet',
+  'magnetic plate', 'magnetic sheet', 'heatbed', 'heated bed', 'heater cartridge', 'heating block',
+  'silicone sock', 'silicone cover', 'ptfe tube', 'bowden tube', 'timing belt', 'stepper motor',
+  'touchscreen', 'touch screen', 'ribbon cable', 'extruder gear', 'cooling fan', 'blower fan',
+  'leveling sensor', 'proximity sensor', 'filament sensor', 'runout sensor', 'nozzle kit',
+  'extruder kit', 'spare parts kit', 'enclosure',
+  // Fransızca yedek parça / aksesuar terimleri
+  'buse', 'buses', 'plateau', 'plateau pei', 'plateau magnetique', 'plaque pei', 'lit chauffant',
+  'tete d impression', 'tete impression', 'corps de chauffe', 'bloc chauffant', 'thermistance',
+  'chaussette silicone', 'tube ptfe', 'extrudeur', 'courroie', 'poulie', 'moteur pas a pas',
+  'carte mere', 'ecran tactile', 'ventilateur', 'engrenage', 'roulement', 'capteur',
+  'piece detachee', 'pieces detachees', 'piece de rechange', 'rechange', 'accessoire', 'accessoires',
+  'couvercle', 'boitier', 'cable', 'bloc d alimentation',
+];
+
+const AKSESUAR_JA = [
+  'ノズル', 'ホットエンド', 'エクストルーダー', 'ヒートベッド', 'ビルドプレート', 'peiプレート',
+  '交換部品', '交換用', '予備パーツ', 'スペアパーツ', 'アクセサリー', 'アクセサリ',
+  'サーミスタ', 'ヒーターカートリッジ', 'ヒートブロック', 'シリコンソックス', 'シリコンカバー',
+  'ptfeチューブ', 'タイミングベルト', 'プーリー', 'ステッピングモーター', 'マザーボード',
+  'メインボード', 'タッチスクリーン', '冷却ファン', 'ギア', 'ベアリング', 'センサー',
+  'フィラメントセンサー', 'エンクロージャー', 'リニアレール',
 ];
 
 function aksesuarEslesmeleri(metin) {
-  const t = sadelestir(metin || '');
+  const t = aksanDuzlestir(sadelestir(metin || ''));
   if (!t) return [];
-  return AKSESUAR_KELIMELERI.filter(k => {
+  const latin = AKSESUAR_KELIMELERI.filter(k => {
     const desen = new RegExp('(^|[^a-z0-9])' + k.replace(/\s+/g, '\\s+') + '($|[^a-z0-9])');
     return desen.test(t);
   });
+  const ja = AKSESUAR_JA.filter(k => t.includes(k));
+  return latin.length && ja.length ? [...latin, ...ja] : (ja.length ? ja : latin);
 }
 
-/** Başlık elektronik/mekanik yedek parça veya aksesuar mı? */
+/** Başlık elektronik/mekanik yedek parça veya aksesuar mı? (TR / EN / FR / JA) */
 export function parcaMi(baslik) {
-  const t = sadelestir(baslik || '');
+  const t = aksanDuzlestir(sadelestir(baslik || ''));
   if (!t) return false;
   if (aksesuarEslesmeleri(t).length > 0) return true;
-  return /(^|[^a-z0-9])(uyumlu|uygun|icin)($|[^a-z0-9])/.test(t);
+  if (/(^|[^a-z0-9])(uyumlu|uygun|icin)($|[^a-z0-9])/.test(t)) return true;
+  return /\b(compatible with|replacement for|pour imprimante|piece pour)\b/.test(t) || t.includes('交換用');
 }
 
 /**
@@ -1148,10 +1246,104 @@ export function formatTL(n) {
   return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
 }
 
-/** Güvenli sayı ayrıştırma ("1.699,90" -> 1699.9). */
-export function parseNum(s) {
+function paraBirimiBolgeden(paraBirimiVeyaMarket, metin = '') {
+  const ham = String(paraBirimiVeyaMarket || '').trim();
+  const kucuk = ham.toLowerCase();
+  if (kucuk === 'us') return 'USD';
+  if (kucuk === 'fr' || kucuk === 'eu') return 'EUR';
+  if (kucuk === 'jp') return 'JPY';
+  if (kucuk === 'tr') return 'TRY';
+  if (ham) return paraBirimiNormalize(ham);
+
+  const s = String(metin || '');
+  if (/[¥￥円]|\bJPY\b/i.test(s)) return 'JPY';
+  if (/€|\bEUR\b/i.test(s)) return 'EUR';
+  if (/\$|\bUSD\b/i.test(s)) return 'USD';
+  if (/₺|\b(?:TRY|TL)\b/i.test(s)) return 'TRY';
+  return null;
+}
+
+/**
+ * Bölgesel fiyat ayrıştırıcı (USD: 849.00 / $1,299.90, EUR: 849,00 / 1 299,90 €,
+ * JPY: 128,000 kuruşsuz tam sayı, TRY: 1.699,90 TL).
+ * @param {string|number|null} metin
+ * @param {string|null} [paraBirimiVeyaMarket] 'USD'|'EUR'|'JPY'|'TRY' veya 'us'|'fr'|'eu'|'jp'|'tr'
+ */
+export function fiyatCikar(metin, paraBirimiVeyaMarket = null) {
+  if (metin == null || metin === '') return null;
+  const kod = paraBirimiBolgeden(paraBirimiVeyaMarket, metin);
+  if (typeof metin === 'number') {
+    if (!Number.isFinite(metin)) return null;
+    return kod === 'JPY' ? Math.round(metin) : metin;
+  }
+
+  const ham = String(metin)
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+    .replace(/[．]/g, '.')
+    .replace(/[，]/g, ',')
+    .trim();
+  if (!ham) return null;
+
+  // Birden fazla sayının (ör. "500g - $29.99") yapışmasını önlemek için ilk fiyat grubunu çek.
+  const paraM = ham.match(/(?:[₺$€¥￥]\s*)(\d[\d\s\u00a0\u202f.,]*)/)
+    || ham.match(/(\d[\d\s\u00a0\u202f.,]*)(?=\s*(?:tl|₺|usd|\$|eur|€|jpy|¥|￥|円))/i)
+    || ham.match(/(\d[\d\s\u00a0\u202f.,]*)/);
+  let t = (paraM ? paraM[1] : ham).replace(/[\s\u00a0\u202f]+/g, '').replace(/[^\d.,]/g, '');
+  if (!t) return null;
+
+  if (kod === 'JPY') {
+    // JPY kuruşsuzdur: "128,000" / "128.000" binlik ayırıcı; "128000.00" (JSON) ondalık.
+    const sonNokta = t.lastIndexOf('.');
+    const sonVirgul = t.lastIndexOf(',');
+    if (sonNokta !== -1 && (t.length - sonNokta - 1) <= 2 && !t.slice(sonNokta + 1).includes(',')) {
+      t = t.slice(0, sonNokta).replace(/[.,]/g, '') + '.' + t.slice(sonNokta + 1);
+    } else if (sonVirgul !== -1 && (t.length - sonVirgul - 1) <= 2 && !t.slice(sonVirgul + 1).includes('.')) {
+      t = t.slice(0, sonVirgul).replace(/[.,]/g, '') + '.' + t.slice(sonVirgul + 1);
+    } else {
+      t = t.replace(/[.,]/g, '');
+    }
+    const n = parseFloat(t);
+    return Number.isFinite(n) ? Math.round(n) : null;
+  }
+
+  const sonVirgul = t.lastIndexOf(',');
+  const sonNokta = t.lastIndexOf('.');
+  if (sonVirgul !== -1 && sonNokta !== -1) {
+    // İki ayırıcı birden varsa sonda gelen daima ondalıktır (1,299.90 vs 1.299,90).
+    t = sonVirgul > sonNokta
+      ? t.replace(/\./g, '').replace(',', '.')
+      : t.replace(/,/g, '');
+  } else if (kod === 'USD') {
+    // USD'de nokta ondalık, virgül ise (3 hane veya çoklu ise) binlik ayırıcıdır.
+    if (sonVirgul !== -1) {
+      const kalan = t.length - sonVirgul - 1;
+      t = (t.split(',').length === 2 && (kalan === 1 || kalan === 2))
+        ? t.replace(',', '.')
+        : t.replace(/,/g, '');
+    }
+  } else if (kod === 'EUR') {
+    // EUR'da virgül ondalık; nokta 3 basamaksa binlik, 1-2 basamaksa (bazı EN/EU feeds) ondalık.
+    if (sonVirgul !== -1) {
+      t = t.replace(/\./g, '').replace(',', '.');
+    } else if (sonNokta !== -1) {
+      const kalan = t.length - sonNokta - 1;
+      if (t.split('.').length > 2 || kalan === 3) t = t.replace(/\./g, '');
+    }
+  } else {
+    // TRY / varsayılan: nokta binlik (3 hane), virgül ondalık ("1.699,90" -> 1699.9, "595.848" -> 595848).
+    t = t.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  }
+
+  const n = parseFloat(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Güvenli sayı ayrıştırma ("1.699,90" -> 1699.9; bölge/para birimi verilirse fiyatCikar kullanır). */
+export function parseNum(s, paraBirimi = null) {
   if (s == null) return null;
   if (typeof s === 'number') return isFinite(s) ? s : null;
+  if (paraBirimi) return fiyatCikar(s, paraBirimi);
   const t = String(s).replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.').replace(/[^\d.]/g, '');
   if (!t) return null;
   const n = parseFloat(t);
