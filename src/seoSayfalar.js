@@ -195,22 +195,29 @@ export function crealityResmiMagazaLink(urunVeyaMetin, ayarlar = null) {
   return { url: bagli, hamUrl: hedefUrl };
 }
 
-const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|lubricant|grease|glue|extruder|board|motherboard|anakart|toolhead|baffle|wiper|thermistor|termistör|heater|sock|silikon\s*çorap|stepper|motor)\b/i;
+const SARF_VE_SPRAY_RE = /\b(spray|adhesion|adhesive|glue\s*stick|magigoo|bed\s*weld|cleaner|isopropyl|lubricant|grease|oil)\b|yapıştırıcı|sprey|yağlayıcı|gres|スプレー|接着剤/i;
+const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|extruder|board|motherboard|anakart|toolhead|baffle|wiper|thermistor|termistör|heater|sock|silikon\s*çorap|stepper|motor|assembly|door|hinge|panel|holder|feeder|buffer|enclosure|spool\s*holder|rotary\s*holder)\b|(ボード|アセンブリ|フロントドア|ドア|ノズル|ホットエンド|エクストルーダー|ヒートベッド|プレート|ビルドプレート|ケーブル|ベルト|ファン|センサー|モーター|ヒーター|カバー|ブラケット|スクリュー|ガラス|ホルダー|エンクロージャー|フィラメントハブ|バッファー|カッター|ワイパー|carte\s*m[èe]re|buse|corps\s*de\s*chauffe|plateau|courroie|ventilateur|[ée]cran|capot|porte\b|assemblage|moteur|extrudeur|caisson|support\s*bobine)/i;
+const BAGIMSIZ_AMS_RE = /\b(ams(\s*(lite|ht|2\s*pro|hub|feeder|buffer))?|cfs|ace\s*pro)\b/i;
+const YAZICI_BASLIK_RE = /3d\s*yazıcı|3d\s*printer|imprimante\s*3d|3d\s*プリンター|3dプリンター|\bcombo\b|コンボ/i;
 
 function anaKategoriSlugBul(k) {
   const metin = `${k.ad || ''} ${k.sorgu || ''}`;
-  if (/reçine|recine|resin|kurutucu|dryer|spacepi|filadryer|ebox/i.test(metin) && !/cable|screen|protector|board|motherboard/i.test(metin)) {
+  if ((/reçine|recine|resin|レジン|kurutucu|dryer|spacepi|filadryer|ebox|sécheur|secheur|ドライヤー/i.test(metin)
+    || SARF_VE_SPRAY_RE.test(metin))
+    && !/cable|screen|protector|board|motherboard|ケーブル|ボード/i.test(metin)) {
     return 'recine-ve-sarf';
   }
-  if (parcaMi(metin) || EK_PARCA_RE.test(metin) || /nozzle|tabla|hotend|yedek\s*parça|\bpei\b/i.test(metin)) {
+  if (parcaMi(metin) || EK_PARCA_RE.test(metin)
+    || /nozzle|tabla|hotend|yedek\s*parça|\bpei\b/i.test(metin)
+    || (BAGIMSIZ_AMS_RE.test(metin) && !YAZICI_BASLIK_RE.test(metin))) {
     return '3d-yazici-yedek-parca';
   }
-  if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa|hips|bvoh|pva)\b/i.test(metin)) {
+  if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa|hips|bvoh|pva)\b/i.test(metin) || /フィラメント/.test(metin)) {
     if (/\b(petg|e?tpu|abs|asa|cf|pa|nylon)\b/i.test(metin)) return 'petg-tpu-filament';
     if (/\b(x?pla|epla|hyper)\b|pla\+/i.test(metin)) return 'pla-filament';
     return 'filament';
   }
-  if (k.kategori === 'yazici' || /3d\s*yazıcı|3d\s*printer|yazıcı|printer|\b(p1s|p1p|p2s|x1c|x1e|x1\s*carbon|a1\s*mini|k1c|k1\s*max|k2\s*plus|ender\s*3|kobra\s*3|saturn\s*4|mars\s*5|photon|neptune\s*4|centauri\s*carbon|creator\s*5|adventurer\s*5|halot)\b/i.test(metin)) {
+  if (k.kategori === 'yazici' || /3d\s*yazıcı|3d\s*printer|yazıcı|printer|imprimante|プリンター|\b(p1s|p1p|p2s|x1c|x1e|x1\s*carbon|a1\s*mini|k1c|k1\s*max|k2\s*plus|ender\s*3|kobra\s*3|saturn\s*4|mars\s*5|photon|neptune\s*4|centauri\s*carbon|creator\s*5|adventurer\s*5|halot)\b/i.test(metin)) {
     return '3d-yazici';
   }
   return k.kategori === 'genel' ? 'recine-ve-sarf' : 'filament';
@@ -399,7 +406,7 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar, market = 'tr') {
     if (satirMarket !== etkinMarket) continue;
     if (r.paraBirimi && paraBirimiNormalize(r.paraBirimi) !== beklenenPara) continue;
     const ad = String(r.baslik || '').trim();
-    if (/hediye\s*çeki|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo/i.test(ad)) continue;
+    if (/hediye\s*çeki|gift\s*card|carte\s*cadeau|shipping\s*insurance|safeguard\s*your\s*purchase|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo/i.test(ad)) continue;
     const slug = slugYap(ad);
     if (slug.length < 6 || kullanilanSluglar.has(slug)) continue;
 
@@ -409,10 +416,14 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar, market = 'tr') {
       || katSlug === 'pla-filament'
       || katSlug === 'petg-tpu-filament'
       || katSlug === '3d-yazici-yedek-parca'
-      || /filament|\bpla\b|petg|tpu|\babs\b|\basa\b|reçine|recine|resin|kurutucu|dryer|nozzle|hotend|pei|tabla|extruder|anakart|motherboard|\bams\b/i.test(ad);
+      || SARF_VE_SPRAY_RE.test(ad)
+      || /filament|フィラメント|\bpla\b|petg|tpu|\babs\b|\basa\b|reçine|recine|resin|レジン|kurutucu|dryer|nozzle|ノズル|hotend|ホットエンド|pei|tabla|extruder|anakart|motherboard|ボード|アセンブリ|\bams\b/i.test(ad);
     if (!alakali) continue;
-    // 4500 TL altı ve adında 3D yazıcı geçmeyen kalemleri yazıcıya koyma
-    const duzeltilmisKat = (katSlug === '3d-yazici' && Number(r.fiyat) < 4500 && !/3d\s*yazıcı|3d\s*printer/i.test(ad))
+    // Bölgesel minimum yazıcı fiyat eşiğinin altındaki kalemleri yazıcıya koyma (spray/yedek parça koruması)
+    const minYaziciFiyat = beklenenPara === 'USD'
+      ? 89
+      : (beklenenPara === 'EUR' ? 85 : (beklenenPara === 'JPY' ? 14000 : 4000));
+    const duzeltilmisKat = (katSlug === '3d-yazici' && Number(r.fiyat) < minYaziciFiyat)
       ? '3d-yazici-yedek-parca'
       : katSlug;
 

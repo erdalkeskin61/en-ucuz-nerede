@@ -27,6 +27,7 @@ import { seoUrunListesi, urunSayfasiHtml, sayfaIskeleti, globalKatalogDiziniHtml
 import { globalRehberDiziniHtml } from '../src/rehberSayfalar.js';
 import { katalogUrunleriAra } from '../src/katalogSync.js';
 import { katalogdanKaynakAdayi } from '../src/urunArama.js';
+import { dbBaglantisi, closeDatabase } from '../src/store.js';
 
 let gecen = 0;
 let kalan = 0;
@@ -573,6 +574,69 @@ const styleCssKod = fs.readFileSync('public/style.css', 'utf8');
 kontrol('.hero h1 b mobilde yatay taşma/kesilme yapmaz (white-space: nowrap yok)',
   !/\.hero h1 b\s*\{[^}]*white-space:\s*nowrap/i.test(styleCssKod)
   && /\.hero h1\s*\{[^}]*overflow-wrap:\s*break-word/s.test(styleCssKod));
+
+console.log('\n14) 🗂️ Katalog kategori sınıflandırma doğrulaması (EN / JA yazıcı vs parça & sarf):');
+{
+  const db = dbBaglantisi();
+  const simdi = Date.now();
+  const eklenenIdler = [];
+  try {
+    const ins = db.prepare(`
+      INSERT INTO katalog_urunleri
+        (siteId, urunUrl, baslik, temizBaslik, marka, fiyat, stokta, gorselUrl, paraBirimi, kaynakTur, guncellemeTs)
+      VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?, 'test-kat', ?)
+    `);
+    const ornekler = [
+      ['creality_us', 'https://store.creality.com/products/test-landu-spray', 'LANDU 3D Printer Bed Adhesion Spray 120ml', 'landu 3d printer bed adhesion spray 120ml', 'LANDU', 13.95, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/test-ams-lite', 'Bambu Lab AMS Lite', 'bambu lab ams lite', 'Bambu Lab', 199.99, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/test-a1-mini-printer', 'Bambu Lab A1 Mini 3D Printer', 'bambu lab a1 mini 3d printer', 'Bambu Lab', 219.00, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/test-p1s-combo', 'Bambu Lab P1S Combo 3D Printer', 'bambu lab p1s combo 3d printer', 'Bambu Lab', 849.00, 'USD'],
+      ['creality_jp', 'https://store.creality.com/jp/products/test-mc-board', 'Bambu Lab P1S MCボード', 'bambu lab p1s mc board', 'Bambu Lab', 6800, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/test-th-board', 'Bambu Lab X1C THボード', 'bambu lab x1c th board', 'Bambu Lab', 7500, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/test-x-assembly', 'Bambu Lab A1 X軸アセンブリ', 'bambu lab a1 x axis assembly', 'Bambu Lab', 15800, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/test-front-door', 'Bambu Lab X1C フロントドア', 'bambu lab x1c front door', 'Bambu Lab', 8900, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/test-jp-printer', 'Bambu Lab P1S 3Dプリンター', 'bambu lab p1s 3d printer', 'Bambu Lab', 99800, 'JPY'],
+    ];
+    for (const [siteId, url, baslik, temiz, marka, fiyat, para] of ornekler) {
+      eklenenIdler.push(ins.run(siteId, url, baslik, temiz, marka, fiyat, para, simdi).lastInsertRowid);
+    }
+
+    const usListe = seoUrunListesi({ taze: true, market: 'us' });
+    const jpListe = seoUrunListesi({ taze: true, market: 'jp' });
+
+    const usSpray = usListe.find(u => u.ad.includes('Adhesion Spray 120ml'));
+    const usAmsLite = usListe.find(u => u.ad === 'Bambu Lab AMS Lite');
+    const usA1Mini = usListe.find(u => u.ad === 'Bambu Lab A1 Mini 3D Printer');
+    const usP1sCombo = usListe.find(u => u.ad === 'Bambu Lab P1S Combo 3D Printer');
+
+    kontrol('EN: Adhesion Spray 120ml recine-ve-sarf kategorisine gider (3d-yazici değil)',
+      usSpray?.kategoriSlug === 'recine-ve-sarf', JSON.stringify(usSpray));
+    kontrol('EN: Bağımsız AMS Lite yedek parça kategorisine gider, P1S Combo yazıcı kalır',
+      usAmsLite?.kategoriSlug === '3d-yazici-yedek-parca'
+      && usA1Mini?.kategoriSlug === '3d-yazici'
+      && usP1sCombo?.kategoriSlug === '3d-yazici',
+      JSON.stringify({ ams: usAmsLite?.kategoriSlug, a1: usA1Mini?.kategoriSlug, combo: usP1sCombo?.kategoriSlug }));
+
+    const jpMc = jpListe.find(u => u.ad.includes('MCボード'));
+    const jpTh = jpListe.find(u => u.ad.includes('THボード'));
+    const jpX = jpListe.find(u => u.ad.includes('X軸アセンブリ'));
+    const jpDoor = jpListe.find(u => u.ad.includes('フロントドア'));
+    const jpYazici = jpListe.find(u => u.ad === 'Bambu Lab P1S 3Dプリンター');
+
+    kontrol('JA: MCボード/THボード/X軸アセンブリ/フロントドア yedek parça olur, gerçek 3Dプリンター yazıcı kalır',
+      jpMc?.kategoriSlug === '3d-yazici-yedek-parca'
+      && jpTh?.kategoriSlug === '3d-yazici-yedek-parca'
+      && jpX?.kategoriSlug === '3d-yazici-yedek-parca'
+      && jpDoor?.kategoriSlug === '3d-yazici-yedek-parca'
+      && jpYazici?.kategoriSlug === '3d-yazici',
+      JSON.stringify({ mc: jpMc?.kategoriSlug, th: jpTh?.kategoriSlug, x: jpX?.kategoriSlug, door: jpDoor?.kategoriSlug, y: jpYazici?.kategoriSlug }));
+  } finally {
+    if (eklenenIdler.length) {
+      db.prepare(`DELETE FROM katalog_urunleri WHERE id IN (${eklenenIdler.map(() => '?').join(',')})`).run(...eklenenIdler);
+    }
+    closeDatabase();
+  }
+}
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
