@@ -23,7 +23,8 @@ import {
   slicerOneri, slicerFilamentBul, malzemeAilesi, malzemeNormalize,
   renkEsleme, slicerOnbellekTemizle, slicerOneriOnbellekli,
 } from '../src/slicerApi.js';
-import { closeDatabase } from '../src/store.js';
+import { enUcuzFilamentler } from '../src/baskiApi.js';
+import { dbBaglantisi, closeDatabase } from '../src/store.js';
 
 let gecen = 0, toplam = 0;
 const hatalar = [];
@@ -425,6 +426,102 @@ if (canli) {
   kontrol('HTTP /yonlendir geçersiz: 404', y2.status === 404, String(y2.status));
 } else {
   console.log('\nℹ️  Canlı HTTP testi atlandı (sunucu kapalı). Açmak için: --canli');
+}
+
+/* ------------------------------------------------------------------ */
+bolum('10) 🌍 Bölgesel katalog (US/FR/JP) slicer & maliyet beslemesi');
+
+{
+  const db = dbBaglantisi();
+  const simdi = Date.now();
+  const eklenenIdler = [];
+  try {
+    const ins = db.prepare(`
+      INSERT INTO katalog_urunleri
+        (siteId, urunUrl, baslik, temizBaslik, marka, fiyat, stokta, gorselUrl, paraBirimi, kaynakTur, guncellemeTs)
+      VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?, 'test-slicer', ?)
+    `);
+    const ornekler = [
+      ['creality_us', 'https://store.creality.com/products/test-hyper-pla-1kg-black', 'Creality Hyper PLA Filament 1.75mm 1kg Black', 'creality hyper pla filament 175mm 1kg black', 'Creality', 18.99, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/test-gramajsiz-pla', 'Creality Hyper PLA Filament Black', 'creality hyper pla filament black', 'Creality', 9.99, 'USD'],
+      ['creality_fr', 'https://store.creality.com/fr/products/test-hyper-pla-1kg-noir', 'Creality Hyper PLA Filament 1kg Noir', 'creality hyper pla filament 1kg noir', 'Creality', 17.50, 'EUR'],
+      ['creality_jp', 'https://store.creality.com/jp/products/test-hyper-pla-1kg-jp', 'Creality Hyper PLA フィラメント 1kg', 'creality hyper pla filament 1kg jp', 'Creality', 2680, 'JPY'],
+    ];
+    for (const [siteId, url, baslik, temiz, marka, fiyat, para] of ornekler) {
+      const r = ins.run(siteId, url, baslik, temiz, marka, fiyat, para, simdi);
+      eklenenIdler.push(r.lastInsertRowid);
+    }
+
+    slicerOnbellekTemizle();
+
+    const usOneri = slicerOneri({
+      malzeme: 'PLA',
+      gramaj: 340,
+      renk: 'Black',
+      kaynak: 'web-demo',
+      market: 'us',
+      tabanUrl: 'https://baskihesap.tech',
+    });
+    kontrol('US PLA: status success', usOneri.status === 'success', usOneri.hata || usOneri.status);
+    kontrol('US PLA: market=us & USD', usOneri.enUcuz?.market === 'us' && usOneri.enUcuz?.paraBirimi === 'USD', JSON.stringify(usOneri.enUcuz));
+    kontrol('US PLA: gramajsız ucuz ($9.99) elenir, 1kg ($18.99) veya daha ucuz 1kg seçilir',
+      Number(usOneri.enUcuz?.fiyat) !== 9.99 && Number(usOneri.enUcuz?.makaraGram) >= 100, String(usOneri.enUcuz?.fiyat));
+    kontrol('US PLA: parcaBasiMaliyet doğru',
+      usOneri.enUcuz && yakin(usOneri.enUcuz.parcaBasiMaliyet, (340 / 1000) * usOneri.enUcuz.tlKg, 0.02),
+      String(usOneri.enUcuz?.parcaBasiMaliyet));
+    kontrol('US PLA: yonlendirmeLinki geçerli URL ve null urunId yok',
+      /^https?:\/\//.test(String(usOneri.enUcuz?.yonlendirmeLinki)) && !/urunId=null/.test(String(usOneri.enUcuz?.yonlendirmeLinki)),
+      String(usOneri.enUcuz?.yonlendirmeLinki));
+    kontrol('US PLA: karsilastirmaUrl /en/urun/ ile başlar',
+      String(usOneri.enUcuz?.karsilastirmaUrl || '').startsWith('https://baskihesap.tech/en/urun/'),
+      String(usOneri.enUcuz?.karsilastirmaUrl));
+    kontrol('US PLA: maliyetUrl /en/cost-calculator içerir',
+      String(usOneri.maliyetUrl || '').startsWith('https://baskihesap.tech/en/cost-calculator?'),
+      String(usOneri.maliyetUrl));
+    kontrol('US PLA: bildirimMetni USD ($)', /\$/.test(String(usOneri.bildirimMetni)), usOneri.bildirimMetni);
+
+    const frOneri = slicerOneri({
+      malzeme: 'PLA',
+      gramaj: 340,
+      kaynak: 'web-demo',
+      market: 'fr',
+      tabanUrl: 'https://baskihesap.tech',
+    });
+    kontrol('FR PLA: status success & EUR', frOneri.status === 'success' && frOneri.enUcuz?.paraBirimi === 'EUR', frOneri.status);
+    kontrol('FR PLA: /fr/urun/ & /fr/calculateur-cout linkleri',
+      String(frOneri.enUcuz?.karsilastirmaUrl || '').startsWith('https://baskihesap.tech/fr/urun/')
+      && String(frOneri.maliyetUrl || '').startsWith('https://baskihesap.tech/fr/calculateur-cout?'),
+      `${frOneri.enUcuz?.karsilastirmaUrl} | ${frOneri.maliyetUrl}`);
+
+    const jpOneri = slicerOneri({
+      malzeme: 'PLA',
+      gramaj: 340,
+      kaynak: 'web-demo',
+      market: 'jp',
+      tabanUrl: 'https://baskihesap.tech',
+    });
+    kontrol('JP PLA: status success & JPY', jpOneri.status === 'success' && jpOneri.enUcuz?.paraBirimi === 'JPY', jpOneri.status);
+    kontrol('JP PLA: /ja/urun/ & /ja/cost-calculator linkleri & ¥',
+      String(jpOneri.enUcuz?.karsilastirmaUrl || '').startsWith('https://baskihesap.tech/ja/urun/')
+      && String(jpOneri.maliyetUrl || '').startsWith('https://baskihesap.tech/ja/cost-calculator?')
+      && /¥/.test(String(jpOneri.bildirimMetni)),
+      jpOneri.bildirimMetni);
+
+    const usFil = enUcuzFilamentler({ market: 'us', limit: 5 });
+    const frFil = enUcuzFilamentler({ market: 'fr', limit: 5 });
+    const jpFil = enUcuzFilamentler({ market: 'jp', limit: 5 });
+    kontrol('enUcuzFilamentler market=us/fr/jp kataloğu okur',
+      usFil.filamentler.length >= 1 && frFil.filamentler.length >= 1 && jpFil.filamentler.length >= 1
+      && usFil.filamentler.every(f => f.paraBirimi === 'USD')
+      && frFil.filamentler.every(f => f.paraBirimi === 'EUR')
+      && jpFil.filamentler.every(f => f.paraBirimi === 'JPY'),
+      `us=${usFil.toplam}, fr=${frFil.toplam}, jp=${jpFil.toplam}`);
+  } finally {
+    if (eklenenIdler.length) {
+      db.prepare(`DELETE FROM katalog_urunleri WHERE id IN (${eklenenIdler.map(() => '?').join(',')})`).run(...eklenenIdler);
+    }
+    slicerOnbellekTemizle();
+  }
 }
 
 /* ------------------------------------------------------------------ */

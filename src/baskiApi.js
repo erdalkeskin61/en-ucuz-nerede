@@ -17,13 +17,112 @@ import {
 } from './baskiMaliyet.js';
 import { dbBaglantisi } from './store.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
-import { extractColors } from './util.js';
+import { extractColors, paraBirimiNormalize } from './util.js';
+import { birimFiyatHesapla } from './birimFiyat.js';
 import { adapterById, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
 
 const sayi = (x) => (Number.isFinite(Number(x)) ? Number(x) : null);
 
 /**
- * Radar durumundaki STOKLU filamentleri birim fiyata göre artan sırada döndürür.
+ * Mağaza beslemelerinden (`katalog_urunleri`) stoklu ve doğrulanabilir kg birim
+ * fiyatlı filament adaylarını üretir. Yalnızca açık makara gramajı ve filament
+ * kategorisi doğrulanan kalemler döndürülür (uydurma gramaj/fiyat yok).
+ *
+ * @param {{market?:string, gorulen?:Set<string>, limit?:number}} [opts]
+ */
+export function beslemeFilamentAdaylari(opts = {}) {
+  const hedefMarket = normalizeMarket(opts.market || 'tr');
+  const beklenenPara = PAZARLAR[hedefMarket]?.currency || 'TRY';
+  const hariciGorulen = opts.gorulen instanceof Set ? opts.gorulen : null;
+  const limit = opts.limit ? Math.max(1, Number(opts.limit)) : null;
+
+  let satirlar = [];
+  try {
+    satirlar = dbBaglantisi().prepare(`
+      SELECT id, siteId, urunUrl, baslik, fiyat, paraBirimi, guncellemeTs
+      FROM katalog_urunleri
+      WHERE stokta = 1 AND fiyat > 0 AND length(baslik) >= 8
+      ORDER BY fiyat ASC, guncellemeTs DESC
+    `).all();
+  } catch {
+    return [];
+  }
+
+  let ayarlar = {};
+  try { ayarlar = afiliyeAyarlari(); } catch { ayarlar = {}; }
+
+  const adaylar = [];
+  const yerelGorulen = new Set();
+
+  for (const r of satirlar) {
+    const adpt = r.siteId ? adapterById(r.siteId) : null;
+    const rowMarket = adpt ? adapterMarket(adpt) : 'tr';
+    if (rowMarket !== hedefMarket) continue;
+
+    const rowPara = r.paraBirimi
+      ? paraBirimiNormalize(r.paraBirimi)
+      : (adpt ? adapterCurrency(adpt) : beklenenPara);
+    if (rowPara !== beklenenPara) continue;
+
+    const fiyat = sayi(r.fiyat);
+    if (!fiyat || fiyat <= 0) continue;
+
+    const ad = String(r.baslik || '').trim();
+    const hamUrl = String(r.urunUrl || '').trim();
+    if (!ad || !hamUrl) continue;
+    if (/hediye\s*çeki|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo|gift\s*card|carte\s*cadeau/i.test(ad)) continue;
+
+    const bf = birimFiyatHesapla(ad, fiyat, rowPara);
+    if (!bf || bf.tur !== 'filament' || bf.birim !== 'kg') continue;
+    const makaraGram = Math.round(Number(bf.gram) || 0);
+    const tlKg = Number(bf.birimFiyat);
+    if (makaraGram < 100 || !Number.isFinite(tlKg) || tlKg <= 0) continue;
+
+    const anahtar = ad.toLocaleLowerCase('tr-TR');
+    if (hariciGorulen?.has(anahtar) || yerelGorulen.has(anahtar)) continue;
+
+    let url = hamUrl;
+    try {
+      const bagli = afiliyeLink(r.siteId, hamUrl, ayarlar);
+      if (bagli) url = bagli;
+    } catch { /* ham URL korunur */ }
+
+    const hammadde = hammaddeTuruBul(ad);
+    const renkler = extractColors(ad);
+
+    yerelGorulen.add(anahtar);
+    adaylar.push({
+      id: Number(r.id) || null,
+      katalogId: null,
+      ad,
+      ilan: ad,
+      site: adpt?.name || r.siteId || 'Mağaza',
+      siteId: r.siteId || null,
+      market: rowMarket,
+      paraBirimi: rowPara,
+      fiyat: Math.round(fiyat * 100) / 100,
+      tlKg,
+      makaraGram,
+      birimMetni: bf.rozetMetni || null,
+      renk: renkler[0] || null,
+      malzeme: hammadde?.ad || 'PLA',
+      malzemeTuru: hammadde?.tur || null,
+      rozet: hammadde?.rozet || null,
+      kargo: null,
+      stok: true,
+      url,
+      afiliye: url !== hamUrl,
+      ts: Number(r.guncellemeTs) || null,
+    });
+  }
+
+  adaylar.sort((a, b) => a.tlKg - b.tlKg);
+  return limit ? adaylar.slice(0, limit) : adaylar;
+}
+
+/**
+ * Radar durumundaki STOKLU filamentleri (ve eksik kalan pazarlarda `katalog_urunleri`
+ * mağaza beslemelerini) birim fiyata göre artan sırada döndürür.
  * @param {{limit?:number, market?:string}} [opts]
  */
 export function enUcuzFilamentler(opts = {}) {
@@ -107,6 +206,18 @@ export function enUcuzFilamentler(opts = {}) {
     });
     guncelleme = Math.max(guncelleme, Number(r.ts) || 0);
     if (liste.length >= limit) break;
+  }
+
+  if (liste.length < limit) {
+    const ekler = beslemeFilamentAdaylari({
+      market: hedefMarket,
+      gorulen,
+      limit: limit - liste.length,
+    });
+    for (const ek of ekler) {
+      liste.push(ek);
+      guncelleme = Math.max(guncelleme, Number(ek.ts) || 0);
+    }
   }
 
   liste.sort((a, b) => a.tlKg - b.tlKg);

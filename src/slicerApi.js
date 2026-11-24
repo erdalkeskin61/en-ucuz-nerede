@@ -19,6 +19,7 @@
  */
 import { dbBaglantisi } from './store.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { beslemeFilamentAdaylari } from './baskiApi.js';
 import { config } from './config.js';
 import { slugYap } from './widget.js';
 import { adapterById, adapterMarket, adapterCurrency, normalizeMarket, PAZARLAR } from './sites/index.js';
@@ -204,6 +205,23 @@ export function slicerFilamentBul(opts = {}) {
   }
 
   if (!adaylar.length) {
+    const beslemeAdaylari = beslemeFilamentAdaylari({ market: hedefMarket, gorulen });
+    for (const item of beslemeAdaylari) {
+      const aile = malzemeAilesi(item.ad);
+      if (!aile || aile !== istenenAile) continue;
+      const baslikKucuk = katla(item.ad);
+      const renkUyum = renkler
+        ? renkler.some(x => baslikKucuk.includes(x))
+        : null;
+      adaylar.push({
+        ...item,
+        aile,
+        renkUyum,
+      });
+    }
+  }
+
+  if (!adaylar.length) {
     return {
       ok: false,
       neden: `Stokta ${istenenAile} filament bulunamadı.`,
@@ -297,13 +315,14 @@ export function slicerOneri(girdi = {}) {
     const makaradanCikanAdet = Math.max(1, Math.floor(makaraGram / gramaj));
     const kalanGramaj = yuvarla(makaraGram - (gramaj % makaraGram), 1);
 
-    const parametreler = new URLSearchParams();
-    parametreler.set('urunId', String(item.katalogId));
-    if (kaynak) parametreler.set('kaynak', kaynak);
-    if (renk) parametreler.set('renk', renk);
-    const yonlendirmeLinki = taban
-      ? `${taban}/yonlendir?${parametreler.toString()}`
-      : (item.url || null);
+    let yonlendirmeLinki = item.url || null;
+    if (taban && item.katalogId != null) {
+      const parametreler = new URLSearchParams();
+      parametreler.set('urunId', String(item.katalogId));
+      if (kaynak) parametreler.set('kaynak', kaynak);
+      if (renk) parametreler.set('renk', renk);
+      yonlendirmeLinki = `${taban}/yonlendir?${parametreler.toString()}`;
+    }
     const slug = slugYap(item.ad);
     const urunOnEk = market === 'us' ? '/en' : (market === 'fr' ? '/fr' : (market === 'jp' ? '/ja' : ''));
     const karsilastirmaUrl = slug
