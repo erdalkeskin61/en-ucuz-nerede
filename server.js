@@ -59,6 +59,7 @@ import {
   seoOnbelleginiTemizle, slugYap,
   globalKatalogDiziniHtml, globalKategoriSayfasiHtml, globalKategoriSlugCoz, globalVitrinVerisi,
 } from './src/seoSayfalar.js';
+import { ebayAccountDeletionChallenge, ebayYapilandirmasi } from './src/sites/ebay-api.js';
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
   globalRehberDiziniHtml,
@@ -327,6 +328,8 @@ if (config.erisimAnahtari) {
     if (req.method === 'GET' && req.path === '/api/sponsor/vitrin') return next();
     if (req.method === 'GET' && /^\/api\/sponsor\/tikla\/[A-Za-z0-9_-]{1,64}$/.test(req.path)) return next();
     if (req.method === 'GET' && req.path === '/api/dogrulanmis-magazalar') return next();
+    // 🛒 Resmî eBay Marketplace Account Deletion webhook doğrulaması (GET/POST).
+    if ((req.method === 'GET' || req.method === 'POST') && req.path === '/api/ebay/account-deletion') return next();
     if (req.path.startsWith('/api/')) return res.status(401).json({ hata: 'Erişim anahtarı gerekli ya da hatalı' });
     // Sayfalar açık kalır; ön yüz anahtarı sorar ve API isteklerine ekler.
     next();
@@ -2750,6 +2753,25 @@ app.post('/api/admin/dogrulanmis-magaza', adminGerekli, (req, res) => {
 app.delete('/api/admin/dogrulanmis-magaza/:siteId', adminGerekli, (req, res) => {
   const silindi = store.dogrulanmisMagazaSil(req.params.siteId);
   res.json({ ok: true, silindi });
+});
+
+app.get('/api/ebay/account-deletion', (req, res) => {
+  const challengeCode = String(req.query.challenge_code || req.query.challengeCode || '').trim();
+  const { verificationToken } = ebayYapilandirmasi();
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  const host = req.get('x-forwarded-host') || req.get('host') || 'baskihesap.tech';
+  const publicBase = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  const endpoint = String(process.env.EBAY_DELETION_ENDPOINT || '').trim()
+    || `${publicBase || `${proto}://${host}`}/api/ebay/account-deletion`;
+  if (!challengeCode) return res.status(400).json({ hata: 'challenge_code gerekli' });
+  if (!verificationToken) return res.status(503).json({ hata: 'EBAY_VERIFICATION_TOKEN tanimli degil' });
+  const challengeResponse = ebayAccountDeletionChallenge({ challengeCode, verificationToken, endpoint });
+  return res.status(200).json({ challengeResponse });
+});
+
+app.post('/api/ebay/account-deletion', (_req, res) => {
+  // Uygulamamız eBay kullanıcı kişisel verisi saklamaz; bildirimi 200 OK ile onaylar.
+  res.status(200).json({ ok: true });
 });
 
 app.get('/api/vitrin', (req, res) => {

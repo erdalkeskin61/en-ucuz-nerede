@@ -1232,7 +1232,7 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
 {
   const {
     ebayApiEtkinMi, ebayBrowseAra, ebayBrowseUrunGetir,
-    ebayLegacyIdCoz, _ebayOnbellekTemizle,
+    ebayLegacyIdCoz, ebayAccountDeletionChallenge, _ebayOnbellekTemizle,
   } = await import('../src/sites/ebay-api.js');
 
   const eskiId = process.env.EBAY_CLIENT_ID;
@@ -1362,6 +1362,14 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
       && sovolLink.startsWith('https://sovol3d.sjv.io/c/8295867/3963679/55332?u=')
       && crealityLink.startsWith('https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u='),
       JSON.stringify({ ffLink, sovolLink, crealityLink }));
+
+    const { createHash } = await import('node:crypto');
+    const cCode = 'challenge_123';
+    const vTok = 'token_aaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const ep = 'https://baskihesap.tech/api/ebay/account-deletion';
+    const bekHash = createHash('sha256').update(cCode + vTok + ep, 'utf8').digest('hex');
+    kontrol('ebayAccountDeletionChallenge SHA-256(challengeCode+verificationToken+endpoint) üretir',
+      ebayAccountDeletionChallenge({ challengeCode: cCode, verificationToken: vTok, endpoint: ep }) === bekHash);
   } finally {
     _ebayOnbellekTemizle();
     if (eskiId === undefined) delete process.env.EBAY_CLIENT_ID; else process.env.EBAY_CLIENT_ID = eskiId;

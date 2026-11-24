@@ -9,6 +9,7 @@
  * Anahtarlar tanımlı değilse `ebayApiEtkinMi()` false döner ve `retail-global.js`
  * mevcut HTML/fetchPage yoluna güvenli biçimde geri düşer.
  */
+import { createHash } from 'node:crypto';
 import { dominantColor, paraBirimiNormalize } from '../util.js';
 
 const EBAY_TOKEN_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
@@ -33,7 +34,17 @@ export function ebayYapilandirmasi() {
     clientId: String(process.env.EBAY_CLIENT_ID || '').trim(),
     clientSecret: String(process.env.EBAY_CLIENT_SECRET || '').trim(),
     campaignId: String(process.env.EBAY_CAMPAIGN_ID || '').trim(),
+    verificationToken: String(process.env.EBAY_VERIFICATION_TOKEN || '').trim(),
   };
+}
+
+/** eBay Marketplace Account Deletion GET doğrulaması için SHA-256 `challengeResponse` üretir. */
+export function ebayAccountDeletionChallenge({ challengeCode, verificationToken, endpoint }) {
+  const code = String(challengeCode || '').trim();
+  const token = String(verificationToken || '').trim();
+  const ep = String(endpoint || '').trim();
+  if (!code || !token || !ep) return null;
+  return createHash('sha256').update(code + token + ep, 'utf8').digest('hex');
 }
 
 /** eBay Browse API anahtarları tanımlı mı? */
