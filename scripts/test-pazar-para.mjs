@@ -534,6 +534,42 @@ kontrol('katalogHedefleri global Shopify & WooCommerce hedeflerini USD/EUR/JPY i
   && hedefler.some(h => h.siteId === 'francofil' && h.paraBirimi === 'EUR')
   && hedefler.some(h => h.siteId === 'skhonpo_jp' && h.paraBirimi === 'JPY'));
 
+console.log('\n13) 🌍 Canlı arama, Slicer & Maliyet araç yerelleştirme kontrolleri:');
+const enSlicerHtml = globalAracSayfasiBul('/en/slicer')?.olustur('https://baskihesap.tech') || '';
+const frSlicerHtml = globalAracSayfasiBul('/fr/slicer')?.olustur('https://baskihesap.tech') || '';
+const jaSlicerHtml = globalAracSayfasiBul('/ja/slicer')?.olustur('https://baskihesap.tech') || '';
+kontrol('EN/FR/JA Slicer form etiketleri Türkçe (Malzeme / Gramaj (g)) kalmaz',
+  /<label>\s*Material\s/.test(enSlicerHtml) && /<label>\s*Weight \(g\)/.test(enSlicerHtml)
+  && /<label>\s*Matériau\s/.test(frSlicerHtml) && /<label>\s*Poids \(g\)/.test(frSlicerHtml)
+  && /<label>\s*素材\s/.test(jaSlicerHtml) && /<label>\s*重量 \(g\)/.test(jaSlicerHtml)
+  && !/<label>\s*Malzeme\s/.test(enSlicerHtml + frSlicerHtml + jaSlicerHtml)
+  && !/Gramaj \(g\)/.test(enSlicerHtml + frSlicerHtml + jaSlicerHtml));
+
+const enMalHtml = globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://baskihesap.tech') || '';
+const frMalHtml = globalAracSayfasiBul('/fr/calculateur-cout')?.olustur('https://baskihesap.tech') || '';
+const jaMalHtml = globalAracSayfasiBul('/ja/cost-calculator')?.olustur('https://baskihesap.tech') || '';
+kontrol('EN/FR/JA Maliyet süre tahmin butonu yerelleşir (Tahmin et kalmaz)',
+  enMalHtml.includes('>✨ Estimate</button>')
+  && frMalHtml.includes('>✨ Estimer</button>')
+  && jaMalHtml.includes('>✨ 自動推定</button>')
+  && !/Tahmin et/.test(enMalHtml + frMalHtml + jaMalHtml));
+
+const appJsKod = fs.readFileSync('public/app.js', 'utf8');
+const i18nJsKod = fs.readFileSync('public/i18n-global.js', 'utf8');
+kontrol('app.js canlı ilerleme, iptal, renk ve baskı widget\'ı DIL_KOPYA_YEREL üzerinden yerelleşir',
+  appJsKod.includes('DIL_KOPYA_YEREL.modBasladi')
+  && appJsKod.includes('DIL_KOPYA_YEREL.iptal')
+  && appJsKod.includes('DIL_KOPYA_YEREL.fazTara')
+  && appJsKod.includes('DIL_KOPYA_YEREL.baskiBaslik')
+  && appJsKod.includes('DIL_KOPYA_YEREL.baskiAria')
+  && appJsKod.includes('DIL_KOPYA_YEREL.istekBirimi')
+  && appJsKod.includes('renkYerellestir(p.color)')
+  && appJsKod.includes("'/api/dogrulanmis-magazalar' + dil"));
+kontrol('i18n-global.js ve server.js rozet/istek kurallarını kapsar',
+  i18nJsKod.includes('Official Manufacturer')
+  && i18nJsKod.includes('istek\\b')
+  && fs.readFileSync('server.js', 'utf8').includes('dogrulanmisRozetYerellestir'));
+
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);

@@ -2604,16 +2604,70 @@ app.get('/api/sponsor/tikla/:id', (req, res) => {
   }
 });
 
+function dogrulanmisRozetYerellestir(metin, dil = 'tr') {
+  const s = String(metin || '').trim();
+  if (!s || dil === 'tr') return s;
+  const tam = {
+    'Resmi Üretici · Aynı Gün Kargo': {
+      en: 'Official Manufacturer · Same-Day Dispatch',
+      fr: 'Fabricant officiel · Expédition le jour même',
+      ja: '公式メーカー · 当日発送',
+    },
+    'Resmi Distribütör · Aynı Gün Kargo': {
+      en: 'Official Distributor · Same-Day Dispatch',
+      fr: 'Distributeur officiel · Expédition le jour même',
+      ja: '公式代理店 · 当日発送',
+    },
+  };
+  if (tam[s]?.[dil]) return tam[s][dil];
+  const parcalar = {
+    en: [
+      ['Resmi Üretici', 'Official Manufacturer'],
+      ['Resmi Distribütör', 'Official Distributor'],
+      ['Resmi Partner', 'Official Partner'],
+      ['Resmi Satıcı', 'Official Seller'],
+      ['Aynı Gün Kargo', 'Same-Day Dispatch'],
+      ['Hızlı Kargo', 'Fast Shipping'],
+    ],
+    fr: [
+      ['Resmi Üretici', 'Fabricant officiel'],
+      ['Resmi Distribütör', 'Distributeur officiel'],
+      ['Resmi Partner', 'Partenaire officiel'],
+      ['Resmi Satıcı', 'Vendeur officiel'],
+      ['Aynı Gün Kargo', 'Expédition le jour même'],
+      ['Hızlı Kargo', 'Livraison rapide'],
+    ],
+    ja: [
+      ['Resmi Üretici', '公式メーカー'],
+      ['Resmi Distribütör', '公式代理店'],
+      ['Resmi Partner', '公式パートナー'],
+      ['Resmi Satıcı', '公式ストア'],
+      ['Aynı Gün Kargo', '当日発送'],
+      ['Hızlı Kargo', '迅速配送'],
+    ],
+  }[dil];
+  if (!parcalar) return s;
+  let out = s;
+  for (const [tr, hedef] of parcalar) out = out.split(tr).join(hedef);
+  return out;
+}
+
 /**
  * GET /api/dogrulanmis-magazalar
  * Mavi tikli mağazalar + rozet metinleri. 5 dk tarayıcı/CDN önbelleği.
  */
 app.get('/api/dogrulanmis-magazalar', (req, res) => {
   try {
-    const magazalar = store.dogrulanmisMagazalariGetir();
+    const dilHam = String(req.query.dil || '').trim().toLowerCase();
+    const dil = ['en', 'fr', 'ja'].includes(dilHam) ? dilHam : 'tr';
+    const magazalar = store.dogrulanmisMagazalariGetir().map(m => ({
+      ...m,
+      rozetMetni: dogrulanmisRozetYerellestir(m.rozetMetni, dil),
+    }));
     res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json({
       ok: true,
+      dil,
       magazalar,
       // Hızlı arama için siteId → rozet sözlüğü (istemci tek sorgu yapsın).
       harita: Object.fromEntries(magazalar.map(m => [m.siteId, m.rozetMetni])),

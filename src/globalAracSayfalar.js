@@ -571,6 +571,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       footerUstNot: 'Live filament pricing is scanned from regional stores; always verify final checkout totals.',
       birimSira: ['Weight', 'Time', 'Printer power', 'Filament', 'Advanced settings (electricity · depreciation · profit margin)', 'Target profit margin', 'Material price', 'Material name', 'Estimated print time.', 'Filament Used from your slicer.'],
       dolulukSecenek: ['10% — draft', '20% — standard', '40% — strong', '100% — solid'],
+      sureTahminBtn: '✨ Estimate', sureTahminTitle: 'Auto-estimate print time from weight',
       fisBaslik: '3D Print Cost &amp; Quote Summary', fisOnerilen: 'RECOMMENDED SELLING PRICE',
       fisWa: '📲 Share via WhatsApp', fisKopya: '📋 Copy Quote', fisYaz: '🖨️ Print / PDF',
     },
@@ -589,6 +590,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       hedefKarLbl: '💰 Marge bénéficiaire cible',
       footerUstNot: 'Les prix des filaments proviennent de l’analyse régionale en direct ; vérifiez toujours chez le marchand.',
       dolulukSecenek: ['10 % — brouillon', '20 % — standard', '40 % — solide', '100 % — plein'],
+      sureTahminBtn: '✨ Estimer', sureTahminTitle: 'Estimer automatiquement depuis le poids',
       fisBaslik: 'Résumé Coût &amp; Devis Impression 3D', fisOnerilen: 'PRIX DE VENTE CONSEILLÉ',
       fisWa: '📲 Envoyer sur WhatsApp', fisKopya: '📋 Copier le devis', fisYaz: '🖨️ Imprimer / PDF',
     },
@@ -607,6 +609,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       hedefKarLbl: '💰 目標利益率',
       footerUstNot: 'フィラメント価格は地域ライブスキャン結果です。購入前にショップ画面で最終金額をご確認ください。',
       dolulukSecenek: ['10% — 下書き', '20% — 標準', '40% — 高強度', '100% — ソリッド'],
+      sureTahminBtn: '✨ 自動推定', sureTahminTitle: 'モデル重量から印刷時間を自動推定',
       fisBaslik: '3Dプリント原価・お見積り書', fisOnerilen: '推奨販売価格',
       fisWa: '📲 WhatsAppで共有', fisKopya: '📋 見積書をコピー', fisYaz: '🖨️ 印刷 / PDF',
     },
@@ -653,6 +656,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<label for="gramaj">⚖️ Model gramajı</label>', `<label for="gramaj">${c.gramajLabel}</label>`)
     .replace('<p class="mz-ipucu">Dilimleyicide (Bambu Studio, Cura, OrcaSlicer) “Filament used” değeri.</p>', `<p class="mz-ipucu">${k.gramajIpucu}</p>`)
     .replace('<label for="sure">⏱️ Baskı süresi (saat)</label>', `<label for="sure">${c.sureLabel}</label>`)
+    .replace('<button type="button" class="mz-mini-btn" id="sureTahmin" title="Gramajdan otomatik tahmin et">✨ Tahmin et</button>', `<button type="button" class="mz-mini-btn" id="sureTahmin" title="${htmlKacis(k.sureTahminTitle)}">${k.sureTahminBtn}</button>`)
     .replace('<label for="yazici">⚡ 3D yazıcı modeli</label>', `<label for="yazici">${k.yaziciLbl}</label>`)
     .replace('<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">Canlı piyasa</button>', `<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">${k.canliPiyasa}</button>`)
     .replace('<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">Manuel</button>', `<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">${k.manuel}</button>`)
@@ -901,6 +905,8 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<span class="sl-canli-etiket">68 mağaza · gerçek veri</span>', `<span class="sl-canli-etiket">${k.canliEtiket}</span>`)
     .replace('<b>İsterseniz bir <code>.gcode</code> dosyasını buraya bırakın (veya tıklayın)</b>', `<b>${c.dropBaslik}</b>`)
     .replace('<span>Bambu Studio, OrcaSlicer, PrusaSlicer, Cura meta verisi tarayıcıda okunur; dosya sunucuya yüklenmez.</span>', `<span>${k.dropMeta}</span>`)
+    .replace(/<label>\s*Malzeme\b/, `<label>\n          ${k.malzemeLbl}`)
+    .replace(/<label>\s*Gramaj \(g\)/, `<label>\n          ${k.gramajLbl}`)
     .replace('Renk (isteğe bağlı)', k.renkLbl)
     .replace('value="Siyah" maxlength="30" placeholder="Siyah"', `value="${k.renkVal}" maxlength="30" placeholder="${k.renkVal}"`)
     .replace('>{ } API JSON çıktısını göster</button>', `>${k.jsonBtn}</button>`)

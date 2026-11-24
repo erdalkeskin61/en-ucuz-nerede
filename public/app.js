@@ -515,7 +515,8 @@ async function dogrulanmisMagazalariYukle() {
   if (dogrulanmisYuklendi) return dogrulanmisHarita;
   dogrulanmisYuklendi = true;
   try {
-    const res = await fetch('/api/dogrulanmis-magazalar', { credentials: 'same-origin' });
+    const dil = BASKI_ORTAM.dil && BASKI_ORTAM.dil !== 'tr' ? '?dil=' + encodeURIComponent(BASKI_ORTAM.dil) : '';
+    const res = await fetch('/api/dogrulanmis-magazalar' + dil, { credentials: 'same-origin' });
     const d = await res.json().catch(() => ({}));
     dogrulanmisHarita = (d && d.harita && typeof d.harita === 'object') ? d.harita : {};
   } catch {
@@ -538,7 +539,10 @@ function dogrulanmisRozetHtml(site) {
   const metin = dogrulanmisHarita[anahtar];
   if (!metin) return '';
   const kisa = String(metin).split('·')[0].trim();
-  return `<span class="magaza-dogrulanmis" title="${esc('Doğrulanmış Partner: ' + metin)}">`
+  const prefix = BASKI_ORTAM.dil === 'en'
+    ? 'Verified Partner: '
+    : (BASKI_ORTAM.dil === 'fr' ? 'Partenaire vérifié : ' : (BASKI_ORTAM.dil === 'ja' ? '認証パートナー: ' : 'Doğrulanmış Partner: '));
+  return `<span class="magaza-dogrulanmis" title="${esc(prefix + metin)}">`
     + '<svg class="mavi-tik" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
     + '<path d="M12 2.4 14.7 5l3.7.5.6 3.7 2.5 2.8-2.5 2.8-.6 3.7-3.7.6-2.7 2.6-2.7-2.6-3.7-.6-.6-3.7L2.5 12 5 9.2l.6-3.7L9.3 5z" '
     + 'fill="#1D9BF0"/><path d="M10.6 15.3 7.9 12.6l1.3-1.3 1.4 1.4 3.9-3.9 1.3 1.3z" fill="#fff"/></svg>'
@@ -1075,6 +1079,30 @@ const DIL_KOPYA_YEREL = {
     buton: { oto: 'Fiyatları Bul', link: 'Linkte Ara', ad: 'Fiyatları Bul' },
     araniyor: 'Aranıyor…',
     taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} site tarandı · ${bulundu} sitede bulundu`,
+    iptal: '✕ İptal',
+    iptalEdiliyor: 'İptal ediliyor…',
+    iptalNotu: 'Karşılaştırma iptal edildi — o ana kadar bulunan sonuçlar gösteriliyor.',
+    modBasladi: '⚡ Ürün karşılaştırma başlatıldı',
+    modDanisman: '🤖 YZ Danışmanı öneri arıyor',
+    fazKatalog: '🗂️ Ürün yerel katalog indeksinden bulundu — mağaza fiyatları taranıyor…',
+    fazAra: '🔎 Ürün mağazalarda aranıyor…',
+    fazTara: '🛒 Mağazalar taranıyor…',
+    renkEtiket: 'Renk',
+    istekBirimi: 'istek',
+    sorguBirimi: 'sorgu',
+    dkOnce: 'dk önce',
+    sepetOptimize: 'Sepeti optimize et',
+    baskiBaslik: '🖨️ Parça Baskı Maliyeti Hesapla',
+    baskiGramajLbl: 'Model gramajı',
+    baskiAria: 'Dilimleyicide okunan model gramajı',
+    baskiYok: 'Bu ürün için baskı maliyeti hesaplanamıyor (miktar okunamadı).',
+    baskiOndalikVirgul: true,
+    baskiSonuc: (h, bk, f) => `Bu makarayla parça başı maliyetiniz: <b>${esc(f(h.parca))}</b>`
+      + ` · Bir makaradan <b>${h.adet ?? '—'} adet</b> basabilirsiniz.`
+      + `<span class="baski-alt">Hammadde ${esc(f(h.hammadde))} + elektrik ~${esc(f(h.elektrik))}`
+      + ` · ${esc(String(h.gramaj).replace('.', ','))} g · ${esc(String(bk.capMm ?? '1,75').replace('.', ','))} mm`
+      + ` · ${esc(f(bk.metreMaliyeti))}/m</span>`,
+    renkler: null,
   },
   en: {
     placeholder: BASKI_ORTAM.placeholders || {
@@ -1085,6 +1113,30 @@ const DIL_KOPYA_YEREL = {
     buton: { oto: 'Find Prices', link: 'Check Link', ad: 'Find Prices' },
     araniyor: 'Searching…',
     taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} stores scanned · ${bulundu} found`,
+    iptal: '✕ Cancel',
+    iptalEdiliyor: 'Cancelling…',
+    iptalNotu: 'Comparison cancelled — showing partial results found so far.',
+    modBasladi: '⚡ Product comparison started',
+    modDanisman: '🤖 AI Advisor searching',
+    fazKatalog: '🗂️ Product matched in local index — scanning live store prices…',
+    fazAra: '🔎 Searching stores for this product…',
+    fazTara: '🛒 Scanning regional stores…',
+    renkEtiket: 'Color',
+    istekBirimi: 'req.',
+    sorguBirimi: 'query',
+    dkOnce: 'm ago',
+    sepetOptimize: 'Optimize Basket',
+    baskiBaslik: '🖨️ Part Print Cost Calculator',
+    baskiGramajLbl: 'Model weight',
+    baskiAria: 'Model weight read from slicer',
+    baskiYok: 'Cannot calculate print cost for this item (spool weight not found).',
+    baskiOndalikVirgul: false,
+    baskiSonuc: (h, bk, f) => `Cost per part with this spool: <b>${esc(f(h.parca))}</b>`
+      + ` · Prints up to <b>${h.adet ?? '—'} pcs</b> per spool.`
+      + `<span class="baski-alt">Material ${esc(f(h.hammadde))} + electricity ~${esc(f(h.elektrik))}`
+      + ` · ${esc(String(h.gramaj))} g · ${esc(String(bk.capMm ?? '1.75'))} mm`
+      + ` · ${esc(f(bk.metreMaliyeti))}/m</span>`,
+    renkler: { siyah: 'Black', beyaz: 'White', gri: 'Gray', kirmizi: 'Red', mavi: 'Blue', yesil: 'Green', sari: 'Yellow', turuncu: 'Orange', mor: 'Purple', pembe: 'Pink', kahverengi: 'Brown', altin: 'Gold', gumus: 'Silver', lacivert: 'Navy', seffaf: 'Clear', naturel: 'Natural', natural: 'Natural', bej: 'Beige' },
   },
   fr: {
     placeholder: BASKI_ORTAM.placeholders || {
@@ -1095,6 +1147,30 @@ const DIL_KOPYA_YEREL = {
     buton: { oto: 'Trouver les prix', link: 'Analyser le lien', ad: 'Trouver les prix' },
     araniyor: 'Recherche…',
     taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} boutiques analysées · ${bulundu} trouvée(s)`,
+    iptal: '✕ Annuler',
+    iptalEdiliyor: 'Annulation…',
+    iptalNotu: 'Comparaison annulée — affichage des résultats déjà trouvés.',
+    modBasladi: '⚡ Comparaison lancée',
+    modDanisman: '🤖 Conseiller IA en recherche',
+    fazKatalog: '🗂️ Produit trouvé dans l’index — analyse des boutiques en direct…',
+    fazAra: '🔎 Recherche du produit en cours…',
+    fazTara: '🛒 Analyse des boutiques en cours…',
+    renkEtiket: 'Couleur',
+    istekBirimi: 'req.',
+    sorguBirimi: 'requête',
+    dkOnce: 'min',
+    sepetOptimize: 'Optimiser le panier',
+    baskiBaslik: '🖨️ Coût d’impression par pièce',
+    baskiGramajLbl: 'Poids modèle',
+    baskiAria: 'Poids du modèle issu du slicer',
+    baskiYok: 'Calcul du coût impossible (poids de bobine non indiqué).',
+    baskiOndalikVirgul: true,
+    baskiSonuc: (h, bk, f) => `Coût par pièce avec cette bobine : <b>${esc(f(h.parca))}</b>`
+      + ` · Jusqu’à <b>${h.adet ?? '—'} pièces</b> par bobine.`
+      + `<span class="baski-alt">Matière ${esc(f(h.hammadde))} + électricité ~${esc(f(h.elektrik))}`
+      + ` · ${esc(String(h.gramaj).replace('.', ','))} g · ${esc(String(bk.capMm ?? '1,75').replace('.', ','))} mm`
+      + ` · ${esc(f(bk.metreMaliyeti))}/m</span>`,
+    renkler: { siyah: 'Noir', beyaz: 'Blanc', gri: 'Gris', kirmizi: 'Rouge', mavi: 'Bleu', yesil: 'Vert', sari: 'Jaune', turuncu: 'Orange', mor: 'Violet', pembe: 'Rose', kahverengi: 'Marron', altin: 'Or', gumus: 'Argent', lacivert: 'Bleu marine', seffaf: 'Transparent', naturel: 'Naturel', natural: 'Naturel', bej: 'Beige' },
   },
   ja: {
     placeholder: BASKI_ORTAM.placeholders || {
@@ -1105,6 +1181,30 @@ const DIL_KOPYA_YEREL = {
     buton: { oto: '最安値を検索', link: 'URLで検索', ad: '最安値を検索' },
     araniyor: '検索中…',
     taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} ストア確認 · ${bulundu} 件見つかりました`,
+    iptal: '✕ 中止',
+    iptalEdiliyor: '中止中…',
+    iptalNotu: '比較を中止しました — これまでに取得した結果を表示しています。',
+    modBasladi: '⚡ 価格比較を開始しました',
+    modDanisman: '🤖 AIアドバイザー検索中',
+    fazKatalog: '🗂️ ローカル索引で一致 — ストア最新価格を確認中…',
+    fazAra: '🔎 ストア内で商品を検索中…',
+    fazTara: '🛒 ストアをスキャン中…',
+    renkEtiket: 'カラー',
+    istekBirimi: '件',
+    sorguBirimi: '検索',
+    dkOnce: '分前',
+    sepetOptimize: 'カート最適化',
+    baskiBaslik: '🖨️ パーツ別コスト計算',
+    baskiGramajLbl: 'モデル重量',
+    baskiAria: 'スライサーで取得したモデル重量',
+    baskiYok: 'この商品の造形コストを算出できません（重量情報なし）。',
+    baskiOndalikVirgul: false,
+    baskiSonuc: (h, bk, f) => `1個あたりの造形コスト: <b>${esc(f(h.parca))}</b>`
+      + ` · 1スプールで約 <b>${h.adet ?? '—'}個</b> 造形可能。`
+      + `<span class="baski-alt">材料費 ${esc(f(h.hammadde))} + 電気代約 ${esc(f(h.elektrik))}`
+      + ` · ${esc(String(h.gramaj))} g · ${esc(String(bk.capMm ?? '1.75'))} mm`
+      + ` · ${esc(f(bk.metreMaliyeti))}/m</span>`,
+    renkler: { siyah: 'ブラック', beyaz: 'ホワイト', gri: 'グレー', kirmizi: 'レッド', mavi: 'ブルー', yesil: 'グリーン', sari: 'イエロー', turuncu: 'オレンジ', mor: 'パープル', pembe: 'ピンク', kahverengi: 'ブラウン', altin: 'ゴールド', gumus: 'シルバー', lacivert: 'ネイビー', seffaf: 'クリア', naturel: 'ナチュラル', natural: 'ナチュラル', bej: 'ベージュ' },
   },
 }[BASKI_ORTAM.dil] || {
   placeholder: {
@@ -1115,7 +1215,40 @@ const DIL_KOPYA_YEREL = {
   buton: { oto: 'Fiyatları Bul', link: 'Linkte Ara', ad: 'Fiyatları Bul' },
   araniyor: 'Aranıyor…',
   taramaSayac: (bitti, toplam, bulundu) => `${bitti}/${toplam} site tarandı · ${bulundu} sitede bulundu`,
+  iptal: '✕ İptal',
+  iptalEdiliyor: 'İptal ediliyor…',
+  iptalNotu: 'Karşılaştırma iptal edildi — o ana kadar bulunan sonuçlar gösteriliyor.',
+  modBasladi: '⚡ Ürün karşılaştırma başlatıldı',
+  modDanisman: '🤖 YZ Danışmanı öneri arıyor',
+  fazKatalog: '🗂️ Ürün yerel katalog indeksinden bulundu — mağaza fiyatları taranıyor…',
+  fazAra: '🔎 Ürün mağazalarda aranıyor…',
+  fazTara: '🛒 Mağazalar taranıyor…',
+  renkEtiket: 'Renk',
+  istekBirimi: 'istek',
+  sorguBirimi: 'sorgu',
+  dkOnce: 'dk önce',
+  sepetOptimize: 'Sepeti optimize et',
+  baskiBaslik: '🖨️ Parça Baskı Maliyeti Hesapla',
+  baskiGramajLbl: 'Model gramajı',
+  baskiAria: 'Dilimleyicide okunan model gramajı',
+  baskiYok: 'Bu ürün için baskı maliyeti hesaplanamıyor (miktar okunamadı).',
+  baskiOndalikVirgul: true,
+  baskiSonuc: (h, bk, f) => `Bu makarayla parça başı maliyetiniz: <b>${esc(f(h.parca))}</b>`
+    + ` · Bir makaradan <b>${h.adet ?? '—'} adet</b> basabilirsiniz.`
+    + `<span class="baski-alt">Hammadde ${esc(f(h.hammadde))} + elektrik ~${esc(f(h.elektrik))}`
+    + ` · ${esc(String(h.gramaj).replace('.', ','))} g · ${esc(String(bk.capMm ?? '1,75').replace('.', ','))} mm`
+    + ` · ${esc(f(bk.metreMaliyeti))}/m</span>`,
+  renkler: null,
 };
+
+function renkYerellestir(ham) {
+  const s = String(ham || '').trim();
+  if (!s || !DIL_KOPYA_YEREL.renkler) return s;
+  const k = s.toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
+  return DIL_KOPYA_YEREL.renkler[k] || s;
+}
 
 const MOD_PLACEHOLDER = DIL_KOPYA_YEREL.placeholder;
 const MOD_BUTON = DIL_KOPYA_YEREL.buton;
@@ -1374,7 +1507,7 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       $('#durumAlani').hidden = true;
       $('#oneriSonuc').hidden = true;
       // 🔎 Mod geri bildirimi: kullanıcı hangi akışta olduğunu bilsin.
-      modBilgisiGoster('🤖 YZ Danışmanı öneri arıyor');
+      modBilgisiGoster(DIL_KOPYA_YEREL.modDanisman);
       if (oneriFormu.requestSubmit) oneriFormu.requestSubmit();
       else $('#oneriBtn').click();
       setTimeout(() => {
@@ -1386,7 +1519,7 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
 
   // Net ürün/model adı: doğrudan karşılaştırma (link akışı metin adını da kabul eder).
   if (!linkGirdi && aramaModu === 'ad') {
-    modBilgisiGoster('⚡ Ürün karşılaştırma başlatıldı');
+    modBilgisiGoster(DIL_KOPYA_YEREL.modBasladi);
   }
 
   // "Linkte ara" (veya otomatik modda link): önce bağlantıyı sunucuda çöz.
@@ -1634,14 +1767,14 @@ function iptalDurumunuSifirla() {
   const btn = $('#iptalBtn');
   if (!btn) return;
   btn.disabled = false;
-  btn.textContent = '✕ İptal';
+  btn.textContent = DIL_KOPYA_YEREL.iptal;
 }
 
 async function karsilastirmayiIptalEt() {
   if (!aktifIs || iptalEdiliyor) return;
   iptalEdiliyor = true;
   const btn = $('#iptalBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'İptal ediliyor…'; }
+  if (btn) { btn.disabled = true; btn.textContent = DIL_KOPYA_YEREL.iptalEdiliyor; }
   try {
     await fetch('/api/compare/' + aktifIs + '/iptal', { method: 'POST' });
   } catch { /* poll zaten durumu yakalar */ }
@@ -1653,7 +1786,7 @@ async function karsilastirmayiIptalEt() {
   // Ekranda kısmi sonuç varsa kullanıcıya bilgi ver
   const not = $('#sonAramaNotu');
   if (not) {
-    notMetniAyarla('Karşılaştırma iptal edildi — o ana kadar bulunan sonuçlar gösteriliyor.');
+    notMetniAyarla(DIL_KOPYA_YEREL.iptalNotu);
     not.hidden = false;
     sifirdanTaraButonunuGoster(false);
   }
@@ -1965,10 +2098,10 @@ function karsilastirmaIsle(job) {
     let metin = '';
     if (job.faz === 'cozum') {
       metin = job.kaynakKatmani === 'katalog'
-        ? '🗂️ Ürün yerel katalog indeksinden bulundu — mağaza fiyatları taranıyor…'
-        : '🔎 Ürün mağazalarda aranıyor…';
+        ? DIL_KOPYA_YEREL.fazKatalog
+        : DIL_KOPYA_YEREL.fazAra;
     } else if (job.faz === 'tarama') {
-      metin = '🛒 Mağazalar taranıyor…';
+      metin = DIL_KOPYA_YEREL.fazTara;
     }
     fazEl.textContent = metin;
     fazEl.hidden = !metin;
@@ -2786,7 +2919,7 @@ function sonucGoster(sonuc, opts = {}) {
     k.marka ? `Marka: <b>${k.marka}</b>` : '',
     k.modelKodu ? `Model kodu: <span class="rozet">${esc(k.modelKodu)}</span>` : '',
     k.barkod ? `Barkod: <b>${esc(k.barkod)}</b>` : '',
-    k.renk ? `Renk: <span class="rozet renk">${esc(k.renk)}</span>` : '',
+    k.renk ? `${DIL_KOPYA_YEREL.renkEtiket}: <span class="rozet renk">${esc(renkYerellestir(k.renk))}</span>` : '',
   ].filter(Boolean).join(' · ');
 
   const o = sonuc.ozet || {};
@@ -3453,22 +3586,19 @@ function baskiHesapla(bk, gramaj) {
   };
 }
 
-function baskiWidgetHtml(bk) {
+function baskiWidgetHtml(bk, paraBirimi = null) {
   if (!bk) return '';
+  const f = (n) => baskiTl(n, paraBirimi);
   const h = baskiHesapla(bk, baskiGramaj);
   const icerik = h
-    ? `Bu makarayla parça başı maliyetiniz: <b>${esc(baskiTl(h.parca))}</b>`
-      + ` · Bir makaradan <b>${h.adet ?? '—'} adet</b> basabilirsiniz.`
-      + `<span class="baski-alt">Hammadde ${esc(baskiTl(h.hammadde))} + elektrik ~${esc(baskiTl(h.elektrik))}`
-      + ` · ${esc(String(h.gramaj).replace('.', ','))} g · ${esc(String(bk.capMm ?? '1,75').replace('.', ','))} mm`
-      + ` · ${esc(baskiTl(bk.metreMaliyeti))}/m</span>`
-    : `<span class="baski-yok">${esc(bk.neden || 'Bu ürün için baskı maliyeti hesaplanamıyor (miktar okunamadı).')}</span>`;
-  return `<div class="baski-widget" data-makara-gram="${esc(String(bk.makaraGram ?? ''))}">
+    ? DIL_KOPYA_YEREL.baskiSonuc(h, bk, f)
+    : `<span class="baski-yok">${esc(bk.neden || DIL_KOPYA_YEREL.baskiYok)}</span>`;
+  return `<div class="baski-widget" data-makara-gram="${esc(String(bk.makaraGram ?? ''))}" data-currency="${esc(String(paraBirimi || ''))}">
     <div class="baski-baslik">
-      <span class="baski-baslik-metin">🖨️ Parça Baskı Maliyeti Hesapla</span>
-      <label class="baski-gramaj-etiket">Model gramajı
+      <span class="baski-baslik-metin">${DIL_KOPYA_YEREL.baskiBaslik}</span>
+      <label class="baski-gramaj-etiket">${DIL_KOPYA_YEREL.baskiGramajLbl}
         <input type="number" class="baski-gramaj" min="1" max="50000" step="1"
-          value="${esc(String(baskiGramaj))}" inputmode="decimal" aria-label="Dilimleyicide okunan model gramajı" />
+          value="${esc(String(baskiGramaj))}" inputmode="decimal" aria-label="${esc(DIL_KOPYA_YEREL.baskiAria)}" />
         <span class="baski-birim">g</span>
       </label>
     </div>
@@ -3483,15 +3613,12 @@ function baskiWidgetlariniGuncelle() {
     const kart = w.closest('.urun-karti');
     const site = kart?.dataset.site;
     const r = (sonSonuc?.sonuclar || []).find(x => x.site === site);
+    const paraBirimi = w.dataset.currency || r?.product?.currency || null;
     const h = baskiHesapla(r?.baski, baskiGramaj);
     const hedef = w.querySelector('.baski-sonuc');
     if (!hedef) continue;
     if (h) {
-      hedef.innerHTML = `Bu makarayla parça başı maliyetiniz: <b>${esc(baskiTl(h.parca))}</b>`
-        + ` · Bir makaradan <b>${h.adet ?? '—'} adet</b> basabilirsiniz.`
-        + `<span class="baski-alt">Hammadde ${esc(baskiTl(h.hammadde))} + elektrik ~${esc(baskiTl(h.elektrik))}`
-        + ` · ${esc(String(h.gramaj).replace('.', ','))} g · ${esc(String(r?.baski?.capMm ?? '1,75').replace('.', ','))} mm`
-        + ` · ${esc(baskiTl(r?.baski?.metreMaliyeti))}/m</span>`;
+      hedef.innerHTML = DIL_KOPYA_YEREL.baskiSonuc(h, r?.baski || {}, (n) => baskiTl(n, paraBirimi));
     }
   }
 }
@@ -3775,7 +3902,7 @@ function kartHtml(r) {
         <div class="kart-baslik"><a href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${esc(p.title)}</a></div>
         <div class="kart-ozellikler">
           ${p.brand ? `<span class="rozet">${esc(p.brand)}</span>` : ''}
-          ${p.color ? `<span class="rozet renk">Renk: ${esc(p.color)}</span>` : ''}
+          ${p.color ? `<span class="rozet renk">${DIL_KOPYA_YEREL.renkEtiket}: ${esc(renkYerellestir(p.color))}</span>` : ''}
           ${p.modelCode ? `<span class="rozet">Model: ${esc(p.modelCode)}</span>` : ''}
           ${stoktaYok ? '<span class="rozet stok-yok">🔴 Stokta Yok</span>' : '<span class="rozet stok-var">🟢 Stokta Var</span>'}
           ${!stoktaYok && Number(p.kalanStok) > 0 ? `<span class="rozet stok-az" title="Mağaza sayfasındaki kalan stok uyarısı">⏳ Son ${Number(p.kalanStok)} Ürün</span>` : ''}
@@ -3809,7 +3936,7 @@ function kartHtml(r) {
       ${kdvHtml}
       ${baskiRozetHtml}
     </div>
-    ${baskiWidgetHtml(bk)}
+    ${baskiWidgetHtml(bk, p.currency)}
     <div class="kart-kargo-alani">
       <div class="kart-kargo" title="${esc(pr.kargo?.aciklama || '')}">
         <span>🚚 Kargo</span>
@@ -3827,7 +3954,7 @@ function kartHtml(r) {
       ${Number(pr.toplam ?? pr.araToplam ?? p.sellingPrice) > 0 ? `<button type="button" class="alarm-btn" data-alarm-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice))}" data-alarm-site="${esc(r.site || '')}" title="Hedef fiyatın altına düşünce bu cihaza bildirim al — e-posta/şifre gerekmez">🔔 Fiyat Alarmı</button>` : ''}
       ${p.url ? `<button type="button" class="sepete-ekle-btn" data-sepet-url="${esc(p.url)}" data-sepet-ad="${esc(p.title || '')}" data-sepet-site="${esc(SITE_ADLARI[r.site] || r.siteName || '')}" data-sepet-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice ?? ''))}" title="Akıllı Sepete ekle — kargo ve kupon dahil en ucuz kombinasyonu bul">🧺 Sepete Ekle</button>` : ''}
       <button type="button" class="embed-btn" data-embed-q="${esc(p.title || '')}" title="Bu ürünün canlı fiyatını kendi sitene ekle">🔌 Sitene Ekle</button>
-      <span class="istek-notu">${kac(r.requestsSpent)} istek${(r.queriesTried || []).length ? ' · sorgu: ' + esc((r.queriesTried || []).join(' / ')) : ''}${r.katalog ? ` · 🗂️ katalog (${Math.max(0, Math.round((Number(r.katalog.yasMs) || 0) / 60000))} dk önce)` : ''}</span>
+      <span class="istek-notu">${kac(r.requestsSpent)} ${DIL_KOPYA_YEREL.istekBirimi}${(r.queriesTried || []).length ? ` · ${DIL_KOPYA_YEREL.sorguBirimi}: ` + esc((r.queriesTried || []).join(' / ')) : ''}${r.katalog ? ` · 🗂️ ${BASKI_ORTAM.dil === 'fr' ? 'catalogue' : (BASKI_ORTAM.dil === 'ja' ? 'カタログ' : (BASKI_ORTAM.dil === 'en' ? 'catalog' : 'katalog'))} (${Math.max(0, Math.round((Number(r.katalog.yasMs) || 0) / 60000))} ${DIL_KOPYA_YEREL.dkOnce})` : ''}</span>
       <a class="urun-link ${stoktaYok ? 'tukendi' : ''}" href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${stoktaYok ? 'Mağazada Gör (Tükendi)' : 'Mağazada Gör'}</a>
     </div>
   </div>`;
@@ -4868,7 +4995,7 @@ if ($('#sepetIptalBtn')) {
     if (!sepetAktifIs) return;
     const btn = $('#sepetIptalBtn');
     btn.disabled = true;
-    btn.textContent = 'İptal ediliyor…';
+    btn.textContent = DIL_KOPYA_YEREL.iptalEdiliyor;
     try { await fetch('/api/sepet/' + sepetAktifIs + '/iptal', { method: 'POST' }); } catch { }
   });
 }
@@ -5004,9 +5131,9 @@ function sepetPollDurdur() {
 /** Sepet butonunu/iptal düğmesini başlangıç durumuna alır. */
 function sepetBtnDurumunuSifirla() {
   const b = $('#sepetBtn');
-  if (b) { b.disabled = false; b.textContent = 'Sepeti optimize et'; }
+  if (b) { b.disabled = false; b.textContent = DIL_KOPYA_YEREL.sepetOptimize; }
   const i = $('#sepetIptalBtn');
-  if (i) { i.hidden = true; i.disabled = false; i.textContent = '✕ İptal'; }
+  if (i) { i.hidden = true; i.disabled = false; i.textContent = DIL_KOPYA_YEREL.iptal; }
 }
 
 /** Sayfa yenilenirse yarım kalan sepet taramasına geri döner (2026-10-28). */

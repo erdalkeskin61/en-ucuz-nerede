@@ -34,6 +34,13 @@
       'Koşullu kampanyalar': 'Conditional offers',
       'Kargo': 'Shipping',
       'İstek': 'Req.',
+      '✕ İptal': '✕ Cancel',
+      'İptal ediliyor…': 'Cancelling…',
+      '⚡ Ürün karşılaştırma başlatıldı': '⚡ Product comparison started',
+      '🤖 YZ Danışmanı öneri arıyor': '🤖 AI Advisor searching',
+      'Resmi Üretici': 'Official Manufacturer',
+      'Resmi Distribütör': 'Official Distributor',
+      'Aynı Gün Kargo': 'Same-Day Dispatch',
       'Ara': 'Search',
       'Ara & Kıyasla': 'Compare',
       'Dip Fırsatlar': 'Deals',
@@ -127,6 +134,13 @@
       'Koşullu kampanyalar': 'Offres conditionnelles',
       'Kargo': 'Livraison',
       'İstek': 'Req.',
+      '✕ İptal': '✕ Annuler',
+      'İptal ediliyor…': 'Annulation…',
+      '⚡ Ürün karşılaştırma başlatıldı': '⚡ Comparaison lancée',
+      '🤖 YZ Danışmanı öneri arıyor': '🤖 Conseiller IA en recherche',
+      'Resmi Üretici': 'Fabricant officiel',
+      'Resmi Distribütör': 'Distributeur officiel',
+      'Aynı Gün Kargo': 'Expédition le jour même',
       'Ara': 'Rechercher',
       'Ara & Kıyasla': 'Comparer',
       'Dip Fırsatlar': 'Offres',
@@ -219,6 +233,13 @@
       'Koşullu kampanyalar': '条件付き特典',
       'Kargo': '送料',
       'İstek': '通信',
+      '✕ İptal': '✕ 中止',
+      'İptal ediliyor…': '中止中…',
+      '⚡ Ürün karşılaştırma başlatıldı': '⚡ 価格比較を開始しました',
+      '🤖 YZ Danışmanı öneri arıyor': '🤖 AIアドバイザー検索中',
+      'Resmi Üretici': '公式メーカー',
+      'Resmi Distribütör': '公式代理店',
+      'Aynı Gün Kargo': '当日発送',
       'Ara': '検索',
       'Ara & Kıyasla': '比較',
       'Dip Fırsatlar': '特価',
@@ -637,6 +658,7 @@
   const KORUNAN = '.kart-baslik, #kaynakBaslik, .site-adi, #gecmisListe, #footerSiteler, #siteCipleri, #dilSecici, script, style';
 
   const STOKTA_SOZ = dil === 'fr' ? 'en stock' : (dil === 'ja' ? '在庫あり' : 'in stock');
+  const ISTEK_SOZ = dil === 'ja' ? '件' : 'req.';
   const SON_URUN_SAB = dil === 'fr' ? '⏳ Plus que $1' : (dil === 'ja' ? '⏳ 残り$1点' : '⏳ Only $1 left');
 
   let zamanli = null;
@@ -667,8 +689,12 @@
           degisti = true;
         }
       }
-      if (/(\d+\s*)stokta\b/i.test(val)) {
+      if (/(\d+)\s*stokta\b/i.test(val)) {
         val = val.replace(/(\d+)\s*stokta\b/gi, `$1 ${STOKTA_SOZ}`);
+        degisti = true;
+      }
+      if (/(\d+|—)\s*istek\b/i.test(val)) {
+        val = val.replace(/(\d+|—)\s*istek\b/gi, `$1 ${ISTEK_SOZ}`);
         degisti = true;
       }
       if (degisti) node.nodeValue = val;
