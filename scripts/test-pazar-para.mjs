@@ -1503,6 +1503,56 @@ console.log('\n31) 🎨 Renksiz isim araması, RGB hattı, $0.00 tükendi & muad
     && srvKod.includes('farkliRenkStok'));
 }
 
+console.log('\n32) 🗿 Örnek STL test butonları & Meshy vs Hi3D baskı maliyeti rehberleri');
+{
+  const stlParser = await import('../public/stlParser.js');
+  const { globalAi3dRehberiHtml, rehberSayfasiBul: bulRehber } = await import('../src/rehberSayfalar.js');
+  const { aiModelPartnerLinkleri } = await import('../src/afiliye.js');
+
+  const figurBuf = fs.readFileSync('public/ornek-modeller/ornek-masaustu-figur.stl');
+  const rozetBuf = fs.readFileSync('public/ornek-modeller/ornek-cok-renkli-rozet.stl');
+  const figurModel = await stlParser.parseModel(figurBuf.buffer.slice(figurBuf.byteOffset, figurBuf.byteOffset + figurBuf.byteLength), { ad: 'ornek-masaustu-figur.stl' });
+  const rozetModel = await stlParser.parseModel(rozetBuf.buffer.slice(rozetBuf.byteOffset, rozetBuf.byteOffset + rozetBuf.byteLength), { ad: 'ornek-cok-renkli-rozet.stl' });
+  const figurG = stlParser.hesaplaGramaj(figurModel.hacimCm3, 20, 'PLA').gram;
+  const rozetG = stlParser.hesaplaGramaj(rozetModel.hacimCm3, 20, 'PLA').gram;
+  kontrol('Yerleşik örnek STL dosyaları stlParser ile gerçek pozitif hacim/gramaj üretir',
+    figurModel.ucgenSayisi > 100 && figurG > 35 && figurG < 55
+    && rozetModel.ucgenSayisi > 100 && rozetG > 25 && rozetG < 45,
+    JSON.stringify({ figurG, rozetG }));
+
+  const trMalHtml = fs.readFileSync('public/maliyet.html', 'utf8');
+  const enMalHtml = globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://baskihesap.tech') || '';
+  const frMalHtml = globalAracSayfasiBul('/fr/calculateur-cout')?.olustur('https://baskihesap.tech') || '';
+  const jaMalHtml = globalAracSayfasiBul('/ja/cost-calculator')?.olustur('https://baskihesap.tech') || '';
+  kontrol('Maliyet Hesaplayıcı (TR/EN/FR/JA) tek tıkla örnek STL butonlarını ve AI araç ipucunu taşır',
+    trMalHtml.includes('data-stl-ornek="/ornek-modeller/ornek-masaustu-figur.stl"')
+    && enMalHtml.includes('Tabletop Figurine')
+    && frMalHtml.includes('Figurine bureau')
+    && jaMalHtml.includes('フィギュア例'));
+
+  const eskiMeshy = process.env.IMPACT_MESHY_URL;
+  process.env.IMPACT_MESHY_URL = 'https://meshy.sjv.io/test123';
+  const partnerLink = aiModelPartnerLinkleri();
+  if (eskiMeshy === undefined) delete process.env.IMPACT_MESHY_URL; else process.env.IMPACT_MESHY_URL = eskiMeshy;
+  kontrol('aiModelPartnerLinkleri IMPACT_MESHY_URL tanımlandığında afiliye=true ve güvenli URL döndürür',
+    partnerLink.meshyAfiliye === true && partnerLink.meshyUrl === 'https://meshy.sjv.io/test123');
+
+  const trAiRehber = bulRehber('/rehber/meshy-vs-hi3d-3d-baski-maliyeti');
+  const trAiHtml = trAiRehber?.olustur([
+    { ad: 'Porima PLA Siyah 1kg', kategori: 'filament', kategoriSlug: 'pla-filament', enUcuzFiyat: 599, stokluSayisi: 3 },
+  ], 'https://baskihesap.tech') || '';
+  const enAiHtml = globalAi3dRehberiHtml('en', 'https://baskihesap.tech', [
+    { ad: 'eSun PLA+ Black 1kg', kategori: 'filament', kategoriSlug: 'pla-filament', enUcuzFiyat: 16.99, paraBirimi: 'USD', stokluSayisi: 1 },
+  ]);
+  const enGuidesHtml = globalRehberDiziniHtml('en', 'https://baskihesap.tech', []);
+  kontrol('Meshy vs Hi3D TR & EN/FR/JA baskı maliyeti rehberleri canlı PLA fiyatlarıyla render olur',
+    !!trAiRehber
+    && trAiHtml.includes('599')
+    && trAiHtml.includes('hreflang="en" href="https://baskihesap.tech/en/guides/meshy-vs-hi3d-3d-printing-cost"')
+    && enAiHtml.includes('$16.99')
+    && enGuidesHtml.includes('/en/guides/meshy-vs-hi3d-3d-printing-cost'));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

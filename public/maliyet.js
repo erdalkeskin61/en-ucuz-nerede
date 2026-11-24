@@ -941,7 +941,12 @@
       return;
     }
 
-    durumEl.textContent = '⏳ Model okunuyor… (' + (dosya.size / 1048576).toFixed(1) + ' MB)';
+    const okumaMetni = {
+      en: '⏳ Reading model… (' + (dosya.size / 1048576).toFixed(2) + ' MB)',
+      fr: '⏳ Lecture du modèle… (' + (dosya.size / 1048576).toFixed(2) + ' Mo)',
+      ja: '⏳ モデルを読み込み中… (' + (dosya.size / 1048576).toFixed(2) + ' MB)',
+    }[ORTAM_DIL] || ('⏳ Model okunuyor… (' + (dosya.size / 1048576).toFixed(1) + ' MB)');
+    durumEl.textContent = okumaMetni;
     durumEl.className = 'stl-durum';
 
     try {
@@ -955,8 +960,12 @@
       stlDurum.dosyaAdi = dosya.name;
       stlDurum.rawBuffer = tampon;
       stlCiz();
-      durumEl.textContent = '✅ ' + Number(model.ucgenSayisi).toLocaleString('tr-TR')
-        + ' üçgen ayrıştırıldı · ' + sureMs + ' ms · dosya cihazınızdan çıkmadı';
+      const ucgenStr = Number(model.ucgenSayisi).toLocaleString(ORTAM_YEREL || 'tr-TR');
+      durumEl.textContent = ({
+        en: `✅ ${ucgenStr} triangles parsed · ${sureMs} ms · processed locally`,
+        fr: `✅ ${ucgenStr} triangles analysés · ${sureMs} ms · traitement local`,
+        ja: `✅ ${ucgenStr} ポリゴン解析完了 · ${sureMs} ms · ブラウザ内処理`,
+      }[ORTAM_DIL] || `✅ ${ucgenStr} üçgen ayrıştırıldı · ${sureMs} ms · dosya cihazınızdan çıkmadı`);
       durumEl.className = 'stl-durum basarili';
     } catch (e) {
       stlDurum.model = null;
@@ -1052,6 +1061,50 @@
       $('stlSonuc').hidden = true;
       const d = $('stlDurum');
       if (d) { d.textContent = ''; d.className = 'stl-durum'; }
+    });
+
+    // Örnek AI / test STL modelleri: 1 tıkla indirip bellekte ayrıştır ve hesaplayıcıya uygula
+    document.querySelectorAll('[data-stl-ornek]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const yol = btn.getAttribute('data-stl-ornek');
+        const ad = btn.getAttribute('data-stl-ad') || 'ornek.stl';
+        if (!yol) return;
+        const eskiMetin = btn.textContent;
+        btn.disabled = true;
+        try {
+          const yanit = await fetch(yol);
+          if (!yanit.ok) throw new Error('HTTP ' + yanit.status);
+          const buf = await yanit.arrayBuffer();
+          const dosya = new File([buf], ad, { type: 'model/stl' });
+          await stlDosyaIsle(dosya);
+          const h = stlHesap();
+          if (h && h.gram > 0) {
+            const g = Math.max(1, Math.round(h.gram * 10) / 10);
+            durum.gramaj = g;
+            const tahminiSure = Math.max(0.2, Math.round((g / GRAM_SAAT) * 10) / 10);
+            durum.sureSaat = tahminiSure;
+            durum.sureTahmini = true;
+            const gs = $('gramajKaydirici');
+            const gn = $('gramaj');
+            const ss = $('sureKaydirici');
+            const sn = $('sure');
+            if (gs) gs.value = String(Math.min(1000, g));
+            if (gn) gn.value = String(g);
+            if (ss) ss.value = String(Math.min(72, tahminiSure));
+            if (sn) sn.value = String(tahminiSure);
+            render();
+          }
+        } catch (e) {
+          const d = $('stlDurum');
+          if (d) {
+            d.textContent = '❌ ' + String(e?.message || e).slice(0, 120);
+            d.className = 'stl-durum hata';
+          }
+        } finally {
+          btn.disabled = false;
+          if (btn.textContent !== eskiMetin) btn.textContent = eskiMetin;
+        }
+      });
     });
 
     // Gramajı hesaplayıcıya aktar (manuel girişe gerek kalmasın)

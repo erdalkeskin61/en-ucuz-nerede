@@ -688,6 +688,54 @@ html[data-theme="dark"] .mz-cta {
 .stl-birak-metin b { font-size: 14.5px; color: var(--metin); letter-spacing: -0.01em; }
 .stl-birak-alt { font-size: 12px; color: var(--gri-metin-hafif); line-height: 1.4; }
 
+/* ---------- Örnek STL & AI İpucu ---------- */
+.stl-ornekler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.stl-ornek-etiket {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gri-metin);
+}
+.stl-ornek-btn {
+  appearance: none;
+  border: 1px solid var(--cizgi-koyu);
+  background: var(--zemin-2);
+  color: var(--metin);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+.stl-ornek-btn:hover:not(:disabled) {
+  border-color: var(--ana-parlak);
+  background: var(--ana-acik);
+  transform: translateY(-1px);
+}
+.stl-ornek-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.stl-ai-ipucu {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--gri-metin-hafif);
+}
+.stl-ai-ipucu a {
+  color: var(--ana);
+  font-weight: 600;
+  text-decoration: none;
+}
+.stl-ai-ipucu a:hover {
+  text-decoration: underline;
+}
+
 /* ---------- Durum satırı ---------- */
 .stl-durum {
   margin: 10px 0 0;

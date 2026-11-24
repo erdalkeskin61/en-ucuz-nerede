@@ -18,6 +18,8 @@ import {
   GLOBAL_REHBER_YOLLARI,
 } from './seoSayfalar.js';
 import { formatPara, formatTL, parcaMi } from './util.js';
+import { aiModelPartnerLinkleri } from './afiliye.js';
+import { GLOBAL_AI_REHBER_YOLLARI, GLOBAL_MALIYET_YOLLARI } from './globalAracSayfalar.js';
 
 function urunBul(tumUrunler, regex) {
   const comboIstendi = /combo/i.test(regex.source);
@@ -814,6 +816,157 @@ function baskiMaliyetiRehberiHtml(tumUrunler, tabanUrl) {
   });
 }
 
+function enUcuzPlaBul(tumUrunler = [], plusMi = false) {
+  const havuz = (Array.isArray(tumUrunler) ? tumUrunler : []).filter(u =>
+    u && Number(u.enUcuzFiyat) > 0
+    && (u.kategori === 'filament' || ['pla-filament', 'filament'].includes(u.kategoriSlug))
+    && (plusMi ? /pla\+|pla\s+plus/i.test(u.ad || '') : !/pla\+|pla\s+plus/i.test(u.ad || '')));
+  const stoklu = havuz.filter(u => (u.stokluSayisi ?? 1) > 0);
+  const liste = stoklu.length ? stoklu : havuz;
+  return [...liste].sort((a, b) => Number(a.enUcuzFiyat) - Number(b.enUcuzFiyat))[0] || null;
+}
+
+function meshyVsHi3dRehberiHtml(tumUrunler, tabanUrl) {
+  const canonicalUrl = `${tabanUrl}${GLOBAL_AI_REHBER_YOLLARI.tr}`;
+  const aiLink = aiModelPartnerLinkleri();
+  const meshyRel = aiLink.meshyAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+
+  const plaUrun = enUcuzPlaBul(tumUrunler, false) || enUcuzPlaBul(tumUrunler, true);
+  const plaPlusUrun = enUcuzPlaBul(tumUrunler, true) || plaUrun;
+  const plaKg = plaUrun ? Math.round(plaUrun.enUcuzFiyat) : 600;
+  const plaPlusKg = plaPlusUrun ? Math.round(plaPlusUrun.enUcuzFiyat) : 680;
+  const etiketKaynak = plaUrun ? `Bugünkü en ucuz stoklu PLA (${htmlKacis(plaUrun.ad)} ≈ ${formatTL(plaKg)}/kg)` : 'Örnek referans PLA (600 TL/kg)';
+
+  // Yerel STL analizörümüzden ölçülen gerçek örnek modeller + çok renkli purge senaryosu
+  const senaryolar = [
+    {
+      ad: 'Masaüstü Figür (örnek STL · 56×56×98 mm)',
+      gram: 43.3,
+      sureSa: 3.5,
+      kgFiyat: plaKg,
+      not: 'Tek renk baskı + %10 destek/fire · Meshy tarzı tek gövde figür boyutu',
+    },
+    {
+      ad: 'Çok Renkli Rozet (örnek STL · 92×92×26 mm)',
+      gram: 36.2,
+      sureSa: 2.9,
+      kgFiyat: plaPlusKg,
+      ekPurge: 1.20,
+      not: 'Model bölmeden çok renkli baskıda +%20 renk geçiş (purge) payı eklenir',
+    },
+    {
+      ad: 'Orta Boy Çok Renkli Büst (120 g senaryo)',
+      gram: 120,
+      sureSa: 9.6,
+      kgFiyat: plaPlusKg,
+      ekPurge: 1.22,
+      not: 'Çok renkli AMS/Combo baskılarda kule + temizleme atığı ~26 g ekler',
+    },
+  ].map((s) => {
+    const carpan = s.ekPurge || 1.10;
+    const etkinGram = s.gram * carpan;
+    const hammadde = (etkinGram / 1000) * s.kgFiyat;
+    const elektrik = s.sureSa * 0.15 * 2.9;
+    const amortisman = s.sureSa * 3.0;
+    const toplam = hammadde + elektrik + amortisman;
+    return { ...s, etkinGram, hammadde, elektrik, toplam };
+  });
+
+  const sss = sssBolumu([
+    {
+      soru: 'Meshy ve Hi3D çıktıları doğrudan 3D yazıcıda basılabilir mi?',
+      cevap: 'Evet, dışa aktarılan .stl veya .obj/.3mf dosyalarını Bambu Studio, OrcaSlicer veya Cura içine atabilirsiniz. İnce çıkıntıları (parmak, kılıç, kulak gibi) yazdırmadan önce dilimleyicide otomatik destek ve "Non-manifold / Fix model" kontrolü yapmanız önerilir.',
+    },
+    {
+      soru: 'Çok renkli (Hi3D / AMS / Combo) baskı neden tek renk baskıdan daha maliyetlidir?',
+      cevap: 'Modeli elle bölmeden çok renkli bastığınızda yazıcı her katmanda renk değiştirirken filament temizleme (purge / prime tower) yapar. Renk sayısına bağlı olarak net parça ağırlığının %15–%25 fazlası kadar filament tüketimi eklenir.',
+    },
+    {
+      soru: 'Dosyam olmadan Baskı Hesap STL maliyet hesaplayıcıyı deneyebilir miyim?',
+      cevap: 'Evet. Maliyet Hesaplayıcı sayfasındaki "Örnek STL ile 1 tıkta dene" butonlarıyla yerleşik Masaüstü Figür (43,3 g) ve Çok Renkli Rozet (36,2 g) modellerini tek tıkla tarayıcınızda ölçebilirsiniz.',
+    },
+  ]);
+
+  return sayfaIskeleti({
+    title: 'Meshy vs Hi3D: 3D Yazıcı Baskısı & Gerçek Maliyet Rehberi | Baskı Hesap',
+    description: 'Meshy AI ve Hi3D ile text/image-to-3D model üretiminin 3D baskı farkları, çok renkli purge tüketimi ve canlı Türkiye PLA fiyatlarıyla gerçek maliyet hesabı.',
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    ogType: 'article',
+    aktifNav: 'rehber',
+    dilYolHaritasi: GLOBAL_AI_REHBER_YOLLARI,
+    jsonLdList: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: `${tabanUrl}/` },
+          { '@type': 'ListItem', position: 2, name: 'Rehberler', item: `${tabanUrl}/rehber` },
+          { '@type': 'ListItem', position: 3, name: 'Meshy vs Hi3D Baskı Maliyeti', item: canonicalUrl },
+        ],
+      },
+      ...(sss.jsonLd ? [sss.jsonLd] : []),
+    ],
+    govdeHtml: `
+      <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <a href="/rehber">Rehberler</a> › <span>Meshy vs Hi3D</span></nav>
+      ${heroAlani({
+        rozet: '🤖 AI 3D Üretim & Gerçek Baskı Maliyeti',
+        baslikHtml: 'Meshy vs Hi3D: <b>3D Baskıda Gerçek Gramaj &amp; Maliyet</b>',
+        altMetin: 'Yapay zekâyla metinden veya fotoğraftan 3D model üretmek işin yarısı; gerçek fark dilimleyicideki gramaj, destek temizliği ve çok renkli filament tüketiminde ortaya çıkar.',
+        istatistikler: [
+          `🧵 Canlı baz PLA: <b>${formatTL(plaKg)}/kg</b>`,
+          '🗿 Yerleşik örnekler: <b>43,3 g &amp; 36,2 g</b>',
+          '🎨 Çok renkli purge payı: <b>+%15–25</b>',
+        ],
+      })}
+      <section class="seo-kart">
+        <div class="seo-fiyat-kutu">
+          <div>💡 <b>Canlı Piyasa Referansı:</b> ${etiketKaynak}${plaPlusUrun && plaPlusUrun !== plaUrun ? ` · En ucuz PLA+: <b>${formatTL(plaPlusKg)}/kg</b> (${htmlKacis(plaPlusUrun.ad)})` : ''}. Kendi STL dosyan yoksa hesaplayıcıdaki 1 tık örneklerle hemen test edebilirsin.</div>
+        </div>
+        <div class="seo-butonlar">
+          <a class="seo-cta" href="/maliyet.html">🧮 Örnek STL ile Maliyet Hesapla →</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI'ı İncele ↗</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D'yi İncele ↗</a>
+        </div>
+      </section>
+      <section class="seo-kart">
+        <h2 style="margin-top:0">Meshy vs Hi3D: Hangisi Hangi Baskıya Uygun?</h2>
+        <div style="overflow-x:auto">
+          <table class="seo-tablo">
+            <thead><tr><th>Kriter</th><th>Meshy AI</th><th>Hi3D</th></tr></thead>
+            <tbody>
+              <tr><td><b>Temel Odak</b></td><td>Text-to-3D, Image-to-3D, AI Texturing &amp; düzenlenebilir asset</td><td>Model bölmeden fiziksel ürünler için çok renkli baskı &amp; 8K doku</td></tr>
+              <tr><td><b>En İyi Baskı Tipi</b></td><td>Tek renk figür, prototip, sonradan akrilikle boyanacak modeller</td><td>Bambu AMS, Creality K2/K3/Hi Combo gibi çok renkli yazıcılar</td></tr>
+              <tr><td><b>Dilimleyici Hazırlığı</b></td><td>%10 destek/fire payıyla tek filamentten düşük maliyetli baskı</td><td>Çok renkli baskıda purge kulesi nedeniyle +%15–25 ek filament</td></tr>
+              <tr><td><b>Atölye / Satış Avantajı</b></td><td>Müşteri fotoğrafından hızlı konsept ve seri baskı prototipi</td><td>Boyama işçiliği olmadan doğrudan çok renkli son ürün çıkarma</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="seo-kart">
+        <h2 style="margin-top:0">Örnek Ölçüm &amp; Çok Renkli Maliyet Karşılaştırması (Canlı PLA Bazlı)</h2>
+        <div style="overflow-x:auto">
+          <table class="seo-tablo">
+            <thead><tr><th>Model / Senaryo</th><th>Parça + Fire/Purge</th><th>Süre</th><th>Ham Madde</th><th>Toplam Net Maliyet</th></tr></thead>
+            <tbody>
+              ${senaryolar.map(s => `<tr>
+                <td><b>${htmlKacis(s.ad)}</b><br><span class="seo-mini-alt">${htmlKacis(s.not)}</span></td>
+                <td>${s.gram.toFixed(1).replace('.', ',')} g → <b>${Math.round(s.etkinGram)} g</b></td>
+                <td>~${s.sureSa.toFixed(1).replace('.', ',')} sa</td>
+                <td>${formatTL(Math.round(s.hammadde))}</td>
+                <td><b style="color:var(--yesil)">${formatTL(Math.round(s.toplam))}</b></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <p class="ipucu" style="margin:10px 0 0">Not: İlk iki satırdaki hacim ve gramaj değerleri Baskı Hesap tarayıcı STL ayrıştırıcısındaki yerleşik örnek dosyalarla (<code>ornek-masaustu-figur.stl</code> ve <code>ornek-cok-renkli-rozet.stl</code>, %20 doluluk, 1,24 g/cm³ PLA) ölçülmüştür; elektrik 2,90 TL/kWh ve amortisman 3,00 TL/saat varsayılmıştır.</p>
+      </section>
+      ${sss.html}
+      ${altAraclarCubugu()}`,
+  });
+}
+
 export const REHBER_SAYFALARI = [
   ...YAZICI_KARSILASTIRMALARI.map(y => ({
     yol: y.yol,
@@ -896,14 +1049,44 @@ export const REHBER_SAYFALARI = [
     canliOzet: () => '4 adımlı formül + canlı PLA maliyet örneği',
     olustur: baskiMaliyetiRehberiHtml,
   },
+  {
+    yol: '/rehber/meshy-vs-hi3d-3d-baski-maliyeti',
+    ikon: '🤖',
+    baslik: 'Meshy vs Hi3D: 3D Baskıda Gerçek Gramaj & Maliyet',
+    ozet: 'Metinden/fotoğraftan üretilen modellerin dilimleyici gramajı, çok renkli purge payı ve canlı PLA maliyeti.',
+    tur: 'AI Model & Maliyet',
+    canliOzet: () => 'Yerleşik örnek STL ölçümleri + canlı çok renkli maliyet',
+    olustur: meshyVsHi3dRehberiHtml,
+  },
 ];
 
 export function rehberSitemapKayitlari() {
   const bugun = new Date().toISOString().slice(0, 10);
   return [
     { yol: '/rehber', oncelik: '0.85', siklik: 'weekly', lastmod: bugun },
-    ...REHBER_SAYFALARI.map(r => ({ yol: r.yol, oncelik: '0.85', siklik: 'daily', lastmod: bugun })),
+    ...REHBER_SAYFALARI.map(r => ({
+      yol: r.yol,
+      oncelik: '0.85',
+      siklik: 'daily',
+      lastmod: bugun,
+      ...(r.yol === GLOBAL_AI_REHBER_YOLLARI.tr ? { alternates: { ...GLOBAL_AI_REHBER_YOLLARI, 'x-default': GLOBAL_AI_REHBER_YOLLARI.en } } : {}),
+    })),
   ];
+}
+
+export function globalRehberSitemapKayitlari(dil = null) {
+  const bugun = new Date().toISOString().slice(0, 10);
+  const alternates = { ...GLOBAL_AI_REHBER_YOLLARI, 'x-default': GLOBAL_AI_REHBER_YOLLARI.en };
+  const liste = ['en', 'fr', 'ja'].map(d => ({
+    dil: d,
+    yol: GLOBAL_AI_REHBER_YOLLARI[d],
+    oncelik: '0.85',
+    siklik: 'weekly',
+    lastmod: bugun,
+    alternates,
+  }));
+  if (!dil) return liste;
+  return liste.filter(x => x.dil === dil);
 }
 
 export function rehberDiziniHtml(tabanUrl, tumUrunler = []) {
@@ -1053,6 +1236,19 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
         urunB: 'Polymaker PLA 1kg',
         detay: 'Formula: Net Cost = (Grams / 1000 × $/kg) + ((Watts × Hours / 1000) × $/kWh) + (Hours × $/hr Depreciation). Use the STL Cost Calculator to compute instantly in your browser.',
       },
+      {
+        id: 'guide-ai-3d',
+        ikon: '🤖',
+        tur: 'AI 3D & Print Cost',
+        baslik: 'Meshy vs Hi3D: Real 3D Print Weight & Filament Cost Guide',
+        ozet: 'Compare Text/Image-to-3D printing workflows, multi-color purge overhead (+15–25%), and live USD filament costs.',
+        band: 'Built-in sample STLs + multi-color purge breakdown',
+        sorgu: 'eSun PLA+ 1kg',
+        urunA: 'eSun PLA+ 1kg',
+        urunB: 'Polymaker PLA 1kg',
+        detayYolu: GLOBAL_AI_REHBER_YOLLARI.en,
+        detay: 'When to use Meshy (single-color figurines & Image-to-3D prototypes) vs Hi3D (no-split multi-color physical prints) — plus how multi-color swaps change real filament cost.',
+      },
     ],
   },
   fr: {
@@ -1145,6 +1341,19 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
         urunA: 'Creality Hyper PLA 1kg',
         urunB: 'Overture PLA 1kg',
         detay: 'Coût net = (Grammes / 1000 × €/kg) + (kWh × tarif EDF) + (Heures × amortissement). Testez vos fichiers STL sans rien envoyer en ligne.',
+      },
+      {
+        id: 'guide-ai-3d',
+        ikon: '🤖',
+        tur: 'IA 3D & Coût',
+        baslik: 'Meshy vs Hi3D : Poids Réel et Coût d’Impression 3D',
+        ozet: 'Comparez Text/Image-to-3D, le surcoût de purge multicouleur (+15–25 %) et les prix réels des bobines en EUR.',
+        band: 'Exemples STL intégrés + calcul purge multicouleur',
+        sorgu: 'eSun PLA+ 1kg',
+        urunA: 'eSun PLA+ 1kg',
+        urunB: 'SUNLU PLA+ 1kg',
+        detayYolu: GLOBAL_AI_REHBER_YOLLARI.fr,
+        detay: 'Quand privilégier Meshy (figurines & prototypes mono-couleur) vs Hi3D (impression physique multicouleur sans découpe) et impact sur le coût filament en €.',
       },
     ],
   },
@@ -1239,13 +1448,26 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
         urunB: 'eSun PLA+ 1kg',
         detay: '原価 = (使用グラム/1000 × ¥/kg) + (消費電力kW × 時間 × 電力単価) + (時間 × 償却費)。原価シミュレーターで即計算できます。',
       },
+      {
+        id: 'guide-ai-3d',
+        ikon: '🤖',
+        tur: 'AI 3D・原価比較',
+        baslik: 'Meshy vs Hi3D：3Dプリント実重量とフィラメント原価ガイド',
+        ozet: 'Text/Image-to-3Dモデルの造形グラム数・多色印刷のパージ増分（+15〜25%）と日本円での実質コスト比較。',
+        band: 'サンプルSTL計測値＋多色パージ原価試算',
+        sorgu: 'eSun PLA+ 1kg',
+        urunA: 'eSun PLA+ 1kg',
+        urunB: 'SUNLU PLA+ 1kg',
+        detayYolu: GLOBAL_AI_REHBER_YOLLARI.ja,
+        detay: '単色フィギュア向けのMeshyと分割不要の多色造形向けHi3Dの使い分け、およびAMS等の色替えロスを含めた原価比較。',
+      },
     ],
   },
 });
 
 function rehberIcinUrunBul(g, tumUrunler = []) {
   if (!Array.isArray(tumUrunler) || !tumUrunler.length) return null;
-  const filamentKartMi = g.id === 'guide-pla' || g.id === 'guide-cost';
+  const filamentKartMi = g.id === 'guide-pla' || g.id === 'guide-cost' || g.id === 'guide-ai-3d';
   const havuz = tumUrunler.filter((u) => {
     if (!u || !(Number(u.enUcuzFiyat) > 0)) return false;
     if (filamentKartMi) {
@@ -1308,6 +1530,7 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
       <p class="rehber-ozet" style="font-size:12.5px;opacity:.92">${htmlKacis(g.detay)}</p>
       <div class="rehber-canli-band">⚡ ${htmlKacis(canliSatir)}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+        ${g.detayYolu ? `<a class="rehber-cta" href="${htmlKacis(g.detayYolu)}">${htmlKacis(k.cta)}</a>` : ''}
         <a class="rehber-cta" href="${htmlKacis(araLinkA)}">🔍 ${htmlKacis(g.urunA)} →</a>
         <a class="rehber-cta" href="${htmlKacis(araLinkB)}">⚖️ ${htmlKacis(g.urunB)} →</a>
       </div>
@@ -1359,5 +1582,204 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
           <a href="${slcYol}">${k.aracLink4}</a>
         </div>
       </section>`,
+  });
+}
+
+const GLOBAL_AI_REHBER_KOPYA = Object.freeze({
+  en: {
+    title: 'Meshy vs Hi3D: AI 3D Print Weight & Filament Cost Guide | Baski Hesap',
+    desc: 'Compare Meshy AI and Hi3D for 3D printing: single-color Image-to-3D figurines vs multi-color purge overhead (+15–25%) with live USD filament pricing.',
+    home: 'Home', guides: 'Guides', crumb: 'Meshy vs Hi3D',
+    rozet: '🤖 AI 3D Generation &amp; Real Print Cost',
+    h1: 'Meshy vs Hi3D: <b>Real 3D Print Weight &amp; Filament Cost</b>',
+    alt: 'Generating a 3D mesh from text or an image is step one — real cost depends on slicer grams, support waste, and multi-color purge swaps.',
+    ctaCalc: '🧮 Test Sample STL in Cost Calculator →',
+    ctaMeshy: 'Try Meshy AI ↗',
+    ctaHi3d: 'Try Hi3D ↗',
+    vsH2: 'Meshy vs Hi3D: Which Fits Your 3D Printer?',
+    th1: 'Criterion', th2: 'Meshy AI', th3: 'Hi3D',
+    rows: [
+      ['Primary Strength', 'Text-to-3D, Image-to-3D, AI Texturing &amp; editable assets', 'No-split multi-color physical printing &amp; 8K texture workflow'],
+      ['Best Print Setup', 'Single-extruder printers (figurines, prototypes, painted models)', 'Multi-color systems (Bambu AMS, Creality K2/K3/Hi Combo, ACE Pro)'],
+      ['Material Overhead', '~10% support &amp; brim allowance', '+15% to +25% filament waste from color-swap purge towers'],
+      ['Workshop Use Case', 'Turning customer photos or prompts into fast prototypes', 'Ready-to-gift multi-color physical items without manual painting'],
+    ],
+    costH2: 'Measured Sample Models &amp; Multi-Color Cost Breakdown',
+    mTh1: 'Model / Scenario', mTh2: 'Part → With Waste', mTh3: 'Est. Time', mTh4: 'Filament', mTh5: 'Net Cost',
+    s1: 'Tabletop Figurine (built-in STL · 56×56×98 mm)', s1n: 'Single-color PLA + 10% support/brim allowance',
+    s2: 'Multi-Color Badge (built-in STL · 92×92×26 mm)', s2n: 'Multi-color print assuming +20% color-swap purge',
+    s3: 'Medium Multi-Color Bust (120 g scenario)', s3n: 'AMS/Combo tower &amp; flush waste (~22% overhead)',
+    note: 'Geometry and grams for the first two rows are measured directly by Baski Hesap’s local STL parser at 20% infill (1.24 g/cm³ PLA). Electricity ($0.16/kWh) and wear ($0.25/hr) match our US calculator defaults.',
+    para: 'USD', bazPla: 19.99, bazPlus: 21.99, kwh: 0.16, amp: 0.25,
+    canliEtiket: 'Live US filament reference:',
+    faq: [
+      { soru: 'Can Meshy and Hi3D exports be 3D printed directly?', cevap: 'Yes. Export .stl, .obj, or .3mf files into Bambu Studio, OrcaSlicer, or Cura. Always run non-manifold repair if needed and enable supports for thin overhangs.' },
+      { soru: 'Why does multi-color printing cost more than single-color?', cevap: 'Every filament swap purges melted plastic into a flush chute or prime tower, typically adding 15%–25% to total filament weight.' },
+    ],
+  },
+  fr: {
+    title: 'Meshy vs Hi3D : Poids Réel et Coût d’Impression 3D | Baski Hesap',
+    desc: 'Comparatif Meshy AI vs Hi3D pour l’impression 3D : mono-couleur vs surcoût de purge multicouleur (+15–25 %) et prix des bobines en EUR.',
+    home: 'Accueil', guides: 'Guides', crumb: 'Meshy vs Hi3D',
+    rozet: '🤖 Génération 3D IA &amp; Coût Réel',
+    h1: 'Meshy vs Hi3D : <b>Poids Réel et Coût d’Impression 3D</b>',
+    alt: 'Générer un maillage 3D depuis un texte ou une photo n’est que la première étape : le coût réel dépend des grammes, des supports et de la purge multicouleur.',
+    ctaCalc: '🧮 Tester un STL dans le Calculateur →',
+    ctaMeshy: 'Découvrir Meshy AI ↗',
+    ctaHi3d: 'Découvrir Hi3D ↗',
+    vsH2: 'Meshy vs Hi3D : Quelle approche pour votre imprimante ?',
+    th1: 'Critère', th2: 'Meshy AI', th3: 'Hi3D',
+    rows: [
+      ['Point fort', 'Text-to-3D, Image-to-3D, texturisation IA &amp; maillages éditables', 'Impression physique multicouleur sans découpe &amp; textures 8K'],
+      ['Imprimante idéale', 'Imprimantes mono-buse (figurines, prototypes à peindre)', 'Systèmes multicouleurs (Bambu AMS, Creality K2/K3/Hi Combo)'],
+      ['Perte matière', '~10 % pour supports et bordure', '+15 % à +25 % de filament pour les purges de couleur'],
+      ['Usage atelier', 'Prototypage rapide à partir de photos clients', 'Pièces physiques multicouleurs prêtes sans peinture manuelle'],
+    ],
+    costH2: 'Mesures STL &amp; Comparatif de Coût Multicouleur (EUR)',
+    mTh1: 'Modèle / Scénario', mTh2: 'Pièce → Avec pertes', mTh3: 'Durée est.', mTh4: 'Filament', mTh5: 'Coût net',
+    s1: 'Figurine de bureau (STL intégré · 56×56×98 mm)', s1n: 'PLA mono-couleur + 10 % supports/pertes',
+    s2: 'Badge multicouleur (STL intégré · 92×92×26 mm)', s2n: 'Impression multicouleur (+20 % purge estimée)',
+    s3: 'Buste multicouleur moyen (scénario 120 g)', s3n: 'Tour de purge AMS/Combo (~22 % de surconsommation)',
+    note: 'Les volumes et poids des deux premières lignes sont mesurés par le parseur STL de Baski Hesap (remplissage 20 %, PLA 1,24 g/cm³) avec électricité à 0,25 €/kWh et usure à 0,25 €/h.',
+    para: 'EUR', bazPla: 19.99, bazPlus: 21.99, kwh: 0.25, amp: 0.25,
+    canliEtiket: 'Référence filament EU en direct :',
+    faq: [
+      { soru: 'Peut-on imprimer directement les modèles Meshy et Hi3D ?', cevap: 'Oui, importez les fichiers .stl, .obj ou .3mf dans Bambu Studio, OrcaSlicer ou Cura et activez la réparation automatique si nécessaire.' },
+      { soru: 'Pourquoi l’impression multicouleur consomme-t-elle plus ?', cevap: 'Chaque changement de filament génère une purge, ajoutant en moyenne 15 % à 25 % de masse totale.' },
+    ],
+  },
+  ja: {
+    title: 'Meshy vs Hi3D：3Dプリント実重量・フィラメント原価ガイド | Baski Hesap',
+    desc: 'Meshy AIとHi3Dの3Dプリント比較：単色造形と多色パージ増分（+15〜25%）を含む日本円（¥）での実質コスト試算。',
+    home: 'ホーム', guides: 'ガイド', crumb: 'Meshy vs Hi3D',
+    rozet: '🤖 AI 3Dモデル生成 &amp; 実造形原価',
+    h1: 'Meshy vs Hi3D：<b>3Dプリント実重量と原価比較</b>',
+    alt: 'テキストや画像から3Dモデルを生成した後、実際の造形コストはスライサー上のグラム数・サポート材・多色印刷時のパージロスで決まります。',
+    ctaCalc: '🧮 原価シミュレーターでサンプルSTLを試算 →',
+    ctaMeshy: 'Meshy AI を見る ↗',
+    ctaHi3d: 'Hi3D を見る ↗',
+    vsH2: 'Meshy vs Hi3D：3Dプリンター用途別の使い分け',
+    th1: '比較項目', th2: 'Meshy AI', th3: 'Hi3D',
+    rows: [
+      ['主な強み', 'Text/Image-to-3D、AIテクスチャ、編集しやすいメッシュ', 'モデル分割不要の物理多色プリント向け造形・8Kテクスチャ'],
+      ['適したプリンター', '単色FDM機（フィギュア試作・塗装前提モデル）', 'AMS・Creality K3 Combo等のマルチカラー機'],
+      ['フィラメントロス', 'サポート・ブリム分で約+10%', '色替えパージタワーで+15%〜+25%加算'],
+      ['活用シーン', '写真からの迅速なプロトタイプ・カスタム造形', '後塗装なしでの多色グッズ直接出力'],
+    ],
+    costH2: '内蔵STL実測値＆多色パージ原価シミュレーション (JPY)',
+    mTh1: 'モデル / シナリオ', mTh2: '本体 → ロス込み', mTh3: '予想時間', mTh4: '材料費', mTh5: '合計原価',
+    s1: '卓上フィギュア (内蔵STL · 56×56×98 mm)', s1n: '単色PLA + サポートロス10%',
+    s2: '多色バッジ (内蔵STL · 92×92×26 mm)', s2n: '色替えパージ+20%想定',
+    s3: '中型マルチカラー胸像 (120 g シナリオ)', s3n: 'AMS色替えパージ含む (+22%)',
+    note: '上位2行の体積・重量はBaski HesapローカルSTLパーサー（インフィル20%、PLA密度1.24g/cm³）の実測値です。電気代31円/kWh・償却費40円/時間で計算しています。',
+    para: 'JPY', bazPla: 2600, bazPlus: 2900, kwh: 31, amp: 40,
+    canliEtiket: '日本国内フィラメント参考価格:',
+    faq: [
+      { soru: 'MeshyやHi3Dの書き出しデータはそのまま印刷できますか？', cevap: 'はい。.stl・.obj・.3mfをBambu StudioやOrcaSlicer、Curaに読み込み、必要に応じて非多様体修復とサポートを有効にしてスライスできます。' },
+      { soru: 'なぜ多色印刷は単色よりフィラメント代が高くなりますか？', cevap: '色を切り替えるたびにノズル内の旧色をパージするため、通常15%〜25%ほど追加のフィラメントを消費します。' },
+    ],
+  },
+});
+
+export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []) {
+  const kod = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'ja' : 'en');
+  const t = GLOBAL_AI_REHBER_KOPYA[kod];
+  const aiLink = aiModelPartnerLinkleri();
+  const meshyRel = aiLink.meshyAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const canonicalUrl = `${tabanUrl}${GLOBAL_AI_REHBER_YOLLARI[kod]}`;
+  const malYol = GLOBAL_MALIYET_YOLLARI[kod];
+  const guidesIndex = GLOBAL_REHBER_YOLLARI[kod];
+
+  const plaUrun = enUcuzPlaBul(tumUrunler, false) || enUcuzPlaBul(tumUrunler, true);
+  const plaPlusUrun = enUcuzPlaBul(tumUrunler, true) || plaUrun;
+  const paraKodu = plaUrun?.paraBirimi || t.para;
+  const plaKg = plaUrun?.enUcuzFiyat > 0 ? Number(plaUrun.enUcuzFiyat) : t.bazPla;
+  const plaPlusKg = plaPlusUrun?.enUcuzFiyat > 0 ? Number(plaPlusUrun.enUcuzFiyat) : t.bazPlus;
+
+  const senaryolar = [
+    { ad: t.s1, not: t.s1n, gram: 43.3, sureSa: 3.5, kg: plaKg, carpan: 1.10 },
+    { ad: t.s2, not: t.s2n, gram: 36.2, sureSa: 2.9, kg: plaPlusKg, carpan: 1.20 },
+    { ad: t.s3, not: t.s3n, gram: 120, sureSa: 9.6, kg: plaPlusKg, carpan: 1.22 },
+  ].map((s) => {
+    const etkinGram = s.gram * s.carpan;
+    const mat = (etkinGram / 1000) * s.kg;
+    const el = s.sureSa * 0.15 * t.kwh;
+    const am = s.sureSa * t.amp;
+    return { ...s, etkinGram, mat, toplam: mat + el + am };
+  });
+
+  const sss = sssBolumu(t.faq);
+  const canliMetin = plaUrun
+    ? `${t.canliEtiket} ${htmlKacis(plaUrun.ad)} — <b>${formatPara(plaKg, paraKodu)}/kg</b>`
+    : `${t.canliEtiket} <b>${formatPara(plaKg, paraKodu)}/kg</b>`;
+
+  return sayfaIskeleti({
+    title: t.title,
+    description: t.desc,
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    ogType: 'article',
+    aktifNav: 'rehber',
+    dil: kod,
+    dilYolHaritasi: GLOBAL_AI_REHBER_YOLLARI,
+    jsonLdList: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: t.home, item: `${tabanUrl}/${kod}` },
+          { '@type': 'ListItem', position: 2, name: t.guides, item: `${tabanUrl}${guidesIndex}` },
+          { '@type': 'ListItem', position: 3, name: t.crumb, item: canonicalUrl },
+        ],
+      },
+      ...(sss.jsonLd ? [sss.jsonLd] : []),
+    ],
+    govdeHtml: `
+      <nav class="seo-yol"><a href="/${kod}">${htmlKacis(t.home)}</a> › <a href="${htmlKacis(guidesIndex)}">${htmlKacis(t.guides)}</a> › <span>${htmlKacis(t.crumb)}</span></nav>
+      ${heroAlani({
+        rozet: t.rozet,
+        baslikHtml: t.h1,
+        altMetin: t.alt,
+        istatistikler: [
+          `🧵 PLA: <b>${formatPara(plaKg, paraKodu)}/kg</b>`,
+          '🗿 43.3 g &amp; 36.2 g STLs',
+          '🎨 +15–25% purge',
+        ],
+      })}
+      <section class="seo-kart">
+        <div class="seo-fiyat-kutu"><div>💡 ${canliMetin}</div></div>
+        <div class="seo-butonlar">
+          <a class="seo-cta" href="${htmlKacis(malYol)}">${t.ctaCalc}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">${t.ctaMeshy}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${t.ctaHi3d}</a>
+        </div>
+      </section>
+      <section class="seo-kart">
+        <h2 style="margin-top:0">${t.vsH2}</h2>
+        <div style="overflow-x:auto">
+          <table class="seo-tablo">
+            <thead><tr><th>${t.th1}</th><th>${t.th2}</th><th>${t.th3}</th></tr></thead>
+            <tbody>${t.rows.map(([a, b, c]) => `<tr><td><b>${htmlKacis(a)}</b></td><td>${b}</td><td>${c}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </section>
+      <section class="seo-kart">
+        <h2 style="margin-top:0">${t.costH2}</h2>
+        <div style="overflow-x:auto">
+          <table class="seo-tablo">
+            <thead><tr><th>${t.mTh1}</th><th>${t.mTh2}</th><th>${t.mTh3}</th><th>${t.mTh4}</th><th>${t.mTh5}</th></tr></thead>
+            <tbody>${senaryolar.map(s => `<tr>
+              <td><b>${htmlKacis(s.ad)}</b><br><span class="seo-mini-alt">${s.not}</span></td>
+              <td>${s.gram} g → <b>${Math.round(s.etkinGram)} g</b></td>
+              <td>~${s.sureSa} h</td>
+              <td>${formatPara(s.mat, paraKodu)}</td>
+              <td><b style="color:var(--yesil)">${formatPara(s.toplam, paraKodu)}</b></td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <p class="ipucu" style="margin:10px 0 0">${htmlKacis(t.note)}</p>
+      </section>
+      ${sss.html}`,
   });
 }

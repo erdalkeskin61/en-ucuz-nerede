@@ -27,7 +27,7 @@ import {
   footerHubHtml, navYollariGetir, SEO_KATEGORILER, kategoriYoluGetir,
 } from './seoSayfalar.js';
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
-import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { afiliyeLink, afiliyeAyarlari, aiModelPartnerLinkleri } from './afiliye.js';
 import { adaptersByMarket, taramaAdaptersByMarket } from './sites/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -142,6 +142,10 @@ const MALIYET_KOPYA = Object.freeze({
     stlGizlilik: '🔒 Processed 100% on your device',
     stlBirakAna: 'Drag & drop an STL or 3MF file here',
     stlBirakAlt: 'or click to browse · max 100 MB · never uploaded to a server',
+    ornekEtiket: '⚡ Try 1-click with a sample STL:',
+    ornekFigur: '🗿 Tabletop Figurine (~43 g)',
+    ornekRozet: '🎨 Multi-Color Badge (~36 g)',
+    aiIpucu: '✨ No STL yet? Create from text or photo:',
     boyut: 'Dimensions',
     hacim: 'Volume',
     agirlik: 'Est. Weight',
@@ -189,6 +193,10 @@ const MALIYET_KOPYA = Object.freeze({
     stlGizlilik: '🔒 Traité à 100% sur votre appareil',
     stlBirakAna: 'Glissez-déposez un fichier STL ou 3MF ici',
     stlBirakAlt: 'ou cliquez pour choisir · max 100 Mo · aucun envoi serveur',
+    ornekEtiket: '⚡ Tester en 1 clic avec un STL :',
+    ornekFigur: '🗿 Figurine bureau (~43 g)',
+    ornekRozet: '🎨 Badge multicouleur (~36 g)',
+    aiIpucu: '✨ Pas de STL ? Générez-en un :',
     boyut: 'Dimensions',
     hacim: 'Volume',
     agirlik: 'Poids estimé',
@@ -236,6 +244,10 @@ const MALIYET_KOPYA = Object.freeze({
     stlGizlilik: '🔒 端末内で100%処理（送信なし）',
     stlBirakAna: 'STL または 3MF ファイルをここにドロップ',
     stlBirakAlt: 'またはクリックして選択 · 最大 100 MB · サーバーへアップロードされません',
+    ornekEtiket: '⚡ サンプルSTLで1クリック試算:',
+    ornekFigur: '🗿 フィギュア例 (~43 g)',
+    ornekRozet: '🎨 多色バッジ例 (~36 g)',
+    aiIpucu: '✨ STLがない場合はAIで作成:',
     boyut: 'サイズ',
     hacim: '体積',
     agirlik: '推定重量',
@@ -638,6 +650,9 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
   const sz = sozlukGetir(kod);
   const nav = navYollariGetir(kod);
   const cr = crealityAracLinki(kod, 'PLA Filament');
+  const aiLink = aiModelPartnerLinkleri();
+  const meshyRel = aiLink.meshyAfiliye ? 'noopener sponsored' : 'noopener';
+  const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored' : 'noopener';
   const sembol = sz.para.sembol;
   const sifirPara = kod === 'ja' ? '¥0' : (kod === 'fr' ? '0,00 €' : '$0.00');
   const k = {
@@ -736,6 +751,13 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('🔒 %100 cihazında işlenir', c.stlGizlilik)
     .replace('<b>STL / 3MF dosyasını buraya sürükleyin</b>', `<b>${c.stlBirakAna}</b>`)
     .replace('<span class="stl-birak-alt">ya da tıklayıp seçin · en fazla 100 MB · sunucuya yüklenmez</span>', `<span class="stl-birak-alt">${c.stlBirakAlt}</span>`)
+    .replace('⚡ Örnek STL ile 1 tıkta dene:', c.ornekEtiket)
+    .replace('🗿 Masaüstü Figür (~43 g)', c.ornekFigur)
+    .replace('🎨 Çok Renkli Rozet (~36 g)', c.ornekRozet)
+    .replace(
+      /<span class="stl-ai-ipucu" id="stlAiIpucu">[\s\S]*?<\/span>/,
+      `<span class="stl-ai-ipucu" id="stlAiIpucu">${c.aiIpucu} <a href="${htmlKacis(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a> · <a href="${htmlKacis(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a></span>`,
+    )
     .replace('<span class="stl-metrik-ad">📏 Boyutlar</span>', `<span class="stl-metrik-ad">📏 ${c.boyut}</span>`)
     .replace('<span class="stl-metrik-ad">🧊 Hacim</span>', `<span class="stl-metrik-ad">🧊 ${c.hacim}</span>`)
     .replace('<span class="stl-metrik-ad">⚖️ Ağırlık</span>', `<span class="stl-metrik-ad">⚖️ ${c.agirlik}</span>`)
@@ -2243,6 +2265,13 @@ export function globalAracSayfasiBul(yol) {
   return null;
 }
 
+export const GLOBAL_AI_REHBER_YOLLARI = Object.freeze({
+  tr: '/rehber/meshy-vs-hi3d-3d-baski-maliyeti',
+  en: '/en/guides/meshy-vs-hi3d-3d-printing-cost',
+  fr: '/fr/guides/meshy-vs-hi3d-cout-impression-3d',
+  ja: '/ja/guides/meshy-vs-hi3d-3d-printing-cost',
+});
+
 /** Çok dilli alternatif haritası (TR + EN + FR + JA + x-default). */
 export function globalAracAlternatifHaritasi() {
   const ana = { ...ANA_YOL_HARITASI, 'x-default': '/' };
@@ -2252,6 +2281,7 @@ export function globalAracAlternatifHaritasi() {
   const ayarlar = { ...AYARLAR_YOL_HARITASI, 'x-default': GLOBAL_AYARLAR_YOLLARI.en };
   const katalog = { ...GLOBAL_KATALOG_YOLLARI, 'x-default': '/' + GLOBAL_KATALOG_YOLLARI.en.replace(/^\//, '') };
   const rehber = { ...GLOBAL_REHBER_YOLLARI, 'x-default': '/' + GLOBAL_REHBER_YOLLARI.en.replace(/^\//, '') };
+  const aiRehber = { ...GLOBAL_AI_REHBER_YOLLARI, 'x-default': GLOBAL_AI_REHBER_YOLLARI.en };
   return {
     '/': ana,
     '/en': ana,
@@ -2277,6 +2307,10 @@ export function globalAracAlternatifHaritasi() {
     '/en/guides': rehber,
     '/fr/guides': rehber,
     '/ja/guides': rehber,
+    '/rehber/meshy-vs-hi3d-3d-baski-maliyeti': aiRehber,
+    '/en/guides/meshy-vs-hi3d-3d-printing-cost': aiRehber,
+    '/fr/guides/meshy-vs-hi3d-cout-impression-3d': aiRehber,
+    '/ja/guides/meshy-vs-hi3d-3d-printing-cost': aiRehber,
     '/ayarlar.html': ayarlar,
     '/en/alerts': ayarlar,
     '/fr/alertes': ayarlar,

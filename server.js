@@ -62,8 +62,9 @@ import {
 import { ebayAccountDeletionChallenge, ebayYapilandirmasi } from './src/sites/ebay-api.js';
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
-  globalRehberDiziniHtml,
+  globalRehberDiziniHtml, globalAi3dRehberiHtml, globalRehberSitemapKayitlari,
 } from './src/rehberSayfalar.js';
+import { aiModelPartnerLinkleri } from './src/afiliye.js';
 import {
   globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
@@ -583,7 +584,7 @@ app.get('/sitemap-:dil.xml', (req, res, next) => {
     const taban = yayinKoku(req);
     const sayfalar = dil === 'tr'
       ? [...sitemapKayitlari(), ...rehberSitemapKayitlari()]
-      : [...globalAracSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil)];
+      : [...globalAracSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil)];
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(sitemapUrlSetXml(taban, sayfalar));
@@ -680,6 +681,23 @@ app.get(['/en/guides', '/fr/guides', '/ja/guides'], (req, res) => {
     res.send(globalRehberDiziniHtml(dil, yayinKoku(req), tumUrunler));
   } catch (e) {
     res.status(500).type('text/plain').send('Guides index generation failed');
+  }
+});
+
+app.get([
+  '/en/guides/meshy-vs-hi3d-3d-printing-cost',
+  '/fr/guides/meshy-vs-hi3d-cout-impression-3d',
+  '/ja/guides/meshy-vs-hi3d-3d-printing-cost',
+], (req, res) => {
+  try {
+    const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
+    const market = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'jp' : 'us');
+    const tumUrunler = seoUrunListesi({ market });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(globalAi3dRehberiHtml(dil, yayinKoku(req), tumUrunler));
+  } catch (e) {
+    res.status(500).type('text/plain').send('AI 3D print cost guide generation failed');
   }
 });
 
@@ -817,6 +835,22 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
         cikti = cikti.replace(
           '</head>',
           `  <link rel="canonical" href="${tamKok}${req.path}" />\n  <meta property="og:url" content="${tamKok}${req.path}" />${ekAlternates}\n</head>`,
+        );
+      }
+    }
+    if (req.path === '/maliyet.html') {
+      const aiLink = aiModelPartnerLinkleri();
+      const escAttr = (s) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      if (aiLink.meshyAfiliye) {
+        cikti = cikti.replace(
+          'href="https://www.meshy.ai" id="aiLinkMeshy" target="_blank" rel="noopener"',
+          `href="${escAttr(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="noopener sponsored"`,
+        );
+      }
+      if (aiLink.hi3dAfiliye) {
+        cikti = cikti.replace(
+          'href="https://www.hi3d.ai" id="aiLinkHi3d" target="_blank" rel="noopener"',
+          `href="${escAttr(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="noopener sponsored"`,
         );
       }
     }

@@ -578,3 +578,24 @@ export function tiklaOzet(gunSayisi = 30) {
   }
   return { gunSayisi: gunler.length, toplamTiklama: tumu, siteler: toplam };
 }
+
+/**
+ * Meshy & Hi3D 3D model üretim araçları için ortak link çözümleyici.
+ * `IMPACT_MESHY_URL` / `IMPACT_HI3D_URL` tanımlanırsa takip linkine döner;
+ * tanımlı değilse temiz doğrudan ürün URL'lerini verir.
+ */
+export function aiModelPartnerLinkleri() {
+  const guvenliUrl = (ham, varsayilan) => {
+    const s = String(ham || '').trim();
+    if (/^https?:\/\//i.test(s)) return { url: s, afiliye: true };
+    return { url: varsayilan, afiliye: false };
+  };
+  const meshy = guvenliUrl(process.env.IMPACT_MESHY_URL, 'https://www.meshy.ai');
+  const hi3d = guvenliUrl(process.env.IMPACT_HI3D_URL, 'https://www.hi3d.ai');
+  return {
+    meshyUrl: meshy.url,
+    hi3dUrl: hi3d.url,
+    meshyAfiliye: meshy.afiliye,
+    hi3dAfiliye: hi3d.afiliye,
+  };
+}
