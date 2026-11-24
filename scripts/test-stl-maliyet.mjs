@@ -321,6 +321,72 @@ kontrol('parseModel STL algılar', m5.tur === 'stl', m5.tur);
 const m6 = await parseModel(ucMfDeflate, { ad: 'uzantisiz' });
 kontrol('uzantısız 3MF magic byte ile algılanır', m6.tur === '3mf', m6.tur);
 
+// Data Descriptor (bit 3 = 0x0008 → yerel başlık boyutu 0) + Central Directory + çoklu .model (Bambu/Orca)
+function cokluZipYap(dosyalar) {
+  const yerelParcalar = [];
+  const cdParcalar = [];
+  let off = 0;
+  for (const d of dosyalar) {
+    const ham = Buffer.from(d.icerik, 'utf8');
+    const veri = deflateRawSync(ham);
+    const adBuf = Buffer.from(d.ad, 'utf8');
+    const crc = crc32(ham);
+
+    const lh = Buffer.alloc(30);
+    lh.writeUInt32LE(0x04034B50, 0);
+    lh.writeUInt16LE(20, 4);
+    lh.writeUInt16LE(0x0008, 6); // data descriptor bayrağı → yerel boyuta 0 yaz
+    lh.writeUInt16LE(8, 8);
+    lh.writeUInt32LE(0, 14);
+    lh.writeUInt32LE(0, 18);
+    lh.writeUInt32LE(0, 22);
+    lh.writeUInt16LE(adBuf.length, 26);
+    lh.writeUInt16LE(0, 28);
+
+    const dd = Buffer.alloc(16);
+    dd.writeUInt32LE(0x08074B50, 0);
+    dd.writeUInt32LE(crc, 4);
+    dd.writeUInt32LE(veri.length, 8);
+    dd.writeUInt32LE(ham.length, 12);
+
+    const cd = Buffer.alloc(46);
+    cd.writeUInt32LE(0x02014B50, 0);
+    cd.writeUInt16LE(20, 4);
+    cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(0x0008, 8);
+    cd.writeUInt16LE(8, 10);
+    cd.writeUInt32LE(crc, 16);
+    cd.writeUInt32LE(veri.length, 20);
+    cd.writeUInt32LE(ham.length, 24);
+    cd.writeUInt16LE(adBuf.length, 28);
+    cd.writeUInt32LE(off, 42);
+
+    yerelParcalar.push(lh, adBuf, veri, dd);
+    cdParcalar.push(cd, adBuf);
+    off += lh.length + adBuf.length + veri.length + dd.length;
+  }
+  const cdBuf = Buffer.concat(cdParcalar);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054B50, 0);
+  eocd.writeUInt16LE(dosyalar.length, 8);
+  eocd.writeUInt16LE(dosyalar.length, 10);
+  eocd.writeUInt32LE(cdBuf.length, 12);
+  eocd.writeUInt32LE(off, 16);
+  return Buffer.concat([...yerelParcalar, cdBuf, eocd]);
+}
+
+const anaComponentXml = '<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter"><resources><object id="1" type="model"><components><component p:path="/3D/Objects/object_1.model" objectid="2"/></components></object></resources><build><item objectid="1"/></build></model>';
+const altMeshXml = xml.replace(/<vertex x="([^"]+)" y="([^"]+)" z="([^"]+)"\/>/g, "<vertex z='$3' y='$2' x='$1'/>");
+const bambuTarzi3mf = cokluZipYap([
+  { ad: '[Content_Types].xml', icerik: '<Types/>' },
+  { ad: '3D/3dmodel.model', icerik: anaComponentXml },
+  { ad: '3D/Objects/object_1.model', icerik: altMeshXml },
+]);
+const m7 = await parseModel(bambuTarzi3mf, { ad: 'bambu-test.3mf' });
+kontrol('Data Descriptor + Central Directory + 3D/Objects/*.model 3MF tam ayrıştırılır',
+  m7.tur === '3mf' && m7.ucgenSayisi === 12 && yuzdeYakin(m7.hacimMm3, 8000, 0.1),
+  JSON.stringify(m7));
+
 /* ------------------------------------------------------------------ */
 bolum('6) 🛡️ Hata yönetimi');
 

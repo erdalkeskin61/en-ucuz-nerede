@@ -307,11 +307,70 @@ export function parseSTL(buffer, opts = {}) {
 /* 3MF (ZIP + XML)                                                     */
 /* ------------------------------------------------------------------ */
 
-/** ZIP yerel dosya başlığı imzası. */
+/** ZIP imzaları. */
 const ZIP_LOCAL = 0x04034b50;
+const ZIP_CD = 0x02014b50;
+const ZIP_EOCD = 0x06054b50;
 
-/** ArrayBuffer'da belirli bir imzayı arar (basit tarama). */
+/** Merkezi dizinden (Central Directory) tüm girişleri okur; data descriptor (boyut=0) destekler. */
+function zipMerkeziDizinGirisleri(bayt) {
+  const dv = new DataView(bayt.buffer, bayt.byteOffset, bayt.byteLength);
+  const enGeri = Math.max(0, bayt.byteLength - 65557);
+  let eocd = -1;
+  for (let p = bayt.byteLength - 22; p >= enGeri; p--) {
+    if (dv.getUint32(p, true) === ZIP_EOCD) {
+      const yorumUzunluk = dv.getUint16(p + 20, true);
+      if (p + 22 + yorumUzunluk <= bayt.byteLength) {
+        eocd = p;
+        break;
+      }
+    }
+  }
+  if (eocd < 0) return null;
+
+  const cdBoyut = dv.getUint32(eocd + 12, true);
+  const cdBas = dv.getUint32(eocd + 16, true);
+  if (cdBas + cdBoyut > eocd) return null;
+
+  const dec = new TextDecoder('utf-8');
+  const girisler = [];
+  let pos = cdBas;
+  while (pos + 46 <= cdBas + cdBoyut) {
+    if (dv.getUint32(pos, true) !== ZIP_CD) break;
+    const yontem = dv.getUint16(pos + 10, true);
+    const sikistirilmisBoyut = dv.getUint32(pos + 20, true);
+    const acilmisBoyut = dv.getUint32(pos + 24, true);
+    const adUzunluk = dv.getUint16(pos + 28, true);
+    const ekUzunluk = dv.getUint16(pos + 30, true);
+    const yorumUzunluk = dv.getUint16(pos + 32, true);
+    const yerelBas = dv.getUint32(pos + 42, true);
+
+    if (pos + 46 + adUzunluk > bayt.byteLength) break;
+    const ad = dec.decode(bayt.subarray(pos + 46, pos + 46 + adUzunluk));
+
+    if (yerelBas + 30 <= bayt.byteLength && dv.getUint32(yerelBas, true) === ZIP_LOCAL) {
+      const yAdUz = dv.getUint16(yerelBas + 26, true);
+      const yEkUz = dv.getUint16(yerelBas + 28, true);
+      const veriBas = yerelBas + 30 + yAdUz + yEkUz;
+      if (sikistirilmisBoyut >= 0 && veriBas + sikistirilmisBoyut <= bayt.byteLength) {
+        girisler.push({
+          ad,
+          yontem,
+          veri: bayt.subarray(veriBas, veriBas + sikistirilmisBoyut),
+          boyut: acilmisBoyut,
+        });
+      }
+    }
+    pos += 46 + adUzunluk + ekUzunluk + yorumUzunluk;
+  }
+  return girisler.length ? girisler : null;
+}
+
+/** ArrayBuffer'da girişleri okur (önce Merkezi Dizin, yoksa Yerel Başlık taraması). */
 function zipGirisleri(bayt) {
+  const merkezi = zipMerkeziDizinGirisleri(bayt);
+  if (merkezi) return merkezi;
+
   const girisler = [];
   const dv = new DataView(bayt.buffer, bayt.byteOffset, bayt.byteLength);
   let i = 0;
@@ -326,8 +385,6 @@ function zipGirisleri(bayt) {
     if (adBas + adUzunluk > bayt.byteLength) break;
     const ad = new TextDecoder('utf-8').decode(bayt.subarray(adBas, adBas + adUzunluk));
     const veriBas = adBas + adUzunluk + ekUzunluk;
-    // Boyutlar 0 ise (data descriptor) merkezi dizinden okumak gerekir; bu durumda
-    // girişi atlarız — 3MF yazıcıları boyutu başlıkta yazar.
     if (sikistirilmisBoyut > 0 && veriBas + sikistirilmisBoyut <= bayt.byteLength) {
       girisler.push({
         ad,
@@ -336,7 +393,7 @@ function zipGirisleri(bayt) {
         boyut: acilmisBoyut,
       });
     }
-    i = veriBas + sikistirilmisBoyut;
+    i = veriBas + (sikistirilmisBoyut > 0 ? sikistirilmisBoyut : 1);
   }
   return girisler;
 }
@@ -359,8 +416,94 @@ async function deflateAc(veri) {
   throw new Error('Bu tarayıcı 3MF sıkıştırmasını açamıyor (DecompressionStream yok).');
 }
 
+async function zipGirisMetniAc(giris) {
+  let ham;
+  if (giris.yontem === 0) {
+    ham = giris.veri;
+  } else if (giris.yontem === 8) {
+    ham = await deflateAc(giris.veri);
+  } else {
+    throw new Error('Desteklenmeyen 3MF sıkıştırma yöntemi (' + giris.yontem + ').');
+  }
+  return new TextDecoder('utf-8').decode(ham);
+}
+
+/** Tek bir .model XML parçasından köşe/üçgen/bbox/hacim ham verisini okur. */
+function modelXmlHamOku(xml) {
+  const birimM = xml.match(/<model[^>]*\bunit\s*=\s*["']([^"']+)["']/i);
+  const birim = (birimM?.[1] || 'millimeter').toLowerCase();
+  const olcek = birim === 'inch' ? 25.4
+    : birim === 'centimeter' ? 10
+      : birim === 'meter' ? 1000
+        : birim === 'micron' ? 0.001
+          : 1;
+
+  const VERTEX_TAG = /<vertex\s+([^>]+?)\/?\s*>/gi;
+  const X_ATTR = /\bx\s*=\s*["']([^"']+)["']/i;
+  const Y_ATTR = /\by\s*=\s*["']([^"']+)["']/i;
+  const Z_ATTR = /\bz\s*=\s*["']([^"']+)["']/i;
+  const koordinat = [];
+  let m;
+  while ((m = VERTEX_TAG.exec(xml)) !== null) {
+    const attrs = m[1];
+    const x = Number(X_ATTR.exec(attrs)?.[1]) * olcek;
+    const y = Number(Y_ATTR.exec(attrs)?.[1]) * olcek;
+    const z = Number(Z_ATTR.exec(attrs)?.[1]) * olcek;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+    koordinat.push(x, y, z);
+  }
+
+  const TRI_TAG = /<triangle\s+([^>]+?)\/?\s*>/gi;
+  const V1_ATTR = /\bv1\s*=\s*["'](\d+)["']/i;
+  const V2_ATTR = /\bv2\s*=\s*["'](\d+)["']/i;
+  const V3_ATTR = /\bv3\s*=\s*["'](\d+)["']/i;
+  let hacim6 = 0;
+  let ucgenSayisi = 0;
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  const koseSayisi = koordinat.length / 3;
+  if (koseSayisi > 0) {
+    while ((m = TRI_TAG.exec(xml)) !== null) {
+      const attrs = m[1];
+      const i1 = Number(V1_ATTR.exec(attrs)?.[1]);
+      const i2 = Number(V2_ATTR.exec(attrs)?.[1]);
+      const i3 = Number(V3_ATTR.exec(attrs)?.[1]);
+      if (!Number.isInteger(i1) || !Number.isInteger(i2) || !Number.isInteger(i3)) continue;
+      if (i1 >= koseSayisi || i2 >= koseSayisi || i3 >= koseSayisi) continue;
+
+      const ax = koordinat[i1 * 3], ay = koordinat[i1 * 3 + 1], az = koordinat[i1 * 3 + 2];
+      const bx = koordinat[i2 * 3], by = koordinat[i2 * 3 + 1], bz = koordinat[i2 * 3 + 2];
+      const cx = koordinat[i3 * 3], cy = koordinat[i3 * 3 + 1], cz = koordinat[i3 * 3 + 2];
+
+      if (ax < minX) minX = ax; if (ax > maxX) maxX = ax;
+      if (ay < minY) minY = ay; if (ay > maxY) maxY = ay;
+      if (az < minZ) minZ = az; if (az > maxZ) maxZ = az;
+      if (bx < minX) minX = bx; if (bx > maxX) maxX = bx;
+      if (by < minY) minY = by; if (by > maxY) maxY = by;
+      if (bz < minZ) minZ = bz; if (bz > maxZ) maxZ = bz;
+      if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+      if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+      if (cz < minZ) minZ = cz; if (cz > maxZ) maxZ = cz;
+
+      hacim6 += ax * (by * cz - bz * cy)
+        - ay * (bx * cz - bz * cx)
+        + az * (bx * cy - by * cx);
+      ucgenSayisi++;
+    }
+  }
+
+  return {
+    birim,
+    koseSayisi,
+    ucgenSayisi,
+    hacimMm3: Math.abs(hacim6) / 6,
+    minX, minY, minZ, maxX, maxY, maxZ,
+  };
+}
+
 /**
- * 3MF dosyasını ayrıştırır (ZIP içindeki 3D/3dmodel.model XML'i).
+ * 3MF dosyasını ayrıştırır (ZIP içindeki 3D/3dmodel.model ve Bambu/Orca alt .model dosyaları).
  *
  * @param {ArrayBuffer|Uint8Array} buffer
  * @param {{ad?:string}} [opts]
@@ -374,104 +517,59 @@ export async function parse3MF(buffer, opts = {}) {
   }
 
   const girisler = zipGirisleri(bayt);
-  // Model dosyası: 3D/3dmodel.model (küçük/büyük harf farkı tolere edilir)
-  const modelGirisi = girisler.find(g => /(^|\/)3dmodel\.model$/i.test(g.ad))
-    || girisler.find(g => /\.model$/i.test(g.ad));
-
-  if (!modelGirisi) {
+  const modelGirisleri = girisler.filter(g => /\.model$/i.test(g.ad));
+  if (!modelGirisleri.length) {
     throw new Error('3MF içinde model dosyası (3D/3dmodel.model) bulunamadı.');
   }
 
-  let ham;
-  if (modelGirisi.yontem === 0) {
-    ham = modelGirisi.veri; // sıkıştırılmamış
-  } else if (modelGirisi.yontem === 8) {
-    ham = await deflateAc(modelGirisi.veri);
-  } else {
-    throw new Error('Desteklenmeyen 3MF sıkıştırma yöntemi (' + modelGirisi.yontem + ').');
+  const anaGiris = modelGirisleri.find(g => /(^|\/)3dmodel\.model$/i.test(g.ad)) || modelGirisleri[0];
+  const anaXml = await zipGirisMetniAc(anaGiris);
+  const anaOku = modelXmlHamOku(anaXml);
+
+  // Bambu Studio / OrcaSlicer / PrusaSlicer 3MF'leri geometriyi 3D/Objects/*.model içinde tutar.
+  const parcalar = [];
+  if (anaOku.ucgenSayisi > 0) parcalar.push(anaOku);
+  const altModeller = modelGirisleri.filter(g => g !== anaGiris);
+  if (!parcalar.length || altModeller.length) {
+    for (const altGiris of altModeller) {
+      const altXml = await zipGirisMetniAc(altGiris);
+      const altOku = modelXmlHamOku(altXml);
+      if (altOku.ucgenSayisi > 0) parcalar.push(altOku);
+    }
   }
 
-  const xml = new TextDecoder('utf-8').decode(ham);
-  return modelXmlOku(xml, opts);
-}
-
-/** 3MF model XML'inden hacim + bbox çıkarır. */
-function modelXmlOku(xml, opts = {}) {
-  // Birim: <model unit="millimeter"> (varsayılan millimeter)
-  const birimM = xml.match(/<model[^>]*\bunit\s*=\s*"([^"]+)"/i);
-  const birim = (birimM?.[1] || 'millimeter').toLowerCase();
-  const olcek = birim === 'inch' ? 25.4
-    : birim === 'centimeter' ? 10
-      : birim === 'meter' ? 1000
-        : birim === 'micron' ? 0.001
-          : 1;
-
-  // Köşe noktaları
-  const xs = [];
-  const ys = [];
-  const zs = [];
-  const VERTEX = /<vertex\s+[^>]*?\bx\s*=\s*"([^"]+)"[^>]*?\by\s*=\s*"([^"]+)"[^>]*?\bz\s*=\s*"([^"]+)"[^>]*?\/?>/gi;
-  let m;
-  const koordinat = [];
-  while ((m = VERTEX.exec(xml)) !== null) {
-    const x = Number(m[1]) * olcek;
-    const y = Number(m[2]) * olcek;
-    const z = Number(m[3]) * olcek;
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-    koordinat.push(x, y, z);
-  }
-  if (!koordinat.length) {
-    throw new Error('3MF modelinde köşe noktası (vertex) bulunamadı.');
+  if (!parcalar.length) {
+    if (!anaOku.koseSayisi) throw new Error('3MF modelinde köşe noktası (vertex) bulunamadı.');
+    throw new Error('3MF modelinde üçgen bulunamadı.');
   }
 
-  // Üçgenler
-  const TRI = /<triangle\s+[^>]*?\bv1\s*=\s*"(\d+)"[^>]*?\bv2\s*=\s*"(\d+)"[^>]*?\bv3\s*=\s*"(\d+)"[^>]*?\/?>/gi;
-  let hacim6 = 0;
-  let ucgenSayisi = 0;
+  let toplamUcgen = 0;
+  let toplamHacim = 0;
   let minX = Infinity, minY = Infinity, minZ = Infinity;
   let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-
-  const koseSayisi = koordinat.length / 3;
-  while ((m = TRI.exec(xml)) !== null) {
-    const i1 = Number(m[1]);
-    const i2 = Number(m[2]);
-    const i3 = Number(m[3]);
-    if (i1 >= koseSayisi || i2 >= koseSayisi || i3 >= koseSayisi) continue;
-
-    const ax = koordinat[i1 * 3], ay = koordinat[i1 * 3 + 1], az = koordinat[i1 * 3 + 2];
-    const bx = koordinat[i2 * 3], by = koordinat[i2 * 3 + 1], bz = koordinat[i2 * 3 + 2];
-    const cx = koordinat[i3 * 3], cy = koordinat[i3 * 3 + 1], cz = koordinat[i3 * 3 + 2];
-
-    if (ax < minX) minX = ax; if (ax > maxX) maxX = ax;
-    if (ay < minY) minY = ay; if (ay > maxY) maxY = ay;
-    if (az < minZ) minZ = az; if (az > maxZ) maxZ = az;
-    if (bx < minX) minX = bx; if (bx > maxX) maxX = bx;
-    if (by < minY) minY = by; if (by > maxY) maxY = by;
-    if (bz < minZ) minZ = bz; if (bz > maxZ) maxZ = bz;
-    if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
-    if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
-    if (cz < minZ) minZ = cz; if (cz > maxZ) maxZ = cz;
-
-    hacim6 += ax * (by * cz - bz * cy)
-      - ay * (bx * cz - bz * cx)
-      + az * (bx * cy - by * cx);
-    ucgenSayisi++;
+  for (const p of parcalar) {
+    toplamUcgen += p.ucgenSayisi;
+    toplamHacim += p.hacimMm3;
+    if (p.minX < minX) minX = p.minX;
+    if (p.minY < minY) minY = p.minY;
+    if (p.minZ < minZ) minZ = p.minZ;
+    if (p.maxX > maxX) maxX = p.maxX;
+    if (p.maxY > maxY) maxY = p.maxY;
+    if (p.maxZ > maxZ) maxZ = p.maxZ;
   }
 
-  if (!ucgenSayisi) throw new Error('3MF modelinde üçgen bulunamadı.');
-  const hacimMm3 = Math.abs(hacim6) / 6;
-  if (!(hacimMm3 > 0)) throw new Error('3MF hacmi hesaplanamadı (bozuk mesh).');
+  if (!(toplamHacim > 0)) throw new Error('3MF hacmi hesaplanamadı (bozuk mesh).');
 
   return {
     tur: '3mf',
     format: '3mf',
     dosyaAdi: opts.ad || null,
-    ucgenSayisi,
-    hacimMm3,
-    hacimCm3: hacimMm3 / 1000,
+    ucgenSayisi: toplamUcgen,
+    hacimMm3: toplamHacim,
+    hacimCm3: toplamHacim / 1000,
     boyutlar: { genislik: maxX - minX, derinlik: maxY - minY, yukseklik: maxZ - minZ },
     bbox: { minX, minY, minZ, maxX, maxY, maxZ },
-    birim,
+    birim: parcalar[0].birim,
   };
 }
 
