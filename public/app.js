@@ -798,6 +798,87 @@ function stokSirala(liste) {
 
 let sonSonuc = null;
 let aktifIs = null;
+let karsilastirmaIstekSeq = 0;
+let fiyatGrafikIstekSeq = 0;
+let fiyatGrafikAbortCtrl = null;
+let muadilIstekSeq = 0;
+let sonCizilenUrunAnahtari = '';
+
+/**
+ * Arka arkaya canlı aramalarda önceki aramaya ait alt panellerin (#muadilAlani,
+ * #fiyatGecmisiAlani, #bentoOzet vb.) yeni sonuç ekranında görünmesini önler.
+ */
+function sonucPanelleriniSifirla() {
+  fiyatGrafikIstekSeq++;
+  if (fiyatGrafikAbortCtrl) {
+    try { fiyatGrafikAbortCtrl.abort(); } catch { /* yoksay */ }
+    fiyatGrafikAbortCtrl = null;
+  }
+  if (typeof muadilIptalEt === 'function') muadilIptalEt();
+  else muadilIstekSeq++;
+  if (typeof muadilSonuc !== 'undefined') muadilSonuc = null;
+  if (typeof chartInstance !== 'undefined' && chartInstance) {
+    try { chartInstance.destroy(); } catch { /* yoksay */ }
+    chartInstance = null;
+  }
+  if (typeof sonTimeline !== 'undefined') sonTimeline = null;
+  if (typeof sonBentoSeri !== 'undefined') sonBentoSeri = null;
+  if (typeof sonBentoVerisi !== 'undefined') sonBentoVerisi = null;
+  if (typeof lastAppFingerprint !== 'undefined') lastAppFingerprint = '';
+  if (typeof muhurYasi !== 'undefined') muhurYasi = null;
+  sonSonuc = null;
+  sonCizilenUrunAnahtari = '';
+
+  const gizleVeBosalt = (secici, altTemizlik) => {
+    const el = $(secici);
+    if (!el) return;
+    el.hidden = true;
+    if (altTemizlik) altTemizlik(el);
+  };
+
+  gizleVeBosalt('#sonucAlani');
+  gizleVeBosalt('#bentoOzet', el => { el.innerHTML = ''; });
+  gizleVeBosalt('#tasarrufVurguBanti', () => {
+    const t = $('#tasarrufVurguTutar'); if (t) t.innerHTML = '';
+    const d = $('#tasarrufVurguDetay'); if (d) d.textContent = '';
+  });
+  gizleVeBosalt('#fiyatZekaAlani', () => {
+    const ist = $('#fiyatZekaIstatistik'); if (ist) ist.innerHTML = '';
+    const m = $('#fiyatZekaMesaj'); if (m) { m.textContent = ''; m.hidden = true; }
+    const bar = $('#fiyatZekaBarDolgu'); if (bar) bar.style.width = '0%';
+  });
+  gizleVeBosalt('#birimAlani', () => {
+    const b = $('#birimIcerik'); if (b) b.innerHTML = '';
+  });
+  gizleVeBosalt('#nedenUcuzAlani', () => {
+    const n = $('#nedenUcuzMetin'); if (n) n.textContent = '';
+  });
+  gizleVeBosalt('#muadilAlani', () => {
+    const m = $('#muadilIcerik'); if (m) m.innerHTML = '';
+    const bas = $('#muadilBaslik'); if (bas) bas.textContent = '';
+    const ac = $('#muadilAciklama'); if (ac) ac.textContent = '';
+    const btn = $('#muadilYenileBtn'); if (btn) { btn.disabled = false; }
+  });
+  gizleVeBosalt('#fiyatGecmisiAlani', () => {
+    const n = $('#fiyatGecmisNotu'); if (n) { n.hidden = true; n.textContent = ''; }
+    const oz = $('#fiyatTrendOzetMetin'); if (oz) oz.textContent = '';
+    const rz = $('#fiyatTavsiyeRozeti'); if (rz) rz.textContent = '';
+    for (const id of ['#istatistikEnDusuk', '#istatistikOrtalama', '#istatistikEnYuksek', '#istatistikFark', '#istatistikIndirimOrani']) {
+      const k = $(id);
+      if (k) k.textContent = '—';
+    }
+  });
+  gizleVeBosalt('#filtreBar', () => {
+    const c = $('#capFiltreleri'); if (c) c.innerHTML = '';
+    const h = $('#hammaddeFiltreleri'); if (h) h.innerHTML = '';
+  });
+
+  const kartlar = $('#kartlar'); if (kartlar) kartlar.innerHTML = '';
+  const tbody = $('#ozetTablo tbody'); if (tbody) tbody.innerHTML = '';
+  const kb = $('#kaynakBaslik'); if (kb) kb.textContent = '';
+  const kbil = $('#kaynakBilgi'); if (kbil) kbil.innerHTML = '';
+  const ok = $('#ozetKutu'); if (ok) ok.innerHTML = '';
+}
 
 // İptal butonu (2026-10-27): tarama sürerken kalan siteleri durdurur.
 // Buton HTML'de her zaman var; yalnız durum alanı görünürken işe yarar.
@@ -2403,12 +2484,27 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
   clearTimeout(oneriTimer);
   oneriIstegeSayaci++;
   onerileriKapat();
+  const buIstek = ++karsilastirmaIstekSeq;
+  if (aktifIs) {
+    const oncekiIs = aktifIs;
+    aktifIs = null;
+    try { fetch('/api/compare/' + encodeURIComponent(oncekiIs) + '/iptal', { method: 'POST' }).catch(() => {}); } catch { /* yoksay */ }
+  }
+  if (typeof appRenderFrame !== 'undefined' && appRenderFrame) {
+    cancelAnimationFrame(appRenderFrame);
+    appRenderFrame = null;
+  }
+  if (typeof anlikMod !== 'undefined') anlikMod = false;
+  if (typeof anlikSurum !== 'undefined') anlikSurum = 0;
+
   let url = $('#urunUrl').value.trim();
   $('#hata').hidden = true;
   $('#sonAramaNotu').hidden = true;
   sifirdanTaraButonunuGoster(false);
   // Önceki aramaların açık SSE bağlantılarını kapat (2026-10-29)
   tumAkislariKapat();
+  // Önceki aramanın stok yok / muadil / 30 günlük trend panellerini anında temizle
+  sonucPanelleriniSifirla();
   if (!url) return;
 
   /* ---- 🔗 Akıllı Niyet Yönlendirici (2026-11-13) ----
@@ -2477,7 +2573,7 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
 
   $('#araBtn').disabled = true;
   $('#araBtn').textContent = DIL_KOPYA_YEREL.araniyor;
-  $('#sonucAlani').hidden = true;
+  sonucPanelleriniSifirla();
   $('#durumAlani').hidden = false;
   // 📍 Link araması başladı: kullanıcıyı anında tarama durumuna ve mağaza
   // çiplerine kaydır. 60 ms gecikme, tarayıcının `hidden = false` sonrası
@@ -2523,6 +2619,7 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       body: JSON.stringify(govde),
     });
     const data = await guvenliJson(res);
+    if (buIstek !== karsilastirmaIstekSeq) return;
     if (!res.ok) throw new Error(data.hata || 'İstek başarısız');
     aktifIs = data.isId;
     try {
@@ -2546,6 +2643,7 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       sonSonuc = onbellekSonuc;
       $('#durumAlani').hidden = true;
       zamanlaCiz(() => {
+        if (buIstek !== karsilastirmaIstekSeq) return;
         // 2026-11-12: önbellekten gelen sonuçta mührün "X dk önce" demesi için
         // sunucunun yaş metni iletilir (bayat veri şüphesini kapatır).
         sonucGoster(onbellekSonuc, { kaydir: true, yasMetni: data.yasMetni || null });
@@ -2558,8 +2656,10 @@ $('#karsilastirForm').addEventListener('submit', async (e) => {
       });
     }
 
+    if (buIstek !== karsilastirmaIstekSeq) return;
     karsilastirmaIzle(data.isId);
   } catch (err) {
+    if (buIstek !== karsilastirmaIstekSeq) return;
     hataGoster(err.message);
   }
 });
@@ -2587,6 +2687,7 @@ function hataGoster(mesaj, tur = 'genel') {
   $('#araBtn').disabled = false;
   $('#araBtn').textContent = MOD_BUTON[aramaModu] || 'Fiyatları Bul';
   $('#durumAlani').hidden = true;
+  sonucPanelleriniSifirla();
   // İskeletleri temizle (hata durumunda boş iskelet kalmasın).
   const iskelet = document.querySelector('.skeleton-izgara');
   if (iskelet) iskelet.hidden = true;
@@ -3825,6 +3926,32 @@ function sonucGoster(sonuc, opts = {}) {
   $('#takipMesaj').textContent = '';
 
   const k = sonuc.kaynak || { site: 'kaynak', urun: CANLI_YEREL.bulunamadiVarsayilan };
+  const yeniUrunAnahtari = [k.site, k.modelKodu, k.barkod, k.urun].filter(Boolean).join('|');
+  const urunDegisti = !!(sonCizilenUrunAnahtari && yeniUrunAnahtari && sonCizilenUrunAnahtari !== yeniUrunAnahtari);
+  sonCizilenUrunAnahtari = yeniUrunAnahtari || sonCizilenUrunAnahtari;
+  if (opts.canli === true || urunDegisti) {
+    // Canlı kısmi güncellemelerde veya ürün değiştiğinde önceki aramaya ait
+    // muadil/trend panelleri asla görünür kalmasın.
+    if (urunDegisti) {
+      fiyatGrafikIstekSeq++;
+      if (fiyatGrafikAbortCtrl) { try { fiyatGrafikAbortCtrl.abort(); } catch { /* yoksay */ } fiyatGrafikAbortCtrl = null; }
+      muadilIptalEt();
+      if (chartInstance) { try { chartInstance.destroy(); } catch { /* yoksay */ } chartInstance = null; }
+      sonTimeline = null;
+    }
+    const mEl = $('#muadilAlani');
+    if (mEl) {
+      mEl.hidden = true;
+      if (urunDegisti) { const mi = $('#muadilIcerik'); if (mi) mi.innerHTML = ''; }
+    }
+    const gEl = $('#fiyatGecmisiAlani');
+    if (gEl) {
+      gEl.hidden = true;
+      if (urunDegisti) {
+        const gn = $('#fiyatGecmisNotu'); if (gn) { gn.hidden = true; gn.textContent = ''; }
+      }
+    }
+  }
   $('#kaynakBaslik').textContent = k.urun || CANLI_YEREL.sonucEtiketi;
   $('#kaynakBilgi').innerHTML = [
     `${CANLI_YEREL.kaynakEtiketi}: <b>${SITE_ADLARI[k.site] || k.site || CANLI_YEREL.belirtilmedi}</b>`,
@@ -4336,6 +4463,7 @@ function muadilPaneliHazirla(sonuc, opts = {}) {
 }
 
 function muadilIptalEt() {
+  muadilIstekSeq++;
   if (muadilPollTimer) { clearTimeout(muadilPollTimer); muadilPollTimer = null; }
   if (muadilAktifIs) {
     try {
@@ -4348,6 +4476,7 @@ function muadilIptalEt() {
 async function muadilAra(elle = true) {
   if (!muadilSonuc) return;
   muadilIptalEt();
+  const buMuadilIstek = muadilIstekSeq;
   const icerik = $('#muadilIcerik');
   const btn = $('#muadilYenileBtn');
   $('#muadilAlani').hidden = false;
@@ -4362,27 +4491,30 @@ async function muadilAra(elle = true) {
       body: JSON.stringify({ sonuc: muadilSonuc, elle }),
     });
     const d = await guvenliJson(res);
+    if (buMuadilIstek !== muadilIstekSeq) return;
     if (!res.ok) throw new Error(d.hata || CANLI_YEREL.muadilHataBaslatilamadi);
     muadilAktifIs = d.isId || d.id;
-    muadilPoll(muadilAktifIs);
+    muadilPoll(muadilAktifIs, buMuadilIstek);
   } catch (e) {
+    if (buMuadilIstek !== muadilIstekSeq) return;
     icerik.innerHTML = `<p class="muadil-uyari">${esc(e.message)}</p>`;
     btn.disabled = false;
     btn.textContent = CANLI_YEREL.muadilAra;
   }
 }
 
-function muadilPoll(id) {
+function muadilPoll(id, buMuadilIstek = muadilIstekSeq) {
   const bekle = (ms) => new Promise(r => { muadilPollTimer = setTimeout(r, ms); });
   (async () => {
     const basladi = Date.now();
     while (Date.now() - basladi < 240000) {
       await bekle(1500);
-      if (muadilAktifIs !== id) return; // iptal edildi / yeni arama
+      if (buMuadilIstek !== muadilIstekSeq || muadilAktifIs !== id) return; // iptal edildi / yeni arama
       let j;
       try {
         j = await guvenliJson(await fetch('/api/muadil/' + id));
       } catch { continue; }
+      if (buMuadilIstek !== muadilIstekSeq || muadilAktifIs !== id) return;
       const icerik = $('#muadilIcerik');
       if (j.status === 'running') {
         const p = j.progress || {};
@@ -4392,18 +4524,19 @@ function muadilPoll(id) {
       muadilAktifIs = null;
       const btn = $('#muadilYenileBtn');
       btn.disabled = false;
-      btn.textContent = 'Yeniden ara';
+      btn.textContent = CANLI_YEREL.muadilAra;
       if (j.status === 'error') {
-        icerik.innerHTML = `<p class="muadil-uyari">Muadil bulunamadı: ${esc(j.error || 'bilinmeyen hata')}</p>`;
+        icerik.innerHTML = `<p class="muadil-uyari">${esc(j.error || 'Error')}</p>`;
         return;
       }
       muadilCiz(j.result);
       return;
     }
-    $('#muadilIcerik').innerHTML = '<p class="muadil-uyari">Muadil araması zaman aşımına uğradı.</p>';
+    if (buMuadilIstek !== muadilIstekSeq) return;
+    $('#muadilIcerik').innerHTML = `<p class="muadil-uyari">${esc(CANLI_YEREL.muadilHataBaslatilamadi)}</p>`;
     const btn = $('#muadilYenileBtn');
     btn.disabled = false;
-    btn.textContent = 'Yeniden ara';
+    btn.textContent = CANLI_YEREL.muadilAra;
   })();
 }
 
@@ -5551,6 +5684,13 @@ async function fiyatGrafiginiYukle(sonuc) {
   const panel = $("#fiyatGecmisiAlani");
   if (!panel || !sonuc) return;
 
+  const istekId = ++fiyatGrafikIstekSeq;
+  if (fiyatGrafikAbortCtrl) {
+    try { fiyatGrafikAbortCtrl.abort(); } catch { /* yoksay */ }
+  }
+  const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  fiyatGrafikAbortCtrl = ac;
+
   const k = sonuc.kaynak || {};
   const found = (sonuc.sonuclar || []).filter(r => r.status === "found" && r.product?.pricing);
 
@@ -5561,6 +5701,7 @@ async function fiyatGrafiginiYukle(sonuc) {
   const rozet = $("#fiyatTavsiyeRozeti");
 
   const yetersizGoster = (metin) => {
+    if (istekId !== fiyatGrafikIstekSeq) return;
     panel.hidden = false;
     sonBentoSeri = null;
     if (istGrid) istGrid.hidden = true;
@@ -5590,7 +5731,7 @@ async function fiyatGrafiginiYukle(sonuc) {
   const curMin = currentPrices.length ? Math.min(...currentPrices) : null;
 
   try {
-    const res = await fetch("/api/price-history", {
+    const fetchOpts = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -5598,9 +5739,13 @@ async function fiyatGrafiginiYukle(sonuc) {
         currentPrice: curMin,
         currentItems: found
       })
-    });
+    };
+    if (ac) fetchOpts.signal = ac.signal;
+    const res = await fetch("/api/price-history", fetchOpts);
+    if (istekId !== fiyatGrafikIstekSeq) return;
     if (!res.ok) { panel.hidden = true; return; }
     const data = await res.json();
+    if (istekId !== fiyatGrafikIstekSeq) return;
     if (!data) { panel.hidden = true; return; }
 
     // Geçmiş yok: UYDURMA GRAFİK ÇİZİLMEZ, dürüst açıklama gösterilir.
@@ -5671,6 +5816,7 @@ async function fiyatGrafiginiYukle(sonuc) {
     try { bentoSparklineCiz(data.timeline); } catch { /* yoksay */ }
     cizFiyatGrafigi(data.timeline);
   } catch (err) {
+    if (err?.name === 'AbortError' || istekId !== fiyatGrafikIstekSeq) return;
     console.warn("Fiyat grafiği yüklenemedi:", err);
     panel.hidden = true;
   }

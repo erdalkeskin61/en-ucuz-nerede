@@ -799,6 +799,95 @@ kontrol('app.js canlı rendering yollarında sabit Türkçe kalıntı kalmamış
   && !/>🔌 Sitene Ekle<\/button>/.test(appJsKod)
   && i18nGlobalKod.includes('Son (\\d+) gün fiyat trendi'));
 
+console.log('\n21) 🔄 Arka arkaya canlı aramalarda eski durumun temizlenmesi (stok yok / trend izolasyonu):');
+kontrol('app.js yeni aramada sonucPanelleriniSifirla, AbortController ve istek sıra sayaçları kullanır',
+  appJsKod.includes('function sonucPanelleriniSifirla()')
+  && appJsKod.includes('sonucPanelleriniSifirla();')
+  && appJsKod.includes('let fiyatGrafikIstekSeq = 0;')
+  && appJsKod.includes('let muadilIstekSeq = 0;')
+  && appJsKod.includes('let karsilastirmaIstekSeq = 0;')
+  && appJsKod.includes('if (opts.canli === true || urunDegisti)')
+  && appJsKod.includes('if (buMuadilIstek !== muadilIstekSeq || muadilAktifIs !== id) return;')
+  && appJsKod.includes('if (err?.name === \'AbortError\' || istekId !== fiyatGrafikIstekSeq) return;'));
+
+const sifirlaMatch = appJsKod.match(/function sonucPanelleriniSifirla\(\) \{[\s\S]*?\n\}/);
+kontrol('sonucPanelleriniSifirla() tüm eski alt panelleri gizler, DOM içeriklerini temizler ve grafiği yok eder', !!sifirlaMatch);
+if (sifirlaMatch) {
+  let yokEdildi = false;
+  const domMock = new Map([
+    ['#sonucAlani', { hidden: false }],
+    ['#bentoOzet', { hidden: false, innerHTML: '<div>Creality K1C</div>' }],
+    ['#tasarrufVurguBanti', { hidden: false }],
+    ['#tasarrufVurguTutar', { innerHTML: 'Save $50' }],
+    ['#tasarrufVurguDetay', { textContent: 'old detail' }],
+    ['#fiyatZekaAlani', { hidden: false }],
+    ['#fiyatZekaIstatistik', { innerHTML: 'old' }],
+    ['#fiyatZekaMesaj', { hidden: false, textContent: 'old' }],
+    ['#fiyatZekaBarDolgu', { style: { width: '75%' } }],
+    ['#birimAlani', { hidden: false }],
+    ['#birimIcerik', { innerHTML: 'old' }],
+    ['#nedenUcuzAlani', { hidden: false }],
+    ['#nedenUcuzMetin', { textContent: 'old' }],
+    ['#muadilAlani', { hidden: false }],
+    ['#muadilIcerik', { innerHTML: '<div>old muadil</div>' }],
+    ['#muadilBaslik', { textContent: 'This product is out of stock' }],
+    ['#muadilAciklama', { textContent: 'All 1 stores appear out of stock' }],
+    ['#muadilYenileBtn', { disabled: true }],
+    ['#fiyatGecmisiAlani', { hidden: false }],
+    ['#fiyatGecmisNotu', { hidden: false, textContent: 'old trend note' }],
+    ['#fiyatTrendOzetMetin', { textContent: 'Last 30 days' }],
+    ['#fiyatTavsiyeRozeti', { textContent: '🔥 At Lowest Level' }],
+    ['#istatistikEnDusuk', { textContent: '$499.00' }],
+    ['#istatistikOrtalama', { textContent: '$499.00' }],
+    ['#istatistikEnYuksek', { textContent: '$499.00' }],
+    ['#istatistikFark', { textContent: 'At average' }],
+    ['#istatistikIndirimOrani', { textContent: '0%' }],
+    ['#filtreBar', { hidden: false }],
+    ['#capFiltreleri', { innerHTML: 'old' }],
+    ['#hammaddeFiltreleri', { innerHTML: 'old' }],
+    ['#kartlar', { innerHTML: '<div class="urun-karti">Creality K1C</div>' }],
+    ['#ozetTablo tbody', { innerHTML: '<tr><td>old</td></tr>' }],
+    ['#kaynakBaslik', { textContent: 'Creality K1C' }],
+    ['#kaynakBilgi', { innerHTML: 'old' }],
+    ['#ozetKutu', { innerHTML: '$499.00' }],
+  ]);
+  let aborted = false;
+  let muadilCancelled = false;
+  const ctxSim = vm.runInNewContext(`
+    let fiyatGrafikIstekSeq = 0;
+    let fiyatGrafikAbortCtrl = { abort() { aborted = true; } };
+    let muadilIstekSeq = 0;
+    let muadilSonuc = { kaynak: { urun: 'Creality K1C' } };
+    let chartInstance = { destroy() { yokEdildi = true; } };
+    let sonTimeline = [1, 2];
+    let sonBentoSeri = [1, 2];
+    let sonBentoVerisi = { enUcuz: {} };
+    let lastAppFingerprint = 'fp1';
+    let muhurYasi = '5m ago';
+    let sonSonuc = { kaynak: { urun: 'Creality K1C' } };
+    let sonCizilenUrunAnahtari = 'creality_us|Creality K1C';
+    function muadilIptalEt() { muadilCancelled = true; muadilIstekSeq++; }
+    function $(s) { return domMock.get(s) || null; }
+    ${sifirlaMatch[0]}
+    sonucPanelleriniSifirla();
+    ({ fiyatGrafikIstekSeq, muadilIstekSeq, aborted, muadilCancelled, yokEdildi, sonSonuc, sonTimeline, sonBentoSeri, chartInstance, sonCizilenUrunAnahtari });
+  `, { domMock, aborted: false, muadilCancelled: false, yokEdildi: false });
+
+  kontrol('Arka arkaya arama başlangıcında K1C $499 trend, muadil, kartlar ve chart temizlenir',
+    domMock.get('#muadilAlani').hidden === true
+    && domMock.get('#muadilBaslik').textContent === ''
+    && domMock.get('#muadilIcerik').innerHTML === ''
+    && domMock.get('#fiyatGecmisiAlani').hidden === true
+    && domMock.get('#istatistikEnDusuk').textContent === '—'
+    && domMock.get('#kartlar').innerHTML === ''
+    && domMock.get('#sonucAlani').hidden === true
+    && ctxSim.fiyatGrafikIstekSeq === 1
+    && ctxSim.muadilIstekSeq === 1
+    && ctxSim.sonSonuc === null
+    && ctxSim.sonCizilenUrunAnahtari === ''
+    && ctxSim.chartInstance === null);
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
