@@ -6,6 +6,9 @@
  * 65W GaN şarj aleti. Üç mağaza, farklı kargo eşikleri.
  */
 import { senaryolariHesapla, gruplariOlustur, kargoKurus } from '../src/basketOptimizer.js';
+import { PAKETLER, paketCoz } from '../public/sepetHesap.js';
+import { enUcuzFilamentler } from '../src/baskiApi.js';
+import { dbBaglantisi, closeDatabase } from '../src/store.js';
 
 let gecen = 0, toplam = 0;
 function kontrol(ad, kosul, ek = '') {
@@ -133,6 +136,61 @@ const kucuk = senaryolariHesapla([
 ]);
 kontrol('eşik aşılmıyorsa toplam 300+50=350', Math.abs(kucuk.senaryolar.tekMagaza.toplam - 350) < 0.01,
   String(kucuk.senaryolar.tekMagaza.toplam));
+
+/* ---------------- 5) EN / FR / JA Hazır Filament Paketleri ---------------- */
+{
+  const db = dbBaglantisi();
+  const simdi = Date.now();
+  const eklenenIdler = [];
+  try {
+    const ins = db.prepare(`
+      INSERT INTO katalog_urunleri
+        (siteId, urunUrl, baslik, temizBaslik, marka, fiyat, stokta, gorselUrl, paraBirimi, kaynakTur, guncellemeTs)
+      VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?, 'test-sepet', ?)
+    `);
+    const ornekler = [
+      // US (EN)
+      ['creality_us', 'https://store.creality.com/products/us-pla-black-1kg', 'Creality Hyper PLA 1kg Black Filament', 'creality hyper pla 1kg black filament', 'Creality', 18.99, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/us-pla-white-1kg', 'eSUN ePLA-HS 1kg White Filament', 'esun epla hs 1kg white filament', 'eSUN', 19.99, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/us-pla-grey-1kg', 'Rapid PLA+ Filament 1kg Grey', 'rapid pla filament 1kg grey', 'Elegoo', 17.99, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/us-petg-1kg', 'PETG Filament 1kg Black', 'petg filament 1kg black', 'Creality', 20.99, 'USD'],
+      ['creality_us', 'https://store.creality.com/products/us-abs-1kg', 'ABS Filament 1kg Black', 'abs filament 1kg black', 'Creality', 21.99, 'USD'],
+      // FR
+      ['creality_fr', 'https://store.creality.com/fr/products/fr-pla-noir-1kg', 'Creality Hyper PLA Filament 1kg Noir', 'creality hyper pla filament 1kg noir', 'Creality', 17.90, 'EUR'],
+      ['creality_fr', 'https://store.creality.com/fr/products/fr-pla-blanc-1kg', 'eSUN ePLA-HS Filament PLA Rapide 1kg Blanc', 'esun epla hs filament pla rapide 1kg blanc', 'eSUN', 18.50, 'EUR'],
+      ['creality_fr', 'https://store.creality.com/fr/products/fr-pla-gris-1kg', 'Filament PLA 1kg Gris', 'filament pla 1kg gris', 'Elegoo', 16.90, 'EUR'],
+      ['creality_fr', 'https://store.creality.com/fr/products/fr-petg-1kg', 'Filament PETG 1kg Noir', 'filament petg 1kg noir', 'Creality', 19.90, 'EUR'],
+      ['creality_fr', 'https://store.creality.com/fr/products/fr-abs-1kg', 'Filament ABS 1kg Noir', 'filament abs 1kg noir', 'Creality', 20.90, 'EUR'],
+      // JP (JA)
+      ['creality_jp', 'https://store.creality.com/jp/products/jp-pla-black-1kg', 'Creality Hyper PLA フィラメント 1kg ブラック', 'creality hyper pla filament 1kg black', 'Creality', 2680, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/jp-pla-white-1kg', 'eSUN ePLA-HS フィラメント 1kg ホワイト', 'esun epla hs filament 1kg white', 'eSUN', 2780, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/jp-pla-grey-1kg', '高速 PLA フィラメント 1kg グレー', 'high speed pla filament 1kg grey', 'Elegoo', 2580, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/jp-petg-1kg', 'PETG フィラメント 1kg 黒', 'petg filament 1kg black', 'Creality', 2980, 'JPY'],
+      ['creality_jp', 'https://store.creality.com/jp/products/jp-abs-1kg', 'ABS フィラメント 1kg 黒', 'abs filament 1kg black', 'Creality', 3080, 'JPY'],
+    ];
+    for (const [siteId, url, baslik, temiz, marka, fiyat, para] of ornekler) {
+      eklenenIdler.push(ins.run(siteId, url, baslik, temiz, marka, fiyat, para, simdi).lastInsertRowid);
+    }
+
+    for (const [market, dil, paraBirimi] of [['us', 'en', 'USD'], ['fr', 'fr', 'EUR'], ['jp', 'ja', 'JPY']]) {
+      const api = enUcuzFilamentler({ limit: 200, market });
+      kontrol(`${market} enUcuzFilamentler limit=200 boş değil ve ${paraBirimi}`,
+        api.filamentler.length >= 5 && api.filamentler.every(f => f.paraBirimi === paraBirimi),
+        `len=${api.filamentler.length}`);
+      for (const paket of PAKETLER) {
+        const cozum = paketCoz(paket, api.filamentler, dil);
+        kontrol(`${market}/${dil} ${paket.id} paketi eklenebilir ve eksiksiz`,
+          cozum.eklenebilir && cozum.eksikler.length === 0 && cozum.parcalar.length >= 2,
+          JSON.stringify({ id: paket.id, eksikler: cozum.eksikler, parcaSay: cozum.parcalar.length }));
+      }
+    }
+  } finally {
+    if (eklenenIdler.length) {
+      db.prepare(`DELETE FROM katalog_urunleri WHERE id IN (${eklenenIdler.map(() => '?').join(',')})`).run(...eklenenIdler);
+    }
+    closeDatabase();
+  }
+}
 
 console.log(`SEPET ${gecen}/${toplam}`);
 process.exit(gecen === toplam ? 0 : 1);

@@ -126,7 +126,7 @@ export function beslemeFilamentAdaylari(opts = {}) {
  * @param {{limit?:number, market?:string}} [opts]
  */
 export function enUcuzFilamentler(opts = {}) {
-  const limit = Math.max(1, Math.min(50, Number(opts.limit) || 12));
+  const limit = Math.max(1, Math.min(250, Number(opts.limit) || 12));
   const hedefMarket = opts.market ? normalizeMarket(opts.market) : 'tr';
   const varsayilanPara = PAZARLAR[hedefMarket]?.currency || 'TRY';
   let satirlar = [];

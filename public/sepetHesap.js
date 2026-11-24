@@ -315,24 +315,25 @@ export function paketCevir(paket, dil = 'tr') {
   };
 }
 
-/** Türkçe renk sözcüklerini başlıkta ararken kullanılan eşleştiriciler. */
+/** Renk sözcüklerini TR/EN/FR/JA başlıklarında ararken kullanılan eşleştiriciler. */
 const RENK_DESENI = {
-  siyah: /siyah|black/i,
-  beyaz: /beyaz|white/i,
-  gri: /gri|grey|gray/i,
-  kirmizi: /kırmızı|kirmizi|red/i,
-  mavi: /mavi|blue/i,
-  yesil: /yeşil|yesil|green/i,
-  sari: /sarı|sari|yellow/i,
-  turuncu: /turuncu|orange/i,
-  pembe: /pembe|pink/i,
-  mor: /mor\b|purple/i,
-  altin: /altın|altin|gold/i,
+  siyah: /siyah|black|noir|noire|黒|ブラック/i,
+  beyaz: /beyaz|white|blanc|blanche|白|ホワイト/i,
+  gri: /gri|grey|gray|gris|grise|silver|argent|灰|グレー|シルバー/i,
+  kirmizi: /kırmızı|kirmizi|red|rouge|赤|レッド/i,
+  mavi: /mavi|blue|bleu|bleue|青|ブルー/i,
+  yesil: /yeşil|yesil|green|vert|verte|緑|グリーン/i,
+  sari: /sarı|sari|yellow|jaune|黄|イエロー/i,
+  turuncu: /turuncu|orange|オレンジ/i,
+  pembe: /pembe|pink|rose|ピンク/i,
+  mor: /mor\b|purple|violet|violette|紫|パープル/i,
+  altin: /altın|altin|gold|or\b|金|ゴールド/i,
 };
 
-/** "PLA" ailesi: PLA, PLA+, Hyper PLA… ama PETG/ABS hariç. */
+/** "PLA" ailesi: PLA, PLA+, Hyper PLA… ama PETG/ABS/PLA-CF hariç. */
 function malzemeAilesi(teklif) {
   const metin = `${teklif?.malzeme || ''} ${teklif?.ad || ''}`.toUpperCase();
+  if (/PLA[\s-]*CF|CARBON\s*FIBER|KARBON\s*FIBER/.test(metin)) return 'PLA-CF';
   if (/PETG/.test(metin)) return 'PETG';
   if (/\bABS\b/.test(metin) || / ABS /.test(metin)) return 'ABS';
   if (/TPU/.test(metin)) return 'TPU';
@@ -343,7 +344,7 @@ function malzemeAilesi(teklif) {
 
 function hizliMi(teklif) {
   const metin = `${teklif?.malzeme || ''} ${teklif?.ad || ''}`;
-  return /hyper|yüksek hız|yuksek hiz|high\s*speed|epla-?hs|pla\+?hs/i.test(metin);
+  return /hyper|yüksek hız|yuksek hiz|high[\s-]*speed|rapid|rapide|vitesse|高速|epla-?hs|pla\+?[\s-]*hs|\bhs\b/i.test(metin);
 }
 
 /**

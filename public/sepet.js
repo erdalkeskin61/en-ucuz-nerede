@@ -412,7 +412,7 @@ async function teklifleriYukle() {
   if (durum.teklifler) return durum.teklifler;
   try {
     const qs = ORTAM_MARKET !== 'tr' ? `&market=${encodeURIComponent(ORTAM_MARKET)}` : '';
-    const r = await fetch('/api/baski/en-ucuz-filamentler?limit=50' + qs);
+    const r = await fetch('/api/baski/en-ucuz-filamentler?limit=200' + qs);
     const v = await r.json();
     durum.teklifler = Array.isArray(v?.filamentler) ? v.filamentler : [];
   } catch {
