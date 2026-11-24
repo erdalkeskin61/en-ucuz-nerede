@@ -2931,16 +2931,17 @@ app.post('/api/tracked/:id/check', async (req, res) => {
 // ---- Geçmiş ve durum ----
 // Son aramalar: her kayda ürün linki + (varsa) en ucuz mağaza linki eklenir.
 const GECMIS_UCD_RE = /3d|yazıcı|yazici|printer|imprimante|プリンター|filament|filaman|フィラメント|\bpla\b|epla|xpla|petg|tpu|\babs\b|\basa\b|resin|reçine|recine|kurutucu|dryer|nozzle|hotend|extruder|\bpei\b|\bams\b|bambu|creality|elegoo|prusa|anycubic|qidi|snapmaker|polymaker|esun|sunlu|overture|porima|microzey|flashforge|phrozen|voron|klipper|valon/i;
-const GECMIS_AU_RE = /\.(?:com|net|org)\.au\b|\/\/au\.|\/en-au\b|\/au\//i;
+const GECMIS_AU_RE = /\.(?:com|net|org)\.au\b|\/\/au\.|\/en-au\b|\/au\/|\baustralia\b|\(\s*au(?:\s+only)?\s*\)|[-_/]\s*au(?:stralia)?(?=\b|$)/i;
 
 function gecmisKaydiGecerliMi(h, istenenPazar = null) {
   const ad = String(h?.urun || '').trim();
   const url = String(h?.url || '').trim();
   const enUcuzUrl = String(h?.enUcuzUrl || '').trim();
+  const enUcuzSite = String(h?.enUcuzSite || '').trim();
   if (ad.length < 3) return false;
   if (/\/urun-p-1(?:$|\?)|example\.com/i.test(url)) return false;
   if (!GECMIS_UCD_RE.test(`${ad} ${url}`)) return false;
-  if (istenenPazar === 'us' && GECMIS_AU_RE.test(`${url} ${enUcuzUrl}`)) return false;
+  if (GECMIS_AU_RE.test(`${ad} ${url} ${enUcuzUrl} ${enUcuzSite}`)) return false;
   return true;
 }
 

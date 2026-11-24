@@ -1061,6 +1061,30 @@ console.log('\n25) 📱 390px mobilde "Popüler Aramalar" (.hizli-arama) yatay t
     && !/flex-wrap:\s*nowrap/.test(m720[1]));
 }
 
+console.log('\n26) 🇦🇺 /en geçmişinde ürün adındaki Avustralya varyantı filtrelenir:');
+{
+  const gecmisBlok = srvKod.match(/const GECMIS_UCD_RE =[\s\S]*?\nfunction gecmisKaydiGecerliMi[\s\S]*?\n\}/);
+  kontrol('server.js gecmisKaydiGecerliMi ürün başlığındaki Australia kalıbını da denetler', !!gecmisBlok);
+  if (gecmisBlok) {
+    const fnCtx = vm.runInNewContext(`${gecmisBlok[0]}; ({ gecmisKaydiGecerliMi })`);
+    const auBaslikKayit = {
+      urun: 'Creality Ender-3 V3 KE 3D Printer, 220x220x240mm - Printer Only / Australia',
+      url: 'https://www.amazon.com/dp/B0EXAMPLE1',
+      enUcuzUrl: 'https://www.amazon.com/dp/B0EXAMPLE1',
+      market: 'us',
+    };
+    const usTemizKayit = {
+      urun: 'Creality K1C 3D Printer',
+      url: 'https://store.creality.com/products/creality-k1c-3d-printer',
+      enUcuzUrl: 'https://store.creality.com/products/creality-k1c-3d-printer',
+      market: 'us',
+    };
+    kontrol('gecmisKaydiGecerliMi "... / Australia" başlığını reddeder, US K1C kaydını korur',
+      fnCtx.gecmisKaydiGecerliMi(auBaslikKayit, 'us') === false
+      && fnCtx.gecmisKaydiGecerliMi(usTemizKayit, 'us') === true);
+  }
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
