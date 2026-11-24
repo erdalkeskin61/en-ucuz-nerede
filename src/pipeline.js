@@ -293,10 +293,11 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
       if (!kayit && process.env.KATALOG_DEBUG === '1') {
         console.log(`[pipeline:katalog] ${adapter.id} aday YOK — kaynak: "${String(src?.title || '').slice(0, 70)}"`);
       }
+      const beklenenPara = String(src?.currency || adapterCurrency(adapter) || 'TRY').toUpperCase();
       if (kayit) {
-        const para = String(kayit.paraBirimi || 'TRY').toUpperCase();
-        // Farklı para birimindeki fiyat TL sanılırsa kıyas bozulur → sayfayı oku.
-        if (kayit.fiyat != null && para === 'TRY') {
+        const para = String(kayit.paraBirimi || beklenenPara).toUpperCase();
+        // Farklı para birimindeki fiyat karıştırılırsa kıyas bozulur → sayfayı oku.
+        if (kayit.fiyat != null && para === beklenenPara) {
           const product = katalogUrunuOlustur(kayit, adapter);
           const match = matchProducts(src, product);
           if (match) {
@@ -419,8 +420,9 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
         result.examined.push({ url: cand.url, sonuc: 'sayfa okunamadı: ' + String(e.message || e).slice(0, 120) });
         continue;
       }
-      if (product?.currency && String(product.currency).toUpperCase() !== 'TRY') {
-        result.examined.push({ url: cand.url, sonuc: 'para birimi TRY değil (' + product.currency + ')' });
+      const beklenenPara = String(src?.currency || adapterCurrency(adapter) || 'TRY').toUpperCase();
+      if (product?.currency && String(product.currency).toUpperCase() !== beklenenPara) {
+        result.examined.push({ url: cand.url, sonuc: `para birimi ${beklenenPara} değil (${product.currency})` });
         continue;
       }
       magazaMarkasiniTemizle(product, adapter);
@@ -873,7 +875,10 @@ async function karsilastirmaAkisiniTamamla({
       etiketOrani: r.etiketOrani ?? null,
       product: r.product ? {
         url: r.product.url,
-        afiliyeUrl: afiliyeLink(r.site, r.product.url, afiliyeAyar),
+        afiliyeUrl: (() => {
+          const bag = afiliyeLink(r.site, r.product.url, afiliyeAyar);
+          return (bag && bag !== r.product.url) ? bag : (r.product.afiliyeUrl || bag);
+        })(),
         title: r.product.title,
         brand: r.product.brand,
         modelCode: r.product.modelCode,

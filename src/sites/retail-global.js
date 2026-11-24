@@ -21,6 +21,7 @@ import { fetchPage } from '../scraper.js';
 import { decodeEntities, dominantColor, fiyatCikar, paraBirimiNormalize, stripTags } from '../util.js';
 import { kargoCikar } from '../kargo.js';
 import { jsonLdUrunBul, parseGlobalFiyat } from './creality-global.js';
+import { ebayApiEtkinMi, ebayBrowseAra, ebayBrowseUrunGetir } from './ebay-api.js';
 
 function mutlakUrl(href, origin) {
   try { return new URL(href, origin).href.split('#')[0]; } catch { return null; }
@@ -346,6 +347,30 @@ const yodobashiJp = {
   },
 };
 
+/** eBay US/FR adaptörü: anahtarlar tanımlıysa resmî Browse API, değilse HTML kazıma yedeği kullanır. */
+function ebayAdaptor(cfg) {
+  const yedek = perakendeciAdaptor({
+    ...cfg,
+    searchPath: '/sch/i.html?_nkw={q}&LH_BIN=1',
+    productPathRe: /^\/itm\/(?:[^/]+\/)?\d+/i,
+  });
+  return {
+    ...yedek,
+    async searchProducts(query, ctx) {
+      if (ebayApiEtkinMi()) {
+        return ebayBrowseAra(cfg.id, query, ctx);
+      }
+      return yedek.searchProducts(query, ctx);
+    },
+    async getProduct(url, ctx, opts = {}) {
+      if (ebayApiEtkinMi()) {
+        return ebayBrowseUrunGetir(cfg.id, url, ctx, opts);
+      }
+      return yedek.getProduct(url, ctx, opts);
+    },
+  };
+}
+
 export const retailGlobalSiteler = [
   // 🇺🇸 ABD (USD)
   perakendeciAdaptor({
@@ -392,15 +417,13 @@ export const retailGlobalSiteler = [
     productPathRe: /^\/p\/[^/?#]+/i,
     linkRe: /href=["']((?:https:\/\/www\.target\.com)?\/p\/[^"'?#]+)/gi,
   }),
-  perakendeciAdaptor({
+  ebayAdaptor({
     id: 'ebay_us',
     name: 'eBay (US)',
     market: 'us',
     currency: 'USD',
     origin: 'https://www.ebay.com',
     hosts: ['ebay.com', 'www.ebay.com'],
-    searchPath: '/sch/i.html?_nkw={q}&LH_BIN=1',
-    productPathRe: /^\/itm\/\d+/i,
     linkRe: /href=["'](https:\/\/www\.ebay\.com\/itm\/\d+)[^"']*/gi,
   }),
 
@@ -439,15 +462,13 @@ export const retailGlobalSiteler = [
     linkRe: /href=["']((?:https:\/\/www\.3djake\.fr)?\/[a-z0-9-]+\/[a-z0-9-]+)["']/gi,
     skipLinkRe: /\/(?:kunden|info|recherche|marques|aide|connexion|panier)\b/i,
   }),
-  perakendeciAdaptor({
+  ebayAdaptor({
     id: 'ebay_fr',
     name: 'eBay (FR)',
     market: 'fr',
     currency: 'EUR',
     origin: 'https://www.ebay.fr',
     hosts: ['ebay.fr', 'www.ebay.fr'],
-    searchPath: '/sch/i.html?_nkw={q}&LH_BIN=1',
-    productPathRe: /^\/itm\/\d+/i,
     linkRe: /href=["'](https:\/\/www\.ebay\.fr\/itm\/\d+)[^"']*/gi,
   }),
 

@@ -1228,6 +1228,130 @@ console.log('\n29) 📊 Çok dilli Canlı Borsa Vitrini (/en /fr /ja):');
     && appSon.includes('VITRIN_YEREL'));
 }
 
+console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi işlem hattı:');
+{
+  const {
+    ebayApiEtkinMi, ebayBrowseAra, ebayBrowseUrunGetir,
+    ebayLegacyIdCoz, _ebayOnbellekTemizle,
+  } = await import('../src/sites/ebay-api.js');
+
+  const eskiId = process.env.EBAY_CLIENT_ID;
+  const eskiSecret = process.env.EBAY_CLIENT_SECRET;
+  const eskiCampaign = process.env.EBAY_CAMPAIGN_ID;
+  try {
+    delete process.env.EBAY_CLIENT_ID;
+    delete process.env.EBAY_CLIENT_SECRET;
+    _ebayOnbellekTemizle();
+    kontrol('EBAY_CLIENT_ID/SECRET yokken ebayApiEtkinMi() false döner', ebayApiEtkinMi() === false);
+
+    process.env.EBAY_CLIENT_ID = 'test-client-id';
+    process.env.EBAY_CLIENT_SECRET = 'test-client-secret';
+    process.env.EBAY_CAMPAIGN_ID = '5339999999';
+    _ebayOnbellekTemizle();
+    kontrol('EBAY_CLIENT_ID/SECRET varken ebayApiEtkinMi() true döner', ebayApiEtkinMi() === true);
+    kontrol('ebayLegacyIdCoz /itm/ ve /itm/<slug>/<id> yollarını çözer',
+      ebayLegacyIdCoz('https://www.ebay.com/itm/Creality-K1C/395123456789?hash=1') === '395123456789'
+      && ebayLegacyIdCoz('https://www.ebay.fr/itm/1234567890') === '1234567890');
+
+    const cagrilar = [];
+    const mockFetch = async (url, init = {}) => {
+      cagrilar.push({ url: String(url), headers: init.headers || {} });
+      if (String(url).includes('/oauth2/token')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ access_token: 'tok-abc', expires_in: 7200 }),
+        };
+      }
+      if (String(url).includes('/item_summary/search')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            itemSummaries: [
+              {
+                legacyItemId: '395123456789',
+                title: 'Creality K1C 3D Printer Official New',
+                brand: 'Creality',
+                price: { value: '479.00', currency: 'USD' },
+                itemWebUrl: 'https://www.ebay.com/itm/395123456789?foo=bar',
+                itemAffiliateWebUrl: 'https://www.ebay.com/itm/395123456789?campid=5339999999',
+                shippingOptions: [{ shippingCostType: 'FIXED', shippingCost: { value: '0.00', currency: 'USD' } }],
+                seller: { username: 'creality_official' },
+                image: { imageUrl: 'https://i.ebayimg.com/images/g/k1c/s-l500.jpg' },
+              },
+            ],
+          }),
+        };
+      }
+      if (String(url).includes('get_item_by_legacy_id')) {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ errors: [{ errorId: 11006, message: 'The item id is an item group.' }] }),
+        };
+      }
+      if (String(url).includes('get_items_by_item_group')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [{
+              legacyItemId: '405987654321',
+              title: 'Polymaker PolyLite PLA 1kg Black',
+              brand: 'Polymaker',
+              price: { value: '19.99', currency: 'EUR' },
+              itemWebUrl: 'https://www.ebay.fr/itm/405987654321',
+              shippingOptions: [{ shippingCostType: 'FIXED', shippingCost: { value: '4.90', currency: 'EUR' } }],
+              estimatedAvailabilities: [{ estimatedAvailabilityStatus: 'IN_STOCK', estimatedAvailableQuantity: 8 }],
+            }],
+          }),
+        };
+      }
+      return { ok: false, status: 500, json: async () => ({}) };
+    };
+
+    const ctx = { spend: 0 };
+    const usAdaylar = await ebayBrowseAra('ebay_us', 'Creality K1C', ctx, { fetchImpl: mockFetch });
+    const searchCall = cagrilar.find(c => c.url.includes('/item_summary/search'));
+    kontrol('ebayBrowseAra EBAY_US başlığı, EPN campaignId ve FIXED_PRICE+NEW filtresiyle döner',
+      usAdaylar.length === 1
+      && usAdaylar[0].price === 479
+      && usAdaylar[0].currency === 'USD'
+      && usAdaylar[0].url === 'https://www.ebay.com/itm/395123456789'
+      && searchCall?.headers['X-EBAY-C-MARKETPLACE-ID'] === 'EBAY_US'
+      && searchCall?.headers['X-EBAY-C-ENDUSERCTX'] === 'affiliateCampaignId=5339999999',
+      JSON.stringify(usAdaylar));
+
+    // Önbellek hit testi: ikinci HTTP atmadan dönmeli
+    const spendOncesi = ctx.spend;
+    const cachedUrun = await ebayBrowseUrunGetir('ebay_us', 'https://www.ebay.com/itm/395123456789', ctx, { fetchImpl: mockFetch });
+    kontrol('ebayBrowseUrunGetir aramadan gelen ürünü ek API isteği olmadan döndürür + kargo & EPN taşır',
+      ctx.spend === spendOncesi
+      && cachedUrun.sellingPrice === 479
+      && cachedUrun.shipping?.applies === false
+      && cachedUrun.afiliyeUrl?.includes('campid=5339999999'));
+
+    // Çoklu varyant (11006 -> get_items_by_item_group) testi
+    const frUrun = await ebayBrowseUrunGetir('ebay_fr', 'https://www.ebay.fr/itm/405987654321', ctx, { fetchImpl: mockFetch, fresh: true });
+    kontrol('ebayBrowseUrunGetir çoklu varyant (11006) item_group yedeğiyle EUR + kargoyu çözer',
+      frUrun.currency === 'EUR'
+      && frUrun.sellingPrice === 19.99
+      && frUrun.shipping?.applies === true
+      && frUrun.shipping?.fee === 4.9);
+
+    const pipeKod = fs.readFileSync('src/pipeline.js', 'utf8');
+    kontrol('src/pipeline.js sabit TRY yerine beklenenPara (USD/EUR/JPY/TRY) kontrolü yapar',
+      pipeKod.includes('const beklenenPara = String(src?.currency || adapterCurrency(adapter)')
+      && !pipeKod.includes("!== 'TRY'"));
+  } finally {
+    _ebayOnbellekTemizle();
+    if (eskiId === undefined) delete process.env.EBAY_CLIENT_ID; else process.env.EBAY_CLIENT_ID = eskiId;
+    if (eskiSecret === undefined) delete process.env.EBAY_CLIENT_SECRET; else process.env.EBAY_CLIENT_SECRET = eskiSecret;
+    if (eskiCampaign === undefined) delete process.env.EBAY_CAMPAIGN_ID; else process.env.EBAY_CAMPAIGN_ID = eskiCampaign;
+  }
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
