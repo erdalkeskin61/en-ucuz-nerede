@@ -17,7 +17,7 @@ import {
   htmlKacis, sayfaIskeleti, crealityResmiMagazaLink,
   GLOBAL_REHBER_YOLLARI,
 } from './seoSayfalar.js';
-import { formatTL, parcaMi } from './util.js';
+import { formatPara, formatTL, parcaMi } from './util.js';
 
 function urunBul(tumUrunler, regex) {
   const comboIstendi = /combo/i.test(regex.source);
@@ -1243,11 +1243,48 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
   },
 });
 
+function rehberIcinUrunBul(g, tumUrunler = []) {
+  if (!Array.isArray(tumUrunler) || !tumUrunler.length) return null;
+  const filamentKartMi = g.id === 'guide-pla' || g.id === 'guide-cost';
+  const havuz = tumUrunler.filter((u) => {
+    if (!u || !(Number(u.enUcuzFiyat) > 0)) return false;
+    if (filamentKartMi) {
+      return u.kategori === 'filament' || ['pla-filament', 'filament'].includes(u.kategoriSlug);
+    }
+    return (u.kategoriSlug === '3d-yazici' || u.kategori === 'yazici') && !parcaMi(u.ad);
+  });
+  if (!havuz.length) return null;
+
+  const adayEslesirMi = (u, hedef) => {
+    const baglam = `${u.ad || ''} ${u.sorgu || ''}`.toLowerCase();
+    const tokenler = String(hedef || '')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(t => t && !['3d', 'printer', '1kg', 'filament'].includes(t));
+    if (!tokenler.length) return false;
+    return tokenler.every(t => baglam.includes(t));
+  };
+
+  const tamA = havuz.find(u => adayEslesirMi(u, g.urunA));
+  if (tamA) return tamA;
+  const tamB = havuz.find(u => adayEslesirMi(u, g.urunB));
+  if (tamB) return tamB;
+
+  if (g.id === 'guide-cost') {
+    const pla = havuz
+      .filter(u => u.kategoriSlug === 'pla-filament')
+      .sort((a, b) => Number(a.enUcuzFiyat) - Number(b.enUcuzFiyat));
+    if (pla.length) return pla[0];
+  }
+  return null;
+}
+
 export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = []) {
   const kod = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'ja' : 'en');
   const k = GLOBAL_REHBER_KOPYA[kod];
   const onEk = `/${kod}`;
   const canonicalUrl = `${tabanUrl}${GLOBAL_REHBER_YOLLARI[kod]}`;
+  const varsayilanPara = kod === 'fr' ? 'EUR' : (kod === 'ja' ? 'JPY' : 'USD');
   const katYol = kod === 'fr' ? '/fr/produits' : (kod === 'ja' ? '/ja/products' : '/en/products');
   const malYol = kod === 'fr' ? '/fr/calculateur-cout' : (kod === 'ja' ? '/ja/cost-calculator' : '/en/cost-calculator');
   const sepYol = kod === 'fr' ? '/fr/panier' : (kod === 'ja' ? '/ja/basket' : '/en/basket');
@@ -1256,12 +1293,9 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
   const kartlarHtml = k.kartlar.map((g) => {
     const araLinkA = `${onEk}?url=${encodeURIComponent(g.urunA)}`;
     const araLinkB = `${onEk}?url=${encodeURIComponent(g.urunB)}`;
-    const tekUrun = tumUrunler.find((u) => {
-      const ad = String(u?.ad || '').toLowerCase();
-      return ad.includes(g.urunA.toLowerCase().split(' ')[0]);
-    });
+    const tekUrun = rehberIcinUrunBul(g, tumUrunler);
     const canliSatir = tekUrun?.enUcuzFiyat > 0
-      ? `${tekUrun.ad} · ${tekUrun.enUcuzSite || ''}`
+      ? `${tekUrun.ad} · ${formatPara(tekUrun.enUcuzFiyat, tekUrun.paraBirimi || varsayilanPara)}${tekUrun.enUcuzSite ? ` (${tekUrun.enUcuzSite})` : ''}`
       : g.band;
     return `<article class="rehber-kart" id="${htmlKacis(g.id)}">
       <div class="rehber-kart-ust">

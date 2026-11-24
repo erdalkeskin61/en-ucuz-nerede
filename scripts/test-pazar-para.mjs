@@ -638,6 +638,25 @@ console.log('\n14) 🗂️ Katalog kategori sınıflandırma doğrulaması (EN /
   }
 }
 
+console.log('\n15) 📖 Rehber kartı rozet eşleştirme doğruluğu (/en/guides):');
+{
+  const sahteUrunler = [
+    { ad: 'Bambu Lab AMS HT', kategori: 'genel', kategoriSlug: '3d-yazici-yedek-parca', enUcuzFiyat: 199.99, paraBirimi: 'USD', enUcuzSite: 'Bambu Lab US' },
+    { ad: 'Creality Ender 5 Max', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 749.00, paraBirimi: 'USD', enUcuzSite: 'Creality Store' },
+    { ad: 'Creality K1C 3D Printer', kategori: 'yazici', kategoriSlug: '3d-yazici', enUcuzFiyat: 499.00, paraBirimi: 'USD', enUcuzSite: 'Creality Store' },
+    { ad: 'Polymaker PLA Filament 1kg', kategori: 'filament', kategoriSlug: 'pla-filament', enUcuzFiyat: 19.99, paraBirimi: 'USD', enUcuzSite: 'Polymaker US' },
+  ];
+  const guidesHtml = globalRehberDiziniHtml('en', 'https://baskihesap.tech', sahteUrunler);
+  kontrol('P1S/A1 Mini/Budget rehber kartlarında ilgisiz "Bambu Lab AMS HT" rozeti çıkmaz',
+    !guidesHtml.includes('Bambu Lab AMS HT'),
+    'Bambu Lab AMS HT sızdı');
+  kontrol('V3 KE/Cost rehber kartlarında ilgisiz "Creality Ender 5 Max" rozeti çıkmaz',
+    !guidesHtml.includes('Creality Ender 5 Max'),
+    'Creality Ender 5 Max sızdı');
+  kontrol('P1S vs K1C kartı urunB olan "Creality K1C 3D Printer" ile eşleşir ve cost kartı PLA filament gösterir',
+    guidesHtml.includes('Creality K1C 3D Printer') && guidesHtml.includes('Polymaker PLA Filament 1kg'));
+}
+
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);
