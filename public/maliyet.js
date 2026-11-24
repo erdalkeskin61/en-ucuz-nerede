@@ -40,6 +40,7 @@
       sureTahmini: (s) => `est. time (${s} hr) · material + electricity + depreciation`,
       maliyetBas: 'Break-even Cost', hobi: 'Hobby / Friend', atolye: 'Standard Workshop', ticari: 'Commercial / Custom',
       karsiz: 'no profit', karOran: (y, x) => `${y}% margin · ${x}x`,
+      dolulukKel: 'infill', karDahil: (yuz, kr) => `Includes ${yuz} workshop margin · profit ${kr}`,
       ctaMetin: (fKg, site) => `💡 The lowest-cost in-stock spool for this print is currently <b>${fKg}/kg</b> at <b>${site || 'store'}</b>!`,
       ctaBtn: (fKg) => `🛒 Buy Cheapest Filament (${fKg})`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>Assumptions:</b> ${guc} W printer power · ${el}/kWh electricity · ${amp}/hr depreciation${sureTah ? ` · time estimated from weight (${gs} g/hr)` : ''}. Prices exclude tax and reflect live regional scans.`,
@@ -52,7 +53,8 @@
     fr: {
       sureTahmini: (s) => `durée est. (${s} h) · matière + électricité + amortissement`,
       maliyetBas: 'Prix coûtant', hobi: 'Loisir / Ami', atolye: 'Atelier Standard', ticari: 'Commercial / Pro',
-      karsiz: 'sans marge', karOran: (y, x) => `marge ${y}% · ${x}x`,
+      karsiz: 'sans marge', karOran: (y, x) => `marge ${y} % · ${x}x`,
+      dolulukKel: 'remplissage', karDahil: (yuz, kr) => `Marge atelier ${yuz} incluse · marge ${kr}`,
       ctaMetin: (fKg, site) => `💡 La bobine la plus économique en stock est actuellement à <b>${fKg}/kg</b> chez <b>${site || 'boutique'}</b> !`,
       ctaBtn: (fKg) => `🛒 Acheter le filament le moins cher (${fKg})`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>Hypothèses :</b> puissance ${guc} W · électricité ${el}/kWh · amortissement ${amp}/h${sureTah ? ` · durée estimée (${gs} g/h)` : ''}. Prix hors TVA issus de l’analyse régionale.`,
@@ -66,6 +68,7 @@
       sureTahmini: (s) => `予想時間 (${s} 時間) · 材料 + 電気 + 償却`,
       maliyetBas: '原価（損益分岐）', hobi: '趣味・実費', atolye: '標準工房価格', ticari: '商用・受注販売',
       karsiz: '利益なし', karOran: (y, x) => `利益 ${y}% · ${x}倍`,
+      dolulukKel: 'インフィル', karDahil: (yuz, kr) => `工房利益 ${yuz} 込み · 利益 ${kr}`,
       ctaMetin: (fKg, site) => `💡 このモデルに最安の在庫ありフィラメントは <b>${site || 'ショップ'}</b> の <b>${fKg}/kg</b> です！`,
       ctaBtn: (fKg) => `🛒 最安フィラメントを購入 (${fKg})`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>計算前提:</b> 消費電力 ${guc} W · 電気代 ${el}/kWh · 償却費 ${amp}/時間${sureTah ? ` · 重量から推定 (${gs} g/h)` : ''}。税抜参考値（地域スキャン連動）。`,
@@ -244,7 +247,7 @@
         // Slider'ı da eşitle (yüzde karşılığı)
         const yuzde = v.karYuzde;
         if (yuzde >= 50 && yuzde <= 300) $('karKaydirici').value = String(yuzde);
-        $('karEtiket').textContent = `%${v.karYuzde} · ${v.carpan}x`;
+        $('karEtiket').textContent = `${yuzdeMetni(v.karYuzde)} · ${v.carpan}x`;
         render();
       };
       kutu.addEventListener('click', sec);
@@ -284,7 +287,7 @@
     // --- Etiketler ---
     $('gramajEtiket').textContent = `${h.gramaj} g`;
     $('gucEtiket').textContent = `${h.gucW} W`;
-    $('karEtiket').textContent = `%${Math.round((h.carpan - 1) * 100)} · ${h.carpan}x`;
+    $('karEtiket').textContent = `${yuzdeMetni(Math.round((h.carpan - 1) * 100))} · ${h.carpan}x`;
     $('sureIpucu').textContent = h.sureTahmini
       ? (M_SZ.sureIpucuTah ? M_SZ.sureIpucuTah(GRAM_SAAT) : `✨ Tahmini süre — gramajdan hesaplandı (${GRAM_SAAT} g/saat). Dilimleyiciden okuduğunuz süreyi girin.`)
       : (M_SZ.sureIpucuN || 'Dilimleyicideki tahmini süre.');
@@ -295,6 +298,10 @@
   const kacis = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
   }[c]));
+
+  const yuzdeMetni = (y) => (ORTAM_DIL === 'tr'
+    ? `%${y}`
+    : (ORTAM_DIL === 'fr' ? `${y} %` : `${y}%`));
 
   /* ================= FİLAMENT LİSTESİ ================= */
   function filamentleriCiz() {
@@ -802,7 +809,7 @@
     yaz('fisTarih', teklif.tarihMetni(new Date()));
     yaz('fisModelAd', t.dosyaAdi);
     yaz('fisEbat', teklif.ebatMetni(t.boyutlar));
-    yaz('fisGramaj', `${Math.round(t.gram)} g · %${t.doluluk} doluluk`);
+    yaz('fisGramaj', `${Math.round(t.gram)} g · ${yuzdeMetni(t.doluluk)} ${M_SZ.dolulukKel || 'doluluk'}`);
     yaz('fisMalzeme', t.malzeme);
     yaz('fisSure', `≈ ${t.sureSaat.toLocaleString('tr-TR')} saat${t.sureTahmini ? ' (tahmini)' : ''}`);
     yaz('fisFilamentMaliyet', t.fiyatBilgisiVar ? `${p(t.hammadde)} · ${p(t.tlKg)}/kg` : 'canlı fiyat alınamadı');
@@ -810,7 +817,7 @@
     yaz('fisYipranmaMaliyet', p(t.amortisman));
     yaz('fisNetMaliyet', p(t.net));
     yaz('fisSatisFiyat', p(t.satisFiyati));
-    yaz('fisKarNotu', `Atölye kâr marjı %${t.karYuzde} dahil · kâr ${p(t.kar)}`);
+    yaz('fisKarNotu', M_SZ.karDahil ? M_SZ.karDahil(yuzdeMetni(t.karYuzde), p(t.kar)) : `Atölye kâr marjı %${t.karYuzde} dahil · kâr ${p(t.kar)}`);
 
     const metin = teklif.teklifMetni(t);
     const wa = $('fisWhatsappBtn');

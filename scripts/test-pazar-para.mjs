@@ -634,7 +634,6 @@ console.log('\n14) 🗂️ Katalog kategori sınıflandırma doğrulaması (EN /
     if (eklenenIdler.length) {
       db.prepare(`DELETE FROM katalog_urunleri WHERE id IN (${eklenenIdler.map(() => '?').join(',')})`).run(...eklenenIdler);
     }
-    closeDatabase();
   }
 }
 
@@ -674,6 +673,20 @@ kontrol('app.js vitrinYukle market!==tr çıkışında aria-busy=false yapar ve 
   /market\s*!==\s*'tr'[\s\S]{0,80}aria-busy',\s*'false'/.test(appJsKod)
   && /modAyarla\(aramaModu\)/.test(appJsKod));
 
+console.log('\n17) 🏷️ Placeholder, aria-label ve % biçimi yerelleştirme kontrolleri:');
+for (const yol of ['/en', '/fr', '/ja', '/en/cost-calculator', '/fr/calculateur-cout', '/ja/cost-calculator', '/en/basket', '/en/slicer', '/en/alerts']) {
+  const html = globalAracSayfasiBul(yol)?.olustur('https://baskihesap.tech') || '';
+  const nitelikler = [...html.matchAll(/(?:aria-label|placeholder)="([^"]*)"/g)].map(m => m[1]);
+  const turkceSizan = nitelikler.filter(n => /[ğıöşüĞİÖŞÜ]|\b(ör\.|Örn\.|Bölge|Arama modu|Kâr|Hızlı site|Sürükle)\b/.test(n));
+  kontrol(`${yol}: hiçbir aria-label veya placeholder Türkçe karakter taşımaz`,
+    turkceSizan.length === 0, JSON.stringify(turkceSizan));
+}
+kontrol('maliyet.js % önekini yalnızca tr için kullanır (yuzdeMetni)',
+  fs.readFileSync('public/maliyet.js', 'utf8').includes('const yuzdeMetni =')
+  && globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://baskihesap.tech').includes('>150% · 2.5x<')
+  && globalAracSayfasiBul('/fr/calculateur-cout')?.olustur('https://baskihesap.tech').includes('>150 % · 2,5x<'));
+
+closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);

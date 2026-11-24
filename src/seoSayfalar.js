@@ -95,8 +95,13 @@ export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
     { dil: 'ja', kisa: 'JA', bayrak: '🇯🇵', ad: '日本語 (JPY)' },
   ];
   const secili = ogeler.find(o => o.dil === kod) || ogeler[0];
+  const ariaEtiket = kod === 'en'
+    ? `Region and language selector (${secili.ad})`
+    : (kod === 'fr'
+      ? `Sélecteur de région et de langue (${secili.ad})`
+      : (kod === 'ja' ? `地域と言語の選択 (${secili.ad})` : `Bölge ve dil seçici (${secili.ad})`));
   return `<details class="dil-secici" id="dilSecici">
-        <summary aria-label="Bölge ve dil seçici (${htmlKacis(secili.ad)})">${secili.bayrak} ${secili.kisa} ▾</summary>
+        <summary aria-label="${htmlKacis(ariaEtiket)}">${secili.bayrak} ${secili.kisa} ▾</summary>
         <div class="dil-menu" role="menu">
           ${ogeler.map(o => `<a href="${htmlKacis(harita[o.dil] || DIL_META[o.dil].yolOnEk || '/')}" hreflang="${o.dil}"${o.dil === kod ? ' class="etkin"' : ''} role="menuitem">${o.bayrak} ${htmlKacis(o.ad)}</a>`).join('\n          ')}
         </div>

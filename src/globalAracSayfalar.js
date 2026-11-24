@@ -357,6 +357,92 @@ export const AYARLAR_YOL_HARITASI = Object.freeze({
 
 export const SEPET_YOL_HARITASI = GLOBAL_SEPET_YOLLARI;
 
+const GLOBAL_ARIA_NITELIK = Object.freeze({
+  en: [
+    ['aria-label="Arama önerileri"', 'aria-label="Search suggestions"'],
+    ['aria-label="Ürün önerileri"', 'aria-label="Product suggestions"'],
+    ['aria-label="Borsayı yenile"', 'aria-label="Refresh deals"'],
+    ['aria-label="Sonucu kapat"', 'aria-label="Close result"'],
+    ['aria-label="Modeli kaldır"', 'aria-label="Remove model"'],
+    ['aria-label="Teklif fişini kapat"', 'aria-label="Close quote receipt"'],
+    ['aria-label="G-Code dosyasını sürükleyip bırakın veya seçin"', 'aria-label="Drag & drop or select a G-Code file"'],
+    ['aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin"', 'aria-label="Drag & drop or select an STL or 3MF file"'],
+    ['aria-label="Modelin izometrik tel çerçeve silüeti"', 'aria-label="Isometric wireframe silhouette of the model"'],
+    ['aria-label="Doluluk oranı ince ayar (%)"', 'aria-label="Fine-tune infill (%)"'],
+    ['aria-label="Model gramajı kaydırıcı"', 'aria-label="Model weight slider"'],
+    ['aria-label="Model gramajı (gram)"', 'aria-label="Model weight (grams)"'],
+    ['aria-label="Baskı süresi kaydırıcı"', 'aria-label="Print time slider"'],
+    ['aria-label="Baskı süresi (saat)"', 'aria-label="Print time (hours)"'],
+    ['aria-label="3D yazıcı modeli"', 'aria-label="3D printer model"'],
+    ['aria-label="Hızlı yazıcı seçimi"', 'aria-label="Quick printer selection"'],
+    ['aria-label="Filament fiyat kaynağı"', 'aria-label="Filament price source"'],
+    ['aria-label="Kâr marjı kaydırıcı"', 'aria-label="Profit margin slider"'],
+    ['aria-label="Hızlı kâr çarpanı"', 'aria-label="Quick profit multiplier"'],
+    ['aria-label="Karanlık / aydınlık temayı değiştir"', 'aria-label="Toggle dark / light theme"'],
+    ['placeholder="ör. PETG Siyah"', 'placeholder="e.g. PETG Black"'],
+    ['placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"', 'placeholder="e.g. quiet beginner 3D printer under $400"'],
+    ['>%150 · 2.5x<', '>150% · 2.5x<'],
+  ],
+  fr: [
+    ['aria-label="Arama önerileri"', 'aria-label="Suggestions de recherche"'],
+    ['aria-label="Ürün önerileri"', 'aria-label="Suggestions de produits"'],
+    ['aria-label="Borsayı yenile"', 'aria-label="Actualiser les offres"'],
+    ['aria-label="Sonucu kapat"', 'aria-label="Fermer le résultat"'],
+    ['aria-label="Modeli kaldır"', 'aria-label="Retirer le modèle"'],
+    ['aria-label="Teklif fişini kapat"', 'aria-label="Fermer le devis"'],
+    ['aria-label="G-Code dosyasını sürükleyip bırakın veya seçin"', 'aria-label="Glissez ou sélectionnez un fichier G-Code"'],
+    ['aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin"', 'aria-label="Glissez ou sélectionnez un fichier STL ou 3MF"'],
+    ['aria-label="Modelin izometrik tel çerçeve silüeti"', 'aria-label="Aperçu filaire isométrique du modèle"'],
+    ['aria-label="Doluluk oranı ince ayar (%)"', 'aria-label="Réglage fin du remplissage (%)"'],
+    ['aria-label="Model gramajı kaydırıcı"', 'aria-label="Curseur poids du modèle"'],
+    ['aria-label="Model gramajı (gram)"', 'aria-label="Poids du modèle (grammes)"'],
+    ['aria-label="Baskı süresi kaydırıcı"', 'aria-label="Curseur durée d’impression"'],
+    ['aria-label="Baskı süresi (saat)"', 'aria-label="Durée d’impression (heures)"'],
+    ['aria-label="3D yazıcı modeli"', 'aria-label="Modèle d’imprimante 3D"'],
+    ['aria-label="Hızlı yazıcı seçimi"', 'aria-label="Sélection rapide d’imprimante"'],
+    ['aria-label="Filament fiyat kaynağı"', 'aria-label="Source du prix filament"'],
+    ['aria-label="Kâr marjı kaydırıcı"', 'aria-label="Curseur marge bénéficiaire"'],
+    ['aria-label="Hızlı kâr çarpanı"', 'aria-label="Multiplicateur de marge rapide"'],
+    ['aria-label="Karanlık / aydınlık temayı değiştir"', 'aria-label="Changer de thème clair / sombre"'],
+    ['placeholder="ör. PETG Siyah"', 'placeholder="ex. PETG Noir"'],
+    ['placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"', 'placeholder="ex. imprimante 3D silencieuse pour débuter, budget 400 €"'],
+    ['>%150 · 2.5x<', '>150 % · 2,5x<'],
+  ],
+  ja: [
+    ['aria-label="Arama önerileri"', 'aria-label="検索候補"'],
+    ['aria-label="Ürün önerileri"', 'aria-label="商品候補"'],
+    ['aria-label="Borsayı yenile"', 'aria-label="相場を更新"'],
+    ['aria-label="Sonucu kapat"', 'aria-label="結果を閉じる"'],
+    ['aria-label="Modeli kaldır"', 'aria-label="モデルを削除"'],
+    ['aria-label="Teklif fişini kapat"', 'aria-label="見積書を閉じる"'],
+    ['aria-label="G-Code dosyasını sürükleyip bırakın veya seçin"', 'aria-label="G-Codeファイルをドロップまたは選択"'],
+    ['aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin"', 'aria-label="STLまたは3MFファイルをドロップまたは選択"'],
+    ['aria-label="Modelin izometrik tel çerçeve silüeti"', 'aria-label="モデルの等角ワイヤーフレーム"'],
+    ['aria-label="Doluluk oranı ince ayar (%)"', 'aria-label="インフィル微調整 (%)"'],
+    ['aria-label="Model gramajı kaydırıcı"', 'aria-label="モデル重量スライダー"'],
+    ['aria-label="Model gramajı (gram)"', 'aria-label="モデル重量 (g)"'],
+    ['aria-label="Baskı süresi kaydırıcı"', 'aria-label="印刷時間スライダー"'],
+    ['aria-label="Baskı süresi (saat)"', 'aria-label="印刷時間 (時間)"'],
+    ['aria-label="3D yazıcı modeli"', 'aria-label="3Dプリンター機種"'],
+    ['aria-label="Hızlı yazıcı seçimi"', 'aria-label="クイック機種選択"'],
+    ['aria-label="Filament fiyat kaynağı"', 'aria-label="フィラメント価格ソース"'],
+    ['aria-label="Kâr marjı kaydırıcı"', 'aria-label="利益率スライダー"'],
+    ['aria-label="Hızlı kâr çarpanı"', 'aria-label="利益倍率プリセット"'],
+    ['aria-label="Karanlık / aydınlık temayı değiştir"', 'aria-label="ライト／ダークテーマ切替"'],
+    ['placeholder="ör. PETG Siyah"', 'placeholder="例: PETG ブラック"'],
+    ['placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"', 'placeholder="例: 予算5万円以内、静音な初心者向け3Dプリンター"'],
+    ['>%150 · 2.5x<', '>150% · 2.5x<'],
+  ],
+});
+
+function nitelikAriaYerellestir(html, kod) {
+  let out = String(html || '');
+  for (const [tr, hedef] of GLOBAL_ARIA_NITELIK[kod] || []) {
+    out = out.split(tr).join(hedef);
+  }
+  return out;
+}
+
 function ortakKlonSayfaHazirla(sablon, {
   kod, tabanUrl, yolHaritasi, aktifNav, title, desc, ogTitle, ogDesc,
 }) {
@@ -407,7 +493,7 @@ function ortakKlonSayfaHazirla(sablon, {
     .replace(/<nav class="footer-hub"[\s\S]*?<\/nav>/, footerHubHtml(kod))
     .replace('<a class="footer-marka-alan" href="/" rel="home">baskihesap.tech</a>', `<a class="footer-marka-alan" href="${htmlKacis(nav.ana)}" rel="home">baskihesap.tech</a>`);
 
-  return cikti;
+  return nitelikAriaYerellestir(cikti, kod);
 }
 
 const SEPET_KOPYA = Object.freeze({
@@ -2027,6 +2113,8 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
     '<script src="/app.js"></script>',
     `<script>window.BASKI_HESAP_ORTAM = ${JSON.stringify(ortam)};</script>\n  <script src="/i18n-global.js"></script>\n  <script src="/app.js"></script>`,
   );
+
+  cikti = nitelikAriaYerellestir(cikti, kod);
 
   return cikti;
 }
