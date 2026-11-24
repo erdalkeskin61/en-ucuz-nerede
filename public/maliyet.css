@@ -1160,3 +1160,63 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
 @media (prefers-reduced-motion: reduce) {
   .stl-satin-btn { animation: none !important; }
 }
+
+/* ---------- Fotoğraftan Bas-Sat 3 Adımlı İş Akışı ---------- */
+.mz-akis-kart {
+  margin: 22px 0 6px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--cizgi);
+  background: var(--kart-zemin, var(--zemin-2));
+}
+.mz-akis-ust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+.mz-akis-ust h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--metin);
+  letter-spacing: -0.01em;
+}
+.mz-akis-rehber-link {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ana);
+  text-decoration: none;
+}
+.mz-akis-rehber-link:hover { text-decoration: underline; }
+.mz-akis-adimlar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.mz-akis-adim {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--cizgi);
+  background: var(--zemin);
+}
+.mz-akis-no {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--metin);
+  margin-bottom: 6px;
+}
+.mz-akis-adim p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--gri-metin);
+}
+.mz-akis-adim a {
+  color: var(--ana);
+  font-weight: 700;
+  text-decoration: none;
+}
+.mz-akis-adim a:hover { text-decoration: underline; }

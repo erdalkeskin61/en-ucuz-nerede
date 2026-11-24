@@ -20,7 +20,7 @@ import { katalogUrunleriAra } from './katalogSync.js';
 import { formatTL, formatPara, paraBirimiNormalize, parcaMi, slugYap } from './util.js';
 export { slugYap };
 import { birimFiyatHesapla } from './birimFiyat.js';
-import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { afiliyeLink, afiliyeAyarlari, aiModelPartnerLinkleri } from './afiliye.js';
 import { dbBaglantisi } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
 import { siteNames, adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
@@ -1699,6 +1699,73 @@ function piyasaOzetiVeSssOlustur(urun, kat, tabanUrl, dil = 'tr') {
   return { analizHtml, sssHtml, rehberKartlarHtml, faqSchema };
 }
 
+function cokRenkliUrunBolumuHtml(urun, kat, dil) {
+  const yaziciMi = kat?.slug === '3d-yazici' || urun?.kategori === 'yazici' || urun?.kategoriSlug === '3d-yazici';
+  if (!yaziciMi) return '';
+  const ad = `${urun?.ad || ''} ${urun?.sorgu || ''}`;
+  if (!/\b(combo|ams|cfs|ace\s*pro|multi[-\s]?color|multicouleur|palette|chroma|mmu)\b|マルチカラー|多色/i.test(ad)) {
+    return '';
+  }
+  const aiLink = aiModelPartnerLinkleri();
+  const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const nav = navYollariGetir(dil);
+  const plaKatYol = kategoriYoluGetir('pla-filament', dil);
+  const maliyetYol = dil === 'tr' ? '/maliyet.html' : (dil === 'fr' ? '/fr/calculateur-cout' : `/${dil}/cost-calculator`);
+  const rehberYol = {
+    tr: '/rehber/meshy-vs-hi3d-3d-baski-maliyeti',
+    en: '/en/guides/meshy-vs-hi3d-3d-printing-cost',
+    fr: '/fr/guides/meshy-vs-hi3d-cout-impression-3d',
+    ja: '/ja/guides/meshy-vs-hi3d-3d-printing-cost',
+  }[dil] || '/en/guides/meshy-vs-hi3d-3d-printing-cost';
+
+  const kopya = {
+    tr: {
+      baslik: '🎨 Çok Renkli Baskı İpucu: Model Bölmeden Üretim &amp; 3–4 Makara Planı',
+      metin: `${htmlKacis(urun.ad)} gibi çok renkli yazıcılarda en büyük soru "Modeli elle boyayıp bölmeden nasıl çok renkli basarım?"dır. <b>Hi3D</b>, model bölmeden fiziksel ürünler için çok renkli baskıya hazır 3D çıktılar üretmeyi hedefler; dilimleyicide renk geçişi (purge) için parça gramajına +%15–25 ek filament planlayın.`,
+      ctaHi3d: '🎨 Hi3D Çok Renkli Yaklaşımını Gör ↗',
+      ctaSepet: '🧺 3–4 Renk Makarayı Kargosuz Sepetle →',
+      ctaPla: '🧵 En Ucuz PLA Filamentleri Gör →',
+      ctaRehber: '🧮 Çok Renkli Maliyet &amp; Purge Rehberi →',
+    },
+    en: {
+      baslik: '🎨 Multi-Color Printing Tip: No-Split Models &amp; 3–4 Spool Planning',
+      metin: `Buyers looking at ${htmlKacis(urun.ad)} often wonder how to prep multi-color prints without manually splitting meshes. <b>Hi3D</b> focuses on multi-color 3D models ready for physical printing without manual splitting — plan +15–25% filament overhead for AMS/Combo color-swap purge towers.`,
+      ctaHi3d: '🎨 Explore Hi3D Multi-Color Workflow ↗',
+      ctaSepet: '🧺 Bundle 3–4 Colors in Smart Basket →',
+      ctaPla: '🧵 Compare Cheapest PLA Spools →',
+      ctaRehber: '🧮 Multi-Color Print Cost Guide →',
+    },
+    fr: {
+      baslik: '🎨 Conseil Impression Multicouleur : Modèles sans découpe &amp; 3–4 Bobines',
+      metin: `Avec une imprimante multicouleur comme ${htmlKacis(urun.ad)}, <b>Hi3D</b> permet de générer des modèles 3D prêts pour l’impression physique sans découpe manuelle des pièces — prévoyez +15 à 25 % de filament pour les purges de couleur.`,
+      ctaHi3d: '🎨 Découvrir Hi3D Multicouleur ↗',
+      ctaSepet: '🧺 Optimiser 3–4 Couleurs au Panier →',
+      ctaPla: '🧵 Voir les PLA les moins chers →',
+      ctaRehber: '🧮 Guide Coût &amp; Purge Multicouleur →',
+    },
+    ja: {
+      baslik: '🎨 多色プリントのコツ：モデル分割不要＆3〜4スプール計画',
+      metin: `${htmlKacis(urun.ad)} のようなマルチカラー機では「手動でパーツ分割せずに多色モデルを用意する方法」が鍵になります。<b>Hi3D</b> はモデル分割不要で物理プリント向けの多色3Dモデル作成に対応。色替えパージ用に +15〜25% のフィラメント余剰を見積もりましょう。`,
+      ctaHi3d: '🎨 Hi3D 多色プリント向け機能を見る ↗',
+      ctaSepet: '🧺 3〜4色をスマートカートでまとめ買い →',
+      ctaPla: '🧵 最安PLAフィラメントを比較 →',
+      ctaRehber: '🧮 多色プリント原価・パージガイド →',
+    },
+  }[dil] || {};
+
+  return `<section class="seo-kart" id="cokRenkliHi3dKart">
+    <h2 style="margin-top:0">${kopya.baslik}</h2>
+    <p style="margin:0 0 12px;font-size:14px;color:var(--gri-metin);line-height:1.55">${kopya.metin}</p>
+    <div class="seo-butonlar">
+      <a class="seo-cta" href="${htmlKacis(plaKatYol)}">${kopya.ctaPla}</a>
+      <a class="seo-cta ikincil" href="${htmlKacis(nav.sepet)}">${kopya.ctaSepet}</a>
+      <a class="seo-cta ikincil" href="${htmlKacis(rehberYol)}">${kopya.ctaRehber}</a>
+      <a class="seo-cta ikincil" href="${htmlKacis(maliyetYol)}">🧮 ${dil === 'tr' ? 'Hesapla' : (dil === 'fr' ? 'Calculateur' : (dil === 'ja' ? '原価試算' : 'Cost Calculator'))} →</a>
+      <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${kopya.ctaHi3d}</a>
+    </div>
+  </section>`;
+}
+
 export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
   const dil = normalizeDil(opts.dil || urun.dil || dilByMarket(urun.market || 'tr'));
   const sz = sozlukGetir(dil);
@@ -1795,6 +1862,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
 
   const { analizHtml, sssHtml, rehberKartlarHtml, faqSchema } = piyasaOzetiVeSssOlustur(urun, kat, tabanUrl, dil);
   jsonLdList.push(faqSchema);
+  const cokRenkliHtml = cokRenkliUrunBolumuHtml(urun, kat, dil);
   const globalCreality = crealityResmiMagazaLink(urun);
 
   const ozetHtml = urun.enUcuzFiyat > 0
@@ -1845,6 +1913,8 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
     </section>
 
     ${analizHtml}
+
+    ${cokRenkliHtml}
 
     ${sssHtml}
 

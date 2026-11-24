@@ -146,6 +146,14 @@ const MALIYET_KOPYA = Object.freeze({
     ornekFigur: '🗿 Tabletop Figurine (~43 g)',
     ornekRozet: '🎨 Multi-Color Badge (~36 g)',
     aiIpucu: '✨ No STL yet? Create from text or photo:',
+    akisBaslik: '💼 Photo-to-Print &amp; Sell Workflow (3 Steps)',
+    akisRehberLink: '📖 Meshy vs Hi3D Cost Guide →',
+    akisAdim1Bas: '1️⃣ Photo / Idea → 3D Printable Model',
+    akisAdim1Aciklama: (m, h) => `Turn a customer photo or prompt into an <code>.stl/.3mf</code> mesh using ${m} (figurines &amp; prototypes) or ${h} (no-split multi-color prints).`,
+    akisAdim2Bas: '2️⃣ Calculate Cost + Target Margin',
+    akisAdim2Aciklama: 'Drop the model above to compute material grams, waste, electricity, machine wear, and your instant customer quote.',
+    akisAdim3Bas: '3️⃣ Pick the Cheapest Spools in Stock',
+    akisAdim3Aciklama: (ana, sep) => `Compare <a href="${ana}">live regional spool prices</a> or bundle 3–4 colors with <a href="${sep}">Smart Basket</a>.`,
     boyut: 'Dimensions',
     hacim: 'Volume',
     agirlik: 'Est. Weight',
@@ -197,6 +205,14 @@ const MALIYET_KOPYA = Object.freeze({
     ornekFigur: '🗿 Figurine bureau (~43 g)',
     ornekRozet: '🎨 Badge multicouleur (~36 g)',
     aiIpucu: '✨ Pas de STL ? Générez-en un :',
+    akisBaslik: '💼 Flux Photo-à-Vente 3D (en 3 étapes)',
+    akisRehberLink: '📖 Guide Coût Meshy vs Hi3D →',
+    akisAdim1Bas: '1️⃣ Photo / Idée → Modèle 3D imprimable',
+    akisAdim1Aciklama: (m, h) => `Transformez une photo client en <code>.stl/.3mf</code> avec ${m} (figurines/prototypes) ou ${h} (impression multicouleur sans découpe).`,
+    akisAdim2Bas: '2️⃣ Calculer coût réel + marge atelier',
+    akisAdim2Aciklama: 'Déposez le STL ci-dessus pour chiffrer grammes, pertes, électricité, usure machine et prix de vente conseillé.',
+    akisAdim3Bas: '3️⃣ Trouver les bobines les moins chères',
+    akisAdim3Aciklama: (ana, sep) => `Comparez <a href="${ana}">les prix EUR en direct</a> ou regroupez 3–4 couleurs via <a href="${sep}">Panier Intelligent</a>.`,
     boyut: 'Dimensions',
     hacim: 'Volume',
     agirlik: 'Poids estimé',
@@ -248,6 +264,14 @@ const MALIYET_KOPYA = Object.freeze({
     ornekFigur: '🗿 フィギュア例 (~43 g)',
     ornekRozet: '🎨 多色バッジ例 (~36 g)',
     aiIpucu: '✨ STLがない場合はAIで作成:',
+    akisBaslik: '💼 写真・アイデアから造形＆販売ワークフロー（3ステップ）',
+    akisRehberLink: '📖 Meshy vs Hi3D 原価ガイド →',
+    akisAdim1Bas: '1️⃣ 写真・アイデア → 造形用3Dモデル',
+    akisAdim1Aciklama: (m, h) => `顧客の写真や案を ${m}（フィギュア・試作）または ${h}（分割不要の多色造形）で <code>.stl/.3mf</code> 化します。`,
+    akisAdim2Bas: '2️⃣ 実質原価・利益率・見積書を算出',
+    akisAdim2Aciklama: '上のSTL解析エリアにドロップすると、材料重量・電気代・償却費と推奨販売価格が即座に計算されます。',
+    akisAdim3Bas: '3️⃣ 最安フィラメントをストア横断で調達',
+    akisAdim3Aciklama: (ana, sep) => `<a href="${ana}">国内ストアの最安価格比較</a>や、<a href="${sep}">スマートカート</a>で多色用スプールを一括手配できます。`,
     boyut: 'サイズ',
     hacim: '体積',
     agirlik: '推定重量',
@@ -757,6 +781,32 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace(
       /<span class="stl-ai-ipucu" id="stlAiIpucu">[\s\S]*?<\/span>/,
       `<span class="stl-ai-ipucu" id="stlAiIpucu">${c.aiIpucu} <a href="${htmlKacis(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a> · <a href="${htmlKacis(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a></span>`,
+    )
+    .replace(
+      /<section class="mz-akis-kart" id="mzAkisKart"[\s\S]*?<\/section>/,
+      `<section class="mz-akis-kart" id="mzAkisKart" aria-labelledby="mzAkisBaslik">
+      <div class="mz-akis-ust">
+        <h2 id="mzAkisBaslik">${c.akisBaslik}</h2>
+        <a class="mz-akis-rehber-link" href="${htmlKacis(GLOBAL_AI_REHBER_YOLLARI[kod])}">${c.akisRehberLink}</a>
+      </div>
+      <div class="mz-akis-adimlar">
+        <article class="mz-akis-adim">
+          <div class="mz-akis-no">${c.akisAdim1Bas}</div>
+          <p>${c.akisAdim1Aciklama(
+            `<a href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>`,
+            `<a href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>`,
+          )}</p>
+        </article>
+        <article class="mz-akis-adim">
+          <div class="mz-akis-no">${c.akisAdim2Bas}</div>
+          <p>${c.akisAdim2Aciklama}</p>
+        </article>
+        <article class="mz-akis-adim">
+          <div class="mz-akis-no">${c.akisAdim3Bas}</div>
+          <p>${c.akisAdim3Aciklama(htmlKacis(nav.ana), htmlKacis(nav.sepet))}</p>
+        </article>
+      </div>
+    </section>`,
     )
     .replace('<span class="stl-metrik-ad">📏 Boyutlar</span>', `<span class="stl-metrik-ad">📏 ${c.boyut}</span>`)
     .replace('<span class="stl-metrik-ad">🧊 Hacim</span>', `<span class="stl-metrik-ad">🧊 ${c.hacim}</span>`)

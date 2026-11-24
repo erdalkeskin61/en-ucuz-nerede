@@ -1551,6 +1551,37 @@ console.log('\n32) 🗿 Örnek STL test butonları & Meshy vs Hi3D baskı maliye
     && trAiHtml.includes('hreflang="en" href="https://baskihesap.tech/en/guides/meshy-vs-hi3d-3d-printing-cost"')
     && enAiHtml.includes('$16.99')
     && enGuidesHtml.includes('/en/guides/meshy-vs-hi3d-3d-printing-cost'));
+
+  kontrol('Fotoğraftan Bas-Sat 3 adımlı akışı TR/EN/FR/JA maliyet sayfalarında ve rehberlerde yer alır',
+    trMalHtml.includes('id="mzAkisKart"')
+    && enMalHtml.includes('Photo-to-Print')
+    && !enMalHtml.includes('Fotoğraftan Özel Ürün Bas-Sat')
+    && frMalHtml.includes('Flux Photo-à-Vente')
+    && jaMalHtml.includes('造形＆販売ワークフロー')
+    && trAiHtml.includes('id="basSatAkisKart"')
+    && enAiHtml.includes('id="basSatAkisKart"')
+    && (bulRehber('/rehber/3d-baski-maliyeti-nasil-hesaplanir')?.olustur([], 'https://baskihesap.tech') || '').includes('id="basSatAkisKart"'));
+
+  const comboUrun = {
+    id: 888001, market: 'us', paraBirimi: 'USD',
+    ad: 'Bambu Lab A1 Combo 3D Printer', sorgu: 'Bambu Lab A1 Combo',
+    kategori: 'yazici', kategoriSlug: '3d-yazici', slug: 'bambu-lab-a1-combo', yol: '/en/urun/bambu-lab-a1-combo',
+    enUcuzFiyat: 489, enUcuzSite: 'Bambu Lab US', stokluSayisi: 2, lastmod: '2026-11-24', teklifler: [],
+  };
+  const duzUrun = {
+    id: 888002, market: 'tr', paraBirimi: 'TRY',
+    ad: 'Creality Ender 3 V3 KE 3D Yazıcı', sorgu: 'Creality Ender 3 V3 KE',
+    kategori: 'yazici', kategoriSlug: '3d-yazici', slug: 'ender-3-v3-ke', yol: '/urun/ender-3-v3-ke',
+    enUcuzFiyat: 11999, enUcuzSite: 'Robotistan', stokluSayisi: 3, lastmod: '2026-11-24', teklifler: [],
+  };
+  const comboHtml = urunSayfasiHtml(comboUrun, 'https://baskihesap.tech', [], { dil: 'en' });
+  const duzHtml = urunSayfasiHtml(duzUrun, 'https://baskihesap.tech', [], { dil: 'tr' });
+  const p1sVsHtml = bulRehber('/karsilastir/bambu-lab-p1s-vs-creality-k1c')?.olustur([], 'https://baskihesap.tech') || '';
+  kontrol('Çok renkli Combo/AMS yazıcı sayfalarında Hi3D & 3-4 makara planı çıkar, düz tek renk yazıcıda çıkmaz',
+    comboHtml.includes('id="cokRenkliHi3dKart"')
+    && comboHtml.includes('Smart Basket')
+    && !duzHtml.includes('id="cokRenkliHi3dKart"')
+    && p1sVsHtml.includes('id="amsCokRenkliRehberKart"'));
 }
 
 closeDatabase();

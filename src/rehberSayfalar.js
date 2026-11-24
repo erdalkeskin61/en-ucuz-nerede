@@ -124,6 +124,7 @@ function altAraclarCubugu() {
     </div>
     <div class="seo-rehber-baglar">
       <a href="/rehber">📖 Tüm Rehberler</a>
+      <a href="/rehber/meshy-vs-hi3d-3d-baski-maliyeti">🤖 Meshy vs Hi3D Maliyet Rehberi</a>
       <a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a>
       <a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filamentler</a>
       <a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS</a>
@@ -198,6 +199,19 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
         </div>
       </div>
     </section>
+    ${/ams|combo|p1s|a1/i.test(`${tanim.solAd} ${tanim.sagAd}`) ? (() => {
+      const aiLink = aiModelPartnerLinkleri();
+      const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+      return `<section class="seo-kart" id="amsCokRenkliRehberKart">
+        <h2 style="margin-top:0">🎨 Çok Renkli (AMS / Combo) Baskı Hazırlığı &amp; Filament Planı</h2>
+        <p style="margin:0 0 12px;font-size:14px;color:var(--gri-metin);line-height:1.55">Çok renkli ünite (AMS / AMS Lite / CFS) almayı düşünenlerin en büyük sorusu “Modeli bölmeden nasıl çok renkli baskı hazırlarım?”dır. <b>Hi3D</b>, modeli bölmeden fiziksel çok renkli baskıya uygun çıktı üretmeye odaklanır; renk değişiminde kule (purge) payı için +%15–25 ek filament bütçelemek ve 3–4 rengi <a href="/sepet.html">Akıllı Sepet</a> üzerinden tek kargoda birleştirmek maliyeti düşürür.</p>
+        <div class="seo-butonlar">
+          <a class="seo-cta" href="/rehber/meshy-vs-hi3d-3d-baski-maliyeti">🤖 Çok Renkli Maliyet &amp; Purge Rehberi →</a>
+          <a class="seo-cta ikincil" href="/sepet.html">🧺 3–4 Renk Filament Sepetle →</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D Çok Renkli Yaklaşımını İncele ↗</a>
+        </div>
+      </section>`;
+    })() : ''}
     ${sss.html}
     ${altAraclarCubugu()}`;
 
@@ -811,9 +825,77 @@ function baskiMaliyetiRehberiHtml(tumUrunler, tabanUrl) {
           </div>
         </div>
       </section>
+      ${basSatAkisBolumuHtml('tr')}
       ${sss.html}
       ${altAraclarCubugu()}`,
   });
+}
+
+function basSatAkisBolumuHtml(dil = 'tr') {
+  const aiLink = aiModelPartnerLinkleri();
+  const meshyRel = aiLink.meshyAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const malYol = dil === 'tr' ? '/maliyet.html' : (GLOBAL_MALIYET_YOLLARI[dil] || '/en/cost-calculator');
+  const sepYol = dil === 'tr' ? '/sepet.html' : (dil === 'fr' ? '/fr/panier' : `/${dil}/basket`);
+  const anaYol = dil === 'tr' ? '/' : `/${dil}`;
+  const mLink = `<a href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>`;
+  const hLink = `<a href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>`;
+  const k = {
+    tr: {
+      h2: '💼 Fotoğraftan Özel Ürün Bas-Sat Akışı (Atölye &amp; Ek Gelir Planı)',
+      s1t: '1️⃣ Fotoğraf / Fikir → 3D Model',
+      s1p: `Müşterinin gönderdiği evcil hayvan fotoğrafını, maskotu veya figür fikrini ${mLink} ya da ${hLink} ile baskıya hazır <code>.stl/.3mf</code> dosyasına çevirin.`,
+      s2t: '2️⃣ Maliyet + Kâr &amp; Müşteri Teklifi',
+      s2p: `Modeli <a href="${malYol}">Maliyet Hesaplayıcı</a> içine bırakın; gramaj, elektrik, yıpranma ve hedef kâr çarpanıyla satış fiyatını saniyede çıkarın.`,
+      s3t: '3️⃣ En Ucuz Renk &amp; Makarayı Seçin',
+      s3p: `Gereken renkteki en ucuz makarayı <a href="${anaYol}">canlı fiyat taramasından</a> bulun ya da çok renkli siparişlerde 3–4 rengi <a href="${sepYol}">Akıllı Sepet</a> ile birleştirin.`,
+    },
+    en: {
+      h2: '💼 Photo-to-Print &amp; Sell Workflow (Print Farms &amp; Etsy Sellers)',
+      s1t: '1️⃣ Turn Customer Photo / Idea into STL',
+      s1p: `Convert a pet photo, mascot, or gift prompt into a printable <code>.stl/.3mf</code> via ${mLink} (single-color figures) or ${hLink} (no-split multi-color prints).`,
+      s2t: '2️⃣ Calculate Print Cost &amp; Profit Margin',
+      s2p: `Drop the file into the <a href="${malYol}">STL Cost Calculator</a> to compute filament grams, electricity, machine wear, and retail price.`,
+      s3t: '3️⃣ Source the Cheapest Matching Spools',
+      s3p: `Compare <a href="${anaYol}">live regional filament deals</a> or combine 3–4 spool colors inside <a href="${sepYol}">Smart Basket</a>.`,
+    },
+    fr: {
+      h2: '💼 Flux Photo-à-Vente 3D (Ateliers &amp; Créateurs)',
+      s1t: '1️⃣ Photo / Idée → Modèle STL imprimable',
+      s1p: `Transformez une photo client en <code>.stl/.3mf</code> avec ${mLink} ou ${hLink} (multicouleur sans découpe).`,
+      s2t: '2️⃣ Calculer coût réel &amp; marge de vente',
+      s2p: `Déposez le fichier dans le <a href="${malYol}">Calculateur de Coût STL</a> pour obtenir filament, électricité, amortissement et tarif client.`,
+      s3t: '3️⃣ Choisir les bobines au meilleur prix',
+      s3p: `Trouvez <a href="${anaYol}">la bobine la moins chère en EUR</a> ou groupez 3–4 couleurs via <a href="${sepYol}">Panier Intelligent</a>.`,
+    },
+    ja: {
+      h2: '💼 写真・アイデアから造形＆販売ワークフロー（工房・副業向け）',
+      s1t: '1️⃣ 写真・案 → 造形用STL/3MFモデル',
+      s1p: `顧客の写真やキャラクター案を ${mLink} または ${hLink} で印刷可能な <code>.stl/.3mf</code> に変換します。`,
+      s2t: '2️⃣ 原価・利益率・販売価格を算出',
+      s2p: `<a href="${malYol}">原価シミュレーター</a> にドロップしてフィラメント重量・電気代・償却費と適正売価を即時算出。`,
+      s3t: '3️⃣ 必要な色の最安フィラメントを調達',
+      s3p: `<a href="${anaYol}">リアルタイム価格検索</a> や <a href="${sepYol}">スマートカート</a> で必要色の最安スプールを調達します。`,
+    },
+  }[dil] || {};
+
+  return `<section class="seo-kart" id="basSatAkisKart">
+    <h2 style="margin-top:0">${k.h2}</h2>
+    <div class="seo-izgara" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+      <div class="seo-mini-kart">
+        <div class="seo-mini-ad">${k.s1t}</div>
+        <p style="margin:0;font-size:13.5px;color:var(--gri-metin);line-height:1.5">${k.s1p}</p>
+      </div>
+      <div class="seo-mini-kart">
+        <div class="seo-mini-ad">${k.s2t}</div>
+        <p style="margin:0;font-size:13.5px;color:var(--gri-metin);line-height:1.5">${k.s2p}</p>
+      </div>
+      <div class="seo-mini-kart">
+        <div class="seo-mini-ad">${k.s3t}</div>
+        <p style="margin:0;font-size:13.5px;color:var(--gri-metin);line-height:1.5">${k.s3p}</p>
+      </div>
+    </div>
+  </section>`;
 }
 
 function enUcuzPlaBul(tumUrunler = [], plusMi = false) {
@@ -962,6 +1044,7 @@ function meshyVsHi3dRehberiHtml(tumUrunler, tabanUrl) {
         </div>
         <p class="ipucu" style="margin:10px 0 0">Not: İlk iki satırdaki hacim ve gramaj değerleri Baskı Hesap tarayıcı STL ayrıştırıcısındaki yerleşik örnek dosyalarla (<code>ornek-masaustu-figur.stl</code> ve <code>ornek-cok-renkli-rozet.stl</code>, %20 doluluk, 1,24 g/cm³ PLA) ölçülmüştür; elektrik 2,90 TL/kWh ve amortisman 3,00 TL/saat varsayılmıştır.</p>
       </section>
+      ${basSatAkisBolumuHtml('tr')}
       ${sss.html}
       ${altAraclarCubugu()}`,
   });
@@ -1780,6 +1863,7 @@ export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []
         </div>
         <p class="ipucu" style="margin:10px 0 0">${htmlKacis(t.note)}</p>
       </section>
+      ${basSatAkisBolumuHtml(kod)}
       ${sss.html}`,
   });
 }

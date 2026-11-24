@@ -845,12 +845,18 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
         cikti = cikti.replace(
           'href="https://www.meshy.ai" id="aiLinkMeshy" target="_blank" rel="noopener"',
           `href="${escAttr(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="noopener sponsored"`,
+        ).replace(
+          'href="https://www.meshy.ai" class="mz-akis-partner-meshy" target="_blank" rel="noopener"',
+          `href="${escAttr(aiLink.meshyUrl)}" class="mz-akis-partner-meshy" target="_blank" rel="noopener sponsored"`,
         );
       }
       if (aiLink.hi3dAfiliye) {
         cikti = cikti.replace(
           'href="https://www.hi3d.ai" id="aiLinkHi3d" target="_blank" rel="noopener"',
           `href="${escAttr(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="noopener sponsored"`,
+        ).replace(
+          'href="https://www.hi3d.ai" class="mz-akis-partner-hi3d" target="_blank" rel="noopener"',
+          `href="${escAttr(aiLink.hi3dUrl)}" class="mz-akis-partner-hi3d" target="_blank" rel="noopener sponsored"`,
         );
       }
     }
