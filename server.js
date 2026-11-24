@@ -12,11 +12,11 @@ import './src/httpPool.js';
 import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
-import { detectSite, adapters, adaptersByMarket, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
+import { detectSite, adapters, adaptersByMarket, taramaAdaptersByMarket, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
 import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi, dominantColor, renkAyni } from './src/util.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
-import { sepetOptimize } from './src/basketOptimizer.js';
+import { sepetOptimize, SEPET_SITELERI } from './src/basketOptimizer.js';
 import { tamamlayiciBul } from './src/kargoTamamlayici.js';
 import { barkodAra } from './src/barkod.js';
 import { gorselAramaYap } from './src/gorselArama.js';
@@ -3012,15 +3012,19 @@ app.get('/api/durum', (req, res) => {
   let afiliyeAktif = false;
   try { afiliyeAktif = afiliyeOzet().durum === 'aktif'; } catch { afiliyeAktif = false; }
   const hamPazar = String(req.query?.market || 'tr').trim().toLowerCase();
-  const piyasaAdaptorleri = (hamPazar === 'all' || hamPazar === 'tumu')
+  const tumPazar = hamPazar === 'all' || hamPazar === 'tumu';
+  const etkinPazar = tumPazar ? 'all' : normalizeMarket(hamPazar);
+  const piyasaAdaptorleri = tumPazar
     ? adapters
-    : adaptersByMarket(hamPazar);
+    : taramaAdaptersByMarket(hamPazar);
+  const hizliSiteSayisi = etkinPazar === 'tr' ? SEPET_SITELERI.length : piyasaAdaptorleri.length;
   res.json({
     scraperApiHazir: !!config.scraperApiKey,
     yzHazir: !!config.ai.apiKey,
     yzModel: config.ai.model,
     afiliyeAktif,
-    market: (hamPazar === 'all' || hamPazar === 'tumu') ? 'all' : normalizeMarket(hamPazar),
+    market: etkinPazar,
+    hizliSiteSayisi,
     desteklenenSiteler: piyasaAdaptorleri.map(a => a.id),
     siteler: piyasaAdaptorleri.map(a => ({
       id: a.id,

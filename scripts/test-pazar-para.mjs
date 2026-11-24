@@ -447,7 +447,7 @@ kontrol('Creality Store (US/FR/EU/JP) kendi ülke sayfalarında görünür, Tür
   && jaAna.includes('Creality Store (JP)') && !jaAna.includes('Creality Store (FR)')
   && adaptersByMarket('tr').every(a => !a.id.startsWith('creality_'))
   && serverKaynak.includes("const hamPazar = String(req.query?.market || 'tr')")
-  && serverKaynak.includes('adaptersByMarket(hamPazar)'));
+  && serverKaynak.includes('taramaAdaptersByMarket(hamPazar)'));
 
 console.log('\n12) 🏭 Global Üretici & Bölgesel Mağaza Ağları (US / FR / EU / JP):');
 const tumIdler = adapters.map(a => a.id);
@@ -1015,6 +1015,36 @@ console.log('\n23) 🧮 Maliyet Hesaplayıcı yuvarlama tutarlılığı, metin t
   const kotuUs = usFil.filter(f => /\bmoq:|pre-?sale|\((?:eu|uk|ca|au|jp)\s+only\)/i.test(f.ad)).map(f => f.ad);
   kontrol('US enUcuzFilamentler MOQ, Pre-Sale ve (EU/UK/CA only) ilanları döndürmez',
     kotuUs.length === 0, JSON.stringify(kotuUs.slice(0, 5)));
+}
+
+console.log('\n24) 🔢 Hızlı sepet modu & footer mağaza sayıları tutarlılığı (/ /en /fr /ja):');
+{
+  const { SEPET_SITELERI } = await import('../src/basketOptimizer.js');
+  const indexHtml = fs.readFileSync('public/index.html', 'utf8');
+  const trSayi = adaptersByMarket('tr').length;
+  kontrol(`TR index.html hızlı mod (${SEPET_SITELERI.length}) & toplam (${trSayi}) mağaza sayılarını taşır`,
+    indexHtml.includes(`Hızlı mod (${SEPET_SITELERI.length} site)`)
+    && indexHtml.includes(`kapatırsanız ${trSayi} mağazanın tamamı taranır`)
+    && indexHtml.includes(`<b id="heroSiteSayisi">${trSayi}</b>`)
+    && !indexHtml.includes('60 mağazanın tamamı'));
+
+  for (const [yol, m, labelTpl] of [
+    ['/en', 'us', (n) => `Fast mode (${n} stores)`],
+    ['/fr', 'fr', (n) => `Mode rapide (${n} boutiques)`],
+    ['/ja', 'jp', (n) => `高速モード (${n}ストア)`],
+  ]) {
+    const html = globalAracSayfasiBul(yol)?.olustur('https://baskihesap.tech') || '';
+    const beklenen = taramaAdaptersByMarket(m).length;
+    const footerLiSay = (html.match(/<ul id="footerSiteler" class="footer-siteler">([\s\S]*?)<\/ul>/)?.[1] || '').split('<li>').length - 1;
+    kontrol(`${yol}: hızlı mod (${beklenen}), hero ve footer (${footerLiSay}) mağaza sayıları eşittir`,
+      html.includes(labelTpl(beklenen))
+      && html.includes(`<b id="heroSiteSayisi">${beklenen}</b>`)
+      && footerLiSay === beklenen,
+      `beklenen=${beklenen}, footer=${footerLiSay}`);
+  }
+  kontrol('server.js /api/durum hizliSiteSayisi döndürür ve app.js .sepet-hizli etiketini günceller',
+    srvKod.includes('hizliSiteSayisi')
+    && appJsKod.includes("document.querySelector('label.sepet-hizli')"));
 }
 
 closeDatabase();

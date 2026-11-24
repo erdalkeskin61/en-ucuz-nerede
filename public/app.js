@@ -741,6 +741,30 @@ let sitelerHazir = (async () => {
       const el = document.getElementById(id);
       if (el) el.textContent = SITE_SIRASI.length;
     }
+    // Sepet hızlı modu etiketi ve tooltip'i (bölge & güncel mağaza sayısıyla uyumlu)
+    const hizliLbl = document.querySelector('label.sepet-hizli');
+    const hizliCb = document.getElementById('sepetHizli');
+    const toplamSayi = SITE_SIRASI.length;
+    const hizliSayi = Number(d.hizliSiteSayisi) || toplamSayi;
+    if (hizliLbl && hizliCb && toplamSayi > 0) {
+      const dil = BASKI_ORTAM.dil || 'tr';
+      hizliLbl.title = dil === 'fr'
+        ? `Analyse les ${hizliSayi} boutiques vérifiées de la région.`
+        : (dil === 'ja'
+          ? `この地域の対象 ${hizliSayi} ストアを並列検索します。`
+          : (dil === 'en'
+            ? `Scans ${hizliSayi} verified stores in this region.`
+            : `Hızlı mod ${hizliSayi} mağazada arar; kapatırsanız ${toplamSayi} mağazanın tamamı taranır (daha yavaş, daha kapsamlı).`));
+      const etiketMetin = dil === 'fr'
+        ? ` Mode rapide (${hizliSayi} boutiques)`
+        : (dil === 'ja'
+          ? ` 高速モード (${hizliSayi}ストア)`
+          : (dil === 'en' ? ` Fast mode (${hizliSayi} stores)` : ` Hızlı mod (${hizliSayi} site)`));
+      for (const n of [...hizliLbl.childNodes]) {
+        if (n.nodeType === 3) n.remove();
+      }
+      hizliLbl.appendChild(document.createTextNode(etiketMetin));
+    }
     // Şeffaflık bildirimi yalnızca satış ortaklığı aktifken gösterilir
     const afBildirim = document.getElementById('afiliyeBildirim');
     if (afBildirim) afBildirim.hidden = !d.afiliyeAktif;
