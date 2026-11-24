@@ -1600,6 +1600,36 @@ console.log('\n32) 🗿 Örnek STL test butonları & Meshy vs Hi3D baskı maliye
   }
 }
 
+console.log('\n33) 🌍 Kök URL ülke / dil yönlendirmesi (TR / FR / JA / Global EN)');
+{
+  const { ulkeVeyaIstekDiliCoz } = await import('../src/i18n/index.js');
+
+  kontrol('TR ziyaretçisi kök sayfada kalır',
+    ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'TR', 'accept-language': 'tr-TR,tr;q=0.9' } }).yonlendirUrl === null);
+  kontrol('Fransa ziyaretçisi /fr sayfasına yönlenir',
+    ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'FR' } }).yonlendirUrl === '/fr');
+  kontrol('Japonya ziyaretçisi /ja sayfasına yönlenir',
+    ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'JP' } }).yonlendirUrl === '/ja');
+  kontrol('Desteklenmeyen ülke (ör. Almanya DE / Brezilya BR / ABD US) global /en olur',
+    ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'DE', 'accept-language': 'de-DE' } }).yonlendirUrl === '/en'
+    && ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'BR' } }).yonlendirUrl === '/en'
+    && ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'US' } }).yonlendirUrl === '/en');
+  kontrol('Ülke başlığı yokken Accept-Language: fr / ja / de doğru çözülür (es/de → /en)',
+    ulkeVeyaIstekDiliCoz({ headers: { 'accept-language': 'fr-FR,fr;q=0.9' } }).yonlendirUrl === '/fr'
+    && ulkeVeyaIstekDiliCoz({ headers: { 'accept-language': 'ja-JP,ja;q=0.9' } }).yonlendirUrl === '/ja'
+    && ulkeVeyaIstekDiliCoz({ headers: { 'accept-language': 'es-ES,es;q=0.9' } }).yonlendirUrl === '/en'
+    && ulkeVeyaIstekDiliCoz({ headers: { 'accept-language': 'tr-TR,tr;q=0.9' } }).yonlendirUrl === null);
+  kontrol('Googlebot/Bingbot hiçbir zaman yönlendirilmez (SEO canonical korunur)',
+    ulkeVeyaIstekDiliCoz({ headers: { 'user-agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)', 'cf-ipcountry': 'US' } }).yonlendirUrl === null);
+  kontrol('Kullanıcının bh_lang çerezi ve ?lang= seçimi coğrafi yönlendirmeden önceliklidir',
+    ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'DE', cookie: 'bh_lang=tr' } }).yonlendirUrl === null
+    && ulkeVeyaIstekDiliCoz({ headers: { 'cf-ipcountry': 'TR', cookie: 'bh_lang=en' } }).yonlendirUrl === '/en'
+    && ulkeVeyaIstekDiliCoz({ query: { lang: 'ja' }, headers: { 'cf-ipcountry': 'TR' } }).yonlendirUrl === '/ja');
+  kontrol('Başlıksız istek (sağlık kontrolü) ve ?url= arama parametresi / üzerinde kalır',
+    ulkeVeyaIstekDiliCoz({ headers: {} }).yonlendirUrl === null
+    && ulkeVeyaIstekDiliCoz({ query: { url: 'eSUN PLA+' }, headers: { 'cf-ipcountry': 'US' } }).yonlendirUrl === null);
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

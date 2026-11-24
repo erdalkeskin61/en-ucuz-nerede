@@ -14,6 +14,7 @@ import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
 import { detectSite, adapters, adaptersByMarket, taramaAdaptersByMarket, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
 import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi, dominantColor, renkAyni, hatCakismasi } from './src/util.js';
+import { ulkeVeyaIstekDiliCoz } from './src/i18n/index.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
 import { sepetOptimize, SEPET_SITELERI } from './src/basketOptimizer.js';
@@ -871,12 +872,24 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
       cikti = cikti.replace('</head>', `  ${ga4Snip}\n</head>`);
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Cache-Control', anaSayfa ? 'private, no-cache' : 'public, max-age=60');
     res.send(cikti);
   });
 }
 
-app.get(['/', '/index.html'], (req, res, next) => statikHtmlSun(req, res, next, 'index.html', { anaSayfa: true }));
+app.get(['/', '/index.html'], (req, res, next) => {
+  res.setHeader('Vary', 'Accept-Language, CF-IPCountry, Cookie');
+  const secim = ulkeVeyaIstekDiliCoz(req);
+  if (secim.cerezKaydet) {
+    res.setHeader('Set-Cookie', `bh_lang=${secim.cerezKaydet}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  }
+  if (secim.yonlendirUrl) {
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.redirect(302, secim.yonlendirUrl);
+  }
+  res.setHeader('Cache-Control', 'private, no-cache');
+  return statikHtmlSun(req, res, next, 'index.html', { anaSayfa: true });
+});
 
 app.get(['/maliyet.html', '/sepet.html', '/slicer.html'], (req, res, next) => (
   statikHtmlSun(req, res, next, path.basename(req.path))

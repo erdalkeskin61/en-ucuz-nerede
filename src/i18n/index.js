@@ -135,3 +135,105 @@ export function sssSablonlari(dil = 'tr', {
 
   return liste;
 }
+
+const BOT_UA_RE = /bot|crawler|spider|slurp|bingbot|googlebot|yandex|duckduckbot|baiduspider|applebot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|slackbot|headless/i;
+const ULKE_DIL_HARITASI = Object.freeze({
+  TR: 'tr',
+  FR: 'fr',
+  MC: 'fr',
+  JP: 'ja',
+  US: 'en',
+  GB: 'en',
+  UK: 'en',
+  CA: 'en',
+  AU: 'en',
+  NZ: 'en',
+  IE: 'en',
+});
+
+/**
+ * Kök istek (`/` veya `/index.html`) için ziyaretçinin ülkesine / tarayıcı diline
+ * göre açılış dilini çözer:
+ *   1) Arama motoru botları yönlendirilmez (SEO canonical & hreflang korunur).
+ *   2) URL'de ürün/arama parametresi (`?url=`/`?sorgu=`) varsa yönlendirilmez.
+ *   3) Açık `?lang=` veya kaydedilmiş `bh_lang` çerezi önceliklidir.
+ *   4) Proxy ülke başlığı (`CF-IPCountry`, `X-Vercel-IP-Country`, `X-Country-Code`, `X-Geo-Country`)
+ *      veya yoksa `Accept-Language` okunur; desteklenmeyen ülke/dil global `'en'` (`/en`) açılır.
+ *   5) Başlık hiç yoksa (curl / sağlık kontrolü) `'tr'` kalır.
+ */
+export function ulkeVeyaIstekDiliCoz(req = {}) {
+  const query = req.query || {};
+  const headersHam = req.headers || {};
+  const h = {};
+  for (const [k, v] of Object.entries(headersHam)) h[String(k).toLowerCase()] = v;
+
+  const ua = String(h['user-agent'] || '');
+  if (BOT_UA_RE.test(ua)) {
+    return { dil: 'tr', yonlendirUrl: null, cerezKaydet: null, bot: true, kaynak: 'bot' };
+  }
+
+  if (query.url || query.sorgu || query.arama) {
+    return { dil: 'tr', yonlendirUrl: null, cerezKaydet: null, bot: false, kaynak: 'arama-param' };
+  }
+
+  const gecerliDil = (d) => {
+    const s = String(d || '').trim().toLowerCase().split(/[-_]/)[0];
+    return DESTEKLENEN_DILLER.includes(s) ? s : null;
+  };
+
+  const acikLang = gecerliDil(query.lang);
+  if (acikLang) {
+    return {
+      dil: acikLang,
+      yonlendirUrl: acikLang === 'tr' ? null : DIL_META[acikLang].yolOnEk,
+      cerezKaydet: acikLang,
+      bot: false,
+      kaynak: 'query',
+    };
+  }
+
+  const cookieStr = String(h.cookie || '');
+  const cookieMatch = cookieStr.match(/(?:^|;\s*)bh_lang=([a-zA-Z_-]{2,10})/);
+  const cerezDil = cookieMatch ? gecerliDil(cookieMatch[1]) : null;
+  if (cerezDil) {
+    return {
+      dil: cerezDil,
+      yonlendirUrl: cerezDil === 'tr' ? null : DIL_META[cerezDil].yolOnEk,
+      cerezKaydet: null,
+      bot: false,
+      kaynak: 'cookie',
+    };
+  }
+
+  const ulkeHam = String(
+    h['cf-ipcountry'] || h['x-vercel-ip-country'] || h['x-country-code'] || h['x-geo-country'] || '',
+  ).trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(ulkeHam) && ulkeHam !== 'XX' && ulkeHam !== 'T1') {
+    const dil = ULKE_DIL_HARITASI[ulkeHam] || 'en';
+    return {
+      dil,
+      yonlendirUrl: dil === 'tr' ? null : DIL_META[dil].yolOnEk,
+      cerezKaydet: null,
+      bot: false,
+      kaynak: 'country:' + ulkeHam,
+    };
+  }
+
+  const acceptLang = String(h['accept-language'] || '').trim();
+  if (acceptLang) {
+    const ilkTercih = acceptLang.split(',')[0]?.split(';')[0]?.trim().toLowerCase();
+    const bas = ilkTercih ? ilkTercih.split(/[-_]/)[0] : '';
+    if (bas) {
+      const dil = DESTEKLENEN_DILLER.includes(bas) ? bas : 'en';
+      return {
+        dil,
+        yonlendirUrl: dil === 'tr' ? null : DIL_META[dil].yolOnEk,
+        cerezKaydet: null,
+        bot: false,
+        kaynak: 'accept-language:' + bas,
+      };
+    }
+  }
+
+  return { dil: 'tr', yonlendirUrl: null, cerezKaydet: null, bot: false, kaynak: 'default' };
+}

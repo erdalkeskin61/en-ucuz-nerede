@@ -89,6 +89,13 @@
   } catch { /* eski tarayici */ }
 
   document.addEventListener('click', (e) => {
+    const dilLink = e.target.closest?.('details.dil-secici a[hreflang]');
+    if (dilLink) {
+      const secilen = (dilLink.getAttribute('hreflang') || '').toLowerCase().slice(0, 2);
+      if (/^(tr|en|fr|ja)$/.test(secilen)) {
+        document.cookie = `bh_lang=${secilen}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    }
     document.querySelectorAll('details.dil-secici[open]').forEach((d) => {
       if (!d.contains(e.target)) d.removeAttribute('open');
     });
