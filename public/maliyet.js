@@ -182,7 +182,7 @@
   function aktifTlKg() {
     if (durum.filamentModu === 'manuel') return Number(durum.manuelTlKg) || 0;
     const f = aktifFilament();
-    return f ? Number(f.tlKg) : 0;
+    return f ? Number(f.tlKg) : (Number(durum.manuelTlKg) || 0);
   }
 
   /* ================= RENDER ================= */

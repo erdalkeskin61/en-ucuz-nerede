@@ -895,6 +895,45 @@ kontrol('CSS: teklif butonu ≥44px dokunma hedefi',
   /\.stl-hizli-teklif-btn\s*\{[^}]*padding:\s*11px/s.test(anaCss));
 
 /* ------------------------------------------------------------------ */
+bolum('14) 🌍 Global Live market sekmesi & boşta sıfırlamama');
+
+{
+  const maliyetSon = fs.readFileSync('public/maliyet.js', 'utf8');
+  kontrol('maliyet.js: aktifTlKg() canlı boşta 0 döndürmez (manuelTlKg fallback)',
+    /function aktifTlKg\(\)[\s\S]{0,200}Number\(durum\.manuelTlKg\)/.test(maliyetSon)
+    && !/return f \? Number\(f\.tlKg\) : 0;/.test(maliyetSon));
+
+  const { enUcuzFilamentler } = await import('../src/baskiApi.js');
+  const { dbBaglantisi, closeDatabase } = await import('../src/store.js');
+  const db = dbBaglantisi();
+  const ins = db.prepare(`
+    INSERT INTO katalog_urunleri
+      (siteId, urunUrl, baslik, temizBaslik, marka, fiyat, stokta, gorselUrl, paraBirimi, kaynakTur, guncellemeTs)
+    VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?, 'test-maliyet', ?)
+  `);
+  const simdi = Date.now();
+  const eklenenId = ins.run(
+    'creality_us',
+    'https://store.creality.com/products/test-maliyet-us-pla-1kg',
+    'Creality PLA Filament 1.75mm 1kg Black',
+    'creality pla filament 175mm 1kg black',
+    'Creality',
+    18.99,
+    'USD',
+    simdi,
+  ).lastInsertRowid;
+  try {
+    const us = enUcuzFilamentler({ limit: 20, market: 'us' });
+    kontrol('enUcuzFilamentler limit=20 market=us canlı US filament döndürür',
+      us.ok && us.paraBirimi === 'USD' && us.filamentler.length >= 1 && us.filamentler.every(f => f.tlKg > 0 && f.paraBirimi === 'USD'),
+      JSON.stringify({ toplam: us.toplam, ilk: us.filamentler[0] }));
+  } finally {
+    db.prepare('DELETE FROM katalog_urunleri WHERE id = ?').run(eklenenId);
+    closeDatabase();
+  }
+}
+
+/* ------------------------------------------------------------------ */
 console.log('\n' + '─'.repeat(46));
 console.log(`Sonuç: ${gecen}/${toplam} kontrol geçti`);
 if (hatalar.length) {
