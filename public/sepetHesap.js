@@ -330,9 +330,12 @@ const RENK_DESENI = {
   altin: /altın|altin|gold|or\b|金|ゴールド/i,
 };
 
-/** "PLA" ailesi: PLA, PLA+, Hyper PLA… ama PETG/ABS/PLA-CF hariç. */
+/** "PLA" ailesi: PLA, PLA+, Hyper PLA… ama toz/destek/PETG/ABS/PLA-CF hariç. */
 function malzemeAilesi(teklif) {
-  const metin = `${teklif?.malzeme || ''} ${teklif?.ad || ''}`.toUpperCase();
+  const hamAd = String(teklif?.ad || '').toUpperCase();
+  const metin = `${teklif?.malzeme || ''} ${hamAd}`.toUpperCase();
+  if (/\b(POWDER|POUDRE|PELLETS?|SLS)\b|パウダー|ペレット|\bTOZ\b/.test(metin)) return null;
+  if (/\b(SUPPORT|BREAKAWAY|PVA|BVOH|HIPS|DESTEK)\b|サポート/.test(metin)) return 'SUPPORT';
   if (/PLA[\s-]*CF|CARBON\s*FIBER|KARBON\s*FIBER/.test(metin)) return 'PLA-CF';
   if (/PETG/.test(metin)) return 'PETG';
   if (/\bABS\b/.test(metin) || / ABS /.test(metin)) return 'ABS';
@@ -342,9 +345,46 @@ function malzemeAilesi(teklif) {
   return null;
 }
 
+function teklifGramaji(teklif) {
+  const g = Number(teklif?.makaraGram);
+  if (Number.isFinite(g) && g > 0) return g;
+  const s = `${teklif?.ad || ''} ${teklif?.birimMetni || ''}`;
+  const m = /(\d+(?:[.,]\d+)?)\s*(kg|g|gr)\b/i.exec(s);
+  if (!m) return null;
+  const val = parseFloat(String(m[1]).replace(',', '.'));
+  if (!Number.isFinite(val) || val <= 0) return null;
+  return m[2].toLowerCase() === 'kg' ? val * 1000 : val;
+}
+
+function toptanVeyaDevMakaraMi(teklif) {
+  const ad = String(teklif?.ad || '');
+  if (/\b(moq\s*:|pre-?sale|bundle\s*sale|mega\s*pack|lot\s+de\s+\d+|large\s*spool)\b|プレセール|最低注文|\d+\s*色セット|\b\d+\s*[x×]\s*0\.\d+\s*kg\b|\b1\s*kg\s*[x×]\s*(?:[3-9]|1\d)\b|\b(?:[3-9]|1\d)\s*[x×]\s*1\s*kg\b/i.test(ad)) {
+    return true;
+  }
+  const gram = teklifGramaji(teklif);
+  if (gram != null && (gram > 2200 || gram < 450)) return true;
+  const fiyat = Number(teklif?.fiyat);
+  const para = String(teklif?.paraBirimi || '').toUpperCase();
+  if (para === 'JPY' && fiyat < 300) return true;
+  if ((para === 'USD' || para === 'EUR') && fiyat < 4) return true;
+  if (para === 'TRY' && fiyat < 50) return true;
+  return false;
+}
+
 function hizliMi(teklif) {
   const metin = `${teklif?.malzeme || ''} ${teklif?.ad || ''}`;
   return /hyper|yüksek hız|yuksek hiz|high[\s-]*speed|rapid|rapide|vitesse|高速|epla-?hs|pla\+?[\s-]*hs|\bhs\b/i.test(metin);
+}
+
+/** Tek bir renk/makara başlığına göre en uygun adayı seçer (çoklu-renk swatch ilanları arka planda bırakılır). */
+function enUygunAdaySec(adaylar) {
+  const cokluRenkMi = (t) => /(?:[a-z]+\/){2,}[a-z]+/i.test(String(t?.ad || ''));
+  return adaylar.reduce((a, b) => {
+    const ca = cokluRenkMi(a) ? 1 : 0;
+    const cb = cokluRenkMi(b) ? 1 : 0;
+    if (ca !== cb) return ca < cb ? a : b;
+    return Number(a.fiyat) <= Number(b.fiyat) ? a : b;
+  });
 }
 
 /**
@@ -359,7 +399,7 @@ function hizliMi(teklif) {
 export function paketCoz(paket, teklifler, dil = 'tr') {
   const cevrilmisPaket = paketCevir(paket, dil);
   const havuz = (Array.isArray(teklifler) ? teklifler : [])
-    .filter(t => t && t.ad && Number(t.fiyat) > 0 && t.url);
+    .filter(t => t && t.ad && Number(t.fiyat) > 0 && t.url && !toptanVeyaDevMakaraMi(t));
   const parcalar = [];
   const eksikler = [];
   const degisimler = [];
@@ -384,11 +424,11 @@ export function paketCoz(paket, teklifler, dil = 'tr') {
     if (parca.tercih) {
       const tercihli = adaylar.filter(t => parca.tercih.test(`${t.ad} ${t.site || ''}`));
       if (tercihli.length) {
-        secili = tercihli.reduce((a, b) => (Number(a.fiyat) <= Number(b.fiyat) ? a : b));
+        secili = enUygunAdaySec(tercihli);
       }
     }
     if (!secili) {
-      secili = adaylar.reduce((a, b) => (Number(a.fiyat) <= Number(b.fiyat) ? a : b));
+      secili = enUygunAdaySec(adaylar);
       if (parca.tercih) {
         degisimler.push({
           etiket: parca.etiket,

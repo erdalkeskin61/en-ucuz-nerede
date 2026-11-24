@@ -71,12 +71,20 @@ export function beslemeFilamentAdaylari(opts = {}) {
     const hamUrl = String(r.urunUrl || '').trim();
     if (!ad || !hamUrl) continue;
     if (/hediye\s*çeki|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo|gift\s*card|carte\s*cadeau/i.test(ad)) continue;
+    // Endüstriyel SLS tozlar, peletler, toptan MOQ/ön-sipariş ilanları tüketici makarası değildir.
+    if (/\b(sls\s*powder|powder|poudre|pellets?|moq\s*:|pre-?sale)\b|パウダー|ペレット|プレセール|最低注文|\btoz\b/i.test(ad)) continue;
+
+    // Bölgesel minimum fiyat eşiği: yanlış para birimi yazılmış kayıtları (örn. JPY pazarında 54.99) ele.
+    const minMakaraFiyat = beklenenPara === 'JPY' ? 300 : (beklenenPara === 'TRY' ? 50 : 4);
+    if (fiyat < minMakaraFiyat) continue;
 
     const bf = birimFiyatHesapla(ad, fiyat, rowPara);
     if (!bf || bf.tur !== 'filament' || bf.birim !== 'kg') continue;
     const makaraGram = Math.round(Number(bf.gram) || 0);
     const tlKg = Number(bf.birimFiyat);
     if (makaraGram < 100 || !Number.isFinite(tlKg) || tlKg <= 0) continue;
+    const minTlKg = beklenenPara === 'JPY' ? 600 : (beklenenPara === 'TRY' ? 150 : 6);
+    if (tlKg < minTlKg) continue;
 
     const anahtar = ad.toLocaleLowerCase('tr-TR');
     if (hariciGorulen?.has(anahtar) || yerelGorulen.has(anahtar)) continue;
@@ -89,6 +97,8 @@ export function beslemeFilamentAdaylari(opts = {}) {
 
     const hammadde = hammaddeTuruBul(ad);
     const renkler = extractColors(ad);
+    const destekMi = /\b(support|breakaway|pva|bvoh|hips)\b|サポート|destek/i.test(ad);
+    const malzemeEtiket = hammadde?.ad || (destekMi ? 'Support' : null);
 
     yerelGorulen.add(anahtar);
     adaylar.push({
@@ -105,8 +115,8 @@ export function beslemeFilamentAdaylari(opts = {}) {
       makaraGram,
       birimMetni: bf.rozetMetni || null,
       renk: renkler[0] || null,
-      malzeme: hammadde?.ad || 'PLA',
-      malzemeTuru: hammadde?.tur || null,
+      malzeme: malzemeEtiket,
+      malzemeTuru: hammadde?.tur || (destekMi ? 'support' : null),
       rozet: hammadde?.rozet || null,
       kargo: null,
       stok: true,
@@ -116,7 +126,9 @@ export function beslemeFilamentAdaylari(opts = {}) {
     });
   }
 
-  adaylar.sort((a, b) => a.tlKg - b.tlKg);
+  // Standart 500g-2kg bireysel makaralar önce, büyük endüstriyel/çoklu makaralar sonra; kendi içinde tlKg artan.
+  const standartMi = (x) => Number(x.makaraGram) >= 450 && Number(x.makaraGram) <= 2200 ? 0 : 1;
+  adaylar.sort((a, b) => standartMi(a) - standartMi(b) || (a.tlKg - b.tlKg));
   return limit ? adaylar.slice(0, limit) : adaylar;
 }
 

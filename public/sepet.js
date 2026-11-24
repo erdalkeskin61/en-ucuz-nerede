@@ -29,6 +29,7 @@ const SP = {
     kargoDegisir: 'Kargo seçilen senaryoya göre değişir',
     maksUrun: (n) => `Sepet en fazla ${n} ürün alabilir.`,
     stoktaYok: '⚠️ Şu an stokta yok:', yerine: 'yerine',
+    degisimMetni: (istenen, eklenen) => `${istenen} yerine ${eklenen}`,
     katalogBos: 'Canlı katalogda uygun ürün yok',
     paketEkleBtn: '+ Paketi Sepete Ekle', urunBulunamadi: 'Ürün bulunamadı',
     canliTeklif: (n) => `${n} canlı filament teklifi okundu. Fiyatlar radar taramasından gelir.`,
@@ -85,6 +86,7 @@ const SP = {
     kargoDegisir: 'Shipping depends on the selected scenario',
     maksUrun: (n) => `Cart can hold at most ${n} items.`,
     stoktaYok: '⚠️ Currently out of stock:', yerine: 'instead of',
+    degisimMetni: (istenen, eklenen) => `${eklenen} instead of ${istenen}`,
     katalogBos: 'No matching in-stock items in regional catalog',
     paketEkleBtn: '+ Add Pack to Cart', urunBulunamadi: 'Unavailable',
     canliTeklif: (n) => `${n} live filament offers loaded from regional scans.`,
@@ -141,6 +143,7 @@ const SP = {
     kargoDegisir: 'Livraison calculée selon le scénario choisi',
     maksUrun: (n) => `Maximum ${n} articles dans le panier.`,
     stoktaYok: '⚠️ Actuellement en rupture :', yerine: 'à la place de',
+    degisimMetni: (istenen, eklenen) => `${eklenen} à la place de ${istenen}`,
     katalogBos: 'Aucun produit compatible en stock dans ce catalogue',
     paketEkleBtn: '+ Ajouter le pack', urunBulunamadi: 'Indisponible',
     canliTeklif: (n) => `${n} offres de filaments en direct chargées pour cette région.`,
@@ -197,6 +200,7 @@ const SP = {
     kargoDegisir: '送料はプランにより変動します',
     maksUrun: (n) => `カートには最大${n}件まで追加できます。`,
     stoktaYok: '⚠️ 現在在庫切れ:', yerine: 'の代替:',
+    degisimMetni: (istenen, eklenen) => `${istenen} の代替: ${eklenen}`,
     katalogBos: 'この地域のライブカタログに該当在庫がありません',
     paketEkleBtn: '+ セットを追加', urunBulunamadi: '在庫なし',
     canliTeklif: (n) => `${n}件の地域ライブフィラメント情報を読み込みました。`,
@@ -441,7 +445,7 @@ function paketleriCiz() {
       ? `<p class="paket-eksik">${SZ.stoktaYok} ${r.eksikler.map(e => esc(e.etiket)).join(', ')}</p>`
       : '';
     const degisim = r.degisimler.length
-      ? `<p class="paket-degisim">↔️ ${r.degisimler.map(d => `${esc(d.istenen)} ${SZ.yerine} ${esc(d.eklenen)}`).join('; ')}</p>`
+      ? `<p class="paket-degisim">↔️ ${r.degisimler.map(d => SZ.degisimMetni(esc(d.istenen), esc(d.eklenen))).join('; ')}</p>`
       : '';
     const toplam = r.tahminiToplam != null ? para(r.tahminiToplam) : '—';
     return `<article class="paket-kart" data-paket="${esc(p.id)}">

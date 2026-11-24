@@ -192,5 +192,48 @@ kontrol('eşik aşılmıyorsa toplam 300+50=350', Math.abs(kucuk.senaryolar.tekM
   }
 }
 
+/* ---------------- 6) Toz / Destek / MOQ / Dev Makara & Ters Değişim Koruması ---------------- */
+{
+  const sahteHavuz = [
+    { ad: 'Raise3D PA NEXT Black Powder 10kg', fiyat: 104900, tlKg: 10490, makaraGram: 10000, paraBirimi: 'JPY', renk: 'siyah', malzeme: 'PLA', url: 'https://example.com/powder' },
+    { ad: 'QIDI S-White Support 1kg Filament', fiyat: 11400, tlKg: 11400, makaraGram: 1000, paraBirimi: 'JPY', renk: 'beyaz', malzeme: 'PLA', url: 'https://example.com/support' },
+    { ad: 'Inslogic PETG 2.0フィラメント 1.75mm、8色セット（8×0.25kg）', fiyat: 54.99, tlKg: 27.5, makaraGram: 2000, paraBirimi: 'JPY', renk: null, malzeme: 'PETG', url: 'https://example.com/inslogic-glitch' },
+    { ad: '(Pre-Sale) ABS Filament, 1kg (MOQ:20 Rolls,Mixable)', fiyat: 12.95, tlKg: 0.65, makaraGram: 20000, paraBirimi: 'USD', renk: null, malzeme: 'ABS', url: 'https://example.com/abs-moq' },
+    { ad: 'PLA Black 10kg Mega Industrial Spool', fiyat: 99.99, tlKg: 9.99, makaraGram: 10000, paraBirimi: 'USD', renk: 'siyah', malzeme: 'PLA', url: 'https://example.com/pla-10kg' },
+    { ad: 'Normal PLA Black 1kg', fiyat: 19.99, tlKg: 19.99, makaraGram: 1000, paraBirimi: 'USD', renk: 'siyah', malzeme: 'PLA', url: 'https://example.com/pla-1kg-black' },
+    { ad: 'Normal PLA White 1kg', fiyat: 19.99, tlKg: 19.99, makaraGram: 1000, paraBirimi: 'USD', renk: 'beyaz', malzeme: 'PLA', url: 'https://example.com/pla-1kg-white' },
+    { ad: 'Normal PLA Grey 1kg', fiyat: 19.99, tlKg: 19.99, makaraGram: 1000, paraBirimi: 'USD', renk: 'gri', malzeme: 'PLA', url: 'https://example.com/pla-1kg-grey' },
+    { ad: 'Normal PETG Black 1kg', fiyat: 21.99, tlKg: 21.99, makaraGram: 1000, paraBirimi: 'USD', renk: 'siyah', malzeme: 'PETG', url: 'https://example.com/petg-1kg' },
+    { ad: 'Normal ABS Black 1kg', fiyat: 22.99, tlKg: 22.99, makaraGram: 1000, paraBirimi: 'USD', renk: 'siyah', malzeme: 'ABS', url: 'https://example.com/abs-1kg' },
+    { ad: 'SUNLU High Speed PLA 1kg', fiyat: 14.99, tlKg: 14.99, makaraGram: 1000, paraBirimi: 'USD', renk: null, malzeme: 'PLA', url: 'https://example.com/sunlu-hs' },
+  ];
+
+  const temelEn = paketCoz(PAKETLER[0], sahteHavuz, 'en');
+  kontrol('paketCoz toz/destek/10kg yerine 1kg bireysel siyah/beyaz/gri PLA seçer',
+    temelEn.eklenebilir
+    && temelEn.parcalar.every(p => p.teklif.ad.startsWith('Normal PLA'))
+    && !temelEn.parcalar.some(p => /powder|support|10kg/i.test(p.teklif.ad)),
+    JSON.stringify(temelEn.parcalar.map(p => p.teklif.ad)));
+
+  const dayEn = paketCoz(PAKETLER[2], sahteHavuz, 'en');
+  kontrol('paketCoz MOQ/Pre-Sale ve JPY 54.99 glitch yerine normal 1kg PETG+ABS seçer',
+    dayEn.eklenebilir
+    && dayEn.parcalar.every(p => p.teklif.ad.startsWith('Normal '))
+    && !dayEn.parcalar.some(p => /moq|pre-?sale|inslogic/i.test(p.teklif.ad)),
+    JSON.stringify(dayEn.parcalar.map(p => p.teklif.ad)));
+
+  const jpTemel = paketCoz(PAKETLER[0], sahteHavuz.filter(x => x.paraBirimi === 'JPY'), 'ja');
+  kontrol('JP havuzunda yalnızca Powder/Support varsa PLA paketini doldurmaz (eksik bildirir)',
+    !jpTemel.eklenebilir && jpTemel.parcalar.length === 0 && jpTemel.eksikler.length === 3,
+    JSON.stringify(jpTemel));
+
+  const fsSepet = await import('node:fs');
+  const sepetJsKod = fsSepet.default.readFileSync('public/sepet.js', 'utf8');
+  kontrol('sepet.js EN ve FR ikame mesajında eklenen ürünü "instead of / à la place de" öncesine koyar',
+    sepetJsKod.includes('`${eklenen} instead of ${istenen}`')
+    && sepetJsKod.includes('`${eklenen} à la place de ${istenen}`')
+    && sepetJsKod.includes('SZ.degisimMetni(esc(d.istenen), esc(d.eklenen))'));
+}
+
 console.log(`SEPET ${gecen}/${toplam}`);
 process.exit(gecen === toplam ? 0 : 1);
