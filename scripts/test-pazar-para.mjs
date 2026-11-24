@@ -1580,8 +1580,24 @@ console.log('\n32) 🗿 Örnek STL test butonları & Meshy vs Hi3D baskı maliye
   kontrol('Çok renkli Combo/AMS yazıcı sayfalarında Hi3D & 3-4 makara planı çıkar, düz tek renk yazıcıda çıkmaz',
     comboHtml.includes('id="cokRenkliHi3dKart"')
     && comboHtml.includes('Smart Basket')
+    && comboHtml.includes('Search PLA+ Colors')
     && !duzHtml.includes('id="cokRenkliHi3dKart"')
     && p1sVsHtml.includes('id="amsCokRenkliRehberKart"'));
+
+  const eskiMP = process.env.IMPACT_MESHY_PROMO;
+  const eskiHP = process.env.IMPACT_HI3D_PROMO;
+  process.env.IMPACT_MESHY_PROMO = 'BASKI20 (%20 OFF)';
+  process.env.IMPACT_HI3D_PROMO = 'HI3DFREE';
+  try {
+    const enMalPromo = globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://baskihesap.tech') || '';
+    const comboPromo = urunSayfasiHtml(comboUrun, 'https://baskihesap.tech', [], { dil: 'en' });
+    kontrol('IMPACT_MESHY_PROMO ve IMPACT_HI3D_PROMO ayarlandığında özel promosyon rozeti görünür',
+      enMalPromo.includes('BASKI20 (%20 OFF)')
+      && comboPromo.includes('HI3DFREE'));
+  } finally {
+    if (eskiMP === undefined) delete process.env.IMPACT_MESHY_PROMO; else process.env.IMPACT_MESHY_PROMO = eskiMP;
+    if (eskiHP === undefined) delete process.env.IMPACT_HI3D_PROMO; else process.env.IMPACT_HI3D_PROMO = eskiHP;
+  }
 }
 
 closeDatabase();

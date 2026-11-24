@@ -677,6 +677,8 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
   const aiLink = aiModelPartnerLinkleri();
   const meshyRel = aiLink.meshyAfiliye ? 'noopener sponsored' : 'noopener';
   const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored' : 'noopener';
+  const meshyPromoHtml = aiLink.meshyPromo ? ` <span class="stl-promo-rozet">🎁 ${htmlKacis(aiLink.meshyPromo)}</span>` : '';
+  const hi3dPromoHtml = aiLink.hi3dPromo ? ` <span class="stl-promo-rozet">🎁 ${htmlKacis(aiLink.hi3dPromo)}</span>` : '';
   const sembol = sz.para.sembol;
   const sifirPara = kod === 'ja' ? '¥0' : (kod === 'fr' ? '0,00 €' : '$0.00');
   const k = {
@@ -780,7 +782,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('🎨 Çok Renkli Rozet (~36 g)', c.ornekRozet)
     .replace(
       /<span class="stl-ai-ipucu" id="stlAiIpucu">[\s\S]*?<\/span>/,
-      `<span class="stl-ai-ipucu" id="stlAiIpucu">${c.aiIpucu} <a href="${htmlKacis(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a> · <a href="${htmlKacis(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a></span>`,
+      `<span class="stl-ai-ipucu" id="stlAiIpucu">${c.aiIpucu} <a href="${htmlKacis(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>${meshyPromoHtml} · <a href="${htmlKacis(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>${hi3dPromoHtml}</span>`,
     )
     .replace(
       /<section class="mz-akis-kart" id="mzAkisKart"[\s\S]*?<\/section>/,
@@ -793,8 +795,8 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
         <article class="mz-akis-adim">
           <div class="mz-akis-no">${c.akisAdim1Bas}</div>
           <p>${c.akisAdim1Aciklama(
-            `<a href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>`,
-            `<a href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>`,
+            `<a href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>${meshyPromoHtml}`,
+            `<a href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>${hi3dPromoHtml}`,
           )}</p>
         </article>
         <article class="mz-akis-adim">

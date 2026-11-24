@@ -590,6 +590,10 @@ export function aiModelPartnerLinkleri() {
     if (/^https?:\/\//i.test(s)) return { url: s, afiliye: true };
     return { url: varsayilan, afiliye: false };
   };
+  const temizPromo = (ham) => {
+    const s = String(ham || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+    return s || null;
+  };
   const meshy = guvenliUrl(process.env.IMPACT_MESHY_URL, 'https://www.meshy.ai');
   const hi3d = guvenliUrl(process.env.IMPACT_HI3D_URL, 'https://www.hi3d.ai');
   return {
@@ -597,5 +601,7 @@ export function aiModelPartnerLinkleri() {
     hi3dUrl: hi3d.url,
     meshyAfiliye: meshy.afiliye,
     hi3dAfiliye: hi3d.afiliye,
+    meshyPromo: temizPromo(process.env.IMPACT_MESHY_PROMO),
+    hi3dPromo: temizPromo(process.env.IMPACT_HI3D_PROMO),
   };
 }

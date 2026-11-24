@@ -202,13 +202,15 @@ function yaziciKarsilastirmaOlustur(tanim, tumUrunler, tabanUrl) {
     ${/ams|combo|p1s|a1/i.test(`${tanim.solAd} ${tanim.sagAd}`) ? (() => {
       const aiLink = aiModelPartnerLinkleri();
       const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+      const hi3dPromo = aiLink.hi3dPromo ? ` · 🎁 ${htmlKacis(aiLink.hi3dPromo)}` : '';
       return `<section class="seo-kart" id="amsCokRenkliRehberKart">
         <h2 style="margin-top:0">🎨 Çok Renkli (AMS / Combo) Baskı Hazırlığı &amp; Filament Planı</h2>
         <p style="margin:0 0 12px;font-size:14px;color:var(--gri-metin);line-height:1.55">Çok renkli ünite (AMS / AMS Lite / CFS) almayı düşünenlerin en büyük sorusu “Modeli bölmeden nasıl çok renkli baskı hazırlarım?”dır. <b>Hi3D</b>, modeli bölmeden fiziksel çok renkli baskıya uygun çıktı üretmeye odaklanır; renk değişiminde kule (purge) payı için +%15–25 ek filament bütçelemek ve 3–4 rengi <a href="/sepet.html">Akıllı Sepet</a> üzerinden tek kargoda birleştirmek maliyeti düşürür.</p>
         <div class="seo-butonlar">
           <a class="seo-cta" href="/rehber/meshy-vs-hi3d-3d-baski-maliyeti">🤖 Çok Renkli Maliyet &amp; Purge Rehberi →</a>
+          <a class="seo-cta ikincil" href="/?url=eSUN%20PLA%2B">🌈 Çok Renkli PLA+ Ara →</a>
           <a class="seo-cta ikincil" href="/sepet.html">🧺 3–4 Renk Filament Sepetle →</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D Çok Renkli Yaklaşımını İncele ↗</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D Çok Renkli Yaklaşımını İncele ↗${hi3dPromo}</a>
         </div>
       </section>`;
     })() : ''}
@@ -838,8 +840,8 @@ function basSatAkisBolumuHtml(dil = 'tr') {
   const malYol = dil === 'tr' ? '/maliyet.html' : (GLOBAL_MALIYET_YOLLARI[dil] || '/en/cost-calculator');
   const sepYol = dil === 'tr' ? '/sepet.html' : (dil === 'fr' ? '/fr/panier' : `/${dil}/basket`);
   const anaYol = dil === 'tr' ? '/' : `/${dil}`;
-  const mLink = `<a href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>`;
-  const hLink = `<a href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>`;
+  const mLink = `<a href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>${aiLink.meshyPromo ? ` <span class="stl-promo-rozet">🎁 ${htmlKacis(aiLink.meshyPromo)}</span>` : ''}`;
+  const hLink = `<a href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>${aiLink.hi3dPromo ? ` <span class="stl-promo-rozet">🎁 ${htmlKacis(aiLink.hi3dPromo)}</span>` : ''}`;
   const k = {
     tr: {
       h2: '💼 Fotoğraftan Özel Ürün Bas-Sat Akışı (Atölye &amp; Ek Gelir Planı)',
@@ -1008,8 +1010,8 @@ function meshyVsHi3dRehberiHtml(tumUrunler, tabanUrl) {
         </div>
         <div class="seo-butonlar">
           <a class="seo-cta" href="/maliyet.html">🧮 Örnek STL ile Maliyet Hesapla →</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI'ı İncele ↗</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D'yi İncele ↗</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI'ı İncele ↗${aiLink.meshyPromo ? ` · 🎁 ${htmlKacis(aiLink.meshyPromo)}` : ''}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D'yi İncele ↗${aiLink.hi3dPromo ? ` · 🎁 ${htmlKacis(aiLink.hi3dPromo)}` : ''}</a>
         </div>
       </section>
       <section class="seo-kart">
@@ -1834,8 +1836,8 @@ export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []
         <div class="seo-fiyat-kutu"><div>💡 ${canliMetin}</div></div>
         <div class="seo-butonlar">
           <a class="seo-cta" href="${htmlKacis(malYol)}">${t.ctaCalc}</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">${t.ctaMeshy}</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${t.ctaHi3d}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">${t.ctaMeshy}${aiLink.meshyPromo ? ` · 🎁 ${htmlKacis(aiLink.meshyPromo)}` : ''}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${t.ctaHi3d}${aiLink.hi3dPromo ? ` · 🎁 ${htmlKacis(aiLink.hi3dPromo)}` : ''}</a>
         </div>
       </section>
       <section class="seo-kart">

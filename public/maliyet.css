@@ -1220,3 +1220,14 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   text-decoration: none;
 }
 .mz-akis-adim a:hover { text-decoration: underline; }
+.stl-promo-rozet {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--yesil);
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}

@@ -1708,8 +1708,12 @@ function cokRenkliUrunBolumuHtml(urun, kat, dil) {
   }
   const aiLink = aiModelPartnerLinkleri();
   const hi3dRel = aiLink.hi3dAfiliye ? 'noopener sponsored nofollow' : 'noopener';
+  const hi3dPromo = aiLink.hi3dPromo ? ` · 🎁 ${htmlKacis(aiLink.hi3dPromo)}` : '';
   const nav = navYollariGetir(dil);
   const plaKatYol = kategoriYoluGetir('pla-filament', dil);
+  const canliCokRenkAraYol = dil === 'tr'
+    ? '/?url=' + encodeURIComponent('eSUN PLA+')
+    : `/${dil}?url=` + encodeURIComponent('eSUN PLA+');
   const maliyetYol = dil === 'tr' ? '/maliyet.html' : (dil === 'fr' ? '/fr/calculateur-cout' : `/${dil}/cost-calculator`);
   const rehberYol = {
     tr: '/rehber/meshy-vs-hi3d-3d-baski-maliyeti',
@@ -1758,10 +1762,11 @@ function cokRenkliUrunBolumuHtml(urun, kat, dil) {
     <p style="margin:0 0 12px;font-size:14px;color:var(--gri-metin);line-height:1.55">${kopya.metin}</p>
     <div class="seo-butonlar">
       <a class="seo-cta" href="${htmlKacis(plaKatYol)}">${kopya.ctaPla}</a>
+      <a class="seo-cta ikincil" href="${htmlKacis(canliCokRenkAraYol)}">🌈 ${dil === 'tr' ? 'Çok Renkli PLA+ Ara' : (dil === 'fr' ? 'Comparer PLA+ Couleurs' : (dil === 'ja' ? '多色向けPLA+比較' : 'Search PLA+ Colors'))} →</a>
       <a class="seo-cta ikincil" href="${htmlKacis(nav.sepet)}">${kopya.ctaSepet}</a>
       <a class="seo-cta ikincil" href="${htmlKacis(rehberYol)}">${kopya.ctaRehber}</a>
       <a class="seo-cta ikincil" href="${htmlKacis(maliyetYol)}">🧮 ${dil === 'tr' ? 'Hesapla' : (dil === 'fr' ? 'Calculateur' : (dil === 'ja' ? '原価試算' : 'Cost Calculator'))} →</a>
-      <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${kopya.ctaHi3d}</a>
+      <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${kopya.ctaHi3d}${hi3dPromo}</a>
     </div>
   </section>`;
 }

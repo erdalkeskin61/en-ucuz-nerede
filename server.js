@@ -841,22 +841,29 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
     if (req.path === '/maliyet.html') {
       const aiLink = aiModelPartnerLinkleri();
       const escAttr = (s) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-      if (aiLink.meshyAfiliye) {
+      const escTxt = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const mPromo = aiLink.meshyPromo ? ` <span class="stl-promo-rozet">🎁 ${escTxt(aiLink.meshyPromo)}</span>` : '';
+      const hPromo = aiLink.hi3dPromo ? ` <span class="stl-promo-rozet">🎁 ${escTxt(aiLink.hi3dPromo)}</span>` : '';
+      if (aiLink.meshyAfiliye || mPromo) {
+        const mUrl = aiLink.meshyAfiliye ? escAttr(aiLink.meshyUrl) : 'https://www.meshy.ai';
+        const mRel = aiLink.meshyAfiliye ? 'noopener sponsored' : 'noopener';
         cikti = cikti.replace(
-          'href="https://www.meshy.ai" id="aiLinkMeshy" target="_blank" rel="noopener"',
-          `href="${escAttr(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="noopener sponsored"`,
+          'href="https://www.meshy.ai" id="aiLinkMeshy" target="_blank" rel="noopener" data-afiliye-site="meshy">Meshy AI</a>',
+          `href="${mUrl}" id="aiLinkMeshy" target="_blank" rel="${mRel}" data-afiliye-site="meshy">Meshy AI</a>${mPromo}`,
         ).replace(
-          'href="https://www.meshy.ai" class="mz-akis-partner-meshy" target="_blank" rel="noopener"',
-          `href="${escAttr(aiLink.meshyUrl)}" class="mz-akis-partner-meshy" target="_blank" rel="noopener sponsored"`,
+          'href="https://www.meshy.ai" class="mz-akis-partner-meshy" target="_blank" rel="noopener" data-afiliye-site="meshy">Meshy AI</a>',
+          `href="${mUrl}" class="mz-akis-partner-meshy" target="_blank" rel="${mRel}" data-afiliye-site="meshy">Meshy AI</a>${mPromo}`,
         );
       }
-      if (aiLink.hi3dAfiliye) {
+      if (aiLink.hi3dAfiliye || hPromo) {
+        const hUrl = aiLink.hi3dAfiliye ? escAttr(aiLink.hi3dUrl) : 'https://www.hi3d.ai';
+        const hRel = aiLink.hi3dAfiliye ? 'noopener sponsored' : 'noopener';
         cikti = cikti.replace(
-          'href="https://www.hi3d.ai" id="aiLinkHi3d" target="_blank" rel="noopener"',
-          `href="${escAttr(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="noopener sponsored"`,
+          'href="https://www.hi3d.ai" id="aiLinkHi3d" target="_blank" rel="noopener" data-afiliye-site="hi3d">Hi3D</a>',
+          `href="${hUrl}" id="aiLinkHi3d" target="_blank" rel="${hRel}" data-afiliye-site="hi3d">Hi3D</a>${hPromo}`,
         ).replace(
-          'href="https://www.hi3d.ai" class="mz-akis-partner-hi3d" target="_blank" rel="noopener"',
-          `href="${escAttr(aiLink.hi3dUrl)}" class="mz-akis-partner-hi3d" target="_blank" rel="noopener sponsored"`,
+          'href="https://www.hi3d.ai" class="mz-akis-partner-hi3d" target="_blank" rel="noopener" data-afiliye-site="hi3d">Hi3D</a>',
+          `href="${hUrl}" class="mz-akis-partner-hi3d" target="_blank" rel="${hRel}" data-afiliye-site="hi3d">Hi3D</a>${hPromo}`,
         );
       }
     }
