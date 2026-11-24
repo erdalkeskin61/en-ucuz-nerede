@@ -657,6 +657,23 @@ console.log('\n15) 📖 Rehber kartı rozet eşleştirme doğruluğu (/en/guides
     guidesHtml.includes('Creality K1C 3D Printer') && guidesHtml.includes('Polymaker PLA Filament 1kg'));
 }
 
+console.log('\n16) ♿ Erişilebilirlik (aria-selected & aria-busy) kontrolleri (/en /fr /ja):');
+for (const yol of ['/en', '/fr', '/ja']) {
+  const anaHtml = globalAracSayfasiBul(yol)?.olustur('https://baskihesap.tech') || '';
+  const modBolumu = (anaHtml.match(/<div class="arama-modu"[\s\S]*?<\/div>/) || [''])[0];
+  const trueSayisi = (modBolumu.match(/aria-selected="true"/g) || []).length;
+  const falseSayisi = (modBolumu.match(/aria-selected="false"/g) || []).length;
+  kontrol(`${yol}: 3 arama sekmesinde tam 1 aria-selected="true" ve 2 aria-selected="false" var`,
+    trueSayisi === 1 && falseSayisi === 2,
+    `true=${trueSayisi}, false=${falseSayisi}`);
+  kontrol(`${yol}: vitrinGrid aria-busy="true" takılı kalmaz ve Arama modu etiketi yerelleşir`,
+    !anaHtml.includes('id="vitrinGrid" class="vitrin-grid" aria-busy="true"')
+    && !anaHtml.includes('aria-label="Arama modu"'));
+}
+kontrol('app.js vitrinYukle market!==tr çıkışında aria-busy=false yapar ve modAyarla ilk yüklemede çalışır',
+  /market\s*!==\s*'tr'[\s\S]{0,80}aria-busy',\s*'false'/.test(appJsKod)
+  && /modAyarla\(aramaModu\)/.test(appJsKod));
+
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
 if (kalan > 0) process.exit(1);

@@ -557,7 +557,11 @@ async function vitrinYukle({ sessiz = false } = {}) {
   const grid = document.getElementById('vitrinGrid');
   const bos = document.getElementById('vitrinBos');
   if (!alan || !grid || vitrinYukleniyor) return;
-  if (BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr') { alan.hidden = true; return; }
+  if (BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr') {
+    grid.setAttribute('aria-busy', 'false');
+    alan.hidden = true;
+    return;
+  }
   vitrinYukleniyor = true;
   alan.hidden = false;
   if (!sessiz && !grid.children.length) {
@@ -1440,6 +1444,8 @@ document.querySelectorAll('.mod-secim').forEach(btn => {
     $('#urunUrl')?.focus();
   });
 });
+// İlk yüklemede yalnızca tek bir sekmenin aria-selected="true" olmasını garanti et.
+modAyarla(aramaModu);
 
 $('#linkteAraBtn')?.addEventListener('click', linkteAra);
 $('#linkAdiylaAraBtn')?.addEventListener('click', linkAdiylaAra);

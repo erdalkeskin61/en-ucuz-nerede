@@ -1603,7 +1603,7 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
           ${b.vitrinParca} <span class="vitrin-filtre-sayi" data-sayi="genel">0</span>
         </button>
       </div>
-      <div id="vitrinGrid" class="vitrin-grid" aria-busy="true" aria-live="polite"></div>
+      <div id="vitrinGrid" class="vitrin-grid" aria-busy="false" aria-live="polite"></div>
       <div id="vitrinBos" class="vitrin-bos" hidden>
         <span class="vitrin-bos-ikon" aria-hidden="true">📡</span>
         <div>
@@ -1974,6 +1974,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   );
 
   cikti = cikti
+    .replace('aria-label="Arama modu"', `aria-label="${htmlKacis(kod === 'fr' ? 'Mode de recherche' : (kod === 'ja' ? '検索モード' : 'Search mode'))}"`)
     .replace('✨ Otomatik', c.modOto)
     .replaceAll('🔗 Linkte ara', c.modLink)
     .replaceAll('💬 Ürün adıyla ara', c.modAd)
