@@ -902,8 +902,10 @@ bolum('14) 🌍 Global Live market sekmesi & boşta sıfırlamama');
   kontrol('maliyet.js: aktifTlKg() canlı boşta 0 döndürmez (manuelTlKg fallback)',
     /function aktifTlKg\(\)[\s\S]{0,200}Number\(durum\.manuelTlKg\)/.test(maliyetSon)
     && !/return f \? Number\(f\.tlKg\) : 0;/.test(maliyetSon));
-  kontrol('maliyet.js: net maliyet çarpımdan önce cent (2 ondalık) yuvarlanır ($1.10×2=$2.20)',
-    /const net = Math\.round\(\(hammadde \+ elektrik \+ amortisman\) \* 100\) \/ 100;/.test(maliyetSon));
+  kontrol('maliyet.js: net maliyet ve kalemler çarpımdan önce para birimi hassasiyetine (cent/Yen) yuvarlanır',
+    /const BASAMAK = ORTAM_PARA === 'JPY' \? 0 : 2;/.test(maliyetSon)
+    && /const net = paraYuvarla\(hammadde \+ elektrik \+ amortisman\);/.test(maliyetSon)
+    && /const fTutar = paraYuvarla\(net \* c\);/.test(maliyetSon));
 
   const { enUcuzFilamentler } = await import('../src/baskiApi.js');
   const { dbBaglantisi, closeDatabase } = await import('../src/store.js');

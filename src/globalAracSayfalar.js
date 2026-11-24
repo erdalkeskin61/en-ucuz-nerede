@@ -658,6 +658,9 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       birimSira: ['Weight', 'Time', 'Printer power', 'Filament', 'Advanced settings (electricity · depreciation · profit margin)', 'Target profit margin', 'Material price', 'Material name', 'Estimated print time.', 'Filament Used from your slicer.'],
       dolulukSecenek: ['10% — draft', '20% — standard', '40% — strong', '100% — solid'],
       sureTahminBtn: '✨ Estimate', sureTahminTitle: 'Auto-estimate print time from weight',
+      filamentLbl: '🧵 Filament', filamentAria: 'Filament price source', gucLbl: 'Power (W)',
+      kaydiriciAria: 'Profit margin slider', carpanAria: 'Quick profit multiplier',
+      ctaNot: 'Affiliate links may earn a commission at zero extra cost to you.',
       fisBaslik: '3D Print Cost &amp; Quote Summary', fisOnerilen: 'RECOMMENDED SELLING PRICE',
       fisWa: '📲 Share via WhatsApp', fisKopya: '📋 Copy Quote', fisYaz: '🖨️ Print / PDF',
     },
@@ -677,6 +680,9 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       footerUstNot: 'Les prix des filaments proviennent de l’analyse régionale en direct ; vérifiez toujours chez le marchand.',
       dolulukSecenek: ['10 % — brouillon', '20 % — standard', '40 % — solide', '100 % — plein'],
       sureTahminBtn: '✨ Estimer', sureTahminTitle: 'Estimer automatiquement depuis le poids',
+      filamentLbl: '🧵 Filament', filamentAria: 'Source de prix du filament', gucLbl: 'Puissance (W)',
+      kaydiriciAria: 'Curseur de marge bénéficiaire', carpanAria: 'Multiplicateur de marge rapide',
+      ctaNot: 'Liens possiblement affiliés ; votre prix reste inchangé.',
       fisBaslik: 'Résumé Coût &amp; Devis Impression 3D', fisOnerilen: 'PRIX DE VENTE CONSEILLÉ',
       fisWa: '📲 Envoyer sur WhatsApp', fisKopya: '📋 Copier le devis', fisYaz: '🖨️ Imprimer / PDF',
     },
@@ -696,6 +702,9 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       footerUstNot: 'フィラメント価格は地域ライブスキャン結果です。購入前にショップ画面で最終金額をご確認ください。',
       dolulukSecenek: ['10% — 下書き', '20% — 標準', '40% — 高強度', '100% — ソリッド'],
       sureTahminBtn: '✨ 自動推定', sureTahminTitle: 'モデル重量から印刷時間を自動推定',
+      filamentLbl: '🧵 フィラメント', filamentAria: 'フィラメント価格ソース', gucLbl: '消費電力 (W)',
+      kaydiriciAria: '利益率スライダー', carpanAria: '利益倍率プリセット',
+      ctaNot: '※一部アフィリエイトリンクを含みますが、購入価格は変わりません。',
       fisBaslik: '3Dプリント原価・お見積り書', fisOnerilen: '推奨販売価格',
       fisWa: '📲 WhatsAppで共有', fisKopya: '📋 見積書をコピー', fisYaz: '🖨️ 印刷 / PDF',
     },
@@ -744,12 +753,17 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<label for="sure">⏱️ Baskı süresi (saat)</label>', `<label for="sure">${c.sureLabel}</label>`)
     .replace('<button type="button" class="mz-mini-btn" id="sureTahmin" title="Gramajdan otomatik tahmin et">✨ Tahmin et</button>', `<button type="button" class="mz-mini-btn" id="sureTahmin" title="${htmlKacis(k.sureTahminTitle)}">${k.sureTahminBtn}</button>`)
     .replace('<label for="yazici">⚡ 3D yazıcı modeli</label>', `<label for="yazici">${k.yaziciLbl}</label>`)
+    .replace('<label for="gucW">Güç (W)</label>', `<label for="gucW">${k.gucLbl}</label>`)
+    .replace('<label>🧵 Filament</label>', `<label>${k.filamentLbl}</label>`)
+    .replace('aria-label="Filament fiyat kaynağı"', `aria-label="${htmlKacis(k.filamentAria)}"`)
     .replace('<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">Canlı piyasa</button>', `<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">${k.canliPiyasa}</button>`)
     .replace('<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">Manuel</button>', `<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">${k.manuel}</button>`)
     .replace('<label for="manuelTlKg">Fiyat (₺/kg)</label>', `<label for="manuelTlKg">${c.filamentFiyatLabel}</label>`)
     .replace('<label for="manuelAd">Malzeme adı</label>', `<label for="manuelAd">${k.malzemeAdLbl}</label>`)
     .replace('<summary>⚙️ Gelişmiş ayarlar (elektrik · amortisman · kâr marjı)</summary>', `<summary>${k.gelismisSum}</summary>`)
     .replace('<label for="karCarpani">💰 Hedef kâr marjı</label>', `<label for="karCarpani">${k.hedefKarLbl}</label>`)
+    .replace('aria-label="Kâr marjı kaydırıcı"', `aria-label="${htmlKacis(k.kaydiriciAria)}"`)
+    .replace('aria-label="Hızlı kâr çarpanı"', `aria-label="${htmlKacis(k.carpanAria)}"`)
     .replace('value="600" inputmode="decimal"', `value="${c.varsayilanFilamentKg}" inputmode="decimal"`)
     .replace('<label for="kwhTl">💡 Elektrik (₺/kWh)</label>', `<label for="kwhTl">${c.elektrikLabel}</label>`)
     .replace('value="2.90" inputmode="decimal"', `value="${c.varsayilanElektrikKwh}" inputmode="decimal"`)
@@ -771,6 +785,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<strong id="secilenFiyat">₺0,00</strong>', `<strong id="secilenFiyat">${sifirPara}</strong>`)
     .replace('<span>Kâr</span>', `<span>${k.kar}</span>`)
     .replace('<strong id="secilenKar">₺0,00</strong>', `<strong id="secilenKar">${sifirPara}</strong>`)
+    .replace('<p class="mz-cta-not">Bağlantı komisyonlu olabilir; fiyatınızı değiştirmez.</p>', `<p class="mz-cta-not">${k.ctaNot}</p>`)
     .replace('📋 Müşteri Fiyat Teklifini Kopyala', k.kopyala)
     .replace('<aside class="mz-varsayim" id="varsayimKutu"></aside>', `<aside class="mz-varsayim" id="varsayimKutu"></aside>\n        <div class="mz-cta" style="margin-top:12px">\n          <p class="mz-cta-metin">${c.magazaMetin}</p>\n          <a class="mz-cta-btn" href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">${k.crealityBtn}</a>\n        </div>`)
     .replace(/Elektrik ve amortisman <b>varsayımdır<\/b>[\s\S]*?<\/p>/, `${k.varsayimAlt}</p>`)

@@ -73,6 +73,13 @@ export function beslemeFilamentAdaylari(opts = {}) {
     if (/hediye\s*çeki|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo|gift\s*card|carte\s*cadeau/i.test(ad)) continue;
     // Endüstriyel SLS tozlar, peletler, toptan MOQ/ön-sipariş ilanları tüketici makarası değildir.
     if (/\b(sls\s*powder|powder|poudre|pellets?|moq\s*:|pre-?sale)\b|パウダー|ペレット|プレセール|最低注文|\btoz\b/i.test(ad)) continue;
+    // Başka ülkeye/bölgeye kilitli ("(EU only)", "(UK only)", "(CA only)" vb.) ilanları dışla.
+    const bolgeKilidiM = /\(\s*(us|eu|uk|ca|au|jp)\s+only\s*\)/i.exec(ad);
+    if (bolgeKilidiM) {
+      const kilit = bolgeKilidiM[1].toLowerCase();
+      const izinli = hedefMarket === 'fr' ? (kilit === 'eu' || kilit === 'fr') : (kilit === hedefMarket);
+      if (!izinli) continue;
+    }
 
     // Bölgesel minimum fiyat eşiği: yanlış para birimi yazılmış kayıtları (örn. JPY pazarında 54.99) ele.
     const minMakaraFiyat = beklenenPara === 'JPY' ? 300 : (beklenenPara === 'TRY' ? 50 : 4);

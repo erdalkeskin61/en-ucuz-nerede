@@ -111,6 +111,10 @@
   };
 
   /* ---------------- Kısa yardımcılar ---------------- */
+  const BASAMAK = ORTAM_PARA === 'JPY' ? 0 : 2;
+  const CARPAN_BASAMAK = 10 ** BASAMAK;
+  const paraYuvarla = (n) => Math.round((Number(n) || 0) * CARPAN_BASAMAK) / CARPAN_BASAMAK;
+
   const $ = (id) => document.getElementById(id);
   const tl = (n) => Number(n || 0).toLocaleString('tr-TR', {
     minimumFractionDigits: 2, maximumFractionDigits: 2,
@@ -120,6 +124,64 @@
     : (typeof window.formatPara === 'function'
       ? window.formatPara(n, ORTAM_PARA, ORTAM_YEREL)
       : Number(n || 0).toLocaleString(ORTAM_YEREL, { style: 'currency', currency: ORTAM_PARA })));
+
+  const MALZEME_CEVIRI = {
+    en: {
+      'TPU (Esnek)': 'TPU (Flexible)', 'Karbon Fiber (CF)': 'Carbon Fiber (CF)',
+      'Hyper / Yüksek Hız': 'Hyper / High-Speed', 'PVA (Destek)': 'PVA (Support)',
+      'Standart Reçine': 'Standard Resin', 'ABS-Like Reçine': 'ABS-Like Resin',
+      'Tough / Dayanıklı': 'Tough Resin', Support: 'Support',
+    },
+    fr: {
+      'TPU (Esnek)': 'TPU (Souple)', 'Karbon Fiber (CF)': 'Fibre de carbone (CF)',
+      'Hyper / Yüksek Hız': 'Hyper / Haute Vitesse', 'PVA (Destek)': 'PVA (Support)',
+      'Standart Reçine': 'Résine standard', 'ABS-Like Reçine': 'Résine ABS-Like',
+      'Tough / Dayanıklı': 'Résine Tough', Support: 'Support',
+    },
+    ja: {
+      'TPU (Esnek)': 'TPU（柔軟）', 'Karbon Fiber (CF)': 'カーボン配合 (CF)',
+      'Hyper / Yüksek Hız': 'Hyper / 高速印刷', 'PVA (Destek)': 'PVA（サポート）',
+      'Standart Reçine': '標準レジン', 'ABS-Like Reçine': 'ABSライクレジン',
+      'Tough / Dayanıklı': '高強度レジン', Support: 'サポート材',
+    },
+  };
+  const RENK_CEVIRI = {
+    en: {
+      siyah: 'Black', beyaz: 'White', gri: 'Grey', 'açık gri': 'Light Grey', 'koyu gri': 'Dark Grey',
+      kırmızı: 'Red', mavi: 'Blue', yeşil: 'Green', sarı: 'Yellow', turuncu: 'Orange',
+      mor: 'Purple', pembe: 'Pink', altın: 'Gold', bakır: 'Copper', bronz: 'Bronze',
+      ten: 'Skin', bej: 'Beige', latte: 'Latte', antrasit: 'Anthracite', gümüş: 'Silver',
+      lacivert: 'Navy', turkuaz: 'Teal', bordo: 'Burgundy', mermer: 'Marble', naturel: 'Natural',
+      kum: 'Sand', mokka: 'Mocha', 'nane yeşili': 'Mint Green', şeffaf: 'Clear', ipek: 'Silk',
+    },
+    fr: {
+      siyah: 'Noir', beyaz: 'Blanc', gri: 'Gris', 'açık gri': 'Gris clair', 'koyu gri': 'Gris foncé',
+      kırmızı: 'Rouge', mavi: 'Bleu', yeşil: 'Vert', sarı: 'Jaune', turuncu: 'Orange',
+      mor: 'Violet', pembe: 'Rose', altın: 'Or', bakır: 'Cuivre', bronz: 'Bronze',
+      ten: 'Chair', bej: 'Beige', latte: 'Latte', antrasit: 'Anthracite', gümüş: 'Argent',
+      lacivert: 'Bleu marine', turkuaz: 'Turquoise', bordo: 'Bordeaux', mermer: 'Marbre', naturel: 'Naturel',
+      kum: 'Sable', mokka: 'Moka', 'nane yeşili': 'Menthe', şeffaf: 'Transparent', ipek: 'Soie',
+    },
+    ja: {
+      siyah: 'ブラック', beyaz: 'ホワイト', gri: 'グレー', 'açık gri': 'ライトグレー', 'koyu gri': 'ダークグレー',
+      kırmızı: 'レッド', mavi: 'ブルー', yeşil: 'グリーン', sarı: 'イエロー', turuncu: 'オレンジ',
+      mor: 'パープル', pembe: 'ピンク', altın: 'ゴールド', bakır: 'カッパー', bronz: 'ブロンズ',
+      ten: 'スキン', bej: 'ベージュ', latte: 'ラテ', antrasit: 'アンスラサイト', gümüş: 'シルバー',
+      lacivert: 'ネイビー', turkuaz: 'ターコイズ', bordo: 'ワインレッド', mermer: 'マーブル', naturel: 'ナチュラル',
+      kum: 'サンド', mokka: 'モカ', 'nane yeşili': 'ミント', şeffaf: 'クリア', ipek: 'シルク',
+    },
+  };
+  const malzemeYerel = (m) => {
+    const s = String(m || '').trim();
+    if (!s || ORTAM_DIL === 'tr') return s;
+    return MALZEME_CEVIRI[ORTAM_DIL]?.[s] || s;
+  };
+  const renkYerel = (r) => {
+    const s = String(r || '').trim();
+    if (!s || ORTAM_DIL === 'tr') return s;
+    const k = s.toLocaleLowerCase('tr-TR');
+    return RENK_CEVIRI[ORTAM_DIL]?.[k] || s;
+  };
 
   function el(tag, sinif, metin) {
     const d = document.createElement(tag);
@@ -137,10 +199,11 @@
     bej: '#d9c7a7', latte: '#c8a882', antrasit: '#374151', gümüş: '#c0c0c0',
     'lacivert': '#1e3a8a', turkuaz: '#14b8a6', bordo: '#7f1d1d', mermer: '#e5e7eb',
     naturel: '#e5e0d5', kum: '#d2b48c', mokka: '#6f4e37', 'nane yeşili': '#a7d8b0',
+    şeffaf: '#e2e8f0', ipek: '#d8b4fe',
   };
   const renkHex = (ad) => RENK_HEX[String(ad || '').toLocaleLowerCase('tr-TR')] || '#9ca3af';
 
-  /* ================= HESAP (sunucu formülüyle birebir) ================= */
+  /* ================= HESAP (para birimi hassasiyetiyle tutarlı) ================= */
   function hesapla() {
     const g = Number(durum.gramaj);
     const sure = Number(durum.sureSaat) > 0 ? Number(durum.sureSaat) : g / GRAM_SAAT;
@@ -150,27 +213,33 @@
     const tlKg = aktifTlKg();
     const carpan = Number(durum.karCarpani) || 2;
 
-    const hammadde = (g / 1000) * tlKg;
     const kwh = (guc * sure) / 1000;
-    const elektrik = kwh * kwhTl;
-    const amortisman = sure * yipranma;
-    const net = Math.round((hammadde + elektrik + amortisman) * 100) / 100;
+    // Görünür kalemler ve net maliyet aynı kuruş/Yen basamağına yuvarlanır:
+    // böylece kalem toplamı == Net Maliyet ve Net × 2 == 2× kartı her zaman tutar.
+    const hammadde = paraYuvarla((g / 1000) * tlKg);
+    const elektrik = paraYuvarla(kwh * kwhTl);
+    const amortisman = paraYuvarla(sure * yipranma);
+    const net = paraYuvarla(hammadde + elektrik + amortisman);
 
-    const fiyat = (c) => ({
-      carpan: c,
-      fiyat: Math.round(net * c * 100) / 100,
-      kar: Math.round((net * c - net) * 100) / 100,
-      karYuzde: Math.round((c - 1) * 100),
-    });
+    const fiyat = (c) => {
+      const fTutar = paraYuvarla(net * c);
+      return {
+        carpan: c,
+        fiyat: fTutar,
+        kar: paraYuvarla(fTutar - net),
+        karYuzde: Math.round((c - 1) * 100),
+      };
+    };
 
+    const secilenFiyat = paraYuvarla(net * carpan);
     return {
       gramaj: g, sureSaat: Math.round(sure * 100) / 100,
       sureTahmini: durum.sureOtomatik === true || !(Number(durum.sureSaat) > 0),
       gucW: guc, kwhTl, yipranmaSaatTl: yipranma, tlKg, kwh,
       hammadde, elektrik, amortisman, net,
       carpan,
-      secilen: Math.round(net * carpan * 100) / 100,
-      karTl: Math.round((net * carpan - net) * 100) / 100,
+      secilen: secilenFiyat,
+      karTl: paraYuvarla(secilenFiyat - net),
       satis: {
         maliyet: fiyat(1), hobi: fiyat(2), atolye: fiyat(2.5), ticari: fiyat(3),
       },
@@ -328,7 +397,7 @@
 
       const govde = el('span', 'mz-fil-govde');
       govde.appendChild(el('span', 'mz-fil-ad', f.ad));
-      const alt = [f.site, f.malzeme, f.renk].filter(Boolean).join(' · ');
+      const alt = [f.site, malzemeYerel(f.malzeme), renkYerel(f.renk)].filter(Boolean).join(' · ');
       govde.appendChild(el('span', 'mz-fil-alt', alt));
 
       btn.appendChild(nokta);

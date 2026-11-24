@@ -955,6 +955,68 @@ console.log('\n22) 🖨️ 3D Yazıcı kategorisi EN/FR/JA yazıcı dışı ür�
   }
 }
 
+console.log('\n23) 🧮 Maliyet Hesaplayıcı yuvarlama tutarlılığı, metin temizliği & bölge kilidi filtresi:');
+{
+  const maliyetJsKod = fs.readFileSync('public/maliyet.js', 'utf8');
+  kontrol('maliyet.js paraYuvarla ile kalemleri ve satış fiyatlarını para birimi hassasiyetine göre yuvarlar',
+    maliyetJsKod.includes('const BASAMAK = ORTAM_PARA === \'JPY\' ? 0 : 2;')
+    && maliyetJsKod.includes('const net = paraYuvarla(hammadde + elektrik + amortisman);')
+    && maliyetJsKod.includes('malzemeYerel(f.malzeme)')
+    && maliyetJsKod.includes('renkYerel(f.renk)'));
+
+  const calcSim = (paraKod, tlKg, g, sure, guc, kwhTl, yipranma, karCarpani) => {
+    const basamak = paraKod === 'JPY' ? 0 : 2;
+    const mult = 10 ** basamak;
+    const round = (x) => Math.round((Number(x) || 0) * mult) / mult;
+    const kwh = (guc * sure) / 1000;
+    const hammadde = round((g / 1000) * tlKg);
+    const elektrik = round(kwh * kwhTl);
+    const amortisman = round(sure * yipranma);
+    const net = round(hammadde + elektrik + amortisman);
+    const x2 = round(net * 2);
+    const x3 = round(net * 3);
+    const sec = round(net * karCarpani);
+    return { hammadde, elektrik, amortisman, net, x2, x3, sec, kar: round(sec - net) };
+  };
+
+  const jp = calcSim('JPY', 2800, 160, 4, 150, 31, 40, 2);
+  kontrol('JA JPY ¥2,800/kg: 448+19+160=627, 2×=1254 (+627), 3×=1881',
+    jp.hammadde === 448 && jp.elektrik === 19 && jp.amortisman === 160
+    && jp.net === 627 && jp.x2 === 1254 && jp.x3 === 1881 && jp.kar === 627,
+    JSON.stringify(jp));
+
+  const us = calcSim('USD', 0.60, 160, 4, 150, 0.16, 0.25, 2);
+  kontrol('EN USD $0.60/kg: 0.10+0.10+1.00=1.20 (kalem toplamı = net, $0.01 sapma yok)',
+    us.hammadde === 0.10 && us.elektrik === 0.10 && us.amortisman === 1.00
+    && us.net === 1.20 && us.x2 === 2.40,
+    JSON.stringify(us));
+
+  for (const [yol, beklenenEtiket] of [
+    ['/en/cost-calculator', '<label>🧵 Filament</label>'],
+    ['/fr/calculateur-cout', '<label>🧵 Filament</label>'],
+    ['/ja/cost-calculator', '<label>🧵 フィラメント</label>'],
+  ]) {
+    const html = globalAracSayfasiBul(yol)?.olustur('https://baskihesap.tech') || '';
+    kontrol(`${yol}: komisyon bildirimi & Filament etiketi yerelleştirilmiştir`,
+      !html.includes('Bağlantı komisyonlu olabilir')
+      && html.includes(beklenenEtiket)
+      && !html.includes('<label for="gucW">Güç (W)</label>'));
+  }
+
+  for (const [m, d] of [['TPU (Esnek)', 'en'], ['Karbon Fiber (CF)', 'en'], ['Hyper / Yüksek Hız', 'ja'], ['PVA (Destek)', 'fr']]) {
+    kontrol(`MALZEME_CEVIRI[${d}] "${m}" değerini içerir`, maliyetJsKod.includes(`'${m}':`));
+  }
+  for (const r of ['siyah', 'beyaz', 'gri', 'şeffaf', 'ipek']) {
+    kontrol(`RENK_CEVIRI "${r}" rengini çevirir`, maliyetJsKod.includes(`${r}:`));
+  }
+
+  const { enUcuzFilamentler } = await import('../src/baskiApi.js');
+  const usFil = enUcuzFilamentler({ limit: 200, market: 'us' }).filamentler;
+  const kotuUs = usFil.filter(f => /\bmoq:|pre-?sale|\((?:eu|uk|ca|au|jp)\s+only\)/i.test(f.ad)).map(f => f.ad);
+  kontrol('US enUcuzFilamentler MOQ, Pre-Sale ve (EU/UK/CA only) ilanları döndürmez',
+    kotuUs.length === 0, JSON.stringify(kotuUs.slice(0, 5)));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
