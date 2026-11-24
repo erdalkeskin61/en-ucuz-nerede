@@ -750,6 +750,55 @@ kontrol('server.js /api/history 3D dışı (tablo/pil) ve Avustralya (.com.au / 
   && srvKod.includes('GECMIS_UCD_RE')
   && srvKod.includes('GECMIS_AU_RE'));
 
+console.log('\n20) 🌐 Canlı Arama Sonuçları, Stok Yok, Fiyat Trendi & Kartlar (TR/EN/FR/JA):');
+const i18nGlobalKod = fs.readFileSync('public/i18n-global.js', 'utf8');
+const canliBlokMatch = appJsKod.match(/const CANLI_SOZLUK = \{[\s\S]*?\nfunction zekaMesajYerellestir[\s\S]*?\n\}/);
+kontrol('app.js CANLI_SOZLUK ve yerelleştirme yardımcıları tanımlı', !!canliBlokMatch);
+
+if (canliBlokMatch) {
+  const yerellestirmeKod = canliBlokMatch[0];
+  const ctxTr = vm.runInNewContext(`const BASKI_ORTAM = { dil: 'tr' }; ${yerellestirmeKod}; ({ CANLI_SOZLUK, CANLI_YEREL, yuzdeStr, imzaliYuzde, baskiNedenYerellestir, baskiRozetYerellestir, magazaDurumNedeniYerellestir, trendTavsiyeYerellestir, zekaMesajYerellestir })`);
+  const trKeys = Object.keys(ctxTr.CANLI_SOZLUK.tr).sort();
+  for (const dil of ['en', 'fr', 'ja']) {
+    const k = Object.keys(ctxTr.CANLI_SOZLUK[dil] || {}).sort();
+    kontrol(`CANLI_SOZLUK.${dil} tüm anahtarlara sahip`, JSON.stringify(trKeys) === JSON.stringify(k));
+    const ctxDil = vm.runInNewContext(`const BASKI_ORTAM = { dil: '${dil}' }; ${yerellestirmeKod}; ({ CANLI_YEREL, yuzdeStr, imzaliYuzde, baskiNedenYerellestir, baskiRozetYerellestir, magazaDurumNedeniYerellestir, trendTavsiyeYerellestir, zekaMesajYerellestir })`);
+    const y = ctxDil.CANLI_YEREL;
+    const tumDegerler = Object.entries(y).map(([kn, val]) => {
+      if (typeof val === 'function') {
+        try { return `${kn}:${String(val(2, 3, 1, 4))}`; } catch { return ''; }
+      }
+      if (val && typeof val === 'object') return JSON.stringify(val);
+      return `${kn}:${String(val)}`;
+    }).join(' | ');
+    const sizinti = tumDegerler.match(/(Mağaza Hazır|Tüm Mağazalarda|Stok Yok|Muadili ara|Muadil ürün|Fiyat dağılımı|Fiyat trendi|Veri Az|Tükendi|Fiyat Alarmı|Sepete Ekle|Sitene Ekle|Mağazada Gör|Mağazaya Git|kaynak ürün|Hammadde:)/);
+    kontrol(`CANLI_SOZLUK.${dil} Türkçe kalıntı içermez`, !sizinti, sizinti?.[0] || '');
+    kontrol(`${dil}: yüzde, neden ve trend yardımcıları yerel metin döndürür`,
+      (dil === 'fr' ? ctxDil.imzaliYuzde(0) === '0 %' : ctxDil.imzaliYuzde(0) === '0%')
+      && !/Makara gramajı|başlıktan okunamadı/i.test(ctxDil.baskiNedenYerellestir('Makara gramajı başlıktan okunamadı (uydurma hesap yapılmaz).'))
+      && !/Aramada hiç sonuç/i.test(ctxDil.magazaDurumNedeniYerellestir('Aramada hiç sonuç bulunamadı (Creality K1C)'))
+      && !/Aday ürünler/i.test(ctxDil.magazaDurumNedeniYerellestir('Aday ürünler incelendi ancak aynı ürün bulunamadı'))
+      && !/Arama sayfası okunamadı/i.test(ctxDil.magazaDurumNedeniYerellestir('Arama sayfası okunamadı: timeout'))
+      && !/Yalnızca \d+ günlük/i.test(ctxDil.trendTavsiyeYerellestir({ gunSayisi: 2, diffFromAvg: 0 }, '📉 Yalnızca 2 günlük fiyat geçmişi var.'))
+      && !/Ortalamadan/i.test(ctxDil.zekaMesajYerellestir('🟢 Ortalamadan %12 daha ucuz — almak için iyi zaman.', { ortalamaFarkYuzde: 12 })));
+  }
+  kontrol('TR modunda %0 biçimi ve Türkçe baskı mesajları korunur',
+    ctxTr.imzaliYuzde(0) === '%0'
+    && ctxTr.baskiNedenYerellestir('Makara gramajı başlıktan okunamadı (uydurma hesap yapılmaz).').includes('Makara gramajı'));
+}
+
+kontrol('app.js canlı rendering yollarında sabit Türkçe kalıntı kalmamıştır',
+  !/Kalanı beklemeden bulunan sonuçları göster \(\$\{hazir\}/.test(appJsKod)
+  && !/`🟢 Stokta Var \(\$\{stoktaVarSayisi\}\)`/.test(appJsKod)
+  && !/`🔴 Stokta Yok \(\$\{stoktaYokSayisi\}\)`/.test(appJsKod)
+  && !/<div[^>]*>⚠️ Tüm Mağazalarda Tükendi<\/div>/.test(appJsKod)
+  && !/aria-label="Son \$\{gun\} gün fiyat trendi"/.test(appJsKod)
+  && !/label:\s*"En Düşük Fiyat"/.test(appJsKod)
+  && !/>🔔 Fiyat Alarmı<\/button>/.test(appJsKod)
+  && !/>🧺 Sepete Ekle<\/button>/.test(appJsKod)
+  && !/>🔌 Sitene Ekle<\/button>/.test(appJsKod)
+  && i18nGlobalKod.includes('Son (\\d+) gün fiyat trendi'));
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

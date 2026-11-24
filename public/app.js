@@ -1254,6 +1254,925 @@ function renkYerellestir(ham) {
   return DIL_KOPYA_YEREL.renkler[k] || s;
 }
 
+/* ---------------- Çok Dilli Canlı Sonuç & Analiz Sözlüğü ---------------- */
+const CANLI_SOZLUK = {
+  tr: {
+    erkenSonucBtn: (n) => `⚡ Kalanı beklemeden bulunan sonuçları göster (${n} Mağaza Hazır)`,
+    erkenSonucHazirlaniyor: '⏳ Sonuçlar hazırlanıyor…',
+    cipAraniyor: 'Aranıyor',
+    cipHata: 'Hata',
+    cipIptal: 'İptal edildi',
+    cipYok: 'Bulunamadı',
+    iptalKalan: (k) => 'Karşılaştırma iptal edildi' + (k > 0 ? ` — ${k} site taranmadı.` : '.') + ' Aşağıda o ana kadar bulunan sonuçlar var.',
+    tazeSrw: (yas, sayac) => `⚡ Bu ürün ${yas || 'daha önce'} tarandı (Hafızadan gösteriliyor) · Mağazalar canlı kontrol ediliyor${sayac}...`,
+    tazeHata: (m) => `⚠️ Fiyatlar güncellenemedi (${m}) — aşağıdaki sonuç son taramaya ait.`,
+    tazeGuncellendi: (n, ornek, yeni, kayb) => `✅ ${n} mağazada fiyat güncellendi ✓${ornek ? ` (${ornek})` : ''}${yeni ? ` · ${yeni} yeni mağaza` : ''}${kayb ? ` · ${kayb} mağaza sonuçtan çıktı` : ''}.`,
+    tazeKaybolan: (k) => `⚠️ ${k} mağaza artık sonuç vermiyor; diğer fiyatlar doğrulandı.`,
+    tazeDogrulandi: '✅ Tüm fiyatlar güncel ve doğrulandı ✓',
+    tazeAnlik: (yas) => `⚡ Bu ürün ${yas || 'daha önce'} tarandı (Hafızadan gösteriliyor).`,
+    kaynakEtiketi: 'Kaynak',
+    belirtilmedi: 'Belirtilmedi',
+    markaEtiketi: 'Marka',
+    modelKoduEtiketi: 'Model kodu',
+    barkodEtiketi: 'Barkod',
+    tumundeTukendi: '⚠️ Tüm Mağazalarda Tükendi',
+    stokYokKisa: 'Stok Yok',
+    hepsiTukenmis: (n) => `${n} mağazanın tamamında stok tükenmiş`,
+    ozetEnUcuzDahil: '🏷️ En ucuz (kargo dahil)',
+    ozetEnUcuzKargo: '🏷️ En ucuz (+kargo sepette)',
+    kargoDahilUcret: (u) => `📦 ${u} kargo dahil`,
+    kargoDahilBedava: '📦 Kargo dahil (ücretsiz)',
+    kargoSepetteEklenir: '⚠️ +Kargo sepette eklenir',
+    stoktaMagazaSayi: (n) => ` · ${n} mağazada stokta`,
+    sonucEtiketi: 'Sonuç',
+    stoktaUrunYok: 'Stokta ürün bulunamadı',
+    tasarrufTutar: (u) => `Bu alışverişte <b>${u} net tasarruf</b> ediyorsunuz!`,
+    tasarrufDetay: (u, us, p, y) => `En ucuz: ${u} (${us}) · En pahalı mağaza (${p}) yerine ${y} daha karlı.`,
+    ayniDipFiyat: (u) => `Tüm mağazalarda en dip fiyat: ${u}`,
+    ayniDipDetay: (n) => `${n} mağaza arasında fiyat farkı bulunmuyor, en ucuz seviyedesiniz.`,
+    kismiTarama: (yas, t, top) => `⚠️ ${yas ? yas + ' ' : ''}Kısmi tarama (${t}/${top} mağaza)`,
+    dogrulandiSaat: (yas, top) => yas ? `🕒 ${yas} ${top} mağazadan doğrulandı` : `🕒 Az önce ${top} mağazadan canlı doğrulandı`,
+    tukendiAltBaslik: '⚠️ Bu ürün şu anda tüm mağazalarda tükenmiş görünüyor.',
+    bulunamadiAltBaslik: '🔍 Bu ürün için mağazalarda eşleşen fiyat bulunamadı.',
+    benzerAlternatifler: (baslik) => `${baslik} Benzer popüler alternatifler stokta:`,
+    muadilAra: 'Muadili ara',
+    muadilAraniyor: 'Aranıyor…',
+    muadilStokYokBaslik: 'Bu ürün stokta yok',
+    muadilHicYokBaslik: 'Bu ürün hiçbir sitede bulunamadı',
+    muadilStokYokAciklama: (n) => `${n} mağazanın tamamı stokta yok görünüyor. Aynı ihtiyacı karşılayan muadillere bakalım.`,
+    muadilHicYokAciklama: 'Aynı ihtiyacı karşılayabilecek muadil ürünlere bakabilirsin.',
+    muadilVarMi: 'Muadil ürün var mı?',
+    muadilKesifAciklama: 'Aynı ihtiyacı karşılayan daha uygun fiyatlı modelleri arayabilirsin.',
+    muadilYukleniyor: 'Muadil ürünler aranıyor… (bu birkaç saniye sürebilir)',
+    muadilHataBaslatilamadi: 'Muadil araması başlatılamadı',
+    bentoEnUcuzUst: '🏷️ EN UCUZ',
+    bentoMagazayaGit: 'Mağazaya Git',
+    bentoFiyatTrendi: '📈 Fiyat trendi',
+    bentoFiyatDagilimi: '📊 Fiyat dağılımı',
+    bentoDip: 'Dip',
+    bentoOrt: 'Ort.',
+    bentoTepe: 'Tepe',
+    bentoTrendAria: (g) => `Son ${g} gün fiyat trendi`,
+    bentoSonGunGecmis: (g) => `Son ${g} gün · fiyat geçmişi`,
+    bentoYetersizTrend: '📈 Henüz yeterli fiyat geçmişi yok.',
+    bentoYetersizTrendAlt: 'Her karşılaştırma bir kayıt ekler; trend birkaç günde oluşur.',
+    bentoEnUcuz: 'En ucuz',
+    bentoEnPahali: 'En pahalı',
+    bentoFarkMetni: (f) => `${f} fark`,
+    bentoTumAyniFiyat: 'Tüm mağazalarda aynı fiyat',
+    bentoDahaAzOde: (y) => `${y} daha az öde`,
+    bentoFarkYok: 'Fark yok',
+    bentoMagazaStok: (m, s) => `${m} mağaza · ${s} stokta`,
+    bentoKargoUcretsiz: '<span class="bento-rozet yesil">📦 Kargo dahil (ücretsiz)</span>',
+    bentoKargoUcretli: (u) => `<span class="bento-rozet yesil">📦 Kargo dahil (${u} kargo toplama eklendi)</span>`,
+    bentoKargoEsikli: (t, esik) => `<span class="bento-rozet uyari" title="${t}">⚠️ +Kargo sepette eklenir (${esik} üzeri ücretsiz)</span>`,
+    bentoKargoEsikliVarsayilanAciklama: 'Kargo ücreti sepette netleşir',
+    bentoKargoBilinmiyorTitle: 'Mağaza kargo ücretini ürün sayfasında belirtmiyor; gerçek toplam sepette artabilir.',
+    bentoKargoBilinmiyor: '⚠️ +Kargo sepette eklenir',
+    bentoStokTukendi: '<span class="bento-rozet kirmizi">🔴 Tükendi</span>',
+    bentoStokta: '<span class="bento-rozet yesil">🟢 Stokta</span>',
+    zekaSimdiAl: 'Şimdi Al',
+    zekaBekle: 'Bekle / Pahalı',
+    zekaFiyatNormal: 'Fiyat Normal',
+    zekaVeriAz: 'Veri Az',
+    zekaGecmisAlt: (g, n) => `${g} günlük geçmiş · ${n} fiyat gözlemi`,
+    zekaFarkUcuz: (y) => `30G ortalamadan ${y} daha ucuz`,
+    zekaFarkPahali: (y) => `30G ortalamadan ${y} daha pahalı`,
+    zekaEnDusuk: (v) => `En düşük: <b>${v}</b>`,
+    zekaOrt30: (v) => `30G ort.: <b>${v}</b>`,
+    zekaEnYuksek: (v) => `En yüksek: <b>${v}</b>`,
+    birimSahteBaslik: '⚠️ Sahte ucuz uyarısı',
+    birimSahteAciklama: 'Başlık fiyatı düşük görünen ürün, kilogram başına daha pahalı.',
+    birimNormalBaslik: '⚖️ Kilogram başına fiyat',
+    birimNormalAciklama: 'Farklı gramajlar aynı birime çevrildi.',
+    birimSupheliTitle: 'Fiyat doğrulanmalı',
+    birimSupheli: 'şüpheli',
+    birimTahminTitle: 'Nominal yoğunlukla tahmin',
+    birimDogrulanmali: (n, nedeni) => `<b>⚠️ ${n} fiyat doğrulanmalı.</b> ${nedeni} Bu yüzden "en iyi birim fiyat" seçimine dahil edilmedi.`,
+    birimSupheliVarsayilan: 'Birim fiyat diğerlerinin çok altında.',
+    birimAltReferans: (g) => `Karşılaştırma ${g} üzerinden yapıldı. Birim/kg = gerçekte ödenecek tutar ÷ net miktar.`,
+    birimAltDuz: 'Birim/kg = gerçekte ödenecek tutar ÷ net miktar.',
+    birimThMagaza: 'Mağaza',
+    birimThMiktar: 'Miktar',
+    birimThFiyat: 'Fiyat',
+    birimThBirim: 'Birim fiyat',
+    filtreStoktaVar: (n) => `🟢 Stokta Var (${n})`,
+    filtreStoktaYok: (n) => `🔴 Stokta Yok (${n})`,
+    filtreCapEtiket: 'Çap:',
+    filtreCap175: (n) => `Çap: 1.75mm (${n})`,
+    filtreCap285: (n) => `⚠️ Çap: 2.85mm (${n})`,
+    filtreHammaddeEtiket: 'Hammadde:',
+    filtreYuksekBirim: (n) => `⚠️ Yüksek Birim Maliyet (${n})`,
+    okunamadiOnEk: '⚠️ Okunamadı: ',
+    bulunamadiVarsayilan: 'Ürün bulunamadı',
+    eslesme: { model_kodu: 'model kodu eşleşmesi', barkod: 'barkod eşleşmesi', benzerlik: 'başlık benzerliği', kaynak: 'kaynak ürün' },
+    rozetUcretsizKargo: '📦 Ücretsiz Kargo',
+    rozetUcretliKargo: (u) => `🚚 +${u} Kargo`,
+    rozetResmiSatici: '🏢 Resmi Satıcı',
+    rozetVadeFarksiz: '💳 Vade Farksız Taksit',
+    capOkTitle: 'Standart FDM yazıcılarla uyumlu',
+    birimTahminiEk: (u) => `≈ ${u}/kg (tahmini)`,
+    birimIpucuHacim: 'Hacimden hesaplandı (nominal yoğunluk)',
+    birimIpucuTahmini: 'Hacimden nominal yoğunlukla hesaplandı (tahmini)',
+    birimIpucuNet: 'Net miktara göre hesaplandı',
+    kdvTitle: 'Mağaza bu ürünü KDV hariç yayımlıyor. Karşılaştırmada KDV dahil tutar kullanılır.',
+    kdvDahil: (oran, haric) => `🧾 KDV Dahil${oran ? ` (${oran})` : ''} — KDV hariç ${haric}`,
+    taksitBaslik: 'Taksit',
+    fiyataDahilBaslik: 'Fiyata dahil',
+    hesapEtiketi: 'Hesap:',
+    cashbackSatir: (p, e) => `🪙 ${p} değerinde puan/cashback — etkin maliyet <b>${e}</b>`,
+    kuponSatir: (f, i, kod, kosul) => `🎟️ Kuponla <b>${f}</b> (−${i})${kod ? ` — kod: <b>${kod}</b>` : ''}${kosul ? `<span class="kupon-kosul"> · ${kosul}</span>` : ''}`,
+    kampanyaOnizlemeSatir: (f, kosul) => `🏷️ Kampanyayla <b>~${f}</b>${kosul ? `<span class="kampanya-kosul"> · ${kosul}</span>` : ''}`,
+    kargoEsikTitle: 'Sepetinizi tamamlayarak kargo ücretinden kurtulabilirsiniz.',
+    kargoEsikMetin: (e, u) => `💡 Sepete <b>${e}</b> değerinde ürün eklerseniz <b>${u}</b> kargo BEDAVA olur!`,
+    seritEnUcuz: '🏷️ EN UCUZ',
+    seritTukendi: '🔴 TÜKENDİ',
+    seritFarkliRenk: (c) => `FARKLI RENK: ${c}`,
+    kartStokYok: '🔴 Stokta Yok',
+    kartStokVar: '🟢 Stokta Var',
+    kartSonStokTitle: 'Mağaza sayfasındaki kalan stok uyarısı',
+    kartSonStok: (n) => `⏳ Son ${n} Ürün`,
+    dipRozetTitle: (s) => `${s} ürün sayfasında belirtilen dip fiyat rozeti`,
+    tukendiRozetTitle: 'Ürün şu anda tükendi; gösterilen fiyat son bilinen fiyattır.',
+    tukendiRozet: 'Tükendi',
+    sahteIndirimRozet: (id, g) => `⚠️ Şişirilmiş Liste Fiyatı<small>iddia ${id} · gerçek ${g}</small>`,
+    gercekFirsatTitle: 'Son 90 günün en düşük fiyatı',
+    gercekFirsatHtml: '🔥 GERÇEK FIRSAT<small>Son 90 günün dip fiyatı</small>',
+    ozelIndirimDusuldu: (u) => `Ürüne özel indirim düşüldü: −${u} · `,
+    sonBilinenFiyat: '⚠️ son bilinen fiyat — ürün şu anda tükendi',
+    kargoDahilToplamDetay: (ara, kar) => `<b>Kargo dahil toplam</b> (ürün ${ara} + kargo ${kar})`,
+    kargoDahilToplamBedava: '<b>Kargo dahil toplam</b> (ücretsiz kargo)',
+    gercekOdenecek: 'gerçekte ödenecek tutar (kargo sepette belli)',
+    fiyatHesaplanamadi: 'fiyat hesaplanamadı',
+    kargoSatirEtiket: '🚚 Kargo',
+    kargoBedava: 'Bedava',
+    kargoEsikSepette: (u) => `Sepette eklenir (${u} üzeri bedava)`,
+    kargoSepetteBelli: 'Sepette belli',
+    kargoBilinmiyor: 'Bilinmiyor',
+    kosulluBaslik: 'Koşullu kampanyalar (fiyata dahil değil)',
+    alarmBtnTitle: 'Hedef fiyatın altına düşünce bu cihaza bildirim al — e-posta/şifre gerekmez',
+    alarmBtn: '🔔 Fiyat Alarmı',
+    sepetBtnTitle: 'Akıllı Sepete ekle — kargo ve kupon dahil en ucuz kombinasyonu bul',
+    sepetBtn: '🧺 Sepete Ekle',
+    embedBtnTitle: 'Bu ürünün canlı fiyatını kendi sitene ekle',
+    embedBtn: '🔌 Sitene Ekle',
+    magazadaGorTukendi: 'Mağazada Gör (Tükendi)',
+    magazadaGor: 'Mağazada Gör',
+    tabloStokYok: '<span class="stok-hucre-yok">🔴 Yok</span>',
+    tabloStokVar: '<span class="stok-hucre-var">🟢 Var</span>',
+    tabloRenkFarkli: ' (farklı)',
+    trendVeriBirikiyor: '📉 Veri birikiyor',
+    trendHenuzYetersiz: 'Henüz yeterli fiyat geçmişi yok',
+    trendHicYokMesaj: 'Bu ürün için henüz fiyat geçmişi yok. Her karşılaştırma ve takip kontrolü bir kayıt ekler.',
+    trendAzGunMesaj: (g) => `Yalnızca ${g} günlük veri var; trend çizgisi için en az 2 gün gerekiyor.`,
+    trendDusukEtiket: (g) => `🟢 Son ${g} Günün En Düşüğü`,
+    trendOrtEtiket: (g) => `📊 Son ${g} Günün Ortalaması`,
+    trendYuksekEtiket: (g) => `🔴 Son ${g} Günün En Yükseği`,
+    trendAvantajli: (y) => `${y} daha avantajlı`,
+    trendPahali: (y) => `${y} daha pahalı`,
+    trendOrtalamada: 'Ortalamada',
+    trendOzetAlt: (g, k, m) => `Son ${g} gün · ${k} fiyat gözlemi${m ? ` · ${m} mağaza` : ''}`,
+    grafikEnDusuk: 'En Düşük Fiyat',
+    grafikOrt30: '30 Günlük Ortalama',
+  },
+  en: {
+    erkenSonucBtn: (n) => `⚡ Show found results now (${n} Store${n === 1 ? '' : 's'} Ready)`,
+    erkenSonucHazirlaniyor: '⏳ Preparing results…',
+    cipAraniyor: 'Searching',
+    cipHata: 'Error',
+    cipIptal: 'Cancelled',
+    cipYok: 'Not found',
+    iptalKalan: (k) => 'Comparison cancelled' + (k > 0 ? ` — ${k} stores skipped.` : '.') + ' Showing results found so far below.',
+    tazeSrw: (yas, sayac) => `⚡ Cached ${yas || 'earlier'} (showing snapshot) · Refreshing live store prices${sayac}...`,
+    tazeHata: (m) => `⚠️ Could not refresh prices (${m}) — showing last recorded results.`,
+    tazeGuncellendi: (n, ornek, yeni, kayb) => `✅ Updated prices across ${n} store(s) ✓${ornek ? ` (${ornek})` : ''}${yeni ? ` · ${yeni} new store(s)` : ''}${kayb ? ` · ${kayb} removed` : ''}.`,
+    tazeKaybolan: (k) => `⚠️ ${k} store(s) no longer returned a match; remaining prices verified.`,
+    tazeDogrulandi: '✅ All prices verified and up to date ✓',
+    tazeAnlik: (yas) => `⚡ Scanned ${yas || 'earlier'} (showing cached snapshot).`,
+    kaynakEtiketi: 'Source',
+    belirtilmedi: 'Not specified',
+    markaEtiketi: 'Brand',
+    modelKoduEtiketi: 'Model code',
+    barkodEtiketi: 'Barcode',
+    tumundeTukendi: '⚠️ Sold Out Everywhere',
+    stokYokKisa: 'Out of Stock',
+    hepsiTukenmis: (n) => `Out of stock across all ${n} store${n === 1 ? '' : 's'}`,
+    ozetEnUcuzDahil: '🏷️ Lowest total (shipping incl.)',
+    ozetEnUcuzKargo: '🏷️ Lowest price (+shipping at checkout)',
+    kargoDahilUcret: (u) => `📦 ${u} shipping included`,
+    kargoDahilBedava: '📦 Free shipping included',
+    kargoSepetteEklenir: '⚠️ +Shipping added at checkout',
+    stoktaMagazaSayi: (n) => ` · in stock at ${n} store${n === 1 ? '' : 's'}`,
+    sonucEtiketi: 'Result',
+    stoktaUrunYok: 'No in-stock offers found',
+    tasarrufTutar: (u) => `You save <b>${u} net</b> on this order!`,
+    tasarrufDetay: (u, us, p, y) => `Cheapest: ${u} (${us}) · ${y} better than the highest offer (${p}).`,
+    ayniDipFiyat: (u) => `Same lowest price everywhere: ${u}`,
+    ayniDipDetay: (n) => `No price spread across ${n} stores — you are already at the floor price.`,
+    kismiTarama: (yas, t, top) => `⚠️ ${yas ? yas + ' · ' : ''}Partial scan (${t}/${top} stores)`,
+    dogrulandiSaat: (yas, top) => yas ? `🕒 Verified ${yas} across ${top} stores` : `🕒 Just verified live across ${top} stores`,
+    tukendiAltBaslik: '⚠️ This item appears sold out at every scanned store.',
+    bulunamadiAltBaslik: '🔍 No matching store prices were found for this item.',
+    benzerAlternatifler: (baslik) => `${baslik} Similar popular alternatives in stock:`,
+    muadilAra: 'Search alternatives',
+    muadilAraniyor: 'Searching…',
+    muadilStokYokBaslik: 'This product is out of stock',
+    muadilHicYokBaslik: 'Not found at any scanned store',
+    muadilStokYokAciklama: (n) => `All ${n} store${n === 1 ? '' : 's'} appear out of stock. Let’s check comparable alternatives.`,
+    muadilHicYokAciklama: 'Look at comparable products that fit the same need.',
+    muadilVarMi: 'Looking for alternatives?',
+    muadilKesifAciklama: 'Search comparable models at a lower total cost.',
+    muadilYukleniyor: 'Searching alternative products… (this may take a few seconds)',
+    muadilHataBaslatilamadi: 'Could not start alternative search',
+    bentoEnUcuzUst: '🏷️ LOWEST PRICE',
+    bentoMagazayaGit: 'Go to Store',
+    bentoFiyatTrendi: '📈 Price trend',
+    bentoFiyatDagilimi: '📊 Price spread',
+    bentoDip: 'Low',
+    bentoOrt: 'Avg.',
+    bentoTepe: 'High',
+    bentoTrendAria: (g) => `Last ${g}-day price trend`,
+    bentoSonGunGecmis: (g) => `Last ${g} days · price history`,
+    bentoYetersizTrend: '📈 Not enough price history yet.',
+    bentoYetersizTrendAlt: 'Each comparison adds an observation; a trend forms in a few days.',
+    bentoEnUcuz: 'Lowest',
+    bentoEnPahali: 'Highest',
+    bentoFarkMetni: (f) => `${f} spread`,
+    bentoTumAyniFiyat: 'Same price across all stores',
+    bentoDahaAzOde: (y) => `Save ${y}`,
+    bentoFarkYok: 'No spread',
+    bentoMagazaStok: (m, s) => `${m} store${m === 1 ? '' : 's'} · ${s} in stock`,
+    bentoKargoUcretsiz: '<span class="bento-rozet yesil">📦 Free shipping included</span>',
+    bentoKargoUcretli: (u) => `<span class="bento-rozet yesil">📦 Shipping incl. (${u} added to total)</span>`,
+    bentoKargoEsikli: (t, esik) => `<span class="bento-rozet uyari" title="${t}">⚠️ +Shipping at checkout (free over ${esik})</span>`,
+    bentoKargoEsikliVarsayilanAciklama: 'Shipping calculated at checkout',
+    bentoKargoBilinmiyorTitle: 'Shipping rate is not shown on the product page; checkout total may be higher.',
+    bentoKargoBilinmiyor: '⚠️ +Shipping at checkout',
+    bentoStokTukendi: '<span class="bento-rozet kirmizi">🔴 Sold Out</span>',
+    bentoStokta: '<span class="bento-rozet yesil">🟢 In Stock</span>',
+    zekaSimdiAl: 'Buy Now',
+    zekaBekle: 'Wait / High',
+    zekaFiyatNormal: 'Fair Price',
+    zekaVeriAz: 'Low Data',
+    zekaGecmisAlt: (g, n) => `${g}-day history · ${n} price observation${n === 1 ? '' : 's'}`,
+    zekaFarkUcuz: (y) => `${y} below 30D average`,
+    zekaFarkPahali: (y) => `${y} above 30D average`,
+    zekaEnDusuk: (v) => `Lowest: <b>${v}</b>`,
+    zekaOrt30: (v) => `30D avg.: <b>${v}</b>`,
+    zekaEnYuksek: (v) => `Highest: <b>${v}</b>`,
+    birimSahteBaslik: '⚠️ Misleading headline price',
+    birimSahteAciklama: 'Cheaper-looking listings cost more per kilogram once spool weight is factored in.',
+    birimNormalBaslik: '⚖️ Price per kilogram',
+    birimNormalAciklama: 'Different weights converted to the same unit.',
+    birimSupheliTitle: 'Price requires verification',
+    birimSupheli: 'unverified',
+    birimTahminTitle: 'Estimated from nominal density',
+    birimDogrulanmali: (n, nedeni) => `<b>⚠️ ${n} price(s) need verification.</b> ${nedeni} Excluded from lowest unit-price ranking.`,
+    birimSupheliVarsayilan: 'Unit price is suspiciously below peers.',
+    birimAltReferans: (g) => `Compared on ${g} basis. Unit/kg = real total ÷ net weight.`,
+    birimAltDuz: 'Unit/kg = real total ÷ net weight.',
+    birimThMagaza: 'Store',
+    birimThMiktar: 'Weight',
+    birimThFiyat: 'Price',
+    birimThBirim: 'Unit price',
+    filtreStoktaVar: (n) => `🟢 In Stock (${n})`,
+    filtreStoktaYok: (n) => `🔴 Out of Stock (${n})`,
+    filtreCapEtiket: 'Diameter:',
+    filtreCap175: (n) => `Diameter: 1.75mm (${n})`,
+    filtreCap285: (n) => `⚠️ Diameter: 2.85mm (${n})`,
+    filtreHammaddeEtiket: 'Material:',
+    filtreYuksekBirim: (n) => `⚠️ High Unit Cost (${n})`,
+    okunamadiOnEk: '⚠️ Unreadable: ',
+    bulunamadiVarsayilan: 'Product not found',
+    eslesme: { model_kodu: 'model code match', barkod: 'barcode match', benzerlik: 'title similarity', kaynak: 'source product' },
+    rozetUcretsizKargo: '📦 Free Shipping',
+    rozetUcretliKargo: (u) => `🚚 +${u} Shipping`,
+    rozetResmiSatici: '🏢 Official Store',
+    rozetVadeFarksiz: '💳 0% APR Installments',
+    capOkTitle: 'Compatible with standard 1.75 mm FDM printers',
+    birimTahminiEk: (u) => `≈ ${u}/kg (est.)`,
+    birimIpucuHacim: 'Calculated from volume (nominal density)',
+    birimIpucuTahmini: 'Estimated from volume & nominal density',
+    birimIpucuNet: 'Calculated from net weight',
+    kdvTitle: 'Store displays pre-tax/VAT prices; total includes applicable tax.',
+    kdvDahil: (oran, haric) => `🧾 Tax Incl.${oran ? ` (${oran})` : ''} — Excl. tax ${haric}`,
+    taksitBaslik: 'Installments',
+    fiyataDahilBaslik: 'Included in price',
+    hesapEtiketi: 'Breakdown:',
+    cashbackSatir: (p, e) => `🪙 ${p} rewards/cashback — effective cost <b>${e}</b>`,
+    kuponSatir: (f, i, kod, kosul) => `🎟️ With coupon <b>${f}</b> (−${i})${kod ? ` — code: <b>${kod}</b>` : ''}${kosul ? `<span class="kupon-kosul"> · ${kosul}</span>` : ''}`,
+    kampanyaOnizlemeSatir: (f, kosul) => `🏷️ With promo <b>~${f}</b>${kosul ? `<span class="kampanya-kosul"> · ${kosul}</span>` : ''}`,
+    kargoEsikTitle: 'Top up your basket to waive shipping fees.',
+    kargoEsikMetin: (e, u) => `💡 Add <b>${e}</b> more to unlock <b>${u}</b> FREE shipping!`,
+    seritEnUcuz: '🏷️ LOWEST',
+    seritTukendi: '🔴 SOLD OUT',
+    seritFarkliRenk: (c) => `OTHER COLOR: ${c}`,
+    kartStokYok: '🔴 Out of Stock',
+    kartStokVar: '🟢 In Stock',
+    kartSonStokTitle: 'Low stock warning reported on store page',
+    kartSonStok: (n) => `⏳ Only ${n} left`,
+    dipRozetTitle: (s) => `Lowest price badge shown on ${s} listing`,
+    tukendiRozetTitle: 'Currently sold out; price shown is the last recorded price.',
+    tukendiRozet: 'Sold Out',
+    sahteIndirimRozet: (id, g) => `⚠️ Inflated List Price<small>claimed ${id} · real ${g}</small>`,
+    gercekFirsatTitle: 'Lowest price in the last 90 days',
+    gercekFirsatHtml: '🔥 REAL DEAL<small>90-day floor price</small>',
+    ozelIndirimDusuldu: (u) => `Instant discount applied: −${u} · `,
+    sonBilinenFiyat: '⚠️ last known price — currently sold out',
+    kargoDahilToplamDetay: (ara, kar) => `<b>Total incl. shipping</b> (item ${ara} + shipping ${kar})`,
+    kargoDahilToplamBedava: '<b>Total incl. shipping</b> (free shipping)',
+    gercekOdenecek: 'estimated checkout total (shipping calculated at checkout)',
+    fiyatHesaplanamadi: 'price unavailable',
+    kargoSatirEtiket: '🚚 Shipping',
+    kargoBedava: 'Free',
+    kargoEsikSepette: (u) => `Added at checkout (free over ${u})`,
+    kargoSepetteBelli: 'At checkout',
+    kargoBilinmiyor: 'Unknown',
+    kosulluBaslik: 'Conditional promos (excluded from price)',
+    alarmBtnTitle: 'Get an alert on this device when price drops — no email or password needed',
+    alarmBtn: '🔔 Price Alert',
+    sepetBtnTitle: 'Add to Smart Basket to minimize total across shipping and coupons',
+    sepetBtn: '🧺 Add to Basket',
+    embedBtnTitle: 'Embed this product’s live price badge on your website',
+    embedBtn: '🔌 Embed Widget',
+    magazadaGorTukendi: 'View at Store (Sold Out)',
+    magazadaGor: 'View at Store',
+    tabloStokYok: '<span class="stok-hucre-yok">🔴 Out</span>',
+    tabloStokVar: '<span class="stok-hucre-var">🟢 In</span>',
+    tabloRenkFarkli: ' (other)',
+    trendVeriBirikiyor: '📉 Collecting data',
+    trendHenuzYetersiz: 'Not enough price history yet',
+    trendHicYokMesaj: 'No price history recorded for this product yet. Each scan and alert check adds an observation.',
+    trendAzGunMesaj: (g) => `Only ${g} day(s) of data recorded; at least 2 days are needed for a trend chart.`,
+    trendDusukEtiket: (g) => `🟢 ${g}-Day Low`,
+    trendOrtEtiket: (g) => `📊 ${g}-Day Average`,
+    trendYuksekEtiket: (g) => `🔴 ${g}-Day High`,
+    trendAvantajli: (y) => `${y} cheaper`,
+    trendPahali: (y) => `${y} higher`,
+    trendOrtalamada: 'At average',
+    trendOzetAlt: (g, k, m) => `Last ${g} day${g === 1 ? '' : 's'} · ${k} price observation${k === 1 ? '' : 's'}${m ? ` · ${m} store${m === 1 ? '' : 's'}` : ''}`,
+    grafikEnDusuk: 'Lowest Price',
+    grafikOrt30: '30-Day Average',
+  },
+  fr: {
+    erkenSonucBtn: (n) => `⚡ Afficher les résultats déjà trouvés (${n} boutique${n === 1 ? '' : 's'} prête${n === 1 ? '' : 's'})`,
+    erkenSonucHazirlaniyor: '⏳ Préparation des résultats…',
+    cipAraniyor: 'Recherche',
+    cipHata: 'Erreur',
+    cipIptal: 'Annulé',
+    cipYok: 'Introuvable',
+    iptalKalan: (k) => 'Comparaison annulée' + (k > 0 ? ` — ${k} boutique(s) ignorée(s).` : '.') + ' Résultats trouvés jusque-là ci-dessous.',
+    tazeSrw: (yas, sayac) => `⚡ En cache ${yas || 'précédemment'} (aperçu) · Actualisation en direct${sayac}...`,
+    tazeHata: (m) => `⚠️ Actualisation impossible (${m}) — affichage du dernier relevé.`,
+    tazeGuncellendi: (n, ornek, yeni, kayb) => `✅ Prix mis à jour sur ${n} boutique(s) ✓${ornek ? ` (${ornek})` : ''}${yeni ? ` · ${yeni} nouvelle(s)` : ''}${kayb ? ` · ${kayb} retirée(s)` : ''}.`,
+    tazeKaybolan: (k) => `⚠️ ${k} boutique(s) ne répond(ent) plus ; les autres prix sont vérifiés.`,
+    tazeDogrulandi: '✅ Tous les prix sont à jour et vérifiés ✓',
+    tazeAnlik: (yas) => `⚡ Relevé ${yas || 'précédemment'} (aperçu en cache).`,
+    kaynakEtiketi: 'Source',
+    belirtilmedi: 'Non précisé',
+    markaEtiketi: 'Marque',
+    modelKoduEtiketi: 'Référence',
+    barkodEtiketi: 'Code-barres',
+    tumundeTukendi: '⚠️ Rupture partout',
+    stokYokKisa: 'Rupture',
+    hepsiTukenmis: (n) => `En rupture sur l’ensemble des ${n} boutique(s)`,
+    ozetEnUcuzDahil: '🏷️ Moins cher (livraison incluse)',
+    ozetEnUcuzKargo: '🏷️ Moins cher (+livraison au panier)',
+    kargoDahilUcret: (u) => `📦 Livraison ${u} incluse`,
+    kargoDahilBedava: '📦 Livraison gratuite incluse',
+    kargoSepetteEklenir: '⚠️ +Livraison ajoutée au panier',
+    stoktaMagazaSayi: (n) => ` · en stock chez ${n} boutique(s)`,
+    sonucEtiketi: 'Résultat',
+    stoktaUrunYok: 'Aucune offre en stock',
+    tasarrufTutar: (u) => `Vous économisez <b>${u} net</b> !`,
+    tasarrufDetay: (u, us, p, y) => `Moins cher : ${u} (${us}) · ${y} moins cher que l’offre la plus élevée (${p}).`,
+    ayniDipFiyat: (u) => `Même prix plancher partout : ${u}`,
+    ayniDipDetay: (n) => `Aucun écart entre ${n} boutiques — vous êtes déjà au prix le plus bas.`,
+    kismiTarama: (yas, t, top) => `⚠️ ${yas ? yas + ' · ' : ''}Analyse partielle (${t}/${top} boutiques)`,
+    dogrulandiSaat: (yas, top) => yas ? `🕒 Vérifié ${yas} sur ${top} boutiques` : `🕒 Vérifié en direct sur ${top} boutiques`,
+    tukendiAltBaslik: '⚠️ Ce produit semble épuisé sur toutes les boutiques analysées.',
+    bulunamadiAltBaslik: '🔍 Aucune offre correspondante trouvée sur les boutiques.',
+    benzerAlternatifler: (baslik) => `${baslik} Alternatives similaires en stock :`,
+    muadilAra: 'Chercher des alternatives',
+    muadilAraniyor: 'Recherche…',
+    muadilStokYokBaslik: 'Ce produit est en rupture de stock',
+    muadilHicYokBaslik: 'Introuvable sur les boutiques',
+    muadilStokYokAciklama: (n) => `Les ${n} boutique(s) semblent en rupture. Voyons des alternatives équivalentes.`,
+    muadilHicYokAciklama: 'Découvrez des produits équivalents répondant au même besoin.',
+    muadilVarMi: 'Une alternative moins chère ?',
+    muadilKesifAciklama: 'Recherchez des modèles équivalents à meilleur prix.',
+    muadilYukleniyor: 'Recherche d’alternatives en cours… (quelques secondes)',
+    muadilHataBaslatilamadi: 'Impossible de lancer la recherche d’alternatives',
+    bentoEnUcuzUst: '🏷️ LE MOINS CHER',
+    bentoMagazayaGit: 'Aller à la boutique',
+    bentoFiyatTrendi: '📈 Tendance des prix',
+    bentoFiyatDagilimi: '📊 Écart de prix',
+    bentoDip: 'Min',
+    bentoOrt: 'Moy.',
+    bentoTepe: 'Max',
+    bentoTrendAria: (g) => `Tendance des prix sur ${g} jours`,
+    bentoSonGunGecmis: (g) => `${g} derniers jours · historique`,
+    bentoYetersizTrend: '📈 Pas encore assez d’historique.',
+    bentoYetersizTrendAlt: 'Chaque comparaison ajoute un relevé ; la tendance apparaît en quelques jours.',
+    bentoEnUcuz: 'Moins cher',
+    bentoEnPahali: 'Plus cher',
+    bentoFarkMetni: (f) => `${f} d’écart`,
+    bentoTumAyniFiyat: 'Même prix partout',
+    bentoDahaAzOde: (y) => `Payez ${y} de moins`,
+    bentoFarkYok: 'Aucun écart',
+    bentoMagazaStok: (m, s) => `${m} boutique(s) · ${s} en stock`,
+    bentoKargoUcretsiz: '<span class="bento-rozet yesil">📦 Livraison gratuite incluse</span>',
+    bentoKargoUcretli: (u) => `<span class="bento-rozet yesil">📦 Livraison incluse (${u} ajoutés)</span>`,
+    bentoKargoEsikli: (t, esik) => `<span class="bento-rozet uyari" title="${t}">⚠️ +Livraison au panier (gratuite dès ${esik})</span>`,
+    bentoKargoEsikliVarsayilanAciklama: 'Frais de port calculés au panier',
+    bentoKargoBilinmiyorTitle: 'Frais de port non précisés sur la fiche produit ; le total peut augmenter au panier.',
+    bentoKargoBilinmiyor: '⚠️ +Livraison au panier',
+    bentoStokTukendi: '<span class="bento-rozet kirmizi">🔴 Épuisé</span>',
+    bentoStokta: '<span class="bento-rozet yesil">🟢 En stock</span>',
+    zekaSimdiAl: 'Acheter maintenant',
+    zekaBekle: 'Attendre / Cher',
+    zekaFiyatNormal: 'Prix normal',
+    zekaVeriAz: 'Peu de données',
+    zekaGecmisAlt: (g, n) => `Historique sur ${g} j · ${n} relevé(s)`,
+    zekaFarkUcuz: (y) => `${y} sous la moyenne 30J`,
+    zekaFarkPahali: (y) => `${y} au-dessus de la moyenne 30J`,
+    zekaEnDusuk: (v) => `Min : <b>${v}</b>`,
+    zekaOrt30: (v) => `Moy. 30J : <b>${v}</b>`,
+    zekaEnYuksek: (v) => `Max : <b>${v}</b>`,
+    birimSahteBaslik: '⚠️ Prix d’appel trompeur',
+    birimSahteAciklama: 'L’article le moins cher à l’unité revient plus cher au kilo.',
+    birimNormalBaslik: '⚖️ Prix au kilogramme',
+    birimNormalAciklama: 'Poids différents convertis dans la même unité.',
+    birimSupheliTitle: 'Prix à vérifier',
+    birimSupheli: 'suspect',
+    birimTahminTitle: 'Estimé selon la densité nominale',
+    birimDogrulanmali: (n, nedeni) => `<b>⚠️ ${n} prix à vérifier.</b> ${nedeni} Exclu du meilleur prix au kg.`,
+    birimSupheliVarsayilan: 'Prix unitaire anormalement bas.',
+    birimAltReferans: (g) => `Comparaison sur base ${g}. Prix/kg = total réel ÷ poids net.`,
+    birimAltDuz: 'Prix/kg = total réel ÷ poids net.',
+    birimThMagaza: 'Boutique',
+    birimThMiktar: 'Quantité',
+    birimThFiyat: 'Prix',
+    birimThBirim: 'Prix unitaire',
+    filtreStoktaVar: (n) => `🟢 En stock (${n})`,
+    filtreStoktaYok: (n) => `🔴 Rupture (${n})`,
+    filtreCapEtiket: 'Diamètre :',
+    filtreCap175: (n) => `Diamètre : 1,75 mm (${n})`,
+    filtreCap285: (n) => `⚠️ Diamètre : 2,85 mm (${n})`,
+    filtreHammaddeEtiket: 'Matière :',
+    filtreYuksekBirim: (n) => `⚠️ Coût unitaire élevé (${n})`,
+    okunamadiOnEk: '⚠️ Illisible : ',
+    bulunamadiVarsayilan: 'Produit introuvable',
+    eslesme: { model_kodu: 'référence identique', barkod: 'code-barres identique', benzerlik: 'titre similaire', kaynak: 'produit source' },
+    rozetUcretsizKargo: '📦 Livraison Gratuite',
+    rozetUcretliKargo: (u) => `🚚 +${u} Livraison`,
+    rozetResmiSatici: '🏢 Boutique Officielle',
+    rozetVadeFarksiz: '💳 Paiement sans frais',
+    capOkTitle: 'Compatible imprimantes FDM 1,75 mm standard',
+    birimTahminiEk: (u) => `≈ ${u}/kg (est.)`,
+    birimIpucuHacim: 'Calculé d’après le volume (densité nominale)',
+    birimIpucuTahmini: 'Estimé d’après le volume et la densité nominale',
+    birimIpucuNet: 'Calculé d’après le poids net',
+    kdvTitle: 'Boutique affichant hors TVA ; le total affiché inclut la TVA.',
+    kdvDahil: (oran, haric) => `🧾 TTC${oran ? ` (${oran})` : ''} — HT ${haric}`,
+    taksitBaslik: 'Paiement en plusieurs fois',
+    fiyataDahilBaslik: 'Inclus dans le prix',
+    hesapEtiketi: 'Détail :',
+    cashbackSatir: (p, e) => `🪙 ${p} cashback — coût net <b>${e}</b>`,
+    kuponSatir: (f, i, kod, kosul) => `🎟️ Avec coupon <b>${f}</b> (−${i})${kod ? ` — code : <b>${kod}</b>` : ''}${kosul ? `<span class="kupon-kosul"> · ${kosul}</span>` : ''}`,
+    kampanyaOnizlemeSatir: (f, kosul) => `🏷️ Avec promo <b>~${f}</b>${kosul ? `<span class="kampanya-kosul"> · ${kosul}</span>` : ''}`,
+    kargoEsikTitle: 'Complétez votre panier pour éviter les frais de port.',
+    kargoEsikMetin: (e, u) => `💡 Ajoutez <b>${e}</b> au panier pour profiter de <b>${u}</b> de port GRATUIT !`,
+    seritEnUcuz: '🏷️ MOINS CHER',
+    seritTukendi: '🔴 ÉPUISÉ',
+    seritFarkliRenk: (c) => `AUTRE COULEUR : ${c}`,
+    kartStokYok: '🔴 Rupture',
+    kartStokVar: '🟢 En stock',
+    kartSonStokTitle: 'Alerte de stock faible sur la page boutique',
+    kartSonStok: (n) => `⏳ Plus que ${n}`,
+    dipRozetTitle: (s) => `Badge prix bas indiqué sur ${s}`,
+    tukendiRozetTitle: 'Actuellement épuisé ; le prix affiché est le dernier connu.',
+    tukendiRozet: 'Épuisé',
+    sahteIndirimRozet: (id, g) => `⚠️ Prix barré gonflé<small>annoncé ${id} · réel ${g}</small>`,
+    gercekFirsatTitle: 'Prix le plus bas des 90 derniers jours',
+    gercekFirsatHtml: '🔥 VRAIE AFFAIRE<small>Plancher sur 90 jours</small>',
+    ozelIndirimDusuldu: (u) => `Remise immédiate déduite : −${u} · `,
+    sonBilinenFiyat: '⚠️ dernier prix connu — actuellement épuisé',
+    kargoDahilToplamDetay: (ara, kar) => `<b>Total livraison incluse</b> (article ${ara} + port ${kar})`,
+    kargoDahilToplamBedava: '<b>Total livraison incluse</b> (livraison gratuite)',
+    gercekOdenecek: 'total estimé (frais de port calculés au panier)',
+    fiyatHesaplanamadi: 'prix indisponible',
+    kargoSatirEtiket: '🚚 Livraison',
+    kargoBedava: 'Gratuite',
+    kargoEsikSepette: (u) => `Ajoutée au panier (gratuite dès ${u})`,
+    kargoSepetteBelli: 'Au panier',
+    kargoBilinmiyor: 'Inconnue',
+    kosulluBaslik: 'Promos conditionnelles (hors prix)',
+    alarmBtnTitle: 'Recevez une alerte locale en cas de baisse — sans e-mail ni mot de passe',
+    alarmBtn: '🔔 Alerte Prix',
+    sepetBtnTitle: 'Ajouter au Panier Malin pour optimiser frais de port et coupons',
+    sepetBtn: '🧺 Ajouter au panier',
+    embedBtnTitle: 'Intégrer ce prix en direct sur votre site',
+    embedBtn: '🔌 Intégrer',
+    magazadaGorTukendi: 'Voir en boutique (Épuisé)',
+    magazadaGor: 'Voir en boutique',
+    tabloStokYok: '<span class="stok-hucre-yok">🔴 Non</span>',
+    tabloStokVar: '<span class="stok-hucre-var">🟢 Oui</span>',
+    tabloRenkFarkli: ' (autre)',
+    trendVeriBirikiyor: '📉 Collecte en cours',
+    trendHenuzYetersiz: 'Historique insuffisant',
+    trendHicYokMesaj: 'Aucun historique de prix pour ce produit. Chaque comparaison ajoute un relevé.',
+    trendAzGunMesaj: (g) => `Seulement ${g} jour(s) d’historique ; au moins 2 jours sont requis pour le graphique.`,
+    trendDusukEtiket: (g) => `🟢 Min sur ${g} j`,
+    trendOrtEtiket: (g) => `📊 Moy. sur ${g} j`,
+    trendYuksekEtiket: (g) => `🔴 Max sur ${g} j`,
+    trendAvantajli: (y) => `${y} moins cher`,
+    trendPahali: (y) => `${y} plus cher`,
+    trendOrtalamada: 'Dans la moyenne',
+    trendOzetAlt: (g, k, m) => `${g} dernier(s) jour(s) · ${k} relevé(s)${m ? ` · ${m} boutique(s)` : ''}`,
+    grafikEnDusuk: 'Prix le plus bas',
+    grafikOrt30: 'Moyenne sur 30 jours',
+  },
+  ja: {
+    erkenSonucBtn: (n) => `⚡ 取得済みの結果を表示 (${n}件見つかりました)`,
+    erkenSonucHazirlaniyor: '⏳ 結果を準備中…',
+    cipAraniyor: '検索中',
+    cipHata: 'エラー',
+    cipIptal: '中止',
+    cipYok: '見つかりません',
+    iptalKalan: (k) => '比較を中止しました' + (k > 0 ? ` — 残り${k}サイトをスキップ。` : '。') + ' これまでに取得した結果を表示しています。',
+    tazeSrw: (yas, sayac) => `⚡ ${yas || '以前'}の取得データを表示中 · 最新価格を再確認しています${sayac}...`,
+    tazeHata: (m) => `⚠️ 価格更新に失敗しました (${m}) — 前回の結果を表示しています。`,
+    tazeGuncellendi: (n, ornek, yeni, kayb) => `✅ ${n}ストアの価格を更新しました ✓${ornek ? ` (${ornek})` : ''}${yeni ? ` · 新規 ${yeni}件` : ''}${kayb ? ` · 終了 ${kayb}件` : ''}。`,
+    tazeKaybolan: (k) => `⚠️ ${k}ストアは掲載終了となりました（他の価格は確認済み）。`,
+    tazeDogrulandi: '✅ すべての価格が最新であることを確認済み ✓',
+    tazeAnlik: (yas) => `⚡ ${yas || '以前'}に取得（キャッシュ表示）。`,
+    kaynakEtiketi: '検索元',
+    belirtilmedi: '未指定',
+    markaEtiketi: 'ブランド',
+    modelKoduEtiketi: '型番',
+    barkodEtiketi: 'JAN/EAN',
+    tumundeTukendi: '⚠️ 全ストア在庫切れ',
+    stokYokKisa: '在庫切れ',
+    hepsiTukenmis: (n) => `検出された全${n}ストアで在庫切れ`,
+    ozetEnUcuzDahil: '🏷️ 最安値（送料込み）',
+    ozetEnUcuzKargo: '🏷️ 最安値（送料別途）',
+    kargoDahilUcret: (u) => `📦 送料 ${u} 込み`,
+    kargoDahilBedava: '📦 送料無料（送料込み）',
+    kargoSepetteEklenir: '⚠️ +送料はカートで確定',
+    stoktaMagazaSayi: (n) => ` · ${n}ストアで在庫あり`,
+    sonucEtiketi: '結果',
+    stoktaUrunYok: '在庫ありの商品が見つかりません',
+    tasarrufTutar: (u) => `実質 <b>${u}</b> お得になります！`,
+    tasarrufDetay: (u, us, p, y) => `最安: ${u} (${us}) · 最高値 (${p}) より ${y} お得。`,
+    ayniDipFiyat: (u) => `全ストア同額の最安値: ${u}`,
+    ayniDipDetay: (n) => `${n}ストア間で価格差はなく、すでに最安値です。`,
+    kismiTarama: (yas, t, top) => `⚠️ ${yas ? yas + ' · ' : ''}部分スキャン (${t}/${top} ストア)`,
+    dogrulandiSaat: (yas, top) => yas ? `🕒 ${yas}に ${top} ストアで確認済み` : `🕒 先ほど ${top} ストアでリアルタイム確認済み`,
+    tukendiAltBaslik: '⚠️ この商品は現在全ストアで在庫切れのようです。',
+    bulunamadiAltBaslik: '🔍 該当する販売ストアが見つかりませんでした。',
+    benzerAlternatifler: (baslik) => `${baslik} 在庫のある類似人気商品:`,
+    muadilAra: '代替品を検索',
+    muadilAraniyor: '検索中…',
+    muadilStokYokBaslik: '現在在庫切れです',
+    muadilHicYokBaslik: '該当するストアが見つかりません',
+    muadilStokYokAciklama: (n) => `${n}ストアすべてで在庫切れです。用途に合う代替モデルを探しましょう。`,
+    muadilHicYokAciklama: '同じ用途に使える代替製品を確認できます。',
+    muadilVarMi: '代替製品はありますか？',
+    muadilKesifAciklama: 'より手頃な代替モデルを検索できます。',
+    muadilYukleniyor: '代替製品を検索中…（数秒かかる場合があります）',
+    muadilHataBaslatilamadi: '代替検索を開始できませんでした',
+    bentoEnUcuzUst: '🏷️ 最安値',
+    bentoMagazayaGit: 'ショップへ',
+    bentoFiyatTrendi: '📈 価格推移',
+    bentoFiyatDagilimi: '📊 価格分布',
+    bentoDip: '最安',
+    bentoOrt: '平均',
+    bentoTepe: '最高',
+    bentoTrendAria: (g) => `過去${g}日間の価格推移`,
+    bentoSonGunGecmis: (g) => `過去${g}日間 · 価格履歴`,
+    bentoYetersizTrend: '📈 価格履歴がまだ不足しています。',
+    bentoYetersizTrendAlt: '比較するたびに記録が追加され、数日で推移が表示されます。',
+    bentoEnUcuz: '最安',
+    bentoEnPahali: '最高',
+    bentoFarkMetni: (f) => `${f} 差`,
+    bentoTumAyniFiyat: '全ストア同一価格',
+    bentoDahaAzOde: (y) => `${y} お得`,
+    bentoFarkYok: '価格差なし',
+    bentoMagazaStok: (m, s) => `${m} ストア · ${s} 在庫あり`,
+    bentoKargoUcretsiz: '<span class="bento-rozet yesil">📦 送料無料込み</span>',
+    bentoKargoUcretli: (u) => `<span class="bento-rozet yesil">📦 送料込み（${u} 加算済）</span>`,
+    bentoKargoEsikli: (t, esik) => `<span class="bento-rozet uyari" title="${t}">⚠️ +送料別（${esik}以上で無料）</span>`,
+    bentoKargoEsikliVarsayilanAciklama: '送料はカートで確定します',
+    bentoKargoBilinmiyorTitle: '商品ページに送料記載なし。チェックアウト時に加算される場合があります。',
+    bentoKargoBilinmiyor: '⚠️ +送料はカートで確定',
+    bentoStokTukendi: '<span class="bento-rozet kirmizi">🔴 在庫切れ</span>',
+    bentoStokta: '<span class="bento-rozet yesil">🟢 在庫あり</span>',
+    zekaSimdiAl: '今が買い時',
+    zekaBekle: '様子見 / 高値',
+    zekaFiyatNormal: '適正価格',
+    zekaVeriAz: 'データ不足',
+    zekaGecmisAlt: (g, n) => `${g}日間の履歴 · ${n}件の価格データ`,
+    zekaFarkUcuz: (y) => `30日平均より ${y} 安い`,
+    zekaFarkPahali: (y) => `30日平均より ${y} 高い`,
+    zekaEnDusuk: (v) => `最安: <b>${v}</b>`,
+    zekaOrt30: (v) => `30日平均: <b>${v}</b>`,
+    zekaEnYuksek: (v) => `最高: <b>${v}</b>`,
+    birimSahteBaslik: '⚠️ 見かけ最安に注意',
+    birimSahteAciklama: '本体価格が安く見えても、1kg単価では割高になる商品があります。',
+    birimNormalBaslik: '⚖️ 1kgあたりの単価',
+    birimNormalAciklama: '異なる内容量を同一単位に換算しました。',
+    birimSupheliTitle: '価格要確認',
+    birimSupheli: '要確認',
+    birimTahminTitle: '標準密度から推定',
+    birimDogrulanmali: (n, nedeni) => `<b>⚠️ ${n}件の価格は要確認です。</b> ${nedeni} 最安単価ランキングからは除外されています。`,
+    birimSupheliVarsayilan: '平均と比べて不自然に安価です。',
+    birimAltReferans: (g) => `${g}基準で比較。単価 = 実質合計 ÷ 正味量。`,
+    birimAltDuz: '単価 = 実質合計 ÷ 正味量。',
+    birimThMagaza: 'ストア',
+    birimThMiktar: '容量',
+    birimThFiyat: '価格',
+    birimThBirim: '単価',
+    filtreStoktaVar: (n) => `🟢 在庫あり (${n})`,
+    filtreStoktaYok: (n) => `🔴 在庫切れ (${n})`,
+    filtreCapEtiket: '径:',
+    filtreCap175: (n) => `径: 1.75mm (${n})`,
+    filtreCap285: (n) => `⚠️ 径: 2.85mm (${n})`,
+    filtreHammaddeEtiket: '素材:',
+    filtreYuksekBirim: (n) => `⚠️ 高単価 (${n})`,
+    okunamadiOnEk: '⚠️ 取得不可: ',
+    bulunamadiVarsayilan: '商品が見つかりません',
+    eslesme: { model_kodu: '型番一致', barkod: 'JAN一致', benzerlik: '名称類似', kaynak: '検索元商品' },
+    rozetUcretsizKargo: '📦 送料無料',
+    rozetUcretliKargo: (u) => `🚚 +送料 ${u}`,
+    rozetResmiSatici: '🏢 公式ストア',
+    rozetVadeFarksiz: '💳 分割手数料無料',
+    capOkTitle: '標準1.75mm FDMプリンター対応',
+    birimTahminiEk: (u) => `≈ ${u}/kg (推定)`,
+    birimIpucuHacim: '体積と標準密度から算出',
+    birimIpucuTahmini: '体積・標準密度からの推定値',
+    birimIpucuNet: '正味重量から算出',
+    kdvTitle: '税抜表記ストアですが、比較合計は税込で計算されています。',
+    kdvDahil: (oran, haric) => `🧾 税込${oran ? ` (${oran})` : ''} — 税抜 ${haric}`,
+    taksitBaslik: '分割払い',
+    fiyataDahilBaslik: '価格に含まれます',
+    hesapEtiketi: '内訳:',
+    cashbackSatir: (p, e) => `🪙 ${p} ポイント還元 — 実質 <b>${e}</b>`,
+    kuponSatir: (f, i, kod, kosul) => `🎟️ クーポン適用 <b>${f}</b> (−${i})${kod ? ` — コード: <b>${kod}</b>` : ''}${kosul ? `<span class="kupon-kosul"> · ${kosul}</span>` : ''}`,
+    kampanyaOnizlemeSatir: (f, kosul) => `🏷️ キャンペーン適用 <b>~${f}</b>${kosul ? `<span class="kampanya-kosul"> · ${kosul}</span>` : ''}`,
+    kargoEsikTitle: 'まとめ買いで送料無料ラインに到達できます。',
+    kargoEsikMetin: (e, u) => `💡 あと <b>${e}</b> 追加すると送料 <b>${u}</b> が無料になります！`,
+    seritEnUcuz: '🏷️ 最安値',
+    seritTukendi: '🔴 在庫切れ',
+    seritFarkliRenk: (c) => `別カラー: ${c}`,
+    kartStokYok: '🔴 在庫切れ',
+    kartStokVar: '🟢 在庫あり',
+    kartSonStokTitle: 'ストア上の残りわずか表示',
+    kartSonStok: (n) => `⏳ 残り${n}点`,
+    dipRozetTitle: (s) => `${s} 商品ページ記載の最安バッジ`,
+    tukendiRozetTitle: '現在在庫切れのため、最後に確認された価格を表示しています。',
+    tukendiRozet: '在庫切れ',
+    sahteIndirimRozet: (id, g) => `⚠️ 割高な元値表示<small>表示 ${id} · 実質 ${g}</small>`,
+    gercekFirsatTitle: '過去90日間の最安値',
+    gercekFirsatHtml: '🔥 本物のセール<small>90日間の最安値</small>',
+    ozelIndirimDusuldu: (u) => `即時割引適用: −${u} · `,
+    sonBilinenFiyat: '⚠️ 最終確認価格 — 現在在庫切れ',
+    kargoDahilToplamDetay: (ara, kar) => `<b>送料込み合計</b> (本体 ${ara} + 送料 ${kar})`,
+    kargoDahilToplamBedava: '<b>送料込み合計</b> (送料無料)',
+    gercekOdenecek: 'お支払い予定額 (送料はカートで確定)',
+    fiyatHesaplanamadi: '価格算出不可',
+    kargoSatirEtiket: '🚚 送料',
+    kargoBedava: '無料',
+    kargoEsikSepette: (u) => `カート計算 (${u}以上で無料)`,
+    kargoSepetteBelli: 'カートで確定',
+    kargoBilinmiyor: '不明',
+    kosulluBaslik: '条件付き特典 (合計に含みません)',
+    alarmBtnTitle: '値下がり時にこの端末へ通知（メール・登録不要）',
+    alarmBtn: '🔔 価格アラート',
+    sepetBtnTitle: 'スマートカートに追加して送料・クーポン込みで最適化',
+    sepetBtn: '🧺 カートに追加',
+    embedBtnTitle: 'この商品の最新価格バッジをサイトに埋め込む',
+    embedBtn: '🔌 埋め込み',
+    magazadaGorTukendi: 'ショップで見る (在庫切れ)',
+    magazadaGor: 'ショップで見る',
+    tabloStokYok: '<span class="stok-hucre-yok">🔴 なし</span>',
+    tabloStokVar: '<span class="stok-hucre-var">🟢 あり</span>',
+    tabloRenkFarkli: ' (別色)',
+    trendVeriBirikiyor: '📉 データ収集中',
+    trendHenuzYetersiz: '価格履歴がまだありません',
+    trendHicYokMesaj: 'この商品の価格履歴はまだありません。検索や監視を行うたびにデータが記録されます。',
+    trendAzGunMesaj: (g) => `${g}日分のデータのみです。推移グラフの表示には最低2日分のデータが必要です。`,
+    trendDusukEtiket: (g) => `🟢 過去${g}日 最安`,
+    trendOrtEtiket: (g) => `📊 過去${g}日 平均`,
+    trendYuksekEtiket: (g) => `🔴 過去${g}日 最高`,
+    trendAvantajli: (y) => `${y} お得`,
+    trendPahali: (y) => `${y} 割高`,
+    trendOrtalamada: '平均並み',
+    trendOzetAlt: (g, k, m) => `過去${g}日間 · ${k}件の価格データ${m ? ` · ${m}ストア` : ''}`,
+    grafikEnDusuk: '最安値',
+    grafikOrt30: '30日間平均',
+  },
+};
+const CANLI_YEREL = CANLI_SOZLUK[BASKI_ORTAM.dil] || CANLI_SOZLUK.tr;
+
+function cY() {
+  return CANLI_YEREL;
+}
+
+function sonucLocale() {
+  const d = BASKI_ORTAM.dil || 'tr';
+  return d === 'ja' ? 'ja-JP' : (d === 'fr' ? 'fr-FR' : (d === 'en' ? 'en-US' : 'tr-TR'));
+}
+
+function yuzdeStr(deger, virgulOndalik = false) {
+  const d = BASKI_ORTAM.dil || 'tr';
+  let s = String(deger ?? '0');
+  if (d === 'tr' || d === 'fr') {
+    if (virgulOndalik) s = s.replace('.', ',');
+  } else {
+    s = s.replace(',', '.');
+  }
+  if (d === 'tr') return '%' + s;
+  if (d === 'fr') return s + ' %';
+  return s + '%';
+}
+
+function imzaliYuzde(diff) {
+  if (diff > 0) return '-' + yuzdeStr(diff);
+  if (diff < 0) return '+' + yuzdeStr(Math.abs(diff));
+  return yuzdeStr(0);
+}
+
+function hammaddeEtiketiYerellestir(tur, varsayilan) {
+  const d = BASKI_ORTAM.dil || 'tr';
+  if (tur === 'standart_recine') {
+    return d === 'fr' ? '🧴 Résine standard' : (d === 'ja' ? '🧴 標準レジン' : (d === 'en' ? '🧴 Standard Resin' : varsayilan));
+  }
+  if (tur === 'suda_yikanabilir') {
+    return d === 'fr' ? '🚿 Lavable à l’eau' : (d === 'ja' ? '🚿 水洗いレジン' : (d === 'en' ? '🚿 Water Washable' : varsayilan));
+  }
+  return varsayilan;
+}
+
+function baskiNedenYerellestir(raw) {
+  const s = String(raw || '').trim();
+  const d = BASKI_ORTAM.dil || 'tr';
+  if (!s || d === 'tr') return s;
+  if (/Ürün fiyatı okunamadı/i.test(s)) {
+    return d === 'fr' ? 'Prix du produit illisible.' : (d === 'ja' ? '商品価格を取得できませんでした。' : 'Could not read product price.');
+  }
+  if (/Makara gramajı başlıktan okunamadı/i.test(s)) {
+    return d === 'fr'
+      ? 'Poids de bobine non détecté dans le titre (aucune estimation inventée).'
+      : (d === 'ja'
+        ? '商品名からスプール重量を読み取れませんでした（推測計算は行いません）。'
+        : 'Spool weight not found in title (no guessed calculation shown).');
+  }
+  if (/Geçerli bir model gramajı girin/i.test(s)) {
+    return d === 'fr'
+      ? 'Entrez un poids de modèle valide (1–100000 g).'
+      : (d === 'ja' ? '有効なモデル重量 (1–100000 g) を入力してください。' : 'Enter a valid model weight (1–100000 g).');
+  }
+  return s;
+}
+
+function baskiRozetYerellestir(raw) {
+  const s = String(raw || '').trim();
+  const d = BASKI_ORTAM.dil || 'tr';
+  if (!s || d === 'tr') return s;
+  if (/2\.85 mm Kalınlık|1\.75mm yazıcılara uymaz/i.test(s)) {
+    return d === 'fr'
+      ? '⚠️ ATTENTION : Fil 2,85 mm (incompatible imprimantes 1,75 mm)'
+      : (d === 'ja' ? '⚠️ 注意: 2.85mm径（標準1.75mmプリンター非対応）' : '⚠️ WARNING: 2.85 mm filament (does not fit 1.75 mm printers!)');
+  }
+  const yuksekM = s.match(/medyanına göre\s*%?([\d.,]+)\s*daha pahalı/i);
+  if (yuksekM) {
+    const pct = yuzdeStr(yuksekM[1], true);
+    return d === 'fr'
+      ? `⚠️ Coût unitaire élevé — ${pct} au-dessus de la médiane`
+      : (d === 'ja' ? `⚠️ 高単価 — 中央値より ${pct} 割高` : `⚠️ High Unit Cost — ${pct} above peer median`);
+  }
+  const nitMap = {
+    '💎 Silk İpeksi': { en: '💎 Silk', fr: '💎 Soyeux Silk', ja: '💎 シルク調' },
+    '🎨 Mat Yüzey': { en: '🎨 Matte', fr: '🎨 Mat', ja: '🎨 マット仕上げ' },
+    '🌱 Biyo-Uyumlu': { en: '🌱 Bio-Compatible', fr: '🌱 Biocompatible', ja: '🌱 生体適合' },
+    '☀️ UV Dayanımlı': { en: '☀️ UV Resistant', fr: '☀️ Résistant UV', ja: '☀️ 耐UV' },
+    '🤸 Esnek': { en: '🤸 Flexible', fr: '🤸 Flexible', ja: '🤸 フレキシブル' },
+    '🚿 Suda Yıkanabilir': { en: '🚿 Water Washable', fr: '🚿 Lavable à l’eau', ja: '🚿 水洗い可' },
+    '🧴 Standart Reçine': { en: '🧴 Standard Resin', fr: '🧴 Résine standard', ja: '🧴 標準レジン' },
+  };
+  if (nitMap[s]?.[d]) return nitMap[s][d];
+  return s;
+}
+
+function magazaDurumNedeniYerellestir(raw) {
+  const s = String(raw || '').trim();
+  const d = BASKI_ORTAM.dil || 'tr';
+  if (!s || d === 'tr') return s;
+  const yokM = s.match(/^Aramada hiç sonuç bulunamadı\s*(?:\((.+)\))?$/i);
+  if (yokM) {
+    const qPart = yokM[1] ? ` (${yokM[1]})` : '';
+    return d === 'fr'
+      ? `Aucun résultat trouvé${qPart}`
+      : (d === 'ja' ? `検索結果が見つかりませんでした${qPart}` : `No search results found${qPart}`);
+  }
+  if (/^Aday ürünler incelendi ancak aynı ürün bulunamadı$/i.test(s)) {
+    return d === 'fr'
+      ? 'Annonces vérifiées, aucune correspondance exacte'
+      : (d === 'ja' ? '候補を確認しましたが一致する商品がありません' : 'Checked candidates, no exact product match');
+  }
+  const okuM = s.match(/^Arama sayfası okunamadı:\s*(.+)$/i);
+  if (okuM) {
+    return d === 'fr'
+      ? `Impossible de charger la page de recherche : ${okuM[1]}`
+      : (d === 'ja' ? `検索ページを読み込めませんでした: ${okuM[1]}` : `Failed to load search page: ${okuM[1]}`);
+  }
+  if (/^Ürün bulunamadı$/i.test(s)) {
+    return d === 'fr' ? 'Produit introuvable' : (d === 'ja' ? '商品が見つかりません' : 'Product not found');
+  }
+  return s;
+}
+
+function trendTavsiyeYerellestir(s, fallbackRaw) {
+  const raw = String(fallbackRaw || s?.recommendationText || '').trim();
+  const d = BASKI_ORTAM.dil || 'tr';
+  if (d === 'tr') return raw;
+  const g = Number(s?.gunSayisi) || 0;
+  const f = Number(s?.diffFromAvg);
+  if ((s && g > 0 && g < 3) || /Yalnızca\s+\d+\s+günlük fiyat geçmişi/i.test(raw)) {
+    const gunN = g || Number((raw.match(/Yalnızca\s+(\d+)\s+günlük/i) || [])[1]) || 1;
+    return d === 'fr'
+      ? `📉 Seulement ${gunN} jour(s) d’historique. Quelques jours de plus sont nécessaires pour une tendance fiable.`
+      : (d === 'ja'
+        ? `📉 ${gunN}日分の履歴しかありません。信頼できる傾向分析にはあと数日分必要です。`
+        : `📉 Only ${gunN} day${gunN === 1 ? '' : 's'} of price history so far. A few more days are needed for a reliable trend.`);
+  }
+  if (/en düşük seviyesinde/i.test(raw)) {
+    return d === 'fr'
+      ? `🔥 Au plus bas des ${g} derniers jours !`
+      : (d === 'ja' ? `🔥 過去${g}日間の最安値水準です！` : `🔥 At the lowest level in the last ${g} days!`);
+  }
+  if (/ortalamasından.*daha ucuz/i.test(raw) || (Number.isFinite(f) && f >= 5)) {
+    const y = yuzdeStr(Number.isFinite(f) ? f : (raw.match(/%(\d+)/)?.[1] || 0));
+    return d === 'fr'
+      ? `✅ ${y} sous la moyenne des ${g} derniers jours.`
+      : (d === 'ja' ? `✅ 過去${g}日平均より ${y} 安値です。` : `✅ ${y} below the ${g}-day average.`);
+  }
+  if (/ortalamasının.*üzerinde/i.test(raw) || (Number.isFinite(f) && f <= -5)) {
+    const y = yuzdeStr(Number.isFinite(f) ? Math.abs(f) : (raw.match(/%(\d+)/)?.[1] || 0));
+    return d === 'fr'
+      ? `⚠️ ${y} au-dessus de la moyenne des ${g} derniers jours.`
+      : (d === 'ja' ? `⚠️ 過去${g}日平均より ${y} 割高です。` : `⚠️ ${y} above the ${g}-day average.`);
+  }
+  if (/ortalama fiyat seviyesinde/i.test(raw)) {
+    return d === 'fr'
+      ? `⚖️ Au niveau moyen des ${g} derniers jours.`
+      : (d === 'ja' ? `⚖️ 過去${g}日間の平均水準です。` : `⚖️ Near the ${g}-day average price level.`);
+  }
+  return raw;
+}
+
+function zekaMesajYerellestir(raw, z) {
+  const s = String(raw || '').trim();
+  const d = BASKI_ORTAM.dil || 'tr';
+  if (!s || d === 'tr') return s;
+  const g = z?.gunSayisi || 0;
+  const n = z?.veriNoktasi || 0;
+  if (/Kayıtlı fiyat geçmişinin en düşüğünde/i.test(s)) {
+    return d === 'fr'
+      ? `🔥 Au plus bas de l’historique enregistré (${g} j, ${n} relevés).`
+      : (d === 'ja' ? `🔥 記録上の最安値 (${g}日・${n}件)。` : `🔥 At the lowest recorded price (${g} day(s), ${n} observation(s)).`);
+  }
+  if (/en az 3 günlük|Yorum için yeterli/i.test(s)) {
+    return d === 'fr'
+      ? 'Pas assez d’historique pour une recommandation fiable.'
+      : (d === 'ja' ? '傾向を判定するための十分な履歴がまだありません。' : 'Not enough price history yet for a reliable recommendation.');
+  }
+  if (/Bu ürün için henüz fiyat geçmişi yok/i.test(s)) {
+    return CANLI_YEREL.trendHicYokMesaj;
+  }
+  if (/Son 90 günün en dip fiyatında/i.test(s)) {
+    return d === 'fr' ? '🔥 Plancher sur 90 jours ! Offre exceptionnelle.' : (d === 'ja' ? '🔥 過去90日間の最安値！買い時です。' : '🔥 90-day floor price! Strong buying opportunity.');
+  }
+  if (/Şişirilmiş İndirim/i.test(s)) {
+    return d === 'fr'
+      ? '⚠️ Remise gonflée : le prix dépasse la moyenne récente sur 30 jours.'
+      : (d === 'ja' ? '⚠️ 割高な割引表示：過去30日平均を上回っています。' : '⚠️ Inflated discount claim: recent 30-day average is lower than this price.');
+  }
+  if (/Ortalamadan .* daha ucuz/i.test(s)) {
+    const pct = yuzdeStr(Math.abs(z?.ortalamaFarkYuzde ?? Number((s.match(/%([\d.,]+)/) || [])[1] || 0)));
+    return d === 'fr' ? `🟢 ${pct} sous la moyenne — bon moment pour acheter.` : (d === 'ja' ? `🟢 平均より ${pct} 安値 — 買い時です。` : `🟢 ${pct} below average — good time to buy.`);
+  }
+  if (/Ortalamanın .* üzerinde/i.test(s)) {
+    const pct = yuzdeStr(Math.abs(z?.ortalamaFarkYuzde ?? Number((s.match(/%([\d.,]+)/) || [])[1] || 0)));
+    return d === 'fr' ? `🔴 ${pct} au-dessus de la moyenne — attendre peut être judicieux.` : (d === 'ja' ? `🔴 平均より ${pct} 高値 — 様子見がおすすめです。` : `🔴 ${pct} above average — worth waiting for a drop.`);
+  }
+  if (/Piyasa ortalamasında/i.test(s)) {
+    return d === 'fr' ? '🟡 Dans la moyenne du marché (±5 %) — prix normal.' : (d === 'ja' ? '🟡 市場平均並み (±5%) — 通常価格です。' : '🟡 Around market average (±5%) — normal price level.');
+  }
+  return s;
+}
+
 const MOD_PLACEHOLDER = DIL_KOPYA_YEREL.placeholder;
 const MOD_BUTON = DIL_KOPYA_YEREL.buton;
 
@@ -1837,10 +2756,10 @@ function erkenSonucZamanlayicisiniKur() {
     buton.type = 'button';
     buton.id = 'erkenSonucBtn';
     buton.className = 'erken-sonuc-btn';
-    buton.textContent = `⚡ Kalanı beklemeden bulunan sonuçları göster (${hazir} Mağaza Hazır)`;
+    buton.textContent = CANLI_YEREL.erkenSonucBtn(hazir);
     buton.addEventListener('click', () => {
       buton.disabled = true;
-      buton.textContent = '⏳ Sonuçlar hazırlanıyor…';
+      buton.textContent = CANLI_YEREL.erkenSonucHazirlaniyor;
       karsilastirmayiIptalEt();
     });
     const baslikSatiri = durumAlani.querySelector('.durum-baslik-satiri');
@@ -1961,11 +2880,9 @@ function anlikNotuGuncelle(durum = {}) {
     const sayacNot = Number(durum.bitenSite) > 0 && SITE_SIRASI.length > 0
       ? ` (${Math.min(Number(durum.bitenSite), SITE_SIRASI.length)}/${SITE_SIRASI.length})`
       : '';
-    parcalar.push(`⚡ Bu ürün ${durum.yasMetni || 'daha önce'} tarandı (Hafızadan gösteriliyor)`
-      + ` · Mağazalar canlı kontrol ediliyor${sayacNot}...`);
+    parcalar.push(CANLI_YEREL.tazeSrw(durum.yasMetni, sayacNot));
   } else if (durum.tazelemeHatasi) {
-    parcalar.push(`⚠️ Fiyatlar güncellenemedi (${String(durum.tazelemeHatasi).slice(0, 70)}) — `
-      + 'aşağıdaki sonuç son taramaya ait.');
+    parcalar.push(CANLI_YEREL.tazeHata(String(durum.tazelemeHatasi).slice(0, 70)));
   } else if (durum.tazelemeBitti && durum.fark) {
     const d = durum.fark;
     const degisen = (d.degisen || []).length;
@@ -1974,20 +2891,17 @@ function anlikNotuGuncelle(durum = {}) {
     if (degisen || yeniSite) {
       const ornek = (d.degisen || []).slice(0, 2)
         .map(x => `${x.siteName} ${tl(x.eski)} → ${tl(x.yeni)}`).join(', ');
-      parcalar.push(`✅ ${degisen + yeniSite} mağazada fiyat güncellendi ✓`
-        + (ornek ? ` (${ornek})` : '')
-        + (yeniSite ? ` · ${yeniSite} yeni mağaza` : '')
-        + (kaybolan ? ` · ${kaybolan} mağaza sonuçtan çıktı` : '') + '.');
+      parcalar.push(CANLI_YEREL.tazeGuncellendi(degisen + yeniSite, ornek, yeniSite, kaybolan));
       // Fiyatı düşen kartlar yeşil parlar (SWR canlı güncelleme görünürlüğü).
       fiyatDegisenKartlariParlat(d.degisen || []);
     } else if (kaybolan) {
-      parcalar.push(`⚠️ ${kaybolan} mağaza artık sonuç vermiyor; diğer fiyatlar doğrulandı.`);
+      parcalar.push(CANLI_YEREL.tazeKaybolan(kaybolan));
     } else {
       // Hiçbir fiyat değişmediyse bunu AÇIKÇA söyle: kullanıcı "güncel mi?" diye düşünmesin.
-      parcalar.push('✅ Tüm fiyatlar güncel ve doğrulandı ✓');
+      parcalar.push(CANLI_YEREL.tazeDogrulandi);
     }
   } else if (durum.anlik) {
-    parcalar.push(`⚡ Bu ürün ${durum.yasMetni || 'daha önce'} tarandı (Hafızadan gösteriliyor).`);
+    parcalar.push(CANLI_YEREL.tazeAnlik(durum.yasMetni));
   }
 
   if (!parcalar.length) {
@@ -2254,9 +3168,7 @@ function karsilastirmaIsle(job) {
     const kalan = job.result?.ozet?.taranmayanSiteSayisi || 0;
     const bilgiNotu = $('#sonAramaNotu');
     if (iptal && bilgiNotu) {
-      notMetniAyarla('Karşılaştırma iptal edildi'
-        + (kalan > 0 ? ` — ${kalan} site taranmadı.` : '.')
-        + ' Aşağıda o ana kadar bulunan sonuçlar var.');
+      notMetniAyarla(CANLI_YEREL.iptalKalan(kalan));
       bilgiNotu.hidden = false;
       sifirdanTaraButonunuGoster(false);
     }
@@ -2324,17 +3236,17 @@ function cipleriGuncelle(progress) {
     if (!el) continue;
     el.className = 'cip';
     if (!p) continue;
-    if (p.status === 'running') { el.classList.add('calisiyor'); el.title = p.note || 'Aranıyor'; }
+    if (p.status === 'running') { el.classList.add('calisiyor'); el.title = p.note ? magazaDurumNedeniYerellestir(p.note) : CANLI_YEREL.cipAraniyor; }
     else if (p.status === 'found') {
       el.classList.add('bulundu');
-      el.title = p.note || '';
+      el.title = p.note ? magazaDurumNedeniYerellestir(p.note) : '';
       // Fiyat yoksa "—" yazmayız: farklı renk/model eşleşmelerinde fiyat bilinmez.
       // (Aksi hâlde çip "Bulundu · —" gibi anlamsız görünüyordu — 2026-10-29)
       el.innerHTML = `<span class="nokta"></span>${SITE_ADLARI[s]}`
         + (p.fiyat != null ? ' · ' + tl(p.fiyat) : '');
-    } else if (p.status === 'error') { el.classList.add('hata'); el.title = p.note || 'Hata'; }
-    else if (p.status === 'iptal') { el.classList.add('iptal'); el.title = p.note || 'İptal edildi'; }
-    else if (p.status === 'not_found') { el.classList.add('bulunamadi'); el.title = p.note || 'Bulunamadı'; }
+    } else if (p.status === 'error') { el.classList.add('hata'); el.title = p.note ? magazaDurumNedeniYerellestir(p.note) : CANLI_YEREL.cipHata; }
+    else if (p.status === 'iptal') { el.classList.add('iptal'); el.title = p.note ? magazaDurumNedeniYerellestir(p.note) : CANLI_YEREL.cipIptal; }
+    else if (p.status === 'not_found') { el.classList.add('bulunamadi'); el.title = p.note ? magazaDurumNedeniYerellestir(p.note) : CANLI_YEREL.cipYok; }
   }
   // İlerleme çubuğu ve sayaç
   const dolgu = document.querySelector('.tarama-dolgu');
@@ -2370,25 +3282,25 @@ function baskiFiltreleriniDoldur(sonuc) {
   if (capEl) {
     const parcalar = [];
     if ((capS['1.75'] || 0) > 0) {
-      parcalar.push(`<button type="button" class="filtre-chip cap-chip" data-filtre="cap:1.75">Çap: 1.75mm (${capS['1.75']})</button>`);
+      parcalar.push(`<button type="button" class="filtre-chip cap-chip" data-filtre="cap:1.75">${esc(CANLI_YEREL.filtreCap175(capS['1.75']))}</button>`);
     }
     if ((capS['2.85'] || 0) > 0) {
-      parcalar.push(`<button type="button" class="filtre-chip cap-chip cap-tehlike" data-filtre="cap:2.85">⚠️ Çap: 2.85mm (${capS['2.85']})</button>`);
+      parcalar.push(`<button type="button" class="filtre-chip cap-chip cap-tehlike" data-filtre="cap:2.85">${esc(CANLI_YEREL.filtreCap285(capS['2.85']))}</button>`);
     }
     capEl.innerHTML = parcalar.length
-      ? `<span class="filtre-alt-etiket">Çap:</span>${parcalar.join('')}` : '';
+      ? `<span class="filtre-alt-etiket">${esc(CANLI_YEREL.filtreCapEtiket)}</span>${parcalar.join('')}` : '';
   }
 
   if (hmEl) {
     const parcalar = Object.entries(hmS)
       .filter(([, n]) => n > 0)
       .sort((a, b) => b[1] - a[1])
-      .map(([tur, n]) => `<button type="button" class="filtre-chip hm-chip" data-filtre="hm:${esc(tur)}">${esc(BASKI_HAMMADDE_ADLARI[tur] || tur)} (${n})</button>`);
+      .map(([tur, n]) => `<button type="button" class="filtre-chip hm-chip" data-filtre="hm:${esc(tur)}">${esc(hammaddeEtiketiYerellestir(tur, BASKI_HAMMADDE_ADLARI[tur] || tur))} (${n})</button>`);
     if (ozet?.yuksekBirimSayisi > 0) {
-      parcalar.push(`<button type="button" class="filtre-chip hm-chip birim-chip" data-filtre="birim_uyari">⚠️ Yüksek Birim Maliyet (${ozet.yuksekBirimSayisi})</button>`);
+      parcalar.push(`<button type="button" class="filtre-chip hm-chip birim-chip" data-filtre="birim_uyari">${esc(CANLI_YEREL.filtreYuksekBirim(ozet.yuksekBirimSayisi))}</button>`);
     }
     hmEl.innerHTML = parcalar.length
-      ? `<span class="filtre-alt-etiket">Hammadde:</span>${parcalar.join('')}` : '';
+      ? `<span class="filtre-alt-etiket">${esc(CANLI_YEREL.filtreHammaddeEtiket)}</span>${parcalar.join('')}` : '';
   }
 
   // Seçili filtre korunur (canlı güncellemede sıfırlanmasın).
@@ -2641,61 +3553,61 @@ function bentoOzetCiz(sonuc) {
     || p.shipping?.applies === false
     || (enUcuz.r.kargoBedava === true && pr.kargo?.uygulanir == null);
   const kargoNotu = kargoBedava
-    ? '<span class="bento-rozet yesil">📦 Kargo dahil (ücretsiz)</span>'
+    ? CANLI_YEREL.bentoKargoUcretsiz
     : (pr.kargo?.uygulanir === true && Number(pr.kargo?.ucret) > 0
-      ? `<span class="bento-rozet yesil">📦 Kargo dahil (${tl(pr.kargo.ucret)} kargo toplama eklendi)</span>`
+      ? CANLI_YEREL.bentoKargoUcretli(tl(pr.kargo.ucret))
       : (Number(pr.kargo?.freeOver) > 0
-        ? `<span class="bento-rozet uyari" title="${esc(pr.kargo?.aciklama || 'Kargo ücreti sepette netleşir')}">⚠️ +Kargo sepette eklenir (${tl(pr.kargo.freeOver)} üzeri ücretsiz)</span>`
-        : '<span class="bento-rozet uyari" title="Mağaza kargo ücretini ürün sayfasında belirtmiyor; gerçek toplam sepette artabilir.">⚠️ +Kargo sepette eklenir</span>'));
+        ? CANLI_YEREL.bentoKargoEsikli(esc(pr.kargo?.aciklama || CANLI_YEREL.bentoKargoEsikliVarsayilanAciklama), tl(pr.kargo.freeOver))
+        : `<span class="bento-rozet uyari" title="${esc(CANLI_YEREL.bentoKargoBilinmiyorTitle)}">${CANLI_YEREL.bentoKargoBilinmiyor}</span>`));
   const stokNotu = p.inStock === false
-    ? '<span class="bento-rozet kirmizi">🔴 Tükendi</span>'
-    : '<span class="bento-rozet yesil">🟢 Stokta</span>';
+    ? CANLI_YEREL.bentoStokTukendi
+    : CANLI_YEREL.bentoStokta;
   const link = p.afiliyeUrl || p.url || '#';
   const siteAdi = enUcuz.r.siteName || SITE_ADLARI[enUcuz.r.site] || enUcuz.r.site;
 
   const trendBlok = gecmisVar
     ? `<div class="bento-istatistik">
-         <div><span class="bento-mini-etiket">Dip</span><b>${tl(min)}</b></div>
-         <div><span class="bento-mini-etiket">Ort.</span><b>${tl(ort)}</b></div>
-         <div><span class="bento-mini-etiket">Tepe</span><b>${tl(max)}</b></div>
+         <div><span class="bento-mini-etiket">${esc(CANLI_YEREL.bentoDip)}</span><b>${tl(min)}</b></div>
+         <div><span class="bento-mini-etiket">${esc(CANLI_YEREL.bentoOrt)}</span><b>${tl(ort)}</b></div>
+         <div><span class="bento-mini-etiket">${esc(CANLI_YEREL.bentoTepe)}</span><b>${tl(max)}</b></div>
        </div>
        <div class="bento-sparkline-sarmal"><svg id="bentoSparkline" class="bento-sparkline" viewBox="0 0 200 44"
-         preserveAspectRatio="none" role="img" aria-label="Son ${gun} gün fiyat trendi"></svg></div>
-       <div class="bento-alt-metin">Son ${gun} gün · fiyat geçmişi</div>`
-    : `<div class="bento-bos">📈 Henüz yeterli fiyat geçmişi yok.<br>
-         <span class="bento-alt-metin">Her karşılaştırma bir kayıt ekler; trend birkaç günde oluşur.</span></div>`;
+         preserveAspectRatio="none" role="img" aria-label="${esc(CANLI_YEREL.bentoTrendAria(gun))}"></svg></div>
+       <div class="bento-alt-metin">${esc(CANLI_YEREL.bentoSonGunGecmis(gun))}</div>`
+    : `<div class="bento-bos">${esc(CANLI_YEREL.bentoYetersizTrend)}<br>
+         <span class="bento-alt-metin">${esc(CANLI_YEREL.bentoYetersizTrendAlt)}</span></div>`;
 
   const enUcuzPara = enUcuz?.r?.product?.currency || sonuc?.ozet?.currency || 'TRY';
   const alan_fiyat = tl(enUcuz.fiyat, enUcuzPara);
   alan.innerHTML = `
     <article class="bento-blok bento-spot">
-      <div class="bento-etiket">🏷️ EN UCUZ</div>
+      <div class="bento-etiket">${CANLI_YEREL.bentoEnUcuzUst}</div>
       <div class="bento-site">${siteAdiHtml(enUcuz.r.site, siteAdi, p.url)}</div>
       <div class="bento-fiyat">${alan_fiyat}</div>
       <div class="bento-rozetler">${kargoNotu}${stokNotu}</div>
       <a class="bento-cta" href="${esc(link)}" target="_blank" rel="noopener sponsored"
-         data-afiliye-site="${esc(enUcuz.r.site || '')}">Mağazaya Git <span aria-hidden="true">↗</span></a>
+         data-afiliye-site="${esc(enUcuz.r.site || '')}">${esc(CANLI_YEREL.bentoMagazayaGit)} <span aria-hidden="true">↗</span></a>
     </article>
 
     <article class="bento-blok bento-trend">
-      <div class="bento-etiket">📈 Fiyat trendi</div>
+      <div class="bento-etiket">${CANLI_YEREL.bentoFiyatTrendi}</div>
       ${trendBlok}
     </article>
 
     <article class="bento-blok bento-dagilim">
-      <div class="bento-etiket">📊 Fiyat dağılımı</div>
+      <div class="bento-etiket">${CANLI_YEREL.bentoFiyatDagilimi}</div>
       <div class="bento-dagilim-ust">
-        <span class="bento-dagilim-etiket">En ucuz</span>
+        <span class="bento-dagilim-etiket">${esc(CANLI_YEREL.bentoEnUcuz)}</span>
         <b class="bento-dagilim-fiyat yesil">${tl(enUcuz.fiyat)}</b>
       </div>
       <div class="bento-dagilim-ust">
-        <span class="bento-dagilim-etiket">En pahalı</span>
+        <span class="bento-dagilim-etiket">${esc(CANLI_YEREL.bentoEnPahali)}</span>
         <b class="bento-dagilim-fiyat">${tl(enPahali?.fiyat)}</b>
       </div>
       <div class="bento-bar" aria-hidden="true"><span style="width:${Math.max(6, Math.min(100, 100 - (yuzde || 0)))}%"></span></div>
-      <div class="bento-fark">${fark > 0 ? `${tl(fark)} fark` : 'Tüm mağazalarda aynı fiyat'}</div>
-      <div class="bento-kazanc">${yuzde != null && yuzde > 0 ? `%${String(yuzde).replace('.', ',')} daha az öde` : 'Fark yok'}</div>
-      <div class="bento-alt-metin">${v.magazaSayisi} mağaza · ${v.stoktaSayisi} stokta</div>
+      <div class="bento-fark">${fark > 0 ? esc(CANLI_YEREL.bentoFarkMetni(tl(fark))) : esc(CANLI_YEREL.bentoTumAyniFiyat)}</div>
+      <div class="bento-kazanc">${yuzde != null && yuzde > 0 ? esc(CANLI_YEREL.bentoDahaAzOde(yuzdeStr(yuzde, true))) : esc(CANLI_YEREL.bentoFarkYok)}</div>
+      <div class="bento-alt-metin">${esc(CANLI_YEREL.bentoMagazaStok(v.magazaSayisi, v.stoktaSayisi))}</div>
     </article>`;
 
   if (sonBentoSeri && gecmisVar) {
@@ -2792,15 +3704,15 @@ function tukendiAlternatifleriniEkle({ tamamiTukendi, hicBulunamadi }) {
 
   const secilen = kaynak.slice(0, 3);
   const baslikMetni = tamamiTukendi
-    ? '⚠️ Bu ürün şu anda tüm mağazalarda tükenmiş görünüyor.'
-    : '🔍 Bu ürün için mağazalarda eşleşen fiyat bulunamadı.';
+    ? CANLI_YEREL.tukendiAltBaslik
+    : CANLI_YEREL.bulunamadiAltBaslik;
 
   const blok = document.createElement('div');
   blok.className = 'tukendi-alternatif-blok';
   blok.innerHTML = `
     <div class="tukendi-alternatif-baslik">
       <span aria-hidden="true">📦</span>
-      <span>${esc(baslikMetni)} Benzer popüler alternatifler stokta:</span>
+      <span>${esc(CANLI_YEREL.benzerAlternatifler(baslikMetni))}</span>
     </div>
     <div class="vitrin-grid">${secilen.map(vitrinKartHtml).join('')}</div>`;
   alan.insertAdjacentElement('afterbegin', blok);
@@ -2862,17 +3774,15 @@ function tasarrufBandiCiz(sonuc, opts = {}) {
   if (netFark > 0.009) {
     const yuzdeKazanc = Math.round((netFark / enPahali.fiyat) * 100);
     if (tutarEl) {
-      tutarEl.innerHTML = `Bu alışverişte <b>${tl(netFark)} net tasarruf</b> ediyorsunuz!`;
+      tutarEl.innerHTML = CANLI_YEREL.tasarrufTutar(tl(netFark));
     }
     if (detayEl) {
-      detayEl.textContent = `En ucuz: ${tl(enUcuz.fiyat)} (${enUcuz.site}) · `
-        + `En pahalı mağaza (${tl(enPahali.fiyat)}) yerine %${yuzdeKazanc} daha karlı.`;
+      detayEl.textContent = CANLI_YEREL.tasarrufDetay(tl(enUcuz.fiyat), enUcuz.site, tl(enPahali.fiyat), yuzdeStr(yuzdeKazanc));
     }
   } else {
-    if (tutarEl) tutarEl.textContent = `Tüm mağazalarda en dip fiyat: ${tl(enUcuz.fiyat)}`;
+    if (tutarEl) tutarEl.textContent = CANLI_YEREL.ayniDipFiyat(tl(enUcuz.fiyat));
     if (detayEl) {
-      detayEl.textContent = `${stokluTeklifler.length} mağaza arasında fiyat farkı bulunmuyor, `
-        + 'en ucuz seviyedesiniz.';
+      detayEl.textContent = CANLI_YEREL.ayniDipDetay(stokluTeklifler.length);
     }
   }
   bant.hidden = false;
@@ -2893,13 +3803,9 @@ function tasarrufBandiCiz(sonuc, opts = {}) {
     const yas = muhurYasi
       || (Number.isFinite(Number(sonuc?.ts)) ? vitrinYas(new Date(Number(sonuc.ts)).toISOString()) : null);
     if (kismi) {
-      dogrulamaMetin.textContent = yas
-        ? `⚠️ ${yas} Kısmi tarama (${taranan}/${toplamSite} mağaza)`
-        : `⚠️ Kısmi tarama (${taranan}/${toplamSite} mağaza)`;
+      dogrulamaMetin.textContent = CANLI_YEREL.kismiTarama(yas, taranan, toplamSite);
     } else {
-      dogrulamaMetin.textContent = yas
-        ? `🕒 ${yas} ${toplamSite} mağazadan doğrulandı`
-        : `🕒 Az önce ${toplamSite} mağazadan canlı doğrulandı`;
+      dogrulamaMetin.textContent = CANLI_YEREL.dogrulandiSaat(yas, toplamSite);
     }
   }
 }
@@ -2918,13 +3824,13 @@ function sonucGoster(sonuc, opts = {}) {
   $('#sonucAlani').hidden = false;
   $('#takipMesaj').textContent = '';
 
-  const k = sonuc.kaynak || { site: 'kaynak', urun: 'Ürün' };
-  $('#kaynakBaslik').textContent = k.urun || 'Ürün';
+  const k = sonuc.kaynak || { site: 'kaynak', urun: CANLI_YEREL.bulunamadiVarsayilan };
+  $('#kaynakBaslik').textContent = k.urun || CANLI_YEREL.sonucEtiketi;
   $('#kaynakBilgi').innerHTML = [
-    `Kaynak: <b>${SITE_ADLARI[k.site] || k.site || 'Belirtilmedi'}</b>`,
-    k.marka ? `Marka: <b>${k.marka}</b>` : '',
-    k.modelKodu ? `Model kodu: <span class="rozet">${esc(k.modelKodu)}</span>` : '',
-    k.barkod ? `Barkod: <b>${esc(k.barkod)}</b>` : '',
+    `${CANLI_YEREL.kaynakEtiketi}: <b>${SITE_ADLARI[k.site] || k.site || CANLI_YEREL.belirtilmedi}</b>`,
+    k.marka ? `${CANLI_YEREL.markaEtiketi}: <b>${esc(k.marka)}</b>` : '',
+    k.modelKodu ? `${CANLI_YEREL.modelKoduEtiketi}: <span class="rozet">${esc(k.modelKodu)}</span>` : '',
+    k.barkod ? `${CANLI_YEREL.barkodEtiketi}: <b>${esc(k.barkod)}</b>` : '',
     k.renk ? `${DIL_KOPYA_YEREL.renkEtiket}: <span class="rozet renk">${esc(renkYerellestir(k.renk))}</span>` : '',
   ].filter(Boolean).join(' · ');
 
@@ -2935,7 +3841,7 @@ function sonucGoster(sonuc, opts = {}) {
   const tamamiTukendi = o.tamamiTukendi ?? (bulunanlar.length > 0 && stoktaVarSayisi === 0);
 
   if (tamamiTukendi) {
-    $('#ozetKutu').innerHTML = `<div class="etiket" style="color:#dc2626">⚠️ Tüm Mağazalarda Tükendi</div><div class="fiyat" style="color:#dc2626">Stok Yok</div><div class="yer">${bulunanlar.length} mağazanın tamamında stok tükenmiş</div>`;
+    $('#ozetKutu').innerHTML = `<div class="etiket" style="color:#dc2626">${CANLI_YEREL.tumundeTukendi}</div><div class="fiyat" style="color:#dc2626">${CANLI_YEREL.stokYokKisa}</div><div class="yer">${CANLI_YEREL.hepsiTukenmis(bulunanlar.length)}</div>`;
   } else if (o.enUcuzSite) {
     const enUcuzTeklif = bulunanlar.find(r =>
       r.enUcuz || ((r.siteName === o.enUcuzSite || SITE_ADLARI[r.site] === o.enUcuzSite) && r.product?.inStock !== false));
@@ -2945,12 +3851,12 @@ function sonucGoster(sonuc, opts = {}) {
       || (enUcuzTeklif?.kargoBedava === true && ekKargo?.uygulanir == null);
     const kargoBilindi = ekKargo?.uygulanir === true || ucretsizKargo;
     const kargoOzeti = (ekKargo?.uygulanir === true && Number(ekKargo.ucret) > 0)
-      ? `📦 ${tl(ekKargo.ucret)} kargo dahil`
-      : (ucretsizKargo ? '📦 Kargo dahil (ücretsiz)' : '⚠️ +Kargo sepette eklenir');
-    const stokEkNot = stoktaYokSayisi > 0 ? ` · ${stoktaVarSayisi} mağazada stokta` : '';
-    $('#ozetKutu').innerHTML = `<div class="etiket">${kargoBilindi ? '🏷️ En ucuz (kargo dahil)' : '🏷️ En ucuz (+kargo sepette)'}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
+      ? CANLI_YEREL.kargoDahilUcret(tl(ekKargo.ucret))
+      : (ucretsizKargo ? CANLI_YEREL.kargoDahilBedava : CANLI_YEREL.kargoSepetteEklenir);
+    const stokEkNot = stoktaYokSayisi > 0 ? CANLI_YEREL.stoktaMagazaSayi(stoktaVarSayisi) : '';
+    $('#ozetKutu').innerHTML = `<div class="etiket">${kargoBilindi ? CANLI_YEREL.ozetEnUcuzDahil : CANLI_YEREL.ozetEnUcuzKargo}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
   } else {
-    $('#ozetKutu').innerHTML = `<div class="etiket">Sonuç</div><div class="fiyat">—</div><div class="yer">Stokta ürün bulunamadı</div>`;
+    $('#ozetKutu').innerHTML = `<div class="etiket">${CANLI_YEREL.sonucEtiketi}</div><div class="fiyat">—</div><div class="yer">${CANLI_YEREL.stoktaUrunYok}</div>`;
   }
 
   // 🎯 Net tasarruf bandı + güvenilirlik mührü (2026-11-12).
@@ -2978,9 +3884,9 @@ function sonucGoster(sonuc, opts = {}) {
     fBar.hidden = false;
     document.querySelectorAll('.filtre-chip').forEach(c => c.classList.toggle('aktif', c.dataset.filtre === 'hepsi'));
     const chipVar = document.querySelector('.filtre-chip[data-filtre="stokta_var"]');
-    if (chipVar) chipVar.textContent = `🟢 Stokta Var (${stoktaVarSayisi})`;
+    if (chipVar) chipVar.textContent = CANLI_YEREL.filtreStoktaVar(stoktaVarSayisi);
     const chipYok = document.querySelector('.filtre-chip[data-filtre="stokta_yok"]');
-    if (chipYok) chipYok.textContent = `🔴 Stokta Yok (${stoktaYokSayisi})`;
+    if (chipYok) chipYok.textContent = CANLI_YEREL.filtreStoktaYok(stoktaYokSayisi);
     // 🖨️ Çap ve hammadde filtreleri (2026-10-30)
     baskiFiltreleriniDoldur(sonuc);
   }
@@ -3200,10 +4106,11 @@ function birimLMetni(deger, paraBirimi = null) {
 function gramMetni(gram) {
   if (gram == null || !isFinite(gram)) return null;
   const g = Number(gram);
+  const loc = sonucLocale();
   if (g >= 1000 && g % 100 === 0) {
-    return (g / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' kg';
+    return (g / 1000).toLocaleString(loc, { maximumFractionDigits: 2 }) + ' kg';
   }
-  return g.toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' g';
+  return g.toLocaleString(loc, { maximumFractionDigits: 0 }) + ' g';
 }
 
 /* ================= 🧠 Alışveriş Zekası Karar Paneli (2026-10-30) =================
@@ -3243,14 +4150,14 @@ function fiyatZekasiPaneli(sonuc) {
   alan.hidden = false;
   alan.className = 'fiyat-zeka-kart fiyat-zeka-' + renk;
 
-  const tavsiyeMetni = z.tavsiye === 'simdi_al' ? 'Şimdi Al'
-    : z.tavsiye === 'bekle' ? 'Bekle / Pahalı'
-      : z.tavsiye === 'piyasa' ? 'Fiyat Normal' : 'Veri Az';
+  const tavsiyeMetni = z.tavsiye === 'simdi_al' ? CANLI_YEREL.zekaSimdiAl
+    : z.tavsiye === 'bekle' ? CANLI_YEREL.zekaBekle
+      : z.tavsiye === 'piyasa' ? CANLI_YEREL.zekaFiyatNormal : CANLI_YEREL.zekaVeriAz;
   rozet.textContent = (z.tavsiye === 'simdi_al' ? '🟢 ' : z.tavsiye === 'bekle' ? '🔴 ' : z.tavsiye === 'piyasa' ? '🟡 ' : '⚪ ') + tavsiyeMetni;
 
   const gun = z.gunSayisi || 0;
   const nokta = z.veriNoktasi || 0;
-  alt.textContent = `${gun} günlük geçmiş · ${nokta} fiyat gözlemi`;
+  alt.textContent = CANLI_YEREL.zekaGecmisAlt(gun, nokta);
 
   if (z.ortalamaFarkYuzde == null) {
     farkEl.textContent = '—';
@@ -3258,8 +4165,8 @@ function fiyatZekasiPaneli(sonuc) {
   } else {
     const f = z.ortalamaFarkYuzde;
     farkEl.textContent = f >= 0
-      ? `30G ortalamadan %${Math.abs(f)} daha ucuz`
-      : `30G ortalamadan %${Math.abs(f)} daha pahalı`;
+      ? CANLI_YEREL.zekaFarkUcuz(yuzdeStr(Math.abs(f)))
+      : CANLI_YEREL.zekaFarkPahali(yuzdeStr(Math.abs(f)));
     farkEl.className = 'fiyat-zeka-fark ' + (f > 0 ? 'iyi' : f < 0 ? 'kotu' : '');
   }
 
@@ -3272,14 +4179,14 @@ function fiyatZekasiPaneli(sonuc) {
   }
 
   const parcalar = [];
-  if (z.minFiyat != null) parcalar.push(`En düşük: <b>${tl(z.minFiyat)}</b>`);
-  if (z.ortFiyat != null) parcalar.push(`30G ort.: <b>${tl(z.ortFiyat)}</b>`);
-  if (z.maxFiyat != null) parcalar.push(`En yüksek: <b>${tl(z.maxFiyat)}</b>`);
+  if (z.minFiyat != null) parcalar.push(CANLI_YEREL.zekaEnDusuk(tl(z.minFiyat)));
+  if (z.ortFiyat != null) parcalar.push(CANLI_YEREL.zekaOrt30(tl(z.ortFiyat)));
+  if (z.maxFiyat != null) parcalar.push(CANLI_YEREL.zekaEnYuksek(tl(z.maxFiyat)));
   ist.innerHTML = parcalar.join(' · ');
 
   const aktifMesaj = zt?.aciklama || z?.mesaj || null;
   if (aktifMesaj) {
-    mesajEl.textContent = aktifMesaj;
+    mesajEl.textContent = zekaMesajYerellestir(aktifMesaj, z);
     mesajEl.hidden = false;
     const stil = (zt?.karar === 'SIMDI_AL' || z?.durum === 'dip_fiyat') ? 'firsat' : (zt?.karar === 'BEKLE' || z?.durum === 'sahte_indirim') ? 'uyari' : '';
     mesajEl.className = 'fiyat-zeka-mesaj ' + stil;
@@ -3320,11 +4227,11 @@ function birimFiyatPaneli(sonuc) {
   const baslik = $('#birimBaslik');
   const aciklama = $('#birimAciklama');
   if (tuzaklar.length) {
-    baslik.textContent = '⚠️ Sahte ucuz uyarısı';
-    aciklama.textContent = 'Başlık fiyatı düşük görünen ürün, kilogram başına daha pahalı.';
+    baslik.textContent = CANLI_YEREL.birimSahteBaslik;
+    aciklama.textContent = CANLI_YEREL.birimSahteAciklama;
   } else {
-    baslik.textContent = '⚖️ Kilogram başına fiyat';
-    aciklama.textContent = 'Farklı gramajlar aynı birime çevrildi.';
+    baslik.textContent = CANLI_YEREL.birimNormalBaslik;
+    aciklama.textContent = CANLI_YEREL.birimNormalAciklama;
   }
 
   // --- Tuzak kartları ---
@@ -3350,32 +4257,29 @@ function birimFiyatPaneli(sonuc) {
     const bi = s.product.birim;
     const supheli = bi.supheli === true;
     return `<tr class="${i === 0 && !supheli ? 'birim-en-iyi' : ''} ${supheli ? 'birim-supheli' : ''}">
-      <td>${esc(SITE_ADLARI[s.site] || s.siteName || s.site)}${supheli ? ' <span class="birim-supheli-rozet" title="Fiyat doğrulanmalı">şüpheli</span>' : ''}</td>
+      <td>${esc(SITE_ADLARI[s.site] || s.siteName || s.site)}${supheli ? ` <span class="birim-supheli-rozet" title="${esc(CANLI_YEREL.birimSupheliTitle)}">${esc(CANLI_YEREL.birimSupheli)}</span>` : ''}</td>
       <td>${bi.gram != null ? esc(gramMetni(bi.gram)) : '—'}</td>
       <td>${tl(bi.fiyat)}</td>
-      <td class="birim-kg-hucre">${esc(birimKgMetni(bi.tlKg))}${bi.tlKgTahmini ? ' <span class="birim-tahmini" title="Nominal yoğunlukla tahmin">~</span>' : ''}</td>
+      <td class="birim-kg-hucre">${esc(birimKgMetni(bi.tlKg))}${bi.tlKgTahmini ? ` <span class="birim-tahmini" title="${esc(CANLI_YEREL.birimTahminTitle)}">~</span>` : ''}</td>
     </tr>`;
   }).join('');
 
   // Şüpheli fiyat uyarısı (dürüstlük: "en iyi" diye sunmuyoruz)
   const supheliHtml = supheliler.length
     ? `<div class="birim-supheli-uyari">
-        <b>⚠️ ${supheliler.length} fiyat doğrulanmalı.</b>
-        ${esc(supheliler[0].birim?.supheliNeden || 'Birim fiyat diğerlerinin çok altında.')}
-        Bu yüzden "en iyi birim fiyat" seçimine dahil edilmedi.
+        ${CANLI_YEREL.birimDogrulanmali(supheliler.length, esc(supheliler[0].birim?.supheliNeden || CANLI_YEREL.birimSupheliVarsayilan))}
       </div>`
     : '';
 
   const referansNotu = referans
-    ? `<p class="birim-alt">Karşılaştırma ${esc(gramMetni(referans))} üzerinden yapıldı. `
-      + '₺/kg = gerçekte ödenecek tutar ÷ net miktar.</p>'
-    : '<p class="birim-alt">₺/kg = gerçekte ödenecek tutar ÷ net miktar.</p>';
+    ? `<p class="birim-alt">${esc(CANLI_YEREL.birimAltReferans(gramMetni(referans)))}</p>`
+    : `<p class="birim-alt">${esc(CANLI_YEREL.birimAltDuz)}</p>`;
 
   $('#birimIcerik').innerHTML = `
     ${tuzakHtml}
     ${supheliHtml}
     ${satirlar ? `<table class="birim-tablo">
-      <thead><tr><th>Mağaza</th><th>Miktar</th><th>Fiyat</th><th>Birim fiyat</th></tr></thead>
+      <thead><tr><th>${esc(CANLI_YEREL.birimThMagaza)}</th><th>${esc(CANLI_YEREL.birimThMiktar)}</th><th>${esc(CANLI_YEREL.birimThFiyat)}</th><th>${esc(CANLI_YEREL.birimThBirim)}</th></tr></thead>
       <tbody>${satirlar}</tbody>
     </table>` : ''}
     ${referansNotu}`;
@@ -3407,26 +4311,26 @@ function muadilPaneliHazirla(sonuc, opts = {}) {
   const stokYok = !hicYok && stokta.length === 0;
 
   $('#muadilIcerik').innerHTML = '';
-  $('#muadilYenileBtn').textContent = 'Muadili ara';
+  $('#muadilYenileBtn').textContent = CANLI_YEREL.muadilAra;
   $('#muadilYenileBtn').hidden = false;
 
   if (stokYok || hicYok) {
     $('#muadilIkon').textContent = stokYok ? '🚫' : '🔎';
     $('#muadilBaslik').textContent = stokYok
-      ? 'Bu ürün stokta yok'
-      : 'Bu ürün hiçbir sitede bulunamadı';
+      ? CANLI_YEREL.muadilStokYokBaslik
+      : CANLI_YEREL.muadilHicYokBaslik;
     $('#muadilAciklama').textContent = stokYok
-      ? `${teklifler.length} mağazanın tamamı stokta yok görünüyor. Aynı ihtiyacı karşılayan muadillere bakalım.`
-      : 'Aynı ihtiyacı karşılayabilecek muadil ürünlere bakabilirsin.';
+      ? CANLI_YEREL.muadilStokYokAciklama(teklifler.length)
+      : CANLI_YEREL.muadilHicYokAciklama;
     alan.hidden = false;
     muadilAra(false);
   } else {
     // Kendiliğinden ARAMA yapılmaz (boşa istek/kredi harcamayalım), ama kullanıcı
     // "fiyat yüksek mi, muadili var mı?" diye elle sorabilsin (2026-10-28).
     $('#muadilIkon').textContent = '🔄';
-    $('#muadilBaslik').textContent = 'Muadil ürün var mı?';
-    $('#muadilAciklama').textContent = 'Aynı ihtiyacı karşılayan daha uygun fiyatlı modelleri arayabilirsin.';
-    $('#muadilYenileBtn').textContent = 'Muadili ara';
+    $('#muadilBaslik').textContent = CANLI_YEREL.muadilVarMi;
+    $('#muadilAciklama').textContent = CANLI_YEREL.muadilKesifAciklama;
+    $('#muadilYenileBtn').textContent = CANLI_YEREL.muadilAra;
     alan.hidden = false;
   }
 }
@@ -3447,9 +4351,9 @@ async function muadilAra(elle = true) {
   const icerik = $('#muadilIcerik');
   const btn = $('#muadilYenileBtn');
   $('#muadilAlani').hidden = false;
-  icerik.innerHTML = '<div class="muadil-yukleniyor">Muadil ürünler aranıyor… (bu birkaç saniye sürebilir)</div>';
+  icerik.innerHTML = `<div class="muadil-yukleniyor">${esc(CANLI_YEREL.muadilYukleniyor)}</div>`;
   btn.disabled = true;
-  btn.textContent = 'Aranıyor…';
+  btn.textContent = CANLI_YEREL.muadilAraniyor;
 
   try {
     const res = await fetch('/api/muadil', {
@@ -3458,13 +4362,13 @@ async function muadilAra(elle = true) {
       body: JSON.stringify({ sonuc: muadilSonuc, elle }),
     });
     const d = await guvenliJson(res);
-    if (!res.ok) throw new Error(d.hata || 'Muadil araması başlatılamadı');
+    if (!res.ok) throw new Error(d.hata || CANLI_YEREL.muadilHataBaslatilamadi);
     muadilAktifIs = d.isId || d.id;
     muadilPoll(muadilAktifIs);
   } catch (e) {
     icerik.innerHTML = `<p class="muadil-uyari">${esc(e.message)}</p>`;
     btn.disabled = false;
-    btn.textContent = 'Muadili ara';
+    btn.textContent = CANLI_YEREL.muadilAra;
   }
 }
 
@@ -3553,11 +4457,15 @@ const muadilBtn = document.getElementById('muadilYenileBtn');
 if (muadilBtn) muadilBtn.addEventListener('click', () => muadilAra(true));
 
 function kampanyaEtiketi(kosul) {
-  const map = {
-    uygulama: 'Uygulamaya özel', uyelik: 'Üyelere özel', karti: 'Karta özel',
-    sepet_tutari: 'Sepet tutarına bağlı', diger: 'Koşullu',
+  const d = BASKI_ORTAM.dil || 'tr';
+  const tablolar = {
+    tr: { uygulama: 'Uygulamaya özel', uyelik: 'Üyelere özel', karti: 'Karta özel', sepet_tutari: 'Sepet tutarına bağlı', diger: 'Koşullu' },
+    en: { uygulama: 'App-only', uyelik: 'Members-only', karti: 'Card-only', sepet_tutari: 'Basket minimum', diger: 'Conditional' },
+    fr: { uygulama: 'Appli uniq.', uyelik: 'Membres', karti: 'Carte bancaire', sepet_tutari: 'Minimum panier', diger: 'Conditionnel' },
+    ja: { uygulama: 'アプリ限定', uyelik: '会員限定', karti: 'カード限定', sepet_tutari: '合計条件', diger: '条件付き' },
   };
-  return map[kosul] || 'Koşullu';
+  const map = tablolar[d] || tablolar.tr;
+  return map[kosul] || map.diger;
 }
 
 /* ================= 🖨️ 3D Baskı Maliyet Widget'ı (2026-10-30) =================
@@ -3598,7 +4506,7 @@ function baskiWidgetHtml(bk, paraBirimi = null) {
   const h = baskiHesapla(bk, baskiGramaj);
   const icerik = h
     ? DIL_KOPYA_YEREL.baskiSonuc(h, bk, f)
-    : `<span class="baski-yok">${esc(bk.neden || DIL_KOPYA_YEREL.baskiYok)}</span>`;
+    : `<span class="baski-yok">${esc(bk.neden ? baskiNedenYerellestir(bk.neden) : DIL_KOPYA_YEREL.baskiYok)}</span>`;
   return `<div class="baski-widget" data-makara-gram="${esc(String(bk.makaraGram ?? ''))}" data-currency="${esc(String(paraBirimi || ''))}">
     <div class="baski-baslik">
       <span class="baski-baslik-metin">${DIL_KOPYA_YEREL.baskiBaslik}</span>
@@ -3756,43 +4664,48 @@ document.addEventListener('click', (e) => {
 
 function kartHtml(r) {
   if (r.status !== 'found' || !r.product) {
+    const nedenMetni = magazaDurumNedeniYerellestir(r.reason || '');
     return `<div class="bulunamadi-karti">
       <div class="site-adi">${SITE_ADLARI[r.site]}</div>
-      <div>${r.status === 'error' ? '⚠️ Okunamadı: ' + esc(r.reason) : '🔍 ' + esc(r.reason || 'Ürün bulunamadı')}</div>
+      <div>${r.status === 'error' ? CANLI_YEREL.okunamadiOnEk + esc(nedenMetni) : '🔍 ' + esc(nedenMetni || CANLI_YEREL.bulunamadiVarsayilan)}</div>
     </div>`;
   }
   const p = r.product;
   const pr = p.pricing || {};
-  const eslesme = { model_kodu: 'model kodu eşleşmesi', barkod: 'barkod eşleşmesi', benzerlik: 'başlık benzerliği', kaynak: 'kaynak ürün' };
+  const eslesme = CANLI_YEREL.eslesme;
 
   const rozetler = [];
   const kargoFree = pr.kargo?.uygulanir === false
     || p.shipping?.applies === false
     || (r.kargoBedava === true && pr.kargo?.uygulanir == null);
-  if (kargoFree) rozetler.push('<span class="etiket-rozeti rozet-kargo">📦 Ücretsiz Kargo</span>');
+  if (kargoFree) rozetler.push(`<span class="etiket-rozeti rozet-kargo">${CANLI_YEREL.rozetUcretsizKargo}</span>`);
   else if (Number(p.pricing?.kargo?.ucret) > 0 && p.pricing?.kargo?.uygulanir !== false) {
-    rozetler.push(`<span class="etiket-rozeti rozet-kargo-ucretli">🚚 +${tl(p.pricing.kargo.ucret)} Kargo</span>`);
+    rozetler.push(`<span class="etiket-rozeti rozet-kargo-ucretli">${esc(CANLI_YEREL.rozetUcretliKargo(tl(p.pricing.kargo.ucret)))}</span>`);
   }
-  if (r.resmiSatici) rozetler.push('<span class="etiket-rozeti rozet-resmi">🏢 Resmi Satıcı</span>');
-  if (r.vadeFarksizTaksit) rozetler.push('<span class="etiket-rozeti rozet-taksit">💳 Vade Farksız Taksit</span>');
+  if (r.resmiSatici) rozetler.push(`<span class="etiket-rozeti rozet-resmi">${CANLI_YEREL.rozetResmiSatici}</span>`);
+  if (r.vadeFarksizTaksit) rozetler.push(`<span class="etiket-rozeti rozet-taksit">${CANLI_YEREL.rozetVadeFarksiz}</span>`);
   const rozetlerHtml = rozetler.length ? `<div class="kart-rozetler">${rozetler.join('')}</div>` : '';
 
   // 🖨️ 3D Baskı Uzmanlık rozetleri (2026-10-30)
   const bk = r.baski || null;
   const baskiRozetleri = [];
   if (bk?.capUyari) {
-    baskiRozetleri.push(`<span class="baski-rozet cap-uyari" title="${esc(bk.capUyari.metin)}">${esc(bk.capUyari.metin)}</span>`);
+    const capMetin = baskiRozetYerellestir(bk.capUyari.metin);
+    baskiRozetleri.push(`<span class="baski-rozet cap-uyari" title="${esc(capMetin)}">${esc(capMetin)}</span>`);
   } else if (bk?.capMm != null) {
-    baskiRozetleri.push(`<span class="baski-rozet cap-ok" title="Standart FDM yazıcılarla uyumlu">✅ ${esc(String(bk.capMm).replace('.', ','))} mm</span>`);
+    const capStr = DIL_KOPYA_YEREL.baskiOndalikVirgul ? String(bk.capMm).replace('.', ',') : String(bk.capMm);
+    baskiRozetleri.push(`<span class="baski-rozet cap-ok" title="${esc(CANLI_YEREL.capOkTitle)}">✅ ${esc(capStr)} mm</span>`);
   }
   if (bk?.hammadde?.rozet) {
-    baskiRozetleri.push(`<span class="baski-rozet ${esc(bk.hammadde.sinif || '')}">${esc(bk.hammadde.rozet)}</span>`);
+    const hmRozet = baskiRozetYerellestir(bk.hammadde.rozet);
+    baskiRozetleri.push(`<span class="baski-rozet ${esc(bk.hammadde.sinif || '')}">${esc(hmRozet)}</span>`);
   }
   for (const n of (bk?.hammadde?.nitelikler || [])) {
-    baskiRozetleri.push(`<span class="baski-rozet ${esc(n.sinif || '')}">${esc(n.rozet)}</span>`);
+    baskiRozetleri.push(`<span class="baski-rozet ${esc(n.sinif || '')}">${esc(baskiRozetYerellestir(n.rozet))}</span>`);
   }
   if (r.birimUyari) {
-    baskiRozetleri.push(`<span class="baski-rozet birim-uyari" title="${esc(r.birimUyari.metin)}">${esc(r.birimUyari.metin)}</span>`);
+    const bwMetin = baskiRozetYerellestir(r.birimUyari.metin);
+    baskiRozetleri.push(`<span class="baski-rozet birim-uyari" title="${esc(bwMetin)}">${esc(bwMetin)}</span>`);
   }
   const baskiRozetHtml = baskiRozetleri.length
     ? `<div class="baski-rozetler">${baskiRozetleri.join('')}</div>` : '';
@@ -3813,12 +4726,12 @@ function kartHtml(r) {
         ? `🧪 ${Number(b.tlL).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL / L`
         : `🏷️ ${Number(b.tlKg).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL / kg`);
     const ikincil = recine && kgVar
-      ? `≈ ${tl(b.tlKg, paraKod)}/kg (tahmini)`
+      ? CANLI_YEREL.birimTahminiEk(tl(b.tlKg, paraKod))
       : '';
-    const miktar = b.gram != null ? gramMetni(b.gram) : (b.ml != null ? (b.ml / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' L' : '');
+    const miktar = b.gram != null ? gramMetni(b.gram) : (b.ml != null ? (b.ml / 1000).toLocaleString(sonucLocale(), { maximumFractionDigits: 2 }) + ' L' : '');
     const ipucu = recine
-      ? 'Hacimden hesaplandı (nominal yoğunluk)'
-      : (b.tlKgTahmini ? 'Hacimden nominal yoğunlukla hesaplandı (tahmini)' : 'Net miktara göre hesaplandı');
+      ? CANLI_YEREL.birimIpucuHacim
+      : (b.tlKgTahmini ? CANLI_YEREL.birimIpucuTahmini : CANLI_YEREL.birimIpucuNet);
 
     return `<div class="birim-rozet-satiri" title="${esc(ipucu)}">
         <span class="birim-rozet ${recine ? 'birim-rozet-resin' : 'birim-rozet-filament'}">${esc(ana)}</span>
@@ -3830,15 +4743,15 @@ function kartHtml(r) {
   // 🧾 KDV şeffaflığı (2026-10-31): KDV hariç yayımlayan sitede gösterilen
   // tutar KDV dahildir; hariç tutar da açıkça yazılır.
   const kdvHtml = p.vatIncluded && p.priceExVat != null
-    ? `<div class="kdv-not" title="Mağaza bu ürünü KDV hariç yayımlıyor. Karşılaştırmada KDV dahil tutar kullanılır.">🧾 KDV Dahil${p.vatRate ? ` (%${esc(String(p.vatRate))})` : ''} — KDV hariç ${tl(p.priceExVat)}</div>`
+    ? `<div class="kdv-not" title="${esc(CANLI_YEREL.kdvTitle)}">${CANLI_YEREL.kdvDahil(p.vatRate ? esc(yuzdeStr(p.vatRate)) : '', tl(p.priceExVat))}</div>`
     : '';
 
   const kosulluHtml = (pr.kampanyaKosullu || []).map(k =>
     `<div class="kosullu-kampanya"><span class="kosul-etiket">${kampanyaEtiketi(k.kosul)}</span>${esc(k.metin)}${k.kosul_aciklamasi ? ' — ' + esc(k.kosul_aciklamasi) : ''}</div>`).join('');
   const taksitHtml = (pr.kampanyaTaksit || []).length
-    ? `<h4>Taksit</h4>${(pr.kampanyaTaksit || []).map(k => `<div class="taksit-notu">• ${esc(k.metin)}</div>`).join('')}` : '';
+    ? `<h4>${CANLI_YEREL.taksitBaslik}</h4>${(pr.kampanyaTaksit || []).map(k => `<div class="taksit-notu">• ${esc(k.metin)}</div>`).join('')}` : '';
   const dahilHtml = (pr.kampanyaDahil || []).length
-    ? `<h4>Fiyata dahil</h4>${(pr.kampanyaDahil || []).map(k => `<div class="dahil-notu">✓ ${esc(k.metin)}</div>`).join('')}` : '';
+    ? `<h4>${CANLI_YEREL.fiyataDahilBaslik}</h4>${(pr.kampanyaDahil || []).map(k => `<div class="dahil-notu">✓ ${esc(k.metin)}</div>`).join('')}` : '';
 
   // Ürün görseli (yoksa ya da yüklenemezse gizlenir).
   // 2026-11-12: sabit 76×76 kutu (CLS yok), lazy + async decode, düşük öncelik.
@@ -3859,16 +4772,16 @@ function kartHtml(r) {
   const dokumAdimlar = (pr.dokuem || []).filter(d =>
     ['cart_discount', 'coupon', 'bank_discount', 'shipping', 'fee', 'installment_surcharge'].includes(d.step) && d.amount !== 0);
   const dokumHtml = dokumAdimlar.length
-    ? `<div class="fiyat-dokumu" title="${esc(dokumAdimlar.map(d => `${d.label}: ${tl(d.amount)}`).join(' | '))}">Hesap: ${tl(pr.taban)}${dokumAdimlar.map(d => ` ${d.amount < 0 ? '−' : '+'}${tl(Math.abs(d.amount))}`).join('')}</div>`
+    ? `<div class="fiyat-dokumu" title="${esc(dokumAdimlar.map(d => `${d.label}: ${tl(d.amount)}`).join(' | '))}">${CANLI_YEREL.hesapEtiketi} ${tl(pr.taban)}${dokumAdimlar.map(d => ` ${d.amount < 0 ? '−' : '+'}${tl(Math.abs(d.amount))}`).join('')}</div>`
     : '';
   const cashbackHtml = (pr.cashback || 0) > 0
-    ? `<div class="fiyat-cashback">🪙 ${tl(pr.cashback)} değerinde puan/cashback — etkin maliyet <b>${tl(pr.etkinMaliyet)}</b></div>`
+    ? `<div class="fiyat-cashback">${CANLI_YEREL.cashbackSatir(tl(pr.cashback), tl(pr.etkinMaliyet))}</div>`
     : '';
   const kuponHtml = pr.kupon
-    ? `<div class="fiyat-kupon" title="${esc(pr.kupon.metin)}">🎟️ Kuponla <b>${tl(pr.kupon.fiyat)}</b> (−${tl(pr.kupon.indirimTutari)})${pr.kupon.kodu ? ` — kod: <b>${esc(pr.kupon.kodu)}</b>` : ''}${pr.kupon.kosul ? `<span class="kupon-kosul"> · ${esc(pr.kupon.kosul)}</span>` : ''}</div>`
+    ? `<div class="fiyat-kupon" title="${esc(pr.kupon.metin)}">${CANLI_YEREL.kuponSatir(tl(pr.kupon.fiyat), tl(pr.kupon.indirimTutari), pr.kupon.kodu ? esc(pr.kupon.kodu) : '', pr.kupon.kosul ? esc(pr.kupon.kosul) : '')}</div>`
     : '';
   const kampanyaHtml = pr.kampanyaOnizleme
-    ? `<div class="fiyat-kampanya" title="${esc(pr.kampanyaOnizleme.metin)}">🏷️ Kampanyayla <b>~${tl(pr.kampanyaOnizleme.fiyat)}</b>${pr.kampanyaOnizleme.kosul ? `<span class="kampanya-kosul"> · ${esc(pr.kampanyaOnizleme.kosul)}</span>` : ''}</div>`
+    ? `<div class="fiyat-kampanya" title="${esc(pr.kampanyaOnizleme.metin)}">${CANLI_YEREL.kampanyaOnizlemeSatir(tl(pr.kampanyaOnizleme.fiyat), pr.kampanyaOnizleme.kosul ? esc(pr.kampanyaOnizleme.kosul) : '')}</div>`
     : '';
 
   // 💡 Akıllı kargo eşiği ipucu (2026-11-12): ürün, mağazanın ücretsiz kargo
@@ -3889,15 +4802,13 @@ function kartHtml(r) {
     && Number.isFinite(ucretsizKargoEsigi) && ucretsizKargoEsigi > 0
     && kargoEksik > 0 && kargoEksik <= 80
     && kargoUcreti > 0)
-    ? `<div class="kargo-esik-ipucu" title="Sepetinizi tamamlayarak kargo ücretinden kurtulabilirsiniz.">`
-      + `💡 Sepete <b>${tl(kargoEksik)}</b> değerinde ürün eklerseniz `
-      + `<b>${tl(kargoUcreti)}</b> kargo BEDAVA olur!</div>`
+    ? `<div class="kargo-esik-ipucu" title="${esc(CANLI_YEREL.kargoEsikTitle)}">${CANLI_YEREL.kargoEsikMetin(tl(kargoEksik), tl(kargoUcreti))}</div>`
     : '';
 
   return `<div class="urun-karti ${r.enUcuz ? 'en-ucuz' : ''} ${r.renkAyni === false ? 'farkli-renk' : ''} ${stoktaYok ? 'stok-yok' : ''}" data-site="${esc(r.site || '')}">
-    ${r.enUcuz ? '<span class="ucuz-serit">🏷️ EN UCUZ</span>' : ''}
-    ${stoktaYok ? '<span class="stok-yok-serit">🔴 TÜKENDİ</span>' : ''}
-    ${!stoktaYok && r.renkAyni === false ? `<span class="farkli-renk-serit">FARKLI RENK: ${esc(p.color || '?')}</span>` : ''}
+    ${r.enUcuz ? `<span class="ucuz-serit">${CANLI_YEREL.seritEnUcuz}</span>` : ''}
+    ${stoktaYok ? `<span class="stok-yok-serit">${CANLI_YEREL.seritTukendi}</span>` : ''}
+    ${!stoktaYok && r.renkAyni === false ? `<span class="farkli-renk-serit">${esc(CANLI_YEREL.seritFarkliRenk(renkYerellestir(p.color) || '?'))}</span>` : ''}
     <div class="kart-ust">
       ${resimHtml}
       <div class="kart-ust-sag">
@@ -3910,29 +4821,29 @@ function kartHtml(r) {
           ${p.brand ? `<span class="rozet">${esc(p.brand)}</span>` : ''}
           ${p.color ? `<span class="rozet renk">${DIL_KOPYA_YEREL.renkEtiket}: ${esc(renkYerellestir(p.color))}</span>` : ''}
           ${p.modelCode ? `<span class="rozet">Model: ${esc(p.modelCode)}</span>` : ''}
-          ${stoktaYok ? '<span class="rozet stok-yok">🔴 Stokta Yok</span>' : '<span class="rozet stok-var">🟢 Stokta Var</span>'}
-          ${!stoktaYok && Number(p.kalanStok) > 0 ? `<span class="rozet stok-az" title="Mağaza sayfasındaki kalan stok uyarısı">⏳ Son ${Number(p.kalanStok)} Ürün</span>` : ''}
+          ${stoktaYok ? `<span class="rozet stok-yok">${CANLI_YEREL.kartStokYok}</span>` : `<span class="rozet stok-var">${CANLI_YEREL.kartStokVar}</span>`}
+          ${!stoktaYok && Number(p.kalanStok) > 0 ? `<span class="rozet stok-az" title="${esc(CANLI_YEREL.kartSonStokTitle)}">${esc(CANLI_YEREL.kartSonStok(Number(p.kalanStok)))}</span>` : ''}
         </div>
       </div>
     </div>
     <div class="kart-fiyat">
-      ${p.enDusukFiyatNotu ? `<div class="magaza-dip-rozet" title="${esc(SITE_ADLARI[r.site] || r.siteName || 'Mağaza')} ürün sayfasında belirtilen dip fiyat rozeti">📉 ${esc(p.enDusukFiyatNotu)}</div>` : ''}
+      ${p.enDusukFiyatNotu ? `<div class="magaza-dip-rozet" title="${esc(CANLI_YEREL.dipRozetTitle(SITE_ADLARI[r.site] || r.siteName || CANLI_YEREL.birimThMagaza))}">📉 ${esc(p.enDusukFiyatNotu)}</div>` : ''}
       ${pr.etiket && pr.etiket > (pr.araToplam ?? pr.taban) ? `<div class="etiket-fiyat ${r.sahteIndirim?.sahteIndirim ? 'supheli' : ''}"${r.sahteIndirim?.sahteIndirim ? ` tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}"` : ''}>${tl(pr.etiket)}</div>` : ''}
       <div class="gercek-fiyat ${r.enUcuz ? 'ek' : ''}">${tl(pr.toplam ?? pr.araToplam ?? p.sellingPrice, p.currency)}</div>
-      ${stoktaYok ? '<span class="stok-fiyat-rozet" title="Ürün şu anda tükendi; gösterilen fiyat son bilinen fiyattır.">Tükendi</span>' : ''}
-      ${r.sahteIndirim?.sahteIndirim ? `<span class="sahte-indirim-rozet" tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}" data-ipucu="${esc(r.sahteIndirim.tooltip)}">⚠️ Şişirilmiş Liste Fiyatı<small>iddia %${esc(String(r.sahteIndirim.iddiaEdilenIndirim ?? '—'))} · gerçek %${esc(String(r.sahteIndirim.gercekTasarruf ?? '0'))}</small></span>` : ''}
-      ${r.sahteIndirim?.gercekFirsat ? `<span class="gercek-firsat-rozet" title="${esc(r.sahteIndirim.tooltip || 'Son 90 günün en düşük fiyatı')}">🔥 GERÇEK FIRSAT<small>Son 90 günün dip fiyatı</small></span>` : ''}
+      ${stoktaYok ? `<span class="stok-fiyat-rozet" title="${esc(CANLI_YEREL.tukendiRozetTitle)}">${esc(CANLI_YEREL.tukendiRozet)}</span>` : ''}
+      ${r.sahteIndirim?.sahteIndirim ? `<span class="sahte-indirim-rozet" tabindex="0" role="note" aria-label="${esc(r.sahteIndirim.tooltip)}" data-ipucu="${esc(r.sahteIndirim.tooltip)}">${CANLI_YEREL.sahteIndirimRozet(esc(r.sahteIndirim.iddiaEdilenIndirim != null ? yuzdeStr(r.sahteIndirim.iddiaEdilenIndirim) : '—'), esc(yuzdeStr(r.sahteIndirim.gercekTasarruf ?? '0')))}</span>` : ''}
+      ${r.sahteIndirim?.gercekFirsat ? `<span class="gercek-firsat-rozet" title="${esc(BASKI_ORTAM.dil && BASKI_ORTAM.dil !== 'tr' ? CANLI_YEREL.gercekFirsatTitle : (r.sahteIndirim.tooltip || CANLI_YEREL.gercekFirsatTitle))}">${CANLI_YEREL.gercekFirsatHtml}</span>` : ''}
       <div class="fiyat-at-not">
-        ${pr.ekIndirim > 0 ? `Ürüne özel indirim düşüldü: −${tl(pr.ekIndirim)} · ` : ''}
+        ${pr.ekIndirim > 0 ? CANLI_YEREL.ozelIndirimDusuldu(tl(pr.ekIndirim)) : ''}
         ${pr.toplam != null
           ? (stoktaYok
-            ? '⚠️ son bilinen fiyat — ürün şu anda tükendi'
+            ? CANLI_YEREL.sonBilinenFiyat
             : (pr.kargo?.uygulanir === true && Number(pr.kargo?.ucret) > 0
-              ? `<b>Kargo dahil toplam</b> (ürün ${tl(pr.araToplam ?? pr.taban)} + kargo ${tl(pr.kargo.ucret)})`
+              ? CANLI_YEREL.kargoDahilToplamDetay(tl(pr.araToplam ?? pr.taban), tl(pr.kargo.ucret))
               : (pr.kargo?.uygulanir === false
-                ? '<b>Kargo dahil toplam</b> (ücretsiz kargo)'
-                : 'gerçekte ödenecek tutar (kargo sepette belli)')))
-          : 'fiyat hesaplanamadı'}
+                ? CANLI_YEREL.kargoDahilToplamBedava
+                : CANLI_YEREL.gercekOdenecek)))
+          : CANLI_YEREL.fiyatHesaplanamadi}
       </div>
       ${dokumHtml}
       ${cashbackHtml}
@@ -3945,23 +4856,23 @@ function kartHtml(r) {
     ${baskiWidgetHtml(bk, p.currency)}
     <div class="kart-kargo-alani">
       <div class="kart-kargo" title="${esc(pr.kargo?.aciklama || '')}">
-        <span>🚚 Kargo</span>
-        <span class="ucret">${pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? 'Bedava' : (pr.kargo?.freeOver ? `Sepette eklenir (${tl(pr.kargo.freeOver)} üzeri bedava)` : 'Sepette belli'))}</span>
+        <span>${CANLI_YEREL.kargoSatirEtiket}</span>
+        <span class="ucret">${pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? CANLI_YEREL.kargoBedava : (pr.kargo?.freeOver ? CANLI_YEREL.kargoEsikSepette(tl(pr.kargo.freeOver)) : CANLI_YEREL.kargoSepetteBelli))}</span>
       </div>
       ${kargoEsikIpucuHtml}
       ${tamamlayiciButonu(pr, r)}
       <div class="tamamlayici-alan" hidden></div>
     </div>
     ${(kosulluHtml || taksitHtml || dahilHtml) ? `<div class="kampanya-bolumu">
-      ${kosulluHtml ? `<h4>Koşullu kampanyalar (fiyata dahil değil)</h4>${kosulluHtml}` : ''}
+      ${kosulluHtml ? `<h4>${CANLI_YEREL.kosulluBaslik}</h4>${kosulluHtml}` : ''}
       ${dahilHtml}${taksitHtml}
     </div>` : ''}
     <div class="kart-alt">
-      ${Number(pr.toplam ?? pr.araToplam ?? p.sellingPrice) > 0 ? `<button type="button" class="alarm-btn" data-alarm-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice))}" data-alarm-site="${esc(r.site || '')}" title="Hedef fiyatın altına düşünce bu cihaza bildirim al — e-posta/şifre gerekmez">🔔 Fiyat Alarmı</button>` : ''}
-      ${p.url ? `<button type="button" class="sepete-ekle-btn" data-sepet-url="${esc(p.url)}" data-sepet-ad="${esc(p.title || '')}" data-sepet-site="${esc(SITE_ADLARI[r.site] || r.siteName || '')}" data-sepet-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice ?? ''))}" title="Akıllı Sepete ekle — kargo ve kupon dahil en ucuz kombinasyonu bul">🧺 Sepete Ekle</button>` : ''}
-      <button type="button" class="embed-btn" data-embed-q="${esc(p.title || '')}" title="Bu ürünün canlı fiyatını kendi sitene ekle">🔌 Sitene Ekle</button>
+      ${Number(pr.toplam ?? pr.araToplam ?? p.sellingPrice) > 0 ? `<button type="button" class="alarm-btn" data-alarm-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice))}" data-alarm-site="${esc(r.site || '')}" title="${esc(CANLI_YEREL.alarmBtnTitle)}">${CANLI_YEREL.alarmBtn}</button>` : ''}
+      ${p.url ? `<button type="button" class="sepete-ekle-btn" data-sepet-url="${esc(p.url)}" data-sepet-ad="${esc(p.title || '')}" data-sepet-site="${esc(SITE_ADLARI[r.site] || r.siteName || '')}" data-sepet-fiyat="${esc(String(pr.toplam ?? pr.araToplam ?? p.sellingPrice ?? ''))}" title="${esc(CANLI_YEREL.sepetBtnTitle)}">${CANLI_YEREL.sepetBtn}</button>` : ''}
+      <button type="button" class="embed-btn" data-embed-q="${esc(p.title || '')}" title="${esc(CANLI_YEREL.embedBtnTitle)}">${CANLI_YEREL.embedBtn}</button>
       <span class="istek-notu">${kac(r.requestsSpent)} ${DIL_KOPYA_YEREL.istekBirimi}${(r.queriesTried || []).length ? ` · ${DIL_KOPYA_YEREL.sorguBirimi}: ` + esc((r.queriesTried || []).join(' / ')) : ''}${r.katalog ? ` · 🗂️ ${BASKI_ORTAM.dil === 'fr' ? 'catalogue' : (BASKI_ORTAM.dil === 'ja' ? 'カタログ' : (BASKI_ORTAM.dil === 'en' ? 'catalog' : 'katalog'))} (${Math.max(0, Math.round((Number(r.katalog.yasMs) || 0) / 60000))} ${DIL_KOPYA_YEREL.dkOnce})` : ''}</span>
-      <a class="urun-link ${stoktaYok ? 'tukendi' : ''}" href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${stoktaYok ? 'Mağazada Gör (Tükendi)' : 'Mağazada Gör'}</a>
+      <a class="urun-link ${stoktaYok ? 'tukendi' : ''}" href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}">${stoktaYok ? CANLI_YEREL.magazadaGorTukendi : CANLI_YEREL.magazadaGor}</a>
     </div>
   </div>`;
 }
@@ -3973,21 +4884,22 @@ function tabloDoldur(sonuc) {
 
   tbody.innerHTML = siraliTablo.map(r => {
     if (r.status !== 'found' || !r.product) {
+      const nedenMetni = magazaDurumNedeniYerellestir(r.reason || '');
       return `<tr>
-        <td><b>${SITE_ADLARI[r.site] || r.site}</b></td><td colspan="5">${r.status === 'error' ? '⚠️ ' + esc(r.reason) : esc(r.reason || 'Bulunamadı')}</td>
+        <td><b>${SITE_ADLARI[r.site] || r.site}</b></td><td colspan="5">${r.status === 'error' ? '⚠️ ' + esc(nedenMetni) : esc(nedenMetni || CANLI_YEREL.bulunamadiVarsayilan)}</td>
         <td>—</td><td>${kac(r.requestsSpent)}</td></tr>`;
     }
     const p = r.product, pr = p.pricing || {};
     const stoktaYok = p.inStock === false;
     const stokBadge = stoktaYok
-      ? '<span class="stok-hucre-yok">🔴 Yok</span>'
-      : '<span class="stok-hucre-var">🟢 Var</span>';
+      ? CANLI_YEREL.tabloStokYok
+      : CANLI_YEREL.tabloStokVar;
     const kosullu = (pr.kampanyaKosullu || []).map(k => esc(k.metin)).join('<br>') || '—';
-    const kargo = pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? 'Bedava' : (pr.kargo?.freeOver ? 'Sepette belli' : (pr.kargo?.aciklama || 'Bilinmiyor')));
+    const kargo = pr.kargo?.uygulanir === true ? tl(pr.kargo.ucret) : (pr.kargo?.uygulanir === false ? CANLI_YEREL.kargoBedava : (pr.kargo?.freeOver ? CANLI_YEREL.kargoSepetteBelli : (pr.kargo?.aciklama || CANLI_YEREL.kargoBilinmiyor)));
     return `<tr class="${stoktaYok ? 'stok-yok' : ''}">
       <td><b>${SITE_ADLARI[r.site] || r.site}</b>${r.enUcuz ? ' 🏷️' : ''}${dogrulanmisRozetHtml(r.site)}</td>
       <td><a href="${esc(p.afiliyeUrl || p.url)}" target="_blank" rel="noopener sponsored" data-afiliye-site="${esc(r.site || '')}" style="color:#3450D1">${esc(p.title.slice(0, 90))}</a></td>
-      <td>${esc(p.color || '—')}${r.renkAyni === false ? ' (farklı)' : ''}</td>
+      <td>${esc(p.color ? renkYerellestir(p.color) : '—')}${r.renkAyni === false ? CANLI_YEREL.tabloRenkFarkli : ''}</td>
       <td style="text-align:center">${stokBadge}</td>
       <td class="fiyat-hucre">${tl(pr.toplam ?? p.sellingPrice, p.currency)}</td>
       <td>${kosullu}</td>
@@ -4654,7 +5566,7 @@ async function fiyatGrafiginiYukle(sonuc) {
     if (istGrid) istGrid.hidden = true;
     if (grafikKap) grafikKap.hidden = true;
     if (rozet) {
-      rozet.textContent = "📉 Veri birikiyor";
+      rozet.textContent = CANLI_YEREL.trendVeriBirikiyor;
       rozet.className = "fiyat-tavsiye-rozet badge-turuncu";
     }
     if (notEl) {
@@ -4662,7 +5574,7 @@ async function fiyatGrafiginiYukle(sonuc) {
       notEl.textContent = metin;
     }
     const ozet = $("#fiyatTrendOzetMetin");
-    if (ozet) ozet.textContent = "Henüz yeterli fiyat geçmişi yok";
+    if (ozet) ozet.textContent = CANLI_YEREL.trendHenuzYetersiz;
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
   };
 
@@ -4693,12 +5605,14 @@ async function fiyatGrafiginiYukle(sonuc) {
 
     // Geçmiş yok: UYDURMA GRAFİK ÇİZİLMEZ, dürüst açıklama gösterilir.
     if (!data.summary || !Array.isArray(data.timeline) || data.timeline.length === 0) {
-      yetersizGoster(data.neden || "Bu ürün için henüz fiyat geçmişi yok. Her karşılaştırma ve takip kontrolü bir kayıt ekler.");
+      yetersizGoster((BASKI_ORTAM.dil && BASKI_ORTAM.dil !== 'tr') ? CANLI_YEREL.trendHicYokMesaj : (data.neden || CANLI_YEREL.trendHicYokMesaj));
       return;
     }
     // Tek nokta "trend" değildir: çizgi yerine açıklama gösterilir.
     if (data.timeline.length < 2) {
-      yetersizGoster(data.neden || `Yalnızca ${data.gunSayisi} günlük veri var; trend çizgisi için en az 2 gün gerekiyor.`);
+      yetersizGoster((BASKI_ORTAM.dil && BASKI_ORTAM.dil !== 'tr')
+        ? CANLI_YEREL.trendAzGunMesaj(data.gunSayisi ?? data.timeline.length)
+        : (data.neden || CANLI_YEREL.trendAzGunMesaj(data.gunSayisi)));
       return;
     }
 
@@ -4714,9 +5628,9 @@ async function fiyatGrafiginiYukle(sonuc) {
     const etDusuk = $("#istatistikEtiketDusuk");
     const etOrta = $("#istatistikEtiketOrtalama");
     const etYuksek = $("#istatistikEtiketYuksek");
-    if (etDusuk) etDusuk.textContent = `🟢 Son ${gun} Günün En Düşüğü`;
-    if (etOrta) etOrta.textContent = `📊 Son ${gun} Günün Ortalaması`;
-    if (etYuksek) etYuksek.textContent = `🔴 Son ${gun} Günün En Yükseği`;
+    if (etDusuk) etDusuk.textContent = CANLI_YEREL.trendDusukEtiket(gun);
+    if (etOrta) etOrta.textContent = CANLI_YEREL.trendOrtEtiket(gun);
+    if (etYuksek) etYuksek.textContent = CANLI_YEREL.trendYuksekEtiket(gun);
 
     $("#istatistikEnDusuk").textContent = tl(s.lowestPrice);
     $("#istatistikOrtalama").textContent = tl(s.avgPrice);
@@ -4725,33 +5639,32 @@ async function fiyatGrafiginiYukle(sonuc) {
     const farkEl = $("#istatistikFark");
     if (farkEl) {
       if (s.diffFromAvg > 0) {
-        farkEl.textContent = "%" + s.diffFromAvg + " daha avantajlı";
+        farkEl.textContent = CANLI_YEREL.trendAvantajli(yuzdeStr(s.diffFromAvg));
         farkEl.style.color = "#0d9f4e";
       } else if (s.diffFromAvg < 0) {
-        farkEl.textContent = "%" + Math.abs(s.diffFromAvg) + " daha pahalı";
+        farkEl.textContent = CANLI_YEREL.trendPahali(yuzdeStr(Math.abs(s.diffFromAvg)));
         farkEl.style.color = "#d43c3c";
       } else {
-        farkEl.textContent = "Ortalamada";
+        farkEl.textContent = CANLI_YEREL.trendOrtalamada;
         farkEl.style.color = "var(--gri-metin)";
       }
     }
 
     const indirimOraniEl = $("#istatistikIndirimOrani");
     if (indirimOraniEl) {
-      indirimOraniEl.textContent = s.diffFromAvg > 0 ? "-%" + s.diffFromAvg : (s.diffFromAvg < 0 ? "+%" + Math.abs(s.diffFromAvg) : "%0");
+      indirimOraniEl.textContent = imzaliYuzde(s.diffFromAvg);
       indirimOraniEl.className = "istatistik-deger " + (s.diffFromAvg > 0 ? "font-yesil" : (s.diffFromAvg < 0 ? "font-kirmizi" : ""));
     }
 
     if (rozet) {
-      rozet.textContent = s.recommendationText;
+      rozet.textContent = trendTavsiyeYerellestir(s, s.recommendationText);
       rozet.className = "fiyat-tavsiye-rozet " + (s.badgeClass || "badge-turuncu");
     }
 
     // Alt metin: gerçek gün sayısı + bu sonuçta okunan mağaza sayısı + gözlem sayısı
     const ozetMetin = $("#fiyatTrendOzetMetin");
     if (ozetMetin) {
-      ozetMetin.textContent = `Son ${gun} gün · ${s.toplamKayit} fiyat gözlemi` +
-        (found.length ? ` · ${found.length} mağaza` : '');
+      ozetMetin.textContent = CANLI_YEREL.trendOzetAlt(gun, s.toplamKayit, found.length);
     }
 
     sonBentoSeri = data.timeline;
@@ -4766,6 +5679,7 @@ async function fiyatGrafiginiYukle(sonuc) {
 function cizFiyatGrafigi(timeline) {
   const canvas = document.getElementById("fiyatGrafigiCanvas");
   if (!canvas) return;
+  canvas.setAttribute('aria-label', CANLI_YEREL.bentoTrendAria(timeline.length || 30));
 
   if (typeof Chart === "undefined") {
     console.warn("Chart.js kütüphanesi hazır değil.");
@@ -4800,7 +5714,7 @@ function cizFiyatGrafigi(timeline) {
       labels: labels,
       datasets: [
         {
-          label: "En Düşük Fiyat",
+          label: CANLI_YEREL.grafikEnDusuk,
           data: lowestData,
           borderColor: "#10B981",
           backgroundColor: gradient,
@@ -4812,7 +5726,7 @@ function cizFiyatGrafigi(timeline) {
           pointBackgroundColor: "#10B981",
         },
         {
-          label: "30 Günlük Ortalama",
+          label: CANLI_YEREL.grafikOrt30,
           data: avgData,
           borderColor: "#94a3b8",
           borderWidth: 1.8,
@@ -6032,13 +6946,23 @@ function tamamlayiciButonu(pr, r) {
   if (eksikKurus > kurusa(ucret)) return ''; // kâr matematiksel olarak imkânsız
 
   const exclusive = r?.product?.shipping?.freeOverExclusive === true ? '1' : '0';
+  const d = BASKI_ORTAM.dil || 'tr';
+  const kalanStr = tl(eksikKurus / 100);
+  const btnMetin = d === 'fr' ? 'Ajouter un article pour port gratuit' : (d === 'ja' ? '送料無料になる追加商品を探す' : (d === 'en' ? 'Find add-on for free shipping' : 'Kargo bedava için tamamlayıcı bul'));
+  const titleMetin = d === 'fr'
+    ? `Il manque ${kalanStr} pour le port gratuit ; suggestions adaptées.`
+    : (d === 'ja'
+      ? `送料無料ラインまであと ${kalanStr} です。追加候補を表示します。`
+      : (d === 'en'
+        ? `${kalanStr} away from free shipping; suggests an add-on cheaper than the shipping fee.`
+        : `Eşiğe ${kalanStr} kaldı; bu tutar ile kargo ücreti arasında bir ürün önerilir`));
   return `<button type="button" class="tamamlayici-btn"
     data-site="${esc(r.site)}"
     data-toplam="${(kurusa(ara) / 100).toFixed(2)}"
     data-fee="${(kurusa(ucret) / 100).toFixed(2)}"
     data-freeover="${(kurusa(esik) / 100).toFixed(2)}"
     data-exclusive="${exclusive}"
-    title="Eşiğe ${(eksikKurus / 100).toFixed(2)} TL kaldı; bu tutar ile kargo ücreti arasında bir ürün önerilir">Kargo bedava için tamamlayıcı bul</button>`;
+    title="${esc(titleMetin)}">${esc(btnMetin)}</button>`;
 }
 
 /** Hızlı mod açık mı? (varsayılan: açık) */

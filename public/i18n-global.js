@@ -660,10 +660,21 @@
   const STOKTA_SOZ = dil === 'fr' ? 'en stock' : (dil === 'ja' ? '在庫あり' : 'in stock');
   const ISTEK_SOZ = dil === 'ja' ? '件' : 'req.';
   const SON_URUN_SAB = dil === 'fr' ? '⏳ Plus que $1' : (dil === 'ja' ? '⏳ 残り$1点' : '⏳ Only $1 left');
+  const YENILE_PCT = (v) => (dil === 'fr' ? `${v} %` : `${v}%`);
 
   let zamanli = null;
   function uygula(kok) {
     if (!kok) return;
+    if (typeof kok.querySelectorAll === 'function') {
+      kok.querySelectorAll('[aria-label]').forEach(el => {
+        const a = el.getAttribute('aria-label') || '';
+        const trM = a.match(/^Son (\d+) gün fiyat trendi$/i);
+        if (trM) {
+          const g = trM[1];
+          el.setAttribute('aria-label', dil === 'fr' ? `Tendance des prix sur ${g} jours` : (dil === 'ja' ? `過去${g}日間の価格推移` : `Last ${g}-day price trend`));
+        }
+      });
+    }
     const walker = document.createTreeWalker(kok, NodeFilter.SHOW_TEXT, null);
     let node;
     while ((node = walker.nextNode())) {
@@ -679,6 +690,10 @@
       }
       let val = orig.includes('\n') ? orig.replace(/\s+/g, ' ') : orig;
       let degisti = false;
+      if (/^[+-]?%\d+(?:[.,]\d+)?$/.test(val.trim())) {
+        val = val.trim().replace(/^([+-]?)%([\d.,]+)$/, (_, sgn, n) => sgn + YENILE_PCT(n));
+        degisti = true;
+      }
       if (/⏳\s*Son\s+\d+\s+Ürün/i.test(val)) {
         val = val.replace(/⏳\s*Son\s+(\d+)\s+Ürün/gi, SON_URUN_SAB);
         degisti = true;

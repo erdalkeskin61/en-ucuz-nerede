@@ -584,7 +584,7 @@ function gorselSonucGoster(r) {
             ${enUcuz.kargo ? `<span class="gorsel-cta-kargo">🚚 ${esc(enUcuz.kargo)}</span>` : ''}
           </div>
           <a class="gorsel-cta-btn" href="${esc(enUcuz.url)}" target="_blank" rel="noopener sponsored"
-             data-afiliye-site="${esc(enUcuz.site || '')}">Mağazaya Git (En Ucuz)</a>
+             data-afiliye-site="${esc(enUcuz.site || '')}">${(window.BASKI_HESAP_ORTAM?.dil === 'en' ? 'Go to Store (Lowest)' : (window.BASKI_HESAP_ORTAM?.dil === 'fr' ? 'Aller à la boutique (Moins cher)' : (window.BASKI_HESAP_ORTAM?.dil === 'ja' ? '最安ショップへ' : 'Mağazaya Git (En Ucuz)')))}</a>
         </div>`;
     } else {
       ctaAlani.hidden = true;
