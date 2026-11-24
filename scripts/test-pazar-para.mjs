@@ -733,6 +733,23 @@ kontrol('server.js eski kategori slugları için res.redirect(301, ...) bağlar'
   fs.readFileSync('server.js', 'utf8').includes('globalKategoriSlugCoz(req.params.slug, dil)')
   && fs.readFileSync('server.js', 'utf8').includes('return res.redirect(301, cozum.canonicalYol);'));
 
+console.log('\n19) 🔍 Footer metni, hızlı mod mağaza sayısı & geçmiş temizliği:');
+const enSoz = sozlukGetir('en');
+kontrol('EN sözlükte "Scan Live Prices Now" yerine "Find Prices" kullanılır',
+  enSoz.buton.canliTara === 'Find Prices'
+  && !enSoz.baslik.footerNot.includes('Scan Live Prices Now')
+  && enSoz.baslik.footerNot.includes('Find Prices'));
+const usMagazaSay = taramaAdaptersByMarket('us').length;
+kontrol('/en hızlı sepet etiketi gerçek bölgesel mağaza sayısını yazar ve market=us iletir',
+  enAnaLinkHtml.includes(`Fast mode (${usMagazaSay} stores)`)
+  && !enAnaLinkHtml.includes('Fast mode (30 sites)')
+  && appJsKod.includes('market: BASKI_ORTAM.market'));
+const srvKod = fs.readFileSync('server.js', 'utf8');
+kontrol('server.js /api/history 3D dışı (tablo/pil) ve Avustralya (.com.au / /en-au) kayıtlarını filtreler',
+  srvKod.includes('function gecmisKaydiGecerliMi(')
+  && srvKod.includes('GECMIS_UCD_RE')
+  && srvKod.includes('GECMIS_AU_RE'));
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

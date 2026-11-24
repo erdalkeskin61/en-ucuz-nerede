@@ -154,7 +154,7 @@
     const kwh = (guc * sure) / 1000;
     const elektrik = kwh * kwhTl;
     const amortisman = sure * yipranma;
-    const net = hammadde + elektrik + amortisman;
+    const net = Math.round((hammadde + elektrik + amortisman) * 100) / 100;
 
     const fiyat = (c) => ({
       carpan: c,

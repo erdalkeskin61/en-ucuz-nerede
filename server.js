@@ -1323,7 +1323,7 @@ function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {
           : (enUcuzTeklif?.site && adapterById(enUcuzTeklif.site)
             ? adapterMarket(adapterById(enUcuzTeklif.site))
             : (kayitUrl && detectSite(kayitUrl) ? adapterMarket(detectSite(kayitUrl)) : 'tr'));
-        store.addHistory({
+        const yeniKayit = {
           url: kayitUrl,
           market: gecmisPazar,
           urun: result.kaynak.urun,
@@ -1335,7 +1335,10 @@ function karsilastirmaCalistir(url, job, formatSonuc, { arananSorgu = null } = {
             || enUcuzTeklif?.product?.url
             || null,
           harcananIstek: result.ozet.harcananIstek,
-        });
+        };
+        if (gecmisKaydiGecerliMi(yeniKayit, gecmisPazar)) {
+          store.addHistory(yeniKayit);
+        }
       }
 
       // Zaman serisi SQLite fiyat geçmişi kaydı (2026-10-28 düzeltmesi)
@@ -2927,10 +2930,24 @@ app.post('/api/tracked/:id/check', async (req, res) => {
 
 // ---- Geçmiş ve durum ----
 // Son aramalar: her kayda ürün linki + (varsa) en ucuz mağaza linki eklenir.
+const GECMIS_UCD_RE = /3d|yazıcı|yazici|printer|imprimante|プリンター|filament|filaman|フィラメント|\bpla\b|epla|xpla|petg|tpu|\babs\b|\basa\b|resin|reçine|recine|kurutucu|dryer|nozzle|hotend|extruder|\bpei\b|\bams\b|bambu|creality|elegoo|prusa|anycubic|qidi|snapmaker|polymaker|esun|sunlu|overture|porima|microzey|flashforge|phrozen|voron|klipper|valon/i;
+const GECMIS_AU_RE = /\.(?:com|net|org)\.au\b|\/\/au\.|\/en-au\b|\/au\//i;
+
+function gecmisKaydiGecerliMi(h, istenenPazar = null) {
+  const ad = String(h?.urun || '').trim();
+  const url = String(h?.url || '').trim();
+  const enUcuzUrl = String(h?.enUcuzUrl || '').trim();
+  if (ad.length < 3) return false;
+  if (/\/urun-p-1(?:$|\?)|example\.com/i.test(url)) return false;
+  if (!GECMIS_UCD_RE.test(`${ad} ${url}`)) return false;
+  if (istenenPazar === 'us' && GECMIS_AU_RE.test(`${url} ${enUcuzUrl}`)) return false;
+  return true;
+}
+
 // Eski kayıtlarda `enUcuzUrl` yoksa güncel snapshot'tan tamamlanır (diskten okuma).
 app.get('/api/history', (req, res) => {
   const istenenPazar = req.query?.market ? normalizeMarket(String(req.query.market)) : null;
-  let liste = store.getHistory(istenenPazar ? 50 : 20);
+  let liste = store.getHistory(50).filter(h => gecmisKaydiGecerliMi(h, istenenPazar));
   if (istenenPazar) {
     const kayitPazari = (h) => {
       if (h?.market) return normalizeMarket(h.market);
@@ -2944,8 +2961,9 @@ app.get('/api/history', (req, res) => {
       }
       return 'tr';
     };
-    liste = liste.filter(h => kayitPazari(h) === istenenPazar).slice(0, 20);
+    liste = liste.filter(h => kayitPazari(h) === istenenPazar);
   }
+  liste = liste.slice(0, 20);
   const normalize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   for (const h of liste) {
     if (h.enUcuzUrl) continue;

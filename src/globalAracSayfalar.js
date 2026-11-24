@@ -1656,6 +1656,15 @@ const ANA_BOLUM_KOPYA = Object.freeze({
 function anaBolumleriYerellestirHtml(kod, nav, cikti) {
   const b = ANA_BOLUM_KOPYA[kod] || ANA_BOLUM_KOPYA.en;
   const fPara = kod === 'ja' ? '¥0' : (kod === 'fr' ? '0,00 €' : '$0.00');
+  const bolgeSayisi = taramaAdaptersByMarket(sozlukGetir(kod).meta.market).length;
+  const hizliTitle = kod === 'fr'
+    ? `Analyse les ${bolgeSayisi} boutiques vérifiées de la région.`
+    : (kod === 'ja'
+      ? `この地域の対象 ${bolgeSayisi} ストアを並列検索します。`
+      : `Scans ${bolgeSayisi} verified stores in this region.`);
+  const hizliEtiket = kod === 'fr'
+    ? `Mode rapide (${bolgeSayisi} boutiques)`
+    : (kod === 'ja' ? `高速モード (${bolgeSayisi}ストア)` : `Fast mode (${bolgeSayisi} stores)`);
   return cikti
     .replace(
       /<section id="vitrinAlani"[\s\S]*?<\/section>/,
@@ -1714,8 +1723,8 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
         <div class="sepet-butonlar">
           <button type="button" id="sepetBtn">${b.sepetBtn}</button>
           <button type="button" id="sepetIptalBtn" class="iptal-btn" hidden>✕</button>
-          <label class="sepet-hizli" title="${htmlKacis(b.sepetHizliTitle)}">
-            <input type="checkbox" id="sepetHizli" checked /> ${b.sepetHizliEtiket}
+          <label class="sepet-hizli" title="${htmlKacis(hizliTitle)}">
+            <input type="checkbox" id="sepetHizli" checked /> ${hizliEtiket}
           </label>
           <span id="sepetSayac" class="ipucu">${b.sepetSayac}</span>
         </div>

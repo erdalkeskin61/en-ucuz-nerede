@@ -4980,7 +4980,11 @@ if ($('#sepetBtn')) {
       });
       const res = await fetch('/api/sepet', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urunler: urunlerGovde, hizliMod: hizliModAcik() }),
+        body: JSON.stringify({
+          urunler: urunlerGovde,
+          hizliMod: hizliModAcik(),
+          market: BASKI_ORTAM.market || 'tr',
+        }),
       });
       const data = await guvenliJson(res);
       if (!res.ok) throw new Error(data.hata || 'Sepet isteği başarısız');
