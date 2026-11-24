@@ -1344,6 +1344,15 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
     kontrol('src/pipeline.js sabit TRY yerine beklenenPara (USD/EUR/JPY/TRY) kontrolü yapar',
       pipeKod.includes('const beklenenPara = String(src?.currency || adapterCurrency(adapter)')
       && !pipeKod.includes("!== 'TRY'"));
+
+    const usEpn = afiliyeLink('ebay_us', 'https://www.ebay.com/itm/395123456789');
+    const frEpn = afiliyeLink('ebay_fr', 'https://www.ebay.fr/itm/405987654321');
+    kontrol('afiliyeLink EBAY_CAMPAIGN_ID ile ebay_us (711) ve ebay_fr (709) EPN parametrelerini ekler',
+      usEpn.includes('campid=5339999999')
+      && usEpn.includes('mkrid=711-53200-19255-0')
+      && frEpn.includes('campid=5339999999')
+      && frEpn.includes('mkrid=709-53476-19255-0'),
+      JSON.stringify({ usEpn, frEpn }));
   } finally {
     _ebayOnbellekTemizle();
     if (eskiId === undefined) delete process.env.EBAY_CLIENT_ID; else process.env.EBAY_CLIENT_ID = eskiId;

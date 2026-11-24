@@ -174,6 +174,21 @@ export function afiliyeAyarlari() {
   for (const [site, sablon] of Object.entries(VARSAYILAN_SITE_SABLONLARI)) {
     siteSablon[site] = { sablon, hedefParametre: '', token: '' };
   }
+  const ebayCampId = /^\d{6,14}$/.test(String(process.env.EBAY_CAMPAIGN_ID || '').trim())
+    ? String(process.env.EBAY_CAMPAIGN_ID).trim()
+    : '';
+  if (ebayCampId) {
+    siteSablon.ebay_us = {
+      sablon: `?mkevt=1&mkcid=1&mkrid=711-53200-19255-0&campid=${ebayCampId}&toolid=10001`,
+      hedefParametre: '',
+      token: '',
+    };
+    siteSablon.ebay_fr = {
+      sablon: `?mkevt=1&mkcid=1&mkrid=709-53476-19255-0&campid=${ebayCampId}&toolid=10001`,
+      hedefParametre: '',
+      token: '',
+    };
+  }
   for (const [site, v] of Object.entries(kayitli.siteSablon || {})) {
     const anahtar = String(site).toLowerCase();
     if (typeof v === 'string') {
