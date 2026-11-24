@@ -3046,9 +3046,8 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
   .hibrit-form .hibrit-ikon { flex: 0 0 auto; font-size: 16px; }
   .hibrit-form input { flex: 1 1 0%; min-width: 0; font-size: 16px; padding: 8px 4px; }
   .hibrit-form button { flex: 1 0 100%; width: 100%; justify-content: center; }
-  .hizli-arama { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; scrollbar-width: none; }
-  .hizli-arama::-webkit-scrollbar { display: none; }
-  .hizli-cip, .hizli-etiket { flex: none; }
+  .hizli-arama { overflow: visible; flex-wrap: wrap; margin: 0; padding: 10px 4px 2px; max-width: 100%; }
+  .hizli-cip, .hizli-etiket { flex: 0 0 auto; max-width: 100%; }
   .bolum-baslik { font-size: 19px; margin-top: 24px; }
   .sonuc-ust { flex-direction: column; }
   .ozet-kutu { width: 100%; }
@@ -5671,28 +5670,23 @@ html[data-theme="dark"] .vitrin-filtre-cip.aktif { background: var(--ana-gradyan
     gap: 6px;
   }
 
-  /* --- 3) Popüler hazır arama çipleri: kaydırmalı --- */
+  /* --- 3) Popüler hazır arama çipleri: mobilde taşmadan sarılır --- */
   .hizli-arama {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 12px 2px 8px;
-    margin: 0 -14px;
-    padding-left: 16px;
-    padding-right: 16px;
-    scroll-padding: 0 16px;
-    overscroll-behavior-x: contain;
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 6px;
+    padding: 10px 4px 4px;
+    margin: 0;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-  .hizli-arama::-webkit-scrollbar { display: none; }
   .hizli-cip {
     flex: 0 0 auto;
-    min-height: 40px;
-    padding: 8px 14px;
-    font-size: 12.5px;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 12px;
     border-radius: 999px;
-    scroll-snap-align: start;
     display: inline-flex;
     align-items: center;
   }

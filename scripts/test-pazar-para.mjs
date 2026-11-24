@@ -1047,6 +1047,20 @@ console.log('\n24) 🔢 Hızlı sepet modu & footer mağaza sayıları tutarlıl
     && appJsKod.includes("document.querySelector('label.sepet-hizli')"));
 }
 
+console.log('\n25) 📱 390px mobilde "Popüler Aramalar" (.hizli-arama) yatay taşma koruması:');
+{
+  const cssSon = fs.readFileSync('public/style.css', 'utf8');
+  const m640 = cssSon.match(/@media\s*\(max-width:\s*640px\)\s*\{[\s\S]*?\.hizli-arama\s*\{([^}]*)\}/);
+  const m720 = cssSon.match(/@media\s*\(max-width:\s*720px\)\s*\{[\s\S]*?\.hizli-arama\s*\{([^}]*)\}/);
+  kontrol('.hizli-arama mobilde nowrap veya negatif margin (-14px) kullanmaz; flex-wrap: wrap ile sarılır',
+    !!m640 && !!m720
+    && /flex-wrap:\s*wrap/.test(m640[1])
+    && !/margin:\s*0\s+-14px/.test(m640[1])
+    && !/flex-wrap:\s*nowrap/.test(m640[1])
+    && /flex-wrap:\s*wrap/.test(m720[1])
+    && !/flex-wrap:\s*nowrap/.test(m720[1]));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
