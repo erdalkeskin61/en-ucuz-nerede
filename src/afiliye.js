@@ -132,7 +132,12 @@ const VARSAYILAN_AYARLAR = {
     gelirortaklari: { etkin: false, parametre: '', token: '', sablon: '' },
     reklamaction: { etkin: false, parametre: '', token: '', sablon: '' },
     admitad: { etkin: false, parametre: '', token: '', sablon: '' },
-    impact: { etkin: false, parametre: '', token: '', sablon: '' },
+    impact: {
+      etkin: true,
+      parametre: '',
+      token: '',
+      sablon: 'https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u={url}',
+    },
     shopify_collabs: { etkin: false, parametre: '', token: '', sablon: '' },
   },
   /** siteId → ağ kimliği (varsayılan eşlemenin üzerine yazar; niş siteler için). */
@@ -147,6 +152,10 @@ const VARSAYILAN_SITE_SABLONLARI = Object.freeze({
   sunlu_us: '?sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
   sunlu_fr: '?sca_ref=12826606.cWbS5xfVJW&utm_source=sunluaffiliate&utm_medium=sunluaffiliate&utm_campaign=sunluaffiliate',
   protopasta: '?aff=321',
+  flashforge_us: 'https://flashforge.sjv.io/c/8295867/3092803/38200?u={url}',
+  flashforge_fr: 'https://flashforge.sjv.io/c/8295867/3092803/38200?u={url}',
+  flashforge_eu: 'https://flashforge.sjv.io/c/8295867/3092803/38200?u={url}',
+  sovol_us: 'https://sovol3d.sjv.io/c/8295867/3963679/55332?u={url}',
 });
 
 /** Kayıtlı ayarları varsayılanlarla birleştirir (eksik alanlar bozulmasın). */
@@ -163,6 +172,10 @@ export function afiliyeAyarlari() {
     if (!birlesik.token && envTagHarita[id]) {
       birlesik.token = envTagHarita[id];
       if (!birlesik.parametre) birlesik.parametre = 'tag';
+      birlesik.etkin = true;
+    }
+    if (id === 'impact' && !birlesik.sablon && varsayilan.sablon) {
+      birlesik.sablon = varsayilan.sablon;
       birlesik.etkin = true;
     }
     aglar[id] = birlesik;

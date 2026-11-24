@@ -1353,6 +1353,15 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
       && frEpn.includes('campid=5339999999')
       && frEpn.includes('mkrid=709-53476-19255-0'),
       JSON.stringify({ usEpn, frEpn }));
+
+    const ffLink = afiliyeLink('flashforge_us', 'https://www.flashforge.com/products/flashforge-creator-5');
+    const sovolLink = afiliyeLink('sovol_us', 'https://www.sovol3d.com/products/sovol-sv08-3d-printer');
+    const crealityLink = afiliyeLink('creality_us', 'https://store.creality.com/products/creality-k1c-3d-printer');
+    kontrol('Varsayılan Impact ortaklıkları (Flashforge, Sovol 3D, Creality Official) ?u= ile çalışır',
+      ffLink.startsWith('https://flashforge.sjv.io/c/8295867/3092803/38200?u=')
+      && sovolLink.startsWith('https://sovol3d.sjv.io/c/8295867/3963679/55332?u=')
+      && crealityLink.startsWith('https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u='),
+      JSON.stringify({ ffLink, sovolLink, crealityLink }));
   } finally {
     _ebayOnbellekTemizle();
     if (eskiId === undefined) delete process.env.EBAY_CLIENT_ID; else process.env.EBAY_CLIENT_ID = eskiId;
