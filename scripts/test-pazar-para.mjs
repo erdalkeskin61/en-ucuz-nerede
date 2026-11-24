@@ -1156,6 +1156,45 @@ console.log('\n27) 🌓 #temaDegistir title & aria-label yerelleştirmesi (publi
   }
 }
 
+console.log('\n28) 🎨 Küçük UI / erişilebilirlik & slicer mağaza sayısı düzeltmeleri:');
+{
+  const ayarHtml = fs.readFileSync('public/ayarlar.html', 'utf8');
+  kontrol('public/ayarlar.html gerçek <h1> başlığı taşır',
+    /<h1>[\s\S]*?<\/h1>/.test(ayarHtml) && /<h2>[\s\S]*?<\/h2>/.test(ayarHtml));
+
+  for (const yol of ['/en/alerts', '/fr/alertes', '/ja/alerts']) {
+    const html = globalAracSayfasiBul(yol)?.olustur('https://baskihesap.tech') || '';
+    kontrol(`${yol} gerçek <h1> ve <h2> hiyerarşisi taşır`,
+      /<h1>[\s\S]*?<\/h1>/.test(html) && /<h2>[\s\S]*?<\/h2>/.test(html));
+  }
+
+  const appSon = fs.readFileSync('public/app.js', 'utf8');
+  const cssSon = fs.readFileSync('public/style.css', 'utf8');
+  kontrol('#ozetKutu stok yok durumunda satır içi #dc2626 yerine .tukendi sınıfı ve beyaz yüksek kontrastlı yazı kullanır',
+    !appSon.includes('style="color:#dc2626"')
+    && /ozetEl\??\.classList\??\.toggle\('tukendi'/.test(appSon)
+    && /\.ozet-kutu\.tukendi\s*\{[\s\S]*?color:\s*#fff/.test(cssSon));
+
+  const frGuides = globalRehberDiziniHtml('fr', 'https://baskihesap.tech');
+  const jaGuides = globalRehberDiziniHtml('ja', 'https://baskihesap.tech');
+  kontrol('/fr/guides ve /ja/guides alt araç bağlantısında "Compare" yerine yerel etiket kullanır',
+    frGuides.includes('🔍 Comparer →') && !frGuides.includes('🔍 Compare →')
+    && jaGuides.includes('🔍 価格比較 →') && !jaGuides.includes('🔍 Compare →'));
+
+  const { slicerOneri } = await import('../src/slicerApi.js');
+  const jpSlicer = slicerOneri({ malzeme: 'PLA', gramaj: 340, market: 'jp' });
+  const jpMagazaLimiti = taramaAdaptersByMarket('jp').length;
+  kontrol(`JP slicerOneri alternatifMagazaSayisi (${jpSlicer.alternatifMagazaSayisi}) toplam JP mağaza sayısından (${jpMagazaLimiti}) azdır`,
+    jpSlicer.status === 'success'
+    && Number.isInteger(jpSlicer.alternatifMagazaSayisi)
+    && jpSlicer.alternatifMagazaSayisi >= 0
+    && jpSlicer.alternatifMagazaSayisi < jpMagazaLimiti);
+
+  const slicerJs = fs.readFileSync('public/slicer.js', 'utf8');
+  kontrol('public/slicer.js 店舗 / store sayısını v.alternatifSayisi yerine v.alternatifMagazaSayisi ile basar',
+    slicerJs.includes('Number(v.alternatifMagazaSayisi)') && slicerJs.includes('件の候補'));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

@@ -1289,6 +1289,7 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
   const malYol = kod === 'fr' ? '/fr/calculateur-cout' : (kod === 'ja' ? '/ja/cost-calculator' : '/en/cost-calculator');
   const sepYol = kod === 'fr' ? '/fr/panier' : (kod === 'ja' ? '/ja/basket' : '/en/basket');
   const slcYol = `/${kod}/slicer`;
+  const karsilastirEtiket = kod === 'fr' ? '🔍 Comparer →' : (kod === 'ja' ? '🔍 価格比較 →' : '🔍 Compare →');
 
   const kartlarHtml = k.kartlar.map((g) => {
     const araLinkA = `${onEk}?url=${encodeURIComponent(g.urunA)}`;
@@ -1349,7 +1350,7 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
             <h2 class="bolum-baslik" style="margin:0 0 4px">${htmlKacis(k.aracBaslik)}</h2>
             <p class="ipucu" style="margin:0">${htmlKacis(k.aracAlt)}</p>
           </div>
-          <a class="seo-tum-link" href="${onEk}">🔍 Compare →</a>
+          <a class="seo-tum-link" href="${onEk}">${karsilastirEtiket}</a>
         </div>
         <div class="seo-rehber-baglar">
           <a href="${katYol}">${k.aracLink1}</a>

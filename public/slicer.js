@@ -37,7 +37,9 @@
       makaradan: (gr, adet) => `${gr} g makaradan <b>${adet}</b> adet`,
       stokVar: '🟢 stokta', stokYok: '🔴 tükendi',
       magazayaGit: '🛒 Mağazaya Git', tumMagazalar: '📊 Tüm mağazalar', maliyetHesap: '🧮 Maliyet + kâr hesapla',
-      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · ${n} alternatif mağaza`,
+      altMagazaSayi: (ms, m, u) => (m > 0
+        ? `⚡ ${ms} ms · ${m} alternatif mağaza`
+        : (u > 0 ? `⚡ ${ms} ms · ${u} diğer seçenek` : `⚡ ${ms} ms`)),
       bulunamadi: '⚠️ Bulunamadı', uygunYok: 'Uygun filament yok.',
       durustYok: 'Stokta bu malzeme yoksa fiyat <b>uydurulmaz</b> — dürüst davranış.',
       sorguHata: (e) => `⚠️ Sorgu başarısız: ${e}`,
@@ -57,7 +59,9 @@
       makaradan: (gr, adet) => `<b>${adet}</b> parts per ${gr} g spool`,
       stokVar: '🟢 in stock', stokYok: '🔴 out of stock',
       magazayaGit: '🛒 Visit Store', tumMagazalar: '📊 All stores', maliyetHesap: '🧮 Cost & profit calc',
-      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · ${n} alternative stores`,
+      altMagazaSayi: (ms, m, u) => (m > 0
+        ? `⚡ ${ms} ms · ${m} alternative ${m === 1 ? 'store' : 'stores'}`
+        : (u > 0 ? `⚡ ${ms} ms · ${u} other ${u === 1 ? 'option' : 'options'}` : `⚡ ${ms} ms`)),
       bulunamadi: '⚠️ Not Found', uygunYok: 'No matching filament in stock.',
       durustYok: 'No synthetic price is shown when this material is out of stock.',
       sorguHata: (e) => `⚠️ Request failed: ${e}`,
@@ -77,7 +81,9 @@
       makaradan: (gr, adet) => `<b>${adet}</b> pièces par bobine de ${gr} g`,
       stokVar: '🟢 en stock', stokYok: '🔴 rupture',
       magazayaGit: '🛒 Voir l’offre', tumMagazalar: '📊 Toutes les boutiques', maliyetHesap: '🧮 Calculateur coût + marge',
-      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · ${n} boutiques alternatives`,
+      altMagazaSayi: (ms, m, u) => (m > 0
+        ? `⚡ ${ms} ms · ${m} ${m === 1 ? 'autre boutique' : 'autres boutiques'}`
+        : (u > 0 ? `⚡ ${ms} ms · ${u} ${u === 1 ? 'autre option' : 'autres options'}` : `⚡ ${ms} ms`)),
       bulunamadi: '⚠️ Introuvable', uygunYok: 'Aucun filament en stock correspondant.',
       durustYok: 'Aucun prix fictif n’est affiché si le matériau est en rupture.',
       sorguHata: (e) => `⚠️ Échec de la requête : ${e}`,
@@ -97,7 +103,9 @@
       makaradan: (gr, adet) => `${gr} g スプールから <b>${adet}</b> 個出力可能`,
       stokVar: '🟢 在庫あり', stokYok: '🔴 在庫切れ',
       magazayaGit: '🛒 ショップへ', tumMagazalar: '📊 全ストアを見る', maliyetHesap: '🧮 原価＋利益を計算',
-      altMagazaSayi: (ms, n) => `⚡ ${ms} ms · 他 ${n} 店舗`,
+      altMagazaSayi: (ms, m, u) => (m > 0
+        ? `⚡ ${ms} ms · 他 ${m} 店舗`
+        : (u > 0 ? `⚡ ${ms} ms · 他 ${u} 件の候補` : `⚡ ${ms} ms`)),
       bulunamadi: '⚠️ 見つかりません', uygunYok: '在庫のある該当フィラメントがありません。',
       durustYok: '在庫がない場合は架空の価格を表示しません。',
       sorguHata: (e) => `⚠️ 照会エラー: ${e}`,
@@ -279,7 +287,7 @@
           </div>
           <p class="sl-sonuc-not">${kac(v.bildirimMetni)}</p>
           ${altHtml}
-          <p class="sl-sonuc-sure">${SL_SZ.altMagazaSayi(ms, Number(v.alternatifSayisi) || 0)}</p>`;
+          <p class="sl-sonuc-sure">${SL_SZ.altMagazaSayi(ms, Number(v.alternatifMagazaSayisi) || 0, Number(v.alternatifSayisi) || 0)}</p>`;
       } else {
         sonuc.innerHTML = `
           <div class="sl-sonuc-kart sl-bos-kart">

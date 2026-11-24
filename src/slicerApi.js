@@ -240,11 +240,19 @@ export function slicerFilamentBul(opts = {}) {
   });
 
   const enIyi = adaylar[0];
+  const enIyiMagaza = katla(enIyi.siteId || enIyi.site || '');
+  const alternatifMagazalar = new Set(
+    adaylar
+      .slice(1)
+      .map(a => katla(a.siteId || a.site || ''))
+      .filter(s => s && s !== enIyiMagaza),
+  ).size;
   return {
     ok: true,
     urun: enIyi,
     adaylar: adaylar.slice(0, 4),
     alternatifler: adaylar.length - 1,
+    alternatifMagazalar,
     renkBulundu: renkler ? enIyi.renkUyum === true : null,
   };
 }
@@ -384,6 +392,7 @@ export function slicerOneri(girdi = {}) {
     enIyiAlternatifler,
     maliyetUrl,
     alternatifSayisi: bulunan.alternatifler || 0,
+    alternatifMagazaSayisi: bulunan.alternatifMagazalar || 0,
     bildirimMetni,
   };
 }

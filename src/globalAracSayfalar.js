@@ -2204,7 +2204,7 @@ export function globalAyarlarSayfasiHtml(dil = 'en', tabanUrl = '') {
   });
 
   cikti = cikti
-    .replace('<h2>📈 Takip edilen ürünler &amp; fiyat alarmlarım</h2>', `<h2>${c.h1a}</h2>`)
+    .replace('<h1>📈 Takip edilen ürünler &amp; fiyat alarmlarım</h1>', `<h1>${c.h1a}</h1>`)
     .replace(/Takibe aldığınız ürünlerin fiyatları gün içinde düzenli kontrol edilir;[\s\S]*?<\/p>/, `${c.p1}</p>`)
     .replace('<div id="takipListesi"><p class="alt-not">Yükleniyor…</p></div>', `<div id="takipListesi"><p class="alt-not">${c.yukleniyor}</p></div>`)
     .replace('<h2>🔔 Bildirimler &amp; görünüm tercihleri</h2>', `<h2>${c.h1b}</h2>`)

@@ -901,7 +901,7 @@ function sonucPanelleriniSifirla() {
   const tbody = $('#ozetTablo tbody'); if (tbody) tbody.innerHTML = '';
   const kb = $('#kaynakBaslik'); if (kb) kb.textContent = '';
   const kbil = $('#kaynakBilgi'); if (kbil) kbil.innerHTML = '';
-  const ok = $('#ozetKutu'); if (ok) ok.innerHTML = '';
+  const ok = $('#ozetKutu'); if (ok) { ok.innerHTML = ''; ok.classList?.remove('tukendi'); }
 }
 
 // İptal butonu (2026-10-27): tarama sürerken kalan siteleri durdurur.
@@ -3991,8 +3991,11 @@ function sonucGoster(sonuc, opts = {}) {
   const stoktaYokSayisi = o.stoktaYokSayisi ?? bulunanlar.filter(r => r.product.inStock === false).length;
   const tamamiTukendi = o.tamamiTukendi ?? (bulunanlar.length > 0 && stoktaVarSayisi === 0);
 
+  const ozetEl = $('#ozetKutu');
+  ozetEl?.classList?.toggle('tukendi', !!tamamiTukendi);
+
   if (tamamiTukendi) {
-    $('#ozetKutu').innerHTML = `<div class="etiket" style="color:#dc2626">${CANLI_YEREL.tumundeTukendi}</div><div class="fiyat" style="color:#dc2626">${CANLI_YEREL.stokYokKisa}</div><div class="yer">${CANLI_YEREL.hepsiTukenmis(bulunanlar.length)}</div>`;
+    ozetEl.innerHTML = `<div class="etiket">${CANLI_YEREL.tumundeTukendi}</div><div class="fiyat">${CANLI_YEREL.stokYokKisa}</div><div class="yer">${CANLI_YEREL.hepsiTukenmis(bulunanlar.length)}</div>`;
   } else if (o.enUcuzSite) {
     const enUcuzTeklif = bulunanlar.find(r =>
       r.enUcuz || ((r.siteName === o.enUcuzSite || SITE_ADLARI[r.site] === o.enUcuzSite) && r.product?.inStock !== false));
@@ -4005,9 +4008,9 @@ function sonucGoster(sonuc, opts = {}) {
       ? CANLI_YEREL.kargoDahilUcret(tl(ekKargo.ucret))
       : (ucretsizKargo ? CANLI_YEREL.kargoDahilBedava : CANLI_YEREL.kargoSepetteEklenir);
     const stokEkNot = stoktaYokSayisi > 0 ? CANLI_YEREL.stoktaMagazaSayi(stoktaVarSayisi) : '';
-    $('#ozetKutu').innerHTML = `<div class="etiket">${kargoBilindi ? CANLI_YEREL.ozetEnUcuzDahil : CANLI_YEREL.ozetEnUcuzKargo}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
+    ozetEl.innerHTML = `<div class="etiket">${kargoBilindi ? CANLI_YEREL.ozetEnUcuzDahil : CANLI_YEREL.ozetEnUcuzKargo}</div><div class="fiyat">${tl(o.enUcuzFiyat)}</div><div class="yer">${esc(o.enUcuzSite)} · ${kargoOzeti}${stokEkNot}</div>`;
   } else {
-    $('#ozetKutu').innerHTML = `<div class="etiket">${CANLI_YEREL.sonucEtiketi}</div><div class="fiyat">—</div><div class="yer">${CANLI_YEREL.stoktaUrunYok}</div>`;
+    ozetEl.innerHTML = `<div class="etiket">${CANLI_YEREL.sonucEtiketi}</div><div class="fiyat">—</div><div class="yer">${CANLI_YEREL.stoktaUrunYok}</div>`;
   }
 
   // 🎯 Net tasarruf bandı + güvenilirlik mührü (2026-11-12).
