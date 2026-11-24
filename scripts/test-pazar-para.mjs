@@ -1630,6 +1630,31 @@ console.log('\n33) 🌍 Kök URL ülke / dil yönlendirmesi (TR / FR / JA / Glob
     && ulkeVeyaIstekDiliCoz({ query: { url: 'eSUN PLA+' }, headers: { 'cf-ipcountry': 'US' } }).yonlendirUrl === null);
 }
 
+console.log('\n34) 🏷️ Amazon gerçek marka çıkarma (#bylineInfo / Marka tablosu)');
+{
+  const { amazonMarkaCikar, matchProducts } = await import('../src/util.js');
+
+  const ornekHtmlByline = '<a id="bylineInfo" href="/stores/eSUN">Marka: eSUN</a>';
+  const ornekHtmlTablo = '<tr class="a-spacing-small po-brand"><td><span>Marka</span></td><td><span class="a-size-base">eSUN</span></td></tr>';
+  const ornekHtmlStore = '<a id="bylineInfo">Visit the Polymaker Store</a>';
+  const baslik = 'PLA Basic Gümüş Filament 1,75mm 1kg - bisiparisver, ESUN118';
+
+  const b1 = amazonMarkaCikar(ornekHtmlByline, baslik);
+  const b2 = amazonMarkaCikar(ornekHtmlTablo, baslik);
+  const b3 = amazonMarkaCikar(ornekHtmlStore, 'PLA+ Filament 1kg');
+  const b4 = amazonMarkaCikar('<html></html>', baslik);
+  kontrol('amazonMarkaCikar #bylineInfo ve po-brand tablosundan eSUN/Polymaker okur, ilk kelime "PLA" markasını uydurmaz',
+    b1 === 'eSUN' && b2 === 'eSUN' && b3 === 'Polymaker' && b4 === null,
+    JSON.stringify({ b1, b2, b3, b4 }));
+
+  const eslesme = matchProducts(
+    { title: 'Esun Basic PLA Filament', brand: 'Esun' },
+    { title: baslik, brand: b1 },
+  );
+  kontrol('Gerçek eSUN markasıyla Amazon "PLA Basic ... ESUN118" ilanı Esun Basic PLA ile eşleşir',
+    eslesme !== null, JSON.stringify(eslesme));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

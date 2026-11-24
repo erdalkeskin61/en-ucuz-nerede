@@ -9,7 +9,7 @@
  * Arama sayfası: data-asin blokları.
  */
 import { fetchPage } from '../scraper.js';
-import { stripTags, parseNum, dominantColor, decodeEntities } from '../util.js';
+import { stripTags, parseNum, dominantColor, decodeEntities, amazonMarkaCikar } from '../util.js';
 
 export default {
   id: 'amazon',
@@ -102,7 +102,7 @@ export default {
       ? { fee: 0, freeOver: null, applies: false, note: 'Ücretsiz kargo' }
       : { fee: null, freeOver: null, applies: null, note: 'Kargo maliyeti ödeme adımında gösterilir' };
 
-    const brand = title.split(/\s+/)[0] || null;
+    const brand = amazonMarkaCikar(html, title);
 
     return {
       site: this.id,

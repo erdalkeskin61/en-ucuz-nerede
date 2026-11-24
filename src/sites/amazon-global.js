@@ -12,7 +12,7 @@
  * erişim engeli hatası fırlatır.
  */
 import { fetchPage } from '../scraper.js';
-import { decodeEntities, dominantColor, fiyatCikar, paraBirimiNormalize, stripTags } from '../util.js';
+import { decodeEntities, dominantColor, fiyatCikar, paraBirimiNormalize, stripTags, amazonMarkaCikar } from '../util.js';
 import { kargoCikar } from '../kargo.js';
 
 function amazonBotEngeliMi(html) {
@@ -104,7 +104,7 @@ function amazonGlobalOlustur({ id, name, market, currency, origin, hosts }) {
       const mn = html.match(/(?:Item model number|Num[ée]ro de mod[èe]le|製品型番|モデル番号)[^<]{0,60}<\/(?:th|span)>\s*<(?:td|span)[^>]*>\s*([^<]{2,60})</i);
       if (mn) modelCode = stripTags(mn[1]);
 
-      const brand = title.split(/\s+/)[0] || null;
+      const brand = amazonMarkaCikar(html, title);
       const color = dominantColor(title) || null;
       const tukendi = /currently unavailable|actuellement indisponible|在庫切れ|現在在庫切れ/i.test(html);
       const image = html.match(/id="landingImage"[^>]+src="([^"]+)"/i)?.[1]

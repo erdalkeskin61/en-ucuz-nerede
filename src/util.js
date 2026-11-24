@@ -1543,3 +1543,50 @@ export function kanonikUrunUrl(bilgi, opts = {}) {
   if (!slug) return null;
   return `${taban}/urun/${slug}`;
 }
+
+const AMAZON_SAHTE_MARKA = /^(pla\+?hs?|pla\+?|petg|abs|tpu|asa|pa|pc|filament|resin|reçine|recine|3d|yazıcı|yazici|printer|model|renk|mini|pro|max|plus|new|yeni|orijinal|original)$/i;
+
+/**
+ * Amazon ürün sayfası HTML'inden gerçek markayı çıkarır (`#bylineInfo` ve teknik
+ * özellik tablosu); yoksa başlığın ilk kelimesini (yalnızca malzeme/renk gibi
+ * genel bir sözcük değilse) yedek olarak döndürür.
+ */
+export function amazonMarkaCikar(html, title) {
+  const s = String(html || '');
+  const temizle = (ham) => {
+    const t = stripTags(ham || '')
+      .replace(/^(?:Marka|Üretici|Brand|Manufacturer|Marque|Fabricant|Marke|ブランド|メーカー)\s*[:：]\s*/i, '')
+      .replace(/^(?:Visit the|Visiter la boutique|Besuche den)\s+/i, '')
+      .replace(/\s+(?:Store|Shop|Mağazasını ziyaret et|Boutique)$/i, '')
+      .replace(/(?:のストアを表示|ストアを表示)$/u, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!t || t.length < 2 || t.length > 60) return null;
+    if (/^(?:amazon|genel|generic|unknown|diğer|marka|brand|üretici|manufacturer|marque|ブランド|メーカー)$/i.test(t)) return null;
+    return t;
+  };
+
+  const bylineM = s.match(/<a[^>]*id="bylineInfo"[^>]*>([\s\S]{1,220}?)<\/a>/i);
+  if (bylineM) {
+    const b = temizle(bylineM[1]);
+    if (b) return b;
+  }
+
+  const poBrandM = s.match(/<tr[^>]*class="[^"]*po-brand[^"]*"[^>]*>[\s\S]{0,300}?<\/td>\s*<td[^>]*>[\s\S]{0,200}?<span[^>]*>([^<]{2,80})<\/span>/i);
+  if (poBrandM) {
+    const b = temizle(poBrandM[1]);
+    if (b) return b;
+  }
+
+  const tabloM = s.match(/(?:Marka|Üretici|Brand|Manufacturer|Marque|Hersteller|ブランド|メーカー)\s*(?:<\/span>|<\/th>)\s*(?:<\/td>\s*<td[^>]*>|<td[^>]*>)\s*(?:<span[^>]*>\s*)*([^<]{2,80})</i);
+  if (tabloM) {
+    const b = temizle(tabloM[1]);
+    if (b) return b;
+  }
+
+  const ilk = String(title || '').trim().split(/\s+/)[0] || '';
+  if (ilk && !AMAZON_SAHTE_MARKA.test(ilk) && !/^\d/.test(ilk) && extractColors(ilk).length === 0) {
+    return ilk;
+  }
+  return null;
+}
