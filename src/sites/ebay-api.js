@@ -86,7 +86,13 @@ export function ebayLegacyIdCoz(url) {
 }
 
 function kanonikItmUrl(item, origin, fallbackUrl = null) {
-  const legacyId = item?.legacyItemId || ebayLegacyIdCoz(item?.itemWebUrl) || ebayLegacyIdCoz(fallbackUrl);
+  const idFromItem = /^v1\|(\d{8,16})\|/.exec(String(item?.itemId || ''))?.[1];
+  const idFromGrp = /[?&]item_group_id=(\d{8,16})/.exec(String(item?.itemGroupHref || ''))?.[1];
+  const legacyId = item?.legacyItemId
+    || ebayLegacyIdCoz(item?.itemWebUrl)
+    || ebayLegacyIdCoz(fallbackUrl)
+    || idFromItem
+    || idFromGrp;
   if (legacyId) return `${origin}/itm/${legacyId}`;
   const ham = String(item?.itemWebUrl || fallbackUrl || '').split('?')[0].split('#')[0];
   return ham || null;
@@ -277,7 +283,8 @@ export async function ebayBrowseAra(siteId, query, ctx = {}, opts = {}) {
     const urun = ebayOgeyiUrunYap(item, cfg);
     if (!urun || seen.has(urun.url)) continue;
     seen.add(urun.url);
-    cacheYaz(urun.url, urun);
+    // Çoklu varyant aramalarında fiyat null dönebilir — yalnızca gerçek fiyatlıysa önbellekle.
+    if (urun.sellingPrice > 0) cacheYaz(urun.url, urun);
     out.push({
       title: urun.title,
       url: urun.url,
@@ -326,7 +333,12 @@ export async function ebayBrowseUrunGetir(siteId, url, ctx = {}, opts = {}) {
     ok = grp.ok;
     status = grp.status;
     const altItems = Array.isArray(grp.veri?.items) ? grp.veri.items : [];
-    veri = altItems.find(i => ebayStokDurumu(i)) || altItems[0] || grp.veri;
+    const hedefRenk = String(opts?.kaynak?.color || '').trim().toLowerCase();
+    const renkli = hedefRenk
+      ? altItems.find(i => ebayStokDurumu(i) && Number(i?.price?.value) > 0
+        && String(dominantColor(i?.title || '') || ebayAspectDegeri(i, ['color', 'colour', 'couleur']) || '').toLowerCase() === hedefRenk)
+      : null;
+    veri = renkli || altItems.find(i => ebayStokDurumu(i) && Number(i?.price?.value) > 0) || altItems.find(i => ebayStokDurumu(i)) || altItems[0] || grp.veri;
   }
 
   if (!ok) {

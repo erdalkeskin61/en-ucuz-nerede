@@ -921,7 +921,10 @@ const KRITIK_VARYANTLAR = [
 ];
 
 export function varyantBul(baslik) {
-  const b = ' ' + sadelestir(baslik || '').replace(/[^a-z0-9]/g, ' ') + ' ';
+  const norm = aksanDuzlestir(sadelestir(baslik || ''))
+    .replace(/\b(pla|petg|abs|tpu|asa|pa|pc)\s*\+/g, '$1plus')
+    .replace(/\b(pla|petg|abs|tpu|asa|pa|pc)\s+plus\b/g, '$1plus');
+  const b = ' ' + norm.replace(/[^a-z0-9]/g, ' ') + ' ';
   const bulunanlar = new Set();
   for (const v of KRITIK_VARYANTLAR) {
     if (b.includes(' ' + v + ' ')) bulunanlar.add(v);
@@ -1193,8 +1196,8 @@ export function matchProducts(src, cand) {
     }
   }
   // Marka tutuyor ve kaynak kimliğinin tamamı adayda geçiyorsa kabul
-  // (özlü başlıklar için; alakasız ürünler ~0.15 altında kalır)
-  if (brandsOk && kapsama && sim >= 0.15) return { eslesme: 'benzerlik', skor: sim };
+  // (özlü aramalar + uzun eBay/Amazon SEO başlıkları için; alakasız ürünler ~0.10 altında kalır)
+  if (brandsOk && kapsama && sim >= 0.10) return { eslesme: 'benzerlik', skor: sim };
   // Marka tutuyor ve aday başlığında kaynak model kodu geçiyorsa düşük eşikle kabul
   // (aynı modelin kısa başlıklı listeleri Jaccard'ı düşürür; alakasız ürünler ~0.15 altında kalır).
   if (sm && sm.length >= 3 && brandsOk && normalizeModelCode(cand.title || '').includes(sm) && sim >= 0.22) {

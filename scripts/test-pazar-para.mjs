@@ -1370,6 +1370,96 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
     const bekHash = createHash('sha256').update(cCode + vTok + ep, 'utf8').digest('hex');
     kontrol('ebayAccountDeletionChallenge SHA-256(challengeCode+verificationToken+endpoint) üretir',
       ebayAccountDeletionChallenge({ challengeCode: cCode, verificationToken: vTok, endpoint: ep }) === bekHash);
+
+    const { matchProducts } = await import('../src/util.js');
+    const esunKaynak = { title: 'eSUN PLA+', brand: 'eSUN' };
+    const esunEbayEslesme = matchProducts(esunKaynak, {
+      title: 'eSUN PLA+ 3D Printer Filament, 1.75mm PLA Plus 1KG, 0.02mm, Most FDM 3D Printers',
+      brand: 'eSUN',
+    });
+    const esunDuzPlaEslesme = matchProducts(esunKaynak, {
+      title: 'eSUN PLA Filament 1.75mm 1kg',
+      brand: 'eSUN',
+    });
+    kontrol('matchProducts eSUN PLA+ vs uzun PLA Plus eBay başlığını eşler, düz PLA ile eşlemez',
+      esunEbayEslesme !== null && esunDuzPlaEslesme === null,
+      JSON.stringify({ esunEbayEslesme, esunDuzPlaEslesme }));
+
+    // Fiyatsız itemGroupHref varyasyon araması önbelleğe alınmamalı; ebayBrowseUrunGetir item_group üzerinden stok+renk çözmeli
+    const varMockFetch = async (url) => {
+      if (String(url).includes('/item_summary/search')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            itemSummaries: [{
+              itemId: 'v1|395123999888|0',
+              itemGroupHref: 'https://api.ebay.com/buy/browse/v1/item/get_items_by_item_group?item_group_id=395123999888',
+              title: 'eSUN PLA+ 3D Printer Filament, 1.75mm PLA Plus 1KG, 0.02mm, Most FDM 3D Printers',
+              brand: 'eSUN',
+            }],
+          }),
+        };
+      }
+      if (String(url).includes('get_item_by_legacy_id')) {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ errors: [{ errorId: 11006, message: 'The item id is an item group.' }] }),
+        };
+      }
+      if (String(url).includes('get_items_by_item_group')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [
+              {
+                legacyItemId: '395123999888',
+                title: 'eSUN PLA+ Filament Red',
+                brand: 'eSUN',
+                color: 'Red',
+                price: { value: '15.99', currency: 'USD' },
+                itemWebUrl: 'https://www.ebay.com/itm/395123999888',
+                estimatedAvailabilities: [{ estimatedAvailabilityStatus: 'OUT_OF_STOCK', estimatedAvailableQuantity: 0 }],
+              },
+              {
+                legacyItemId: '395123999888',
+                title: 'eSUN PLA+ Filament White',
+                brand: 'eSUN',
+                color: 'White',
+                price: { value: '17.99', currency: 'USD' },
+                itemWebUrl: 'https://www.ebay.com/itm/395123999888',
+                estimatedAvailabilities: [{ estimatedAvailabilityStatus: 'IN_STOCK', estimatedAvailableQuantity: 4 }],
+              },
+              {
+                legacyItemId: '395123999888',
+                title: 'eSUN PLA+ Filament Black',
+                brand: 'eSUN',
+                color: 'Black',
+                price: { value: '16.99', currency: 'USD' },
+                itemWebUrl: 'https://www.ebay.com/itm/395123999888',
+                estimatedAvailabilities: [{ estimatedAvailabilityStatus: 'IN_STOCK', estimatedAvailableQuantity: 10 }],
+              },
+            ],
+          }),
+        };
+      }
+      return { ok: false, status: 500, json: async () => ({}) };
+    };
+
+    const varAdaylar = await ebayBrowseAra('ebay_us', 'eSUN PLA+', ctx, { fetchImpl: varMockFetch });
+    const varUrun = await ebayBrowseUrunGetir('ebay_us', varAdaylar[0]?.url, ctx, {
+      fetchImpl: varMockFetch,
+      kaynak: { color: 'siyah' },
+    });
+    kontrol('ebayBrowseAra fiyatsız varyant grubunu önbelleğe kitlemez ve ebayBrowseUrunGetir stoklu+renkli fiyatı çözer',
+      varAdaylar.length === 1
+      && varAdaylar[0].url === 'https://www.ebay.com/itm/395123999888'
+      && varAdaylar[0].price === null
+      && varUrun.sellingPrice === 16.99
+      && varUrun.currency === 'USD',
+      JSON.stringify({ varAdaylar, varUrun }));
   } finally {
     _ebayOnbellekTemizle();
     if (eskiId === undefined) delete process.env.EBAY_CLIENT_ID; else process.env.EBAY_CLIENT_ID = eskiId;
