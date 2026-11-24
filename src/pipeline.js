@@ -275,6 +275,7 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
   // Aksi hâlde 6 saatlik sayfa önbelleği tazelemeyi "değişiklik yok" gibi gösteriyordu.
   const tazeOpts = opts && opts.taze ? { fresh: true } : {};
   const durduruldu = () => !!(iptalMi && iptalMi());
+  const renkEsnek = opts.renkEsnek === true;
 
   /* ---- 🗂️ KATALOG KISAYOLU (2026-11-17) -------------------------------
    * Mağazanın kendi beslemesinden gelen TAZE kayıt varsa arama sayfasını
@@ -302,19 +303,20 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
           const match = matchProducts(src, product);
           if (match) {
             const colorSame = sameColor(src.color, product.color);
-            product.renkAyni = colorSame;
+            const etkinRenkAyni = (renkEsnek && colorSame === false) ? null : colorSame;
+            product.renkAyni = etkinRenkAyni;
             product.matchBasis = match.eslesme;
             result.status = 'found';
             result.product = product;
             result.matchBasis = match.eslesme;
-            result.renkAyni = colorSame;
+            result.renkAyni = etkinRenkAyni;
             result.katalog = {
               kaynakTur: kayit.kaynakTur,
               guncellemeTs: kayit.guncellemeTs,
               yasMs: kayit.yasMs ?? null,
               fiyatKaynagi: 'katalog',
             };
-            result.reason = colorSame === false
+            result.reason = etkinRenkAyni === false
               ? 'Katalogda aynı ürün bulundu ancak rengi farklı: ' + (product.color || '?')
               : '';
             if (onProgress) onProgress(adapter.id, result);
@@ -327,19 +329,20 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
           const match = matchProducts(src, product);
           if (match) {
             const colorSame = sameColor(src.color, product.color);
-            product.renkAyni = colorSame;
+            const etkinRenkAyni = (renkEsnek && colorSame === false) ? null : colorSame;
+            product.renkAyni = etkinRenkAyni;
             product.matchBasis = match.eslesme;
             result.status = 'found';
             result.product = product;
             result.matchBasis = match.eslesme;
-            result.renkAyni = colorSame;
+            result.renkAyni = etkinRenkAyni;
             result.katalog = {
               kaynakTur: kayit.kaynakTur,
               guncellemeTs: kayit.guncellemeTs,
               yasMs: kayit.yasMs ?? null,
               fiyatKaynagi: 'urun-sayfasi',
             };
-            result.reason = colorSame === false
+            result.reason = etkinRenkAyni === false
               ? 'Aynı ürün bulundu ancak rengi farklı: ' + (product.color || '?')
               : '';
             result.queriesTried.push('katalog:' + adapter.id);
@@ -490,7 +493,7 @@ async function findOnSite(adapter, src, queries, onProgress, maxCandidates = con
       if (colorSame === false) {
         if (!diffColorMatch) {
           diffColorMatch = product;
-          diffColorMatch.renkAyni = false;
+          diffColorMatch.renkAyni = renkEsnek ? null : false;
           diffColorMatch.matchBasis = match.eslesme;
         }
       } else {
@@ -701,6 +704,7 @@ async function karsilastirmaAkisiniTamamla({
     }, maxCandidates, iptalMi, {
       semantik: opts.semantik !== false,
       taze: opts.taze === true,
+      renkEsnek: opts.renkEsnek === true,
       aktivite,
     });
 
@@ -786,7 +790,10 @@ async function karsilastirmaAkisiniTamamla({
     fiyatZekasi = { tavsiye: 'veri_yok', durum: null, neden: 'Fiyat geçmişi okunamadı: ' + String(e.message || e).slice(0, 80) };
   }
 
-  const uygunFiyatli = (r) => Number.isFinite(karsilastirmaFiyati(r));
+  const uygunFiyatli = (r) => {
+    const f = karsilastirmaFiyati(r);
+    return Number.isFinite(f) && f > 0;
+  };
   const eligible = found.filter(r => r.renkAyni !== false && uygunFiyatli(r) && r.product.inStock !== false);
   let cheapest = null;
   for (const r of eligible) {
@@ -924,9 +931,12 @@ async function karsilastirmaAkisiniTamamla({
       fiyatZekasi: fiyatZekasi || null,
       zamanlamaTavsiyesi: zamanlamaTavsiyesi || null,
       sahteIndirim: (() => {
-        const uygun = allResults.filter(r => r?.status === 'found' && r?.product
-          && r.product.inStock !== false && r.renkAyni !== false
-          && Number.isFinite(Number(r.product.pricing?.toplam ?? r.product.sellingPrice)));
+        const uygun = allResults.filter(r => {
+          if (!r || r.status !== 'found' || !r.product) return false;
+          if (r.product.inStock === false || r.renkAyni === false) return false;
+          const ham = r.product.pricing?.toplam ?? r.product.sellingPrice;
+          return ham != null && Number.isFinite(Number(ham)) && Number(ham) > 0;
+        });
         if (!uygun.length) return null;
         const enUcuz = uygun.reduce((a, b) => (
           Number(b.product.pricing?.toplam ?? b.product.sellingPrice)
@@ -1146,7 +1156,14 @@ export async function runComparison(sourceUrl, opts = {}) {
   };
   onProgress(adapter.id, sourceResult);
 
-  const tumSorgular = buildQueries(srcProduct);
+  const arananSorgu = opts.arananSorgu ? String(opts.arananSorgu).trim() : null;
+  const kullaniciRenkBelirtmedi = !!arananSorgu && extractColors(arananSorgu).length === 0;
+  const uretilenSorgular = buildQueries(srcProduct);
+  const tumSorgular = kullaniciRenkBelirtmedi
+    ? [...new Set([arananSorgu, ...sorguKademeleriUret(arananSorgu), ...uretilenSorgular]
+        .map(q => String(q || '').trim())
+        .filter(q => q.length >= 2))]
+    : uretilenSorgular;
   const sorguSiniri = Number.isFinite(opts.maxQueries) && opts.maxQueries > 0
     ? Math.floor(opts.maxQueries)
     : tumSorgular.length;
@@ -1165,7 +1182,7 @@ export async function runComparison(sourceUrl, opts = {}) {
     sourceResult,
     queries,
     others,
-    opts,
+    opts: { ...opts, renkEsnek: opts.renkEsnek ?? kullaniciRenkBelirtmedi },
     startedAt,
     onProgress,
     iptalMi,

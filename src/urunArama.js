@@ -380,7 +380,8 @@ export function katalogdanKaynakAdayi(sorgu, opts = {}) {
 
   const puanli = adaylar
     .filter(a => (!a.siteId || izinliSiteler.has(a.siteId) || (market === 'tr' && !adapterById(a.siteId)))
-      && (!a.paraBirimi || a.paraBirimi === beklenenPara))
+      && (!a.paraBirimi || a.paraBirimi === beklenenPara)
+      && (a.fiyat == null || Number(a.fiyat) > 0))
     .map(a => ({ ...a, url: a.urunUrl, puan: sorguPuanla(a.baslik, temiz) + (a.fiyat != null ? 0.03 : 0) }))
     .filter(a => a.puan >= 0.35);
 
@@ -433,9 +434,12 @@ export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disS
     return cached.urun;
   }
 
-  // 🗂️ KATMAN 0: yerel katalog indeksi — ağ isteği yok, milisaniyeler sürer.
+  // 🗂️ KATMAN 0: yerel katalog indeksi — stokta ürün varsa ağ isteği yok, milisaniyeler sürer.
+  // Katalog adayı yalnızca tükendiyse (stokta: 0/false) hemen kilitlenmeyiz; canlı
+  // mağazalar taranır, yine bulunamazsa en sonda yedek olarak döner.
   const katalogAdayi = katalogdanKaynakAdayi(temizSorgu, { ttlMs: katalogTtlMs, market: etkinMarket });
-  if (katalogAdayi) {
+  const katalogStokta = katalogAdayi && katalogAdayi.stokta !== 0 && katalogAdayi.stokta !== false;
+  if (katalogAdayi && katalogStokta) {
     KAYNAK_CACHE.set(key, { ts: Date.now(), urun: katalogAdayi });
     console.log('[urunArama] kaynak katalog indeksinden bulundu (ağ isteği yok): "'
       + katalogAdayi.title.slice(0, 60) + '"');
@@ -539,5 +543,8 @@ export async function hizliKaynakUrunBul(sorgu, { timeoutMs = 6500, signal: disS
     }
   }
 
+  if (katalogAdayi) {
+    return katalogAdayi;
+  }
   return null;
 }

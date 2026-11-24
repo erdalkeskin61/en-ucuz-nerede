@@ -690,6 +690,11 @@ function hatGostergeleri(baslik) {
     // PLA+HS / PLA-CF gibi alt hatlar (2026-11-04)
     altHatEkle(hat, kelimeler, i);
   }
+  // "RGB" yalnızca filament/3D malzeme bağlamında ayrı filament hattıdır ("RGB Blue eSun PLA+");
+  // oyuncu faresi/klavye ("Logitech G102 Lightsync RGB") gibi donanımlarda dekoratif aydınlatmadır.
+  if (kelimeler.includes('rgb') && (malzeme.size > 0 || hat.has('plaplus') || hat.has('ecopla') || kelimeler.includes('filament'))) {
+    hat.add('rgb');
+  }
   return { hat, malzeme };
 }
 

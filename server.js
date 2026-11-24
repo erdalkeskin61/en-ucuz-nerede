@@ -13,7 +13,7 @@ import { warmUpHosts, getDnsCacheStats } from './src/httpPool.js';
 import { config, secretProblems } from './src/config.js';
 import { runComparison, runComparisonByQuery } from './src/pipeline.js';
 import { detectSite, adapters, adaptersByMarket, taramaAdaptersByMarket, adapterById, adapterMarket, adapterCurrency, normalizeMarket } from './src/sites/index.js';
-import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi, dominantColor, renkAyni } from './src/util.js';
+import { parcaMi, kritikVaryantCakismasi, modelSerisiCakismasi, dominantColor, renkAyni, hatCakismasi } from './src/util.js';
 import * as store from './src/store.js';
 import { startAlarmScheduler, checkAlarms, sendTestEmail, sendTestTelegram, sendTestWhatsApp, gorevDurumu } from './src/alarms.js';
 import { sepetOptimize, SEPET_SITELERI } from './src/basketOptimizer.js';
@@ -1538,7 +1538,7 @@ app.post('/api/compare', async (req, res) => {
     job.tazelemeHatasi = String(e.message || e);
     job.surum = (job.surum || 1) + 1;
   };
-  const arkaPlanTazelemeBaslat = (hedefUrl, anlik, job) => {
+  const arkaPlanTazelemeBaslat = (hedefUrl, anlik, job, ekOpts = {}) => {
     job.mod = 'tazeleme';
     job.tazeleniyor = true;
     job.surum = 1;
@@ -1549,7 +1549,7 @@ app.post('/api/compare', async (req, res) => {
     job.kaynak = anlik.payload.kaynak || null;
     job.faz = 'bitti';
     job.fazNotu = 'Hafızadan gösteriliyor, arka planda tazeleniyor';
-    karsilastirmaCalistir(hedefUrl, job, formatSonuc)
+    karsilastirmaCalistir(hedefUrl, job, formatSonuc, ekOpts)
       .then((yeni) => tazelemeTamamlandi(anlik, job, yeni))
       .catch((e) => tazelemeHataAldi(job, e));
   };
@@ -1561,7 +1561,16 @@ app.post('/api/compare', async (req, res) => {
   if (arananSorgu) {
     const sorguRengi = dominantColor(arananSorgu) || null;
     const renkUyumluAnlik = (kayit) => {
-      if (!sorguRengi) return true;
+      const kayitBaslik = kayit?.payload?.kaynak?.urun || '';
+      if (kayitBaslik && hatCakismasi(kayitBaslik, arananSorgu)) return false;
+      if (!sorguRengi) {
+        const oz = kayit?.payload?.ozet;
+        const farkliRenkStok = (kayit?.payload?.sonuclar || []).some(
+          r => r?.status === 'found' && r?.product?.inStock !== false && r?.renkAyni === false,
+        );
+        if (oz && oz.enUcuzFiyat == null && farkliRenkStok) return false;
+        return true;
+      }
       const kayitRenk = kayit?.payload?.kaynak?.color;
       return !kayitRenk || renkAyni(kayitRenk, sorguRengi);
     };
@@ -1583,7 +1592,7 @@ app.post('/api/compare', async (req, res) => {
         anlikTs: anlik.ts,
         anlikYasMs: anlik.yasMs,
       });
-      arkaPlanTazelemeBaslat(sorguAnlikHam.kaynakUrl, anlik, job);
+      arkaPlanTazelemeBaslat(sorguAnlikHam.kaynakUrl, anlik, job, { arananSorgu });
       return res.json({
         isId: job.id,
         id: job.id,
@@ -1702,7 +1711,7 @@ app.post('/api/compare', async (req, res) => {
             ? { ...anlikHam, payload: baskiZenginlestir(anlikHam.payload) }
             : null;
           if (anlik) {
-            arkaPlanTazelemeBaslat(bulunan.url, anlik, job);
+            arkaPlanTazelemeBaslat(bulunan.url, anlik, job, { arananSorgu });
             return;
           }
         }

@@ -3701,9 +3701,11 @@ function siteAdiHtml(site, siteAdi, url) {
 
 /** Fiyat dağılımı ve trend verisini sonuçtan çıkarır. */
 function bentoVerisiHesapla(sonuc) {
-  const bulunan = (sonuc.sonuclar || []).filter(r =>
-    r.status === 'found' && r.product && r.renkAyni !== false
-    && Number.isFinite(Number(r.product.pricing?.toplam ?? r.product.sellingPrice)));
+  const bulunan = (sonuc.sonuclar || []).filter(r => {
+    if (!r || r.status !== 'found' || !r.product || r.renkAyni === false) return false;
+    const ham = r.product.pricing?.toplam ?? r.product.sellingPrice;
+    return ham != null && Number.isFinite(Number(ham)) && Number(ham) > 0;
+  });
 
   const fiyatli = bulunan.map(r => ({
     r,
@@ -3803,14 +3805,14 @@ function bentoOzetCiz(sonuc) {
       <div class="bento-etiket">${CANLI_YEREL.bentoFiyatDagilimi}</div>
       <div class="bento-dagilim-ust">
         <span class="bento-dagilim-etiket">${esc(CANLI_YEREL.bentoEnUcuz)}</span>
-        <b class="bento-dagilim-fiyat yesil">${tl(enUcuz.fiyat)}</b>
+        <b class="bento-dagilim-fiyat yesil">${tl(enUcuz.fiyat, enUcuzPara)}</b>
       </div>
       <div class="bento-dagilim-ust">
         <span class="bento-dagilim-etiket">${esc(CANLI_YEREL.bentoEnPahali)}</span>
-        <b class="bento-dagilim-fiyat">${tl(enPahali?.fiyat)}</b>
+        <b class="bento-dagilim-fiyat">${tl(enPahali?.fiyat, enUcuzPara)}</b>
       </div>
       <div class="bento-bar" aria-hidden="true"><span style="width:${Math.max(6, Math.min(100, 100 - (yuzde || 0)))}%"></span></div>
-      <div class="bento-fark">${fark > 0 ? esc(CANLI_YEREL.bentoFarkMetni(tl(fark))) : esc(CANLI_YEREL.bentoTumAyniFiyat)}</div>
+      <div class="bento-fark">${fark > 0 ? esc(CANLI_YEREL.bentoFarkMetni(tl(fark, enUcuzPara))) : esc(CANLI_YEREL.bentoTumAyniFiyat)}</div>
       <div class="bento-kazanc">${yuzde != null && yuzde > 0 ? esc(CANLI_YEREL.bentoDahaAzOde(yuzdeStr(yuzde, true))) : esc(CANLI_YEREL.bentoFarkYok)}</div>
       <div class="bento-alt-metin">${esc(CANLI_YEREL.bentoMagazaStok(v.magazaSayisi, v.stoktaSayisi))}</div>
     </article>`;
@@ -4539,7 +4541,10 @@ function muadilPaneliHazirla(sonuc, opts = {}) {
   // Yerel ön değerlendirme: sunucuya gitmeden "gerekli mi" kararını ver.
   const teklifler = (sonuc?.sonuclar || [])
     .filter(s => s.status === 'found' && s.product && s.renkAyni !== false)
-    .filter(s => (s.product.pricing?.toplam ?? s.product.sellingPrice) != null);
+    .filter(s => {
+      const f = s.product.pricing?.toplam ?? s.product.sellingPrice;
+      return f != null && Number.isFinite(Number(f)) && Number(f) > 0;
+    });
   const stokta = teklifler.filter(s => s.product.inStock !== false);
   const hicYok = teklifler.length === 0;
   const stokYok = !hicYok && stokta.length === 0;
@@ -4625,7 +4630,9 @@ function muadilPoll(id, buMuadilIstek = muadilIstekSeq) {
       const icerik = $('#muadilIcerik');
       if (j.status === 'running') {
         const p = j.progress || {};
-        if (p.not) icerik.innerHTML = `<div class="muadil-yukleniyor">${esc(String(p.not))}</div>`;
+        const trDisi = BASKI_ORTAM.dil && BASKI_ORTAM.dil !== 'tr';
+        const gosterNot = trDisi ? CANLI_YEREL.muadilYukleniyor : p.not;
+        if (gosterNot) icerik.innerHTML = `<div class="muadil-yukleniyor">${esc(String(gosterNot))}</div>`;
         continue;
       }
       muadilAktifIs = null;
@@ -4650,21 +4657,25 @@ function muadilPoll(id, buMuadilIstek = muadilIstekSeq) {
 function muadilCiz(r) {
   const icerik = $('#muadilIcerik');
   if (!r) { icerik.innerHTML = ''; return; }
+  const trDisi = BASKI_ORTAM.dil && BASKI_ORTAM.dil !== 'tr';
 
-  if (r.baslik) $('#muadilBaslik').textContent = r.baslik;
-  if (r.aciklama) $('#muadilAciklama').textContent = r.aciklama;
+  if (!trDisi) {
+    if (r.baslik) $('#muadilBaslik').textContent = r.baslik;
+    if (r.aciklama) $('#muadilAciklama').textContent = r.aciklama;
+  }
 
   const liste = Array.isArray(r.alternatifler) ? r.alternatifler : [];
   if (!liste.length) {
-    const neden = (r.uyarilar || [])[0] || 'Uygun bir muadil bulunamadı.';
+    const neden = (!trDisi && (r.uyarilar || [])[0])
+      || (trDisi ? CANLI_YEREL.muadilHicYokAciklama : 'Uygun bir muadil bulunamadı.');
     icerik.innerHTML = `<p class="muadil-uyari">${esc(neden)}</p>`;
     return;
   }
 
   const mevcutMetni = r.mevcut?.fiyat != null
-    ? `Şu anki en ucuz: ${tl(r.mevcut.fiyat)}${r.mevcut.siteName ? ' · ' + esc(r.mevcut.siteName) : ''}`
+    ? `${trDisi ? CANLI_YEREL.bentoEnUcuz : 'Şu anki en ucuz'}: ${tl(r.mevcut.fiyat)}${r.mevcut.siteName ? ' · ' + esc(r.mevcut.siteName) : ''}`
     : '';
-  const ozellik = r.ortakOzellik ? `Aranan: <b>${esc(r.ortakOzellik)}</b>` : '';
+  const ozellik = r.ortakOzellik ? `${trDisi ? 'Query' : 'Aranan'}: <b>${esc(r.ortakOzellik)}</b>` : '';
 
   icerik.innerHTML = `
     <p class="muadil-altmetin" style="margin:10px 0 0">

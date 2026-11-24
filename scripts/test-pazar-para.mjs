@@ -1468,6 +1468,41 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
   }
 }
 
+console.log('\n31) 🎨 Renksiz isim araması, RGB hattı, $0.00 tükendi & muadil yerelleştirmesi');
+{
+  const { hatCakismasi } = await import('../src/util.js');
+  kontrol('hatCakismasi RGB Blue - eSun PLA+ ile düz esun pla+ aramasını ayırır',
+    hatCakismasi('RGB Blue - eSun PLA+ Filament - 1.75mm, 1kg', 'esun pla+') === true);
+  kontrol('hatCakismasi kullanıcı açıkça RGB yazarsa eşleşmeye izin verir',
+    hatCakismasi('RGB Blue - eSun PLA+ Filament - 1.75mm, 1kg', 'esun rgb pla+') === false);
+
+  const katEsun = katalogdanKaynakAdayi('esun pla+', { market: 'us', ttlMs: 1e12 });
+  kontrol('katalogdanKaynakAdayi("esun pla+", us) RGB Blue ürününe kilitlenmez',
+    !katEsun || !/\brgb\b/i.test(katEsun.title || ''),
+    JSON.stringify(katEsun));
+
+  const urunAramaKod = fs.readFileSync('src/urunArama.js', 'utf8');
+  kontrol('hizliKaynakUrunBul stokta:0 katalog kaydında canlı mağazaları atlamaz',
+    urunAramaKod.includes('katalogAdayi.stokta !== 0 && katalogAdayi.stokta !== false'));
+
+  const pipelineKod = fs.readFileSync('src/pipeline.js', 'utf8');
+  kontrol('pipeline runComparison renk belirtilmeyen isim aramasında renkEsnek modunu açar',
+    pipelineKod.includes('kullaniciRenkBelirtmedi')
+    && pipelineKod.includes('renkEsnek: opts.renkEsnek ?? kullaniciRenkBelirtmedi')
+    && pipelineKod.includes('etkinRenkAyni'));
+
+  const appKod = fs.readFileSync('public/app.js', 'utf8');
+  kontrol('bentoVerisiHesapla null/0 fiyattan sahte $0.00 Sold Out üretmez',
+    appKod.includes('ham != null && Number.isFinite(Number(ham)) && Number(ham) > 0'));
+  kontrol('muadilPoll ve muadilCiz TR dışı dillerde Türkçe ilerleme/etiket sızdırmaz',
+    appKod.includes('const gosterNot = trDisi ? CANLI_YEREL.muadilYukleniyor : p.not;'));
+
+  const srvKod = fs.readFileSync('server.js', 'utf8');
+  kontrol('renkUyumluAnlik hatCakismasi ve renksiz-stoksuz eski anlık önbelleği eler',
+    srvKod.includes('hatCakismasi(kayitBaslik, arananSorgu)')
+    && srvKod.includes('farkliRenkStok'));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
