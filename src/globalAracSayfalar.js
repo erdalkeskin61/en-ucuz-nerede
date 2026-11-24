@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import {
   htmlKacis, sayfaIskeleti, dilSeciciHtml, ga4HeadSnip,
   GLOBAL_KATALOG_YOLLARI, GLOBAL_REHBER_YOLLARI, GLOBAL_SEPET_YOLLARI,
-  footerHubHtml, navYollariGetir,
+  footerHubHtml, navYollariGetir, SEO_KATEGORILER, kategoriYoluGetir,
 } from './seoSayfalar.js';
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
@@ -1236,11 +1236,11 @@ function anaSeoRehberKartHtml(kod) {
         <a class="seo-tum-link" href="${htmlKacis(nav.katalog)}">${k.tum}</a>
       </div>
       <div class="seo-rehber-baglar">
-        <a href="${htmlKacis(nav.kategoriOnEk)}/3d-yazici">${k.y}</a>
-        <a href="${htmlKacis(nav.kategoriOnEk)}/pla-filament">${k.pla}</a>
-        <a href="${htmlKacis(nav.kategoriOnEk)}/petg-tpu-filament">${k.petg}</a>
-        <a href="${htmlKacis(nav.kategoriOnEk)}/3d-yazici-yedek-parca">${k.yedek}</a>
-        <a href="${htmlKacis(nav.kategoriOnEk)}/recine-ve-sarf">${k.recine}</a>
+        <a href="${htmlKacis(kategoriYoluGetir('3d-yazici', kod))}">${k.y}</a>
+        <a href="${htmlKacis(kategoriYoluGetir('pla-filament', kod))}">${k.pla}</a>
+        <a href="${htmlKacis(kategoriYoluGetir('petg-tpu-filament', kod))}">${k.petg}</a>
+        <a href="${htmlKacis(kategoriYoluGetir('3d-yazici-yedek-parca', kod))}">${k.yedek}</a>
+        <a href="${htmlKacis(kategoriYoluGetir('recine-ve-sarf', kod))}">${k.recine}</a>
         <a href="${htmlKacis(nav.maliyet)}">${k.mal}</a>
         <a href="${htmlKacis(nav.sepet)}">${k.sep}</a>
         <a href="${htmlKacis(nav.rehber)}">${k.reh}</a>
@@ -2278,6 +2278,27 @@ export function globalAracSitemapKayitlari(dil = null) {
   for (const g of gruplar) {
     for (const [d, yol] of Object.entries(g.yollar)) {
       hepsi.push({ dil: d, yol, oncelik: g.oncelik, siklik: g.siklik, lastmod: bugun, alternates: altHarita[yol] });
+    }
+  }
+  if (!dil) return hepsi;
+  const hedef = normalizeDil(dil);
+  return hepsi.filter(x => x.dil === hedef);
+}
+
+/** Bölgesel (EN / FR / JA) kategori sayfaları için sitemap kayıtlarını üretir. */
+export function globalKategoriSitemapKayitlari(dil = null) {
+  const bugun = new Date().toISOString().slice(0, 10);
+  const hepsi = [];
+  for (const kat of SEO_KATEGORILER) {
+    const alternates = {
+      tr: kategoriYoluGetir(kat.slug, 'tr'),
+      en: kategoriYoluGetir(kat.slug, 'en'),
+      fr: kategoriYoluGetir(kat.slug, 'fr'),
+      ja: kategoriYoluGetir(kat.slug, 'ja'),
+      'x-default': kategoriYoluGetir(kat.slug, 'en'),
+    };
+    for (const d of ['en', 'fr', 'ja']) {
+      hepsi.push({ dil: d, yol: alternates[d], oncelik: '0.85', siklik: 'daily', lastmod: bugun, alternates });
     }
   }
   if (!dil) return hepsi;

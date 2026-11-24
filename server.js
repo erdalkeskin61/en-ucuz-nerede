@@ -57,14 +57,14 @@ import {
   SEO_KATEGORILER, seoUrunListesi, seoUrunBul, seoUrunYedekCoz, sitemapKayitlari,
   urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
   seoOnbelleginiTemizle, slugYap,
-  globalKatalogDiziniHtml, globalKategoriSayfasiHtml,
+  globalKatalogDiziniHtml, globalKategoriSayfasiHtml, globalKategoriSlugCoz,
 } from './src/seoSayfalar.js';
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
   globalRehberDiziniHtml,
 } from './src/rehberSayfalar.js';
 import {
-  globalAracSayfasiBul, globalAracSitemapKayitlari, globalAracAlternatifHaritasi,
+  globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
@@ -580,7 +580,7 @@ app.get('/sitemap-:dil.xml', (req, res, next) => {
     const taban = yayinKoku(req);
     const sayfalar = dil === 'tr'
       ? [...sitemapKayitlari(), ...rehberSitemapKayitlari()]
-      : globalAracSitemapKayitlari(dil);
+      : [...globalAracSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil)];
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(sitemapUrlSetXml(taban, sayfalar));
@@ -628,15 +628,19 @@ app.get(['/en/products', '/fr/produits', '/ja/products'], (req, res) => {
 });
 
 app.get(['/en/category/:slug', '/fr/categorie/:slug', '/ja/category/:slug'], (req, res) => {
-  const kat = SEO_KATEGORILER.find(c => c.slug === String(req.params.slug || '').toLowerCase());
-  if (!kat) return res.status(404).type('text/plain').send('Category not found');
+  const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
+  const cozum = globalKategoriSlugCoz(req.params.slug, dil);
+  if (!cozum) return res.status(404).type('text/plain').send('Category not found');
+  if (cozum.yonlendir) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.redirect(301, cozum.canonicalYol);
+  }
   try {
-    const dil = req.path.startsWith('/fr') ? 'fr' : (req.path.startsWith('/ja') ? 'ja' : 'en');
     const market = dil === 'fr' ? 'fr' : (dil === 'ja' ? 'jp' : 'us');
     const urunler = seoUrunListesi({ market });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=120');
-    res.send(globalKategoriSayfasiHtml(dil, kat, urunler, yayinKoku(req)));
+    res.send(globalKategoriSayfasiHtml(dil, cozum.kat, urunler, yayinKoku(req)));
   } catch (e) {
     res.status(500).type('text/plain').send('Category page generation failed');
   }

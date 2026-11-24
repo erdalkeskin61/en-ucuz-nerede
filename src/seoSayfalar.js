@@ -273,6 +273,42 @@ export const SEO_KATEGORILER = Object.freeze([
   },
 ]);
 
+export const KATEGORI_SLUG_HARITASI = Object.freeze({
+  '3d-yazici': { tr: '3d-yazici', en: '3d-printers', fr: 'imprimantes-3d', ja: '3d-printers' },
+  'pla-filament': { tr: 'pla-filament', en: 'pla-filament', fr: 'filament-pla', ja: 'pla-filament' },
+  'petg-tpu-filament': { tr: 'petg-tpu-filament', en: 'petg-tpu-abs-filament', fr: 'filament-petg-tpu-abs', ja: 'petg-tpu-abs-filament' },
+  filament: { tr: 'filament', en: 'all-filaments', fr: 'tous-filaments', ja: 'all-filaments' },
+  '3d-yazici-yedek-parca': { tr: '3d-yazici-yedek-parca', en: 'spare-parts', fr: 'pieces-detachees', ja: 'spare-parts' },
+  'recine-ve-sarf': { tr: 'recine-ve-sarf', en: 'resin-and-dryers', fr: 'resines-et-sechoirs', ja: 'resin-and-dryers' },
+});
+
+export function kategoriSlugGetir(icSlug, dil = 'tr') {
+  const d = normalizeDil(dil);
+  return KATEGORI_SLUG_HARITASI[icSlug]?.[d] || icSlug;
+}
+
+export function kategoriYoluGetir(icSlug, dil = 'tr') {
+  const d = normalizeDil(dil);
+  return `${navYollariGetir(d).kategoriOnEk}/${kategoriSlugGetir(icSlug, d)}`;
+}
+
+export function globalKategoriSlugCoz(urlSlug, dil = 'en') {
+  const temiz = String(urlSlug || '').trim().toLowerCase();
+  const d = ['fr', 'ja'].includes(normalizeDil(dil)) ? normalizeDil(dil) : 'en';
+  if (!temiz) return null;
+  for (const kat of SEO_KATEGORILER) {
+    if (kategoriSlugGetir(kat.slug, d) === temiz) {
+      return { kat, yonlendir: false, canonicalYol: kategoriYoluGetir(kat.slug, d) };
+    }
+  }
+  const eskiKat = SEO_KATEGORILER.find(k => k.slug === temiz);
+  if (eskiKat) {
+    const canonicalYol = kategoriYoluGetir(eskiKat.slug, d);
+    return { kat: eskiKat, yonlendir: true, canonicalYol };
+  }
+  return null;
+}
+
 function teklifListesiTopla(kayit, durum, snapshot, afiliyeAyar, market = 'tr') {
   const harita = new Map();
   const etkinMarket = normalizeMarket(market);
@@ -930,11 +966,11 @@ export function footerHubHtml(dil = 'tr') {
         <div>
           <h3 class="footer-hub-baslik">${etiket.kat}</h3>
           <ul class="footer-hub-liste">
-            <li><a href="${yol.kategoriOnEk}/3d-yazici">🖨️ ${etiket.k3d}</a></li>
-            <li><a href="${yol.kategoriOnEk}/pla-filament">🧵 ${etiket.kpla}</a></li>
-            <li><a href="${yol.kategoriOnEk}/petg-tpu-filament">🦾 ${etiket.kpetg}</a></li>
-            <li><a href="${yol.kategoriOnEk}/3d-yazici-yedek-parca">⚙️ ${etiket.kyedek}</a></li>
-            <li><a href="${yol.kategoriOnEk}/recine-ve-sarf">🧪 ${etiket.krecine}</a></li>
+            <li><a href="${kategoriYoluGetir('3d-yazici', kod)}">🖨️ ${etiket.k3d}</a></li>
+            <li><a href="${kategoriYoluGetir('pla-filament', kod)}">🧵 ${etiket.kpla}</a></li>
+            <li><a href="${kategoriYoluGetir('petg-tpu-filament', kod)}">🦾 ${etiket.kpetg}</a></li>
+            <li><a href="${kategoriYoluGetir('3d-yazici-yedek-parca', kod)}">⚙️ ${etiket.kyedek}</a></li>
+            <li><a href="${kategoriYoluGetir('recine-ve-sarf', kod)}">🧪 ${etiket.krecine}</a></li>
             <li><a href="${yol.katalog}">🗂️ ${etiket.ktum}</a></li>
           </ul>
         </div>
@@ -1664,13 +1700,18 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
     .filter(x => x.id !== urun.id && x.kategoriSlug === urun.kategoriSlug)
     .slice(0, 6);
 
+  const nav = navYollariGetir(dil);
+  const katYol = kategoriYoluGetir(kat.slug, dil);
+  const katAdYerel = dil !== 'tr'
+    ? (GLOBAL_KAT_CEVIRI[dil]?.kategoriler?.[kat.slug]?.ad || kat.ad)
+    : kat.ad;
   const jsonLdList = [
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: `${tabanUrl}/` },
-        { '@type': 'ListItem', position: 2, name: kat.ad, item: `${tabanUrl}/kategori/${kat.slug}` },
+        { '@type': 'ListItem', position: 1, name: sz.nav.anaSayfa, item: `${tabanUrl}${nav.ana}` },
+        { '@type': 'ListItem', position: 2, name: katAdYerel, item: `${tabanUrl}${katYol}` },
         { '@type': 'ListItem', position: 3, name: urun.ad, item: `${tabanUrl}${urun.yol}` },
       ],
     },
@@ -1740,7 +1781,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
 
   const govdeHtml = `
     <nav class="seo-yol" aria-label="Breadcrumb">
-      <a href="/">${htmlKacis(sz.nav.anaSayfa)}</a> › <a href="/kategori/${htmlKacis(kat.slug)}">${htmlKacis(kat.ad)}</a> › <span>${htmlKacis(urun.ad)}</span>
+      <a href="${htmlKacis(nav.ana)}">${htmlKacis(sz.nav.anaSayfa)}</a> › <a href="${htmlKacis(katYol)}">${htmlKacis(katAdYerel)}</a> › <span>${htmlKacis(urun.ad)}</span>
     </nav>
 
     <section class="seo-kart">
@@ -1905,10 +1946,10 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
     canonicalUrl,
     ogImage: `${tabanUrl}/og-gorsel.png`,
     dilYolHaritasi: {
-      tr: `/kategori/${kat.slug}`,
-      en: `/en/category/${kat.slug}`,
-      fr: `/fr/categorie/${kat.slug}`,
-      ja: `/ja/category/${kat.slug}`,
+      tr: kategoriYoluGetir(kat.slug, 'tr'),
+      en: kategoriYoluGetir(kat.slug, 'en'),
+      fr: kategoriYoluGetir(kat.slug, 'fr'),
+      ja: kategoriYoluGetir(kat.slug, 'ja'),
     },
     jsonLdList,
     govdeHtml,
@@ -2159,7 +2200,7 @@ export function globalKatalogDiziniHtml(dil = 'en', tumUrunler = [], tabanUrl = 
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="kat-sayac">${urunler.length} ${htmlKacis(tKat.urunKelime)}</span>
-          <a class="seo-cta ikincil" style="padding:7px 13px;font-size:12.5px" href="${nav.kategoriOnEk}/${htmlKacis(kat.slug)}">${htmlKacis(tKat.tumunuGor)}</a>
+          <a class="seo-cta ikincil" style="padding:7px 13px;font-size:12.5px" href="${htmlKacis(kategoriYoluGetir(kat.slug, kod))}">${htmlKacis(tKat.tumunuGor)}</a>
         </div>
       </div>
       <div class="seo-izgara">
@@ -2236,17 +2277,17 @@ export function globalKategoriSayfasiHtml(dil = 'en', kat, tumUrunler = [], taba
   const katAd = kc.ad || kat.ad;
   const katAciklama = kc.aciklama || kat.aciklama;
   const title = `${katAd} | Baski Hesap`;
-  const canonicalUrl = `${tabanUrl}${nav.kategoriOnEk}/${kat.slug}`;
+  const canonicalUrl = `${tabanUrl}${kategoriYoluGetir(kat.slug, kod)}`;
   const dilYolHaritasi = {
-    tr: `/kategori/${kat.slug}`,
-    en: `/en/category/${kat.slug}`,
-    fr: `/fr/categorie/${kat.slug}`,
-    ja: `/ja/category/${kat.slug}`,
+    tr: kategoriYoluGetir(kat.slug, 'tr'),
+    en: kategoriYoluGetir(kat.slug, 'en'),
+    fr: kategoriYoluGetir(kat.slug, 'fr'),
+    ja: kategoriYoluGetir(kat.slug, 'ja'),
   };
 
   const katBar = SEO_KATEGORILER.map(c => {
     const ck = tKat.kategoriler[c.slug] || {};
-    return `<a class="seo-kat-hap ${c.slug === kat.slug ? 'etkin' : ''}" href="${nav.kategoriOnEk}/${htmlKacis(c.slug)}">${kategoriIkonu(c.slug)} ${htmlKacis(ck.kisaAd || c.kisaAd)}</a>`;
+    return `<a class="seo-kat-hap ${c.slug === kat.slug ? 'etkin' : ''}" href="${htmlKacis(kategoriYoluGetir(c.slug, kod))}">${kategoriIkonu(c.slug)} ${htmlKacis(ck.kisaAd || c.kisaAd)}</a>`;
   }).join('');
 
   const kartlar = eslesen.map(u => seoUrunKartiHtml(u, false, kod)).join('');

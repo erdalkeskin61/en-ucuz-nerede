@@ -21,9 +21,13 @@ import {
 } from '../src/i18n/index.js';
 import {
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI, GLOBAL_SEPET_YOLLARI,
-  globalAracSayfasiBul, globalAracSitemapKayitlari, globalAracAlternatifHaritasi,
+  globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
 } from '../src/globalAracSayfalar.js';
-import { seoUrunListesi, urunSayfasiHtml, sayfaIskeleti, globalKatalogDiziniHtml } from '../src/seoSayfalar.js';
+import {
+  seoUrunListesi, urunSayfasiHtml, sayfaIskeleti, globalKatalogDiziniHtml,
+  globalKategoriSayfasiHtml, kategoriSayfasiHtml, SEO_KATEGORILER,
+  kategoriYoluGetir, globalKategoriSlugCoz,
+} from '../src/seoSayfalar.js';
 import { globalRehberDiziniHtml } from '../src/rehberSayfalar.js';
 import { katalogUrunleriAra } from '../src/katalogSync.js';
 import { katalogdanKaynakAdayi } from '../src/urunArama.js';
@@ -685,6 +689,49 @@ kontrol('maliyet.js % önekini yalnızca tr için kullanır (yuzdeMetni)',
   fs.readFileSync('public/maliyet.js', 'utf8').includes('const yuzdeMetni =')
   && globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://baskihesap.tech').includes('>150% · 2.5x<')
   && globalAracSayfasiBul('/fr/calculateur-cout')?.olustur('https://baskihesap.tech').includes('>150 % · 2,5x<'));
+
+console.log('\n18) 🔗 Yerelleştirilmiş kategori URL slug\'ları, canonical/hreflang ve 301 yönlendirme:');
+kontrol('kategoriYoluGetir doğru yerel slug döndürür (TR/EN/FR/JA)',
+  kategoriYoluGetir('3d-yazici', 'en') === '/en/category/3d-printers'
+  && kategoriYoluGetir('recine-ve-sarf', 'en') === '/en/category/resin-and-dryers'
+  && kategoriYoluGetir('3d-yazici', 'fr') === '/fr/categorie/imprimantes-3d'
+  && kategoriYoluGetir('3d-yazici', 'ja') === '/ja/category/3d-printers'
+  && kategoriYoluGetir('3d-yazici', 'tr') === '/kategori/3d-yazici');
+
+const cozumEnYeni = globalKategoriSlugCoz('3d-printers', 'en');
+const cozumEnEski = globalKategoriSlugCoz('3d-yazici', 'en');
+const cozumEnSarfEski = globalKategoriSlugCoz('recine-ve-sarf', 'en');
+const cozumFrEski = globalKategoriSlugCoz('3d-yazici', 'fr');
+const cozumJaEski = globalKategoriSlugCoz('3d-yazici', 'ja');
+kontrol('globalKategoriSlugCoz yeni slugları doğrudan çözer, eski Türkçe sluglarda 301 canonicalYol verir',
+  cozumEnYeni?.yonlendir === false && cozumEnYeni?.kat?.slug === '3d-yazici'
+  && cozumEnEski?.yonlendir === true && cozumEnEski?.canonicalYol === '/en/category/3d-printers'
+  && cozumEnSarfEski?.yonlendir === true && cozumEnSarfEski?.canonicalYol === '/en/category/resin-and-dryers'
+  && cozumFrEski?.yonlendir === true && cozumFrEski?.canonicalYol === '/fr/categorie/imprimantes-3d'
+  && cozumJaEski?.yonlendir === true && cozumJaEski?.canonicalYol === '/ja/category/3d-printers');
+
+const yaziciKat = SEO_KATEGORILER.find(c => c.slug === '3d-yazici');
+const enKatSayfa = globalKategoriSayfasiHtml('en', yaziciKat, [], 'https://baskihesap.tech');
+const frKatSayfa = globalKategoriSayfasiHtml('fr', yaziciKat, [], 'https://baskihesap.tech');
+const trKatSayfa = kategoriSayfasiHtml(yaziciKat, [], 'https://baskihesap.tech');
+kontrol('EN/FR kategori sayfalarında ve TR hreflang etiketlerinde Türkçe slug kalıntısı yoktur',
+  enKatSayfa.includes('href="https://baskihesap.tech/en/category/3d-printers"')
+  && enKatSayfa.includes('href="/en/category/resin-and-dryers"')
+  && !/\/(en|ja)\/category\/(3d-yazici|3d-yazici-yedek-parca|recine-ve-sarf)\b/.test(enKatSayfa + frKatSayfa)
+  && !/\/fr\/categorie\/(3d-yazici|3d-yazici-yedek-parca|recine-ve-sarf)\b/.test(frKatSayfa)
+  && trKatSayfa.includes('href="https://baskihesap.tech/fr/categorie/imprimantes-3d"')
+  && trKatSayfa.includes('href="https://baskihesap.tech/en/category/3d-printers"'));
+
+const enAnaLinkHtml = globalAracSayfasiBul('/en')?.olustur('https://baskihesap.tech') || '';
+kontrol('EN ana sayfa, katalog, footer-hub ve sitemap yeni yerel kategori sluglarını kullanır',
+  enAnaLinkHtml.includes('/en/category/3d-printers')
+  && enAnaLinkHtml.includes('/en/category/resin-and-dryers')
+  && !/\/en\/category\/(3d-yazici|recine-ve-sarf)\b/.test(enAnaLinkHtml)
+  && globalKategoriSitemapKayitlari('en').some(s => s.yol === '/en/category/3d-printers')
+  && globalKategoriSitemapKayitlari('fr').some(s => s.yol === '/fr/categorie/imprimantes-3d'));
+kontrol('server.js eski kategori slugları için res.redirect(301, ...) bağlar',
+  fs.readFileSync('server.js', 'utf8').includes('globalKategoriSlugCoz(req.params.slug, dil)')
+  && fs.readFileSync('server.js', 'utf8').includes('return res.redirect(301, cozum.canonicalYol);'));
 
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
