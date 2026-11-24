@@ -569,6 +569,10 @@ kontrol('i18n-global.js ve server.js rozet/istek kurallarını kapsar',
   i18nJsKod.includes('Official Manufacturer')
   && i18nJsKod.includes('istek\\b')
   && fs.readFileSync('server.js', 'utf8').includes('dogrulanmisRozetYerellestir'));
+const styleCssKod = fs.readFileSync('public/style.css', 'utf8');
+kontrol('.hero h1 b mobilde yatay taşma/kesilme yapmaz (white-space: nowrap yok)',
+  !/\.hero h1 b\s*\{[^}]*white-space:\s*nowrap/i.test(styleCssKod)
+  && /\.hero h1\s*\{[^}]*overflow-wrap:\s*break-word/s.test(styleCssKod));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

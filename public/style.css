@@ -2019,9 +2019,10 @@ main.kap { padding-top: 8px; }
   margin: 0 0 12px; color: #fff;
   font-size: clamp(30px, 5vw, 46px); line-height: 1.1; font-weight: 800;
   letter-spacing: -0.035em;
+  overflow-wrap: break-word;
 }
 .hero h1 b {
-  text-decoration: none; white-space: nowrap;
+  text-decoration: none; white-space: normal;
   background: linear-gradient(90deg, #FDE68A 0%, #A7F3D0 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
@@ -3069,6 +3070,8 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
 }
 @media (max-width: 420px) {
   .hero-rozet { font-size: 11px; }
+  .hero h1 { font-size: clamp(23px, 6.4vw, 28px); }
+  .hero h1 b { white-space: normal; }
   .kart-ust { gap: 12px; }
   .kart-resim { width: 74px; height: 74px; }
 }
