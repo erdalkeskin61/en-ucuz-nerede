@@ -509,13 +509,18 @@ const AKSESUAR_KELIMELERI = [
   'touchscreen', 'touch screen', 'ribbon cable', 'extruder gear', 'cooling fan', 'blower fan',
   'leveling sensor', 'proximity sensor', 'filament sensor', 'runout sensor', 'nozzle kit',
   'extruder kit', 'spare parts kit', 'enclosure', 'front door', 'door kit', 'accessories hub',
+  'accessory', 'accessories', 'upgrade kit', 'uptime kit', 'cartridge kit', 'conversion kit',
+  'buildtak', 'water pump', 'servo', 'air quality monitor', 'air purifier', 'purifier',
+  'sidepanel', 'side panel', 'print bed', 'infinity bed', 'whole platform', 'laminator',
+  'rotary attachment', 'printer stand',
   // Fransızca yedek parça / aksesuar terimleri
   'buse', 'buses', 'plateau', 'plateau pei', 'plateau magnetique', 'plaque pei', 'lit chauffant',
   'tete d impression', 'tete impression', 'corps de chauffe', 'bloc chauffant', 'thermistance',
   'chaussette silicone', 'tube ptfe', 'extrudeur', 'courroie', 'poulie', 'moteur pas a pas',
   'carte mere', 'ecran tactile', 'ventilateur', 'engrenage', 'roulement', 'capteur',
   'piece detachee', 'pieces detachees', 'piece de rechange', 'rechange', 'accessoire', 'accessoires',
-  'couvercle', 'boitier', 'cable', 'bloc d alimentation',
+  'couvercle', 'boitier', 'cable', 'bloc d alimentation', 'panneau', 'panneau lateral',
+  'laminateur', 'module rotatif',
 ];
 
 const AKSESUAR_JA = [
@@ -523,8 +528,9 @@ const AKSESUAR_JA = [
   '交換部品', '交換用', '予備パーツ', 'スペアパーツ', 'アクセサリー', 'アクセサリ',
   'サーミスタ', 'ヒーターカートリッジ', 'ヒートブロック', 'シリコンソックス', 'シリコンカバー',
   'ptfeチューブ', 'タイミングベルト', 'プーリー', 'ステッピングモーター', 'マザーボード',
-  'メインボード', 'タッチスクリーン', '冷却ファン', 'ギア', 'ベアリング', 'センサー',
-  'フィラメントセンサー', 'エンクロージャー', 'リニアレール',
+  'メインボード', 'タッチスクリーン', 'プリントスクリーン', '冷却ファン', 'ギア', 'ベアリング', 'センサー',
+  'フィラメントセンサー', 'エンクロージャー', 'リニアレール', 'プリンタースタンド', 'ラミネーター',
+  '洗浄硬化機', 'アップグレードキット', 'アップグレード', 'シリーズ専用', '3dプリンター用', 'プリンター用',
 ];
 
 function aksesuarEslesmeleri(metin) {

@@ -200,21 +200,39 @@ export function crealityResmiMagazaLink(urunVeyaMetin, ayarlar = null) {
   return { url: bagli, hamUrl: hedefUrl };
 }
 
-const SARF_VE_SPRAY_RE = /\b(spray|adhesion|adhesive|glue\s*stick|magigoo|bed\s*weld|cleaner|isopropyl|lubricant|grease|oil)\b|yapıştırıcı|sprey|yağlayıcı|gres|スプレー|接着剤/i;
-const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|extruder|board|motherboard|anakart|toolhead|baffle|wiper|thermistor|termistör|heater|sock|silikon\s*çorap|stepper|motor|assembly|door|hinge|panel|holder|feeder|buffer|enclosure|spool\s*holder|rotary\s*holder)\b|(ボード|アセンブリ|フロントドア|ドア|ノズル|ホットエンド|エクストルーダー|ヒートベッド|プレート|ビルドプレート|ケーブル|ベルト|ファン|センサー|モーター|ヒーター|カバー|ブラケット|スクリュー|ガラス|ホルダー|エンクロージャー|フィラメントハブ|バッファー|カッター|ワイパー|carte\s*m[èe]re|buse|corps\s*de\s*chauffe|plateau|courroie|ventilateur|[ée]cran|capot|porte\b|assemblage|moteur|extrudeur|caisson|support\s*bobine)/i;
-const BAGIMSIZ_AMS_RE = /\b(ams(\s*(lite|ht|2\s*pro|hub|feeder|buffer))?|cfs|ace\s*pro)\b/i;
-const YAZICI_BASLIK_RE = /3d\s*yazıcı|3d\s*printer|imprimante\s*3d|3d\s*プリンター|3dプリンター|\bcombo\b|コンボ/i;
+const SARF_VE_SPRAY_RE = /\b(spray|adhesion|adhesive|glue\s*stick|magigoo|bed\s*weld|cleaner|isopropyl|lubricant|grease|oil|ink\s*(?:and|&)\s*cleaning|cleaning\s*cartridge|powder)\b|yapıştırıcı|sprey|yağlayıcı|gres|スプレー|接着剤/i;
+const WASH_CURE_RE = /\b(wash\s*(?:&|and)?\s*cure|curing\s*(?:station|machine|box)|washing\s*(?:station|machine)|cleaning\s*station|df\s*cure|df\s*wash)\b|洗浄硬化機/i;
+const YAZICI_DISI_URUN_RE = /\b(screen\s*print(?:er|ing)|apparel\s*printer|dtg\s*printer|uv\s*printer|o1\s*omni\s*printer|holiday\s*machine\s*vault|machine\s*vault|rc\s*overland\s*truck|3d\s*printer\s*project|3d\s*scanner|cutting\s*upgrade)\b|imprimante\s*uv|uvプリンター/i;
+const EK_PARCA_RE = /\b(cover|housing|block|protector|tempered\s*glass|camera|heatbed|display\s*screen|frame|case|fan|sensor|cable|bracket|gear|tube|ptfe|screw|spring|belt|damper|pad|cutter|hub|switch|adapter|plate|sheet|scraper|filter|extruder|board|motherboard|anakart|toolhead|baffle|wiper|thermistor|termistör|heater|sock|silikon\s*çorap|stepper|motor|assembly|door|hinge|panel|sidepanel|panneau|holder|feeder|buffer|enclosure|spool\s*holder|rotary\s*(?:holder|attachment)?|module\s*rotatif|buildtak|servo|water\s*pump|siphon\s*pump|pump|whole\s*platform|infinity\s*bed|print\s*bed|exoskeleton|air\s*quality\s*monitor|air\s*purifier|printer\s*stand|laminator|laminateur|upgrade\s*(?:kits?|bundles?|set)?|upgrades|uptime\s*kit|maintenance\s*kit|cartridge\s*kit|conversion\s*kit|accessories|accessory|mmu\d|blazecut|rambo|linear\s*rail|calibrator|dry\s*box|finish\s*box|tool\s*box|sieve|tray\b|lid\b|shelf|printed\s*parts|print\s*head|flow\s*head|galvanometer|marking\s*card|build\s*unit|protection\s*glass|add-?on)\b|(ボード|アセンブリ|フロントドア|ドア|ノズル|ホットエンド|エクストルーダー|ヒートベッド|プレート|ビルドプレート|ケーブル|ベルト|ファン|センサー|モーター|ヒーター|カバー|ブラケット|スクリュー|ガラス|ホルダー|エンクロージャー|フィラメントハブ|バッファー|カッター|ワイパー|プリントスクリーン|プリンタースタンド|ラミネーター|アップグレードキット|アップグレード|carte\s*m[èe]re|buse|corps\s*de\s*chauffe|plateau|courroie|ventilateur|[ée]cran|capot|porte\b|assemblage|moteur|extrudeur|caisson|support\s*bobine|d[ée]coupe)/i;
+const YAZICI_ICIN_PARCA_RE = /\bfor\s+(?:the\s+)?(?:creatbot|bambu\s*labs?|creality|elegoo|anycubic|prusa|flashforge|qidi|centauri|raise3d|voron|uv\s*printer|[\w\s/-]{0,30}3d\s*printers?)\b|\bpour\s+imprimante|\bonly\)|（[^）]*プリンター用）|3dプリンター用|シリーズ専用/i;
+const BAGIMSIZ_AMS_RE = /\b(ams(\s*(lite|ht|2\s*pro|hub|feeder|buffer))?|cfs|ace\s*pro|canvas\b(?=.*\bcentauri\b))\b/i;
+const YAZICI_PAKET_MODEL_RE = /\b(p1s|p1p|p2s|x1c|x1e|x1\s*carbon|a1(?:\s*mini)?|h2d|h2s|h2c|h3c|k2\s*plus|k2\s*pro|kobra\s*(?:3|s1)|centauri(?:\s*carbon)?|halot(?:-?x1)?|saturn\s*4|mars\s*5)\b/i;
+const YAZICI_PAKET_EK_RE = /\b(combo|bundle|pack)\b|コンボ|セット/i;
+const YAZICI_BILINEN_MODEL_RE = /\b(p1s|p1p|p2s|x1c|x1e|x1\s*carbon|a1\s*mini|a2l|h2d|h2s|h2c|h3c|k1c|k1\s*max|k2\s*plus|k2\s*pro|ender[\s-]*3|kobra(?:\s*(?:3|4|s1|x))?|saturn\s*4|mars\s*5|photon(?:\s*(?:mono|p1))?|neptune\s*4|centauri(?:\s*carbon)?|orange\s*storm\s*giga|creator\s*5|adventurer\s*5|halot)\b/i;
 
-function anaKategoriSlugBul(k) {
+export function anaKategoriSlugBul(k) {
   const metin = `${k.ad || ''} ${k.sorgu || ''}`;
+  const yaziciPaketiMi = YAZICI_PAKET_MODEL_RE.test(metin)
+    && YAZICI_PAKET_EK_RE.test(metin)
+    && !/\b(?:upgrade|accessories|combo\s*deal|combos\s*for)\b/i.test(metin)
+    && !YAZICI_ICIN_PARCA_RE.test(metin);
+
+  if (YAZICI_DISI_URUN_RE.test(metin)) {
+    return '3d-yazici-yedek-parca';
+  }
   if ((/reçine|recine|resin|レジン|kurutucu|dryer|spacepi|filadryer|ebox|sécheur|secheur|ドライヤー/i.test(metin)
-    || SARF_VE_SPRAY_RE.test(metin))
+    || SARF_VE_SPRAY_RE.test(metin)
+    || (WASH_CURE_RE.test(metin) && !yaziciPaketiMi))
     && !/cable|screen|protector|board|motherboard|ケーブル|ボード/i.test(metin)) {
     return 'recine-ve-sarf';
   }
-  if (parcaMi(metin) || EK_PARCA_RE.test(metin)
+  const havaTemizleyiciTekil = /空気清浄機/i.test(metin) && !yaziciPaketiMi;
+  const sadecePrinterKitUpgrade = /\b3d\s*printer\s*(?:build\s*)?kit\b/i.test(metin)
+    && !/\b(?:upgrade\s*kit|uptime\s*kit|maintenance\s*kit|for\s+)\b/i.test(metin);
+  const parcaVar = !sadecePrinterKitUpgrade && (parcaMi(metin) || EK_PARCA_RE.test(metin));
+  if (parcaVar || YAZICI_ICIN_PARCA_RE.test(metin) || havaTemizleyiciTekil
     || /nozzle|tabla|hotend|yedek\s*parça|\bpei\b/i.test(metin)
-    || (BAGIMSIZ_AMS_RE.test(metin) && !YAZICI_BASLIK_RE.test(metin))) {
+    || (BAGIMSIZ_AMS_RE.test(metin) && !yaziciPaketiMi)) {
     return '3d-yazici-yedek-parca';
   }
   if (k.kategori === 'filament' || /\b(filament|x?pla|pla\+|epla|petg|e?tpu|abs|asa|hips|bvoh|pva)\b/i.test(metin) || /フィラメント/.test(metin)) {
@@ -222,7 +240,8 @@ function anaKategoriSlugBul(k) {
     if (/\b(x?pla|epla|hyper)\b|pla\+/i.test(metin)) return 'pla-filament';
     return 'filament';
   }
-  if (k.kategori === 'yazici' || /3d\s*yazıcı|3d\s*printer|yazıcı|printer|imprimante|プリンター|\b(p1s|p1p|p2s|x1c|x1e|x1\s*carbon|a1\s*mini|k1c|k1\s*max|k2\s*plus|ender\s*3|kobra\s*3|saturn\s*4|mars\s*5|photon|neptune\s*4|centauri\s*carbon|creator\s*5|adventurer\s*5|halot)\b/i.test(metin)) {
+  if (k.kategori === 'yazici'
+    || (/3d\s*yazıcı|3d\s*printers?|imprimante\s*3d|3d\s*プリンター|3dプリンター|\b(fdm|fff|msla|core\s*xy)\b/i.test(metin) || YAZICI_BILINEN_MODEL_RE.test(metin))) {
     return '3d-yazici';
   }
   return k.kategori === 'genel' ? 'recine-ve-sarf' : 'filament';
@@ -447,7 +466,8 @@ function beslemeUrunleriniTopla(kullanilanSluglar, afiliyeAyar, market = 'tr') {
     if (satirMarket !== etkinMarket) continue;
     if (r.paraBirimi && paraBirimiNormalize(r.paraBirimi) !== beklenenPara) continue;
     const ad = String(r.baslik || '').trim();
-    if (/hediye\s*çeki|gift\s*card|carte\s*cadeau|shipping\s*insurance|safeguard\s*your\s*purchase|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo/i.test(ad)) continue;
+    if (/hediye\s*çeki|gift\s*card|carte\s*cadeau|shipping\s*insurance|safeguard\s*your\s*purchase|kargo\s*fark|test\s*ürün|numune|broşür|etiket\s*rulo/i.test(ad)
+      || YAZICI_DISI_URUN_RE.test(ad)) continue;
     const slug = slugYap(ad);
     if (slug.length < 6 || kullanilanSluglar.has(slug)) continue;
 

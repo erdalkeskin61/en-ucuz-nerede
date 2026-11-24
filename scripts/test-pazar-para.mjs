@@ -888,6 +888,73 @@ if (sifirlaMatch) {
     && ctxSim.chartInstance === null);
 }
 
+console.log('\n22) 🖨️ 3D Yazıcı kategorisi EN/FR/JA yazıcı dışı ürün temizliği:');
+{
+  const { anaKategoriSlugBul } = await import('../src/seoSayfalar.js');
+  const yaziciOlmamali = [
+    // EN
+    'AMS Lite Multi-Color Automated Material System for Bambu Labs A1 and A1 Mini 3D Printers',
+    'CreatBot Buildtak for the CreatBot F430 3D Printer',
+    'CreatBot Servo for Auto Leveling for CreatBot F1000 3D Printer',
+    'CreatBot High-speed Upgrade Kit for CreatBot D600 Pro 2 3D Printer',
+    'CreatBot Water Pump for CreatBot PEEK-250 3D Printer',
+    'CreatBot Whole Platform for CreatBot F430 NX 3D Printer',
+    'CreatBot Glass Print Bed for CreatBot F160-PEEK 3D Printer',
+    'BIQU Beginner-Friendly Upgrade Accessories Combo for Bambu Lab Printers',
+    'BIQU × FOXLT Infinity Bed P1/P2 for Bambu Lab P1P/P1S/P2S',
+    'BIQU Panda Exoskeleton All-Metal Construction for Bambu Lab P2S/P1S/P1P/X1C/X1E',
+    'Bondtech LGX Lite Pro Accessories for Creality K1/K1C/Max',
+    'eufyMake Ink and Cleaning Cartridge Kit for UV Printer E1',
+    'xTool Screen Printer: 1st Screen Printing Solution with Laser',
+    'SainSmart Holiday Machine Vault, Only $99 unlock a laser engraver or 3D printer or CNC router',
+    'MOG and MOG Lite Massive 3D Printer Project RC Overland Truck (4x4 and 6x6 Compatible)',
+    // FR
+    'Bambu Lab - X1E - Panneau latéral gauche (Left Sidepanel)',
+    'Bambu Lab - X1E - Panneau latéral droit (Right Sidepanel)',
+    'xTool - O1 Omni Printer - Laminateur LM1 (LM1 Laminator)',
+    'xTool - O1 Omni Printer - Module Rotatif OR1 (OR1 Rotary Attachment)',
+    'xTool - O1 Omni Printer Standard - Simple Tête UV (Single UV) - Imprimante UV 4-en-1',
+    'Formlabs Fuse 1+ 30W Printer Uptime Kit',
+    'Bambu Lab - A2L - Combo Complet de Découpe (Cutting Upgrade Set)',
+    // JA
+    'Halot Mage Sプリントスクリーン',
+    'UW-03 3Dプリンター用洗浄硬化機',
+    'Bambu Lab E1 空気清浄機（3Dプリンター用）',
+    'Bambu Lab Bambu Station L（H3C・H2シリーズ用プリンタースタンド）',
+    'OrangeStorm Giga 四エクストルージョン | アップグレードキット',
+    'CANVAS｜Centauri 2 シリーズ専用',
+    'xTool Apparel Printer',
+  ];
+  const sizanlar = yaziciOlmamali.filter(ad => anaKategoriSlugBul({ ad, sorgu: ad, kategori: 'genel' }) === '3d-yazici');
+  kontrol('Hiçbir aksesuar/kit/panel/yıkama/temizleyici/RC/UV kalem 3d-yazici kategorisine düşmez',
+    sizanlar.length === 0, JSON.stringify(sizanlar));
+
+  const yaziciKalmali = [
+    'Bambu Lab P1S Combo 3D Printer',
+    'Bambu Lab A1 Mini 3D Printer',
+    'LDO Voron Trident 300 Cube 3D Printer Kit (Rev. D)',
+    'Flashforge AD5X Multicolor Core XY 3D Printer',
+    'BIQU Hurakan Klipper 3D Printer',
+    'Elegoo Mars 5 Ultra: Ultra-High-Resolution 9K MSLA 3D Printing',
+    'Anycubic Kobra 3 Max V2 Combo',
+    'Creality K2 Plus FDM 3Dプリンター',
+    'Saturn 4 Ultra 16K・Marsmate 空気清浄機 セット',
+    'Mars 5 with Mercury Plus V3.0 Bundle',
+  ];
+  const kayanlar = yaziciKalmali.filter(ad => anaKategoriSlugBul({ ad, sorgu: ad, kategori: 'genel' }) !== '3d-yazici');
+  kontrol('Gerçek 3D yazıcılar ve yazıcı+combo/set paketleri 3d-yazici kategorisinde kalır',
+    kayanlar.length === 0, JSON.stringify(kayanlar));
+
+  // Canlı yerel katalog çıktısında da bu kalıntıların hiçbiri 3d-yazici içinde yer almaz
+  const sizintiDeseni = /(ams lite|buildtak|for auto leveling|upgrade kit|upgrade accessories combo|lgx lite pro accessories|cleaning cartridge kit|screen printer|holiday machine vault|rc overland truck|panneau lat[ée]ral|laminateur lm1|module rotatif|uptime kit|プリントスクリーン|洗浄硬化機|e1 空気清浄機|プリンタースタンド|アップグレードキット|シリーズ専用|apparel printer)/i;
+  for (const m of ['us', 'fr', 'jp']) {
+    const dbYazicilar = seoUrunListesi({ taze: true, market: m }).filter(u => u.kategoriSlug === '3d-yazici');
+    const dbSizan = dbYazicilar.filter(u => sizintiDeseni.test(u.ad)).map(u => u.ad);
+    kontrol(`${m.toUpperCase()} seoUrunListesi(3d-yazici) hiçbir yazıcı dışı kalem içermez (toplam ${dbYazicilar.length})`,
+      dbSizan.length === 0, JSON.stringify(dbSizan));
+  }
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
