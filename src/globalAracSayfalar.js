@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  htmlKacis, sayfaIskeleti, dilSeciciHtml, ga4HeadSnip,
+  htmlKacis, sayfaIskeleti, dilSeciciHtml, ga4HeadSnip, temaDugmesiHtml,
   GLOBAL_KATALOG_YOLLARI, GLOBAL_REHBER_YOLLARI, GLOBAL_SEPET_YOLLARI,
   footerHubHtml, navYollariGetir, SEO_KATEGORILER, kategoriYoluGetir,
 } from './seoSayfalar.js';
@@ -484,7 +484,7 @@ function ortakKlonSayfaHazirla(sablon, {
         <a href="${htmlKacis(nav.ayarlar)}"${aktifNav === 'ayarlar' ? ' class="etkin"' : ''}>🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(kod, yolHaritasi)}
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Theme" title="Theme">🌓</button>
+      ${temaDugmesiHtml(kod)}
     </div>
   </header>`,
   );
@@ -2061,7 +2061,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
         <a href="${htmlKacis(nav.ayarlar)}">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(kod, ANA_YOL_HARITASI)}
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Theme" title="Theme">🌓</button>
+      ${temaDugmesiHtml(kod)}
     </div>
   </header>`,
   );

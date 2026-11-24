@@ -32,6 +32,34 @@
     govde.style.display = onceki;
   };
 
+  const TEMA_METNI = {
+    tr: {
+      dark: 'Aydınlık temaya geç',
+      light: 'Karanlık temaya geç',
+      aria: 'Karanlık / aydınlık temayı değiştir',
+    },
+    en: {
+      dark: 'Switch to light theme',
+      light: 'Switch to dark theme',
+      aria: 'Toggle dark / light theme',
+    },
+    fr: {
+      dark: 'Passer au thème clair',
+      light: 'Passer au thème sombre',
+      aria: 'Changer de thème clair / sombre',
+    },
+    ja: {
+      dark: 'ライトテーマに切替',
+      light: 'ダークテーマに切替',
+      aria: 'ライト／ダークテーマ切替',
+    },
+  };
+
+  const sayfaDili = () => {
+    const d = (kok.getAttribute('lang') || window.BASKI_HESAP_ORTAM?.dil || 'tr').toLowerCase().slice(0, 2);
+    return TEMA_METNI[d] ? d : 'tr';
+  };
+
   const uygula = (tema) => {
     kok.setAttribute('data-theme', tema);
     kok.style.colorScheme = tema === 'dark' ? 'dark' : 'light';
@@ -40,7 +68,9 @@
     if (meta) meta.setAttribute('content', tema === 'dark' ? '#0F172A' : '#4338CA');
     dugme.textContent = tema === 'dark' ? '☀️' : '🌓';
     dugme.setAttribute('aria-pressed', tema === 'dark' ? 'true' : 'false');
-    dugme.title = tema === 'dark' ? 'Aydınlık temaya geç' : 'Karanlık temaya geç';
+    const metin = TEMA_METNI[sayfaDili()];
+    dugme.title = tema === 'dark' ? metin.dark : metin.light;
+    dugme.setAttribute('aria-label', metin.aria);
     try { localStorage.setItem('tema', tema); } catch { /* kapali */ }
     restyle();
     window.dispatchEvent(new CustomEvent('tema:degisti', { detail: { tema } }));

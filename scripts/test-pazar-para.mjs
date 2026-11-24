@@ -1085,6 +1085,77 @@ console.log('\n26) 🇦🇺 /en geçmişinde ürün adındaki Avustralya varyant
   }
 }
 
+console.log('\n27) 🌓 #temaDegistir title & aria-label yerelleştirmesi (public/tema.js & SSR):');
+{
+  const temaJsKod = fs.readFileSync('public/tema.js', 'utf8');
+  const beklenenTema = {
+    tr: { light: 'Karanlık temaya geç', dark: 'Aydınlık temaya geç', aria: 'Karanlık / aydınlık temayı değiştir' },
+    en: { light: 'Switch to dark theme', dark: 'Switch to light theme', aria: 'Toggle dark / light theme' },
+    fr: { light: 'Passer au thème sombre', dark: 'Passer au thème clair', aria: 'Changer de thème clair / sombre' },
+    ja: { light: 'ダークテーマに切替', dark: 'ライトテーマに切替', aria: 'ライト／ダークテーマ切替' },
+  };
+  for (const [dil, bek] of Object.entries(beklenenTema)) {
+    let curTheme = 'light';
+    const attrs = { lang: dil };
+    const metaEl = { setAttribute() {} };
+    const dugme = {
+      attrs: {},
+      title: '',
+      textContent: '',
+      listeners: {},
+      setAttribute(k, v) { this.attrs[k] = v; },
+      addEventListener(ev, fn) { this.listeners[ev] = fn; },
+    };
+    const sandbox = {
+      document: {
+        documentElement: {
+          style: {},
+          getAttribute: (k) => attrs[k] ?? null,
+          setAttribute: (k, v) => { attrs[k] = v; if (k === 'data-theme') curTheme = v; },
+        },
+        getElementById: (id) => (id === 'temaDegistir' ? dugme : null),
+        querySelector: (sel) => (sel === 'meta[name="theme-color"]' ? metaEl : null),
+        querySelectorAll: () => [],
+        addEventListener() {},
+      },
+      window: {
+        BASKI_HESAP_ORTAM: { dil },
+        matchMedia: () => ({ matches: false, addEventListener() {} }),
+        dispatchEvent() {},
+      },
+      CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+      localStorage: { getItem: () => null, setItem() {} },
+    };
+    vm.runInNewContext(temaJsKod, sandbox);
+    const lightOk = dugme.title === bek.light && dugme.attrs['aria-label'] === bek.aria;
+    dugme.listeners.click?.();
+    const darkOk = curTheme === 'dark' && dugme.title === bek.dark && dugme.attrs['aria-label'] === bek.aria;
+    kontrol(`public/tema.js [${dil}] aydınlık & karanlık mod title/aria-label yerelleştirilmiştir`,
+      lightOk && darkOk, `title=${dugme.title}, aria=${dugme.attrs['aria-label']}`);
+  }
+
+  for (const [dil, html] of [
+    ['en', globalAracSayfasiBul('/en')?.olustur('https://baskihesap.tech') || ''],
+    ['fr', globalAracSayfasiBul('/fr')?.olustur('https://baskihesap.tech') || ''],
+    ['ja', globalAracSayfasiBul('/ja')?.olustur('https://baskihesap.tech') || ''],
+    ['en', globalKatalogDiziniHtml('en', [], 'https://baskihesap.tech')],
+    ['fr', globalKatalogDiziniHtml('fr', [], 'https://baskihesap.tech')],
+    ['ja', globalKatalogDiziniHtml('ja', [], 'https://baskihesap.tech')],
+    ['en', globalRehberDiziniHtml('en', 'https://baskihesap.tech')],
+    ['fr', globalRehberDiziniHtml('fr', 'https://baskihesap.tech')],
+    ['ja', globalRehberDiziniHtml('ja', 'https://baskihesap.tech')],
+  ]) {
+    const bek = beklenenTema[dil];
+    const btn = html.match(/<button[^>]*id="temaDegistir"[^>]*>/)?.[0] || '';
+    kontrol(`SSR [${dil}] #temaDegistir yerelleştirilmiş aria-label ve title taşır`,
+      btn.includes(`aria-label="${bek.aria}"`)
+      && btn.includes(`title="${bek.light}"`)
+      && !btn.includes('Karanlık / aydınlık')
+      && !btn.includes('Tema değiştir'),
+      btn);
+  }
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

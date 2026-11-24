@@ -84,6 +84,20 @@ export function navYollariGetir(dil = 'tr') {
   };
 }
 
+const TEMA_DUGME_ETIKETLERI = Object.freeze({
+  tr: { aria: 'Karanlık / aydınlık temayı değiştir', title: 'Karanlık temaya geç' },
+  en: { aria: 'Toggle dark / light theme', title: 'Switch to dark theme' },
+  fr: { aria: 'Changer de thème clair / sombre', title: 'Passer au thème sombre' },
+  ja: { aria: 'ライト／ダークテーマ切替', title: 'ダークテーマに切替' },
+});
+
+/** Seçili dilde yerelleştirilmiş #temaDegistir SSR düğmesini üretir. */
+export function temaDugmesiHtml(dil = 'tr') {
+  const kod = normalizeDil(dil);
+  const etiket = TEMA_DUGME_ETIKETLERI[kod] || TEMA_DUGME_ETIKETLERI.tr;
+  return `<button type="button" class="tema-degistir" id="temaDegistir" aria-label="${htmlKacis(etiket.aria)}" title="${htmlKacis(etiket.title)}">🌓</button>`;
+}
+
 /** Üst bar için kompakt bölge + dil seçici HTML'i üretir (Googlebot tarafından taranabilir linkler). */
 export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
   const kod = normalizeDil(aktifDil);
@@ -1261,7 +1275,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
         <a href="${htmlKacis(navYol.ayarlar)}">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(sz.meta.dil, dilYolHaritasi)}
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+      ${temaDugmesiHtml(sz.meta.dil)}
     </div>
   </header>
 
