@@ -13,7 +13,7 @@
  * ve `anlikOnbellek` kayıtlarından okunur; kayıt yoksa uydurma fiyat basılmaz,
  * doğrudan canlı tarama butonuna yönlendirilir.
  */
-import { katalogGetir, radarDurumVerisi, radarSerisi, teklifKategoriyeUygunMu } from './otonomRadar.js';
+import { katalogGetir, radarDurumVerisi, radarSerisi, teklifKategoriyeUygunMu, vitrinKotadanSec, urunIkonu } from './otonomRadar.js';
 import { grafikOzeti } from './grafik.js';
 import { anlikAl, sorgudanAnlikAl, snapshotAra, BAYAT_SWR_MAX_YAS_MS } from './anlikOnbellek.js';
 import { katalogUrunleriAra } from './katalogSync.js';
@@ -2368,5 +2368,125 @@ export function globalKategoriSayfasiHtml(dil = 'en', kat, tumUrunler = [], taba
       </section>
       ${katalogFiltreScriptHtml()}
     `,
+  });
+}
+
+const VITRIN_TOPTAN_RE = /\bmoq\s*:|pre-?sale|bundle\s+sale|\((?:eu|uk|ca|au|jp|us)\s+only\)/i;
+
+function vitrinBaslikTemizle(ad) {
+  return String(ad || '')
+    .replace(/<\/?[a-z][^>]*>/gi, '')
+    .replace(/&#8211;|&ndash;/gi, '–')
+    .replace(/&#8212;|&mdash;/gi, '—')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function vitrinKargoYerellestir(kargoHam, dil, paraBirimi, yerel) {
+  const s = String(kargoHam || '').trim();
+  if (!s) return null;
+  if (/ücretsiz\s*kargo|free\s*shipping|livraison\s*gratuite|送料無料/i.test(s)) {
+    return dil === 'en' ? 'Free shipping' : (dil === 'fr' ? 'Livraison gratuite' : (dil === 'ja' ? '送料無料' : 'Ücretsiz Kargo'));
+  }
+  if (/kargo\s*sepette|sepette\s*belli|at\s*checkout|au\s*panier|カート/i.test(s)) {
+    return dil === 'en' ? 'Shipping at checkout' : (dil === 'fr' ? 'Frais de port au panier' : (dil === 'ja' ? '送料はカートで確認' : 'Kargo sepette'));
+  }
+  if (dil === 'tr') return s;
+  const tutarEs = /\+?\s*([0-9]+(?:[.,][0-9]+)?)/.exec(s);
+  if (tutarEs && /kargo\s*dahil/i.test(s)) {
+    const ucret = Number(String(tutarEs[1]).replace(',', '.'));
+    if (Number.isFinite(ucret) && ucret > 0) {
+      const p = formatPara(ucret, paraBirimi, yerel);
+      return dil === 'en' ? `+${p} shipping` : (dil === 'fr' ? `+${p} livraison` : `+${p} 送料`);
+    }
+  }
+  return null;
+}
+
+/** Bölgesel (EN/FR/JA) ana sayfa canlı borsa vitrini verisini üretir. */
+export function globalVitrinVerisi({ limit = 12, market = 'us', rastgele } = {}) {
+  const etkinMarket = normalizeMarket(market);
+  const paraBirimi = PAZARLAR[etkinMarket]?.currency || 'USD';
+  const dil = dilByMarket(etkinMarket);
+  const sz = sozlukGetir(dil);
+  const liste = seoUrunListesi({ market: etkinMarket });
+  const minYaziciFiyat = etkinMarket === 'jp' ? 10000 : (etkinMarket === 'tr' ? 2500 : 80);
+  const minFilamentKg = etkinMarket === 'jp' ? 600 : (etkinMarket === 'tr' ? 150 : 5);
+
+  const kartlar = [];
+  let guncelleme = 0;
+
+  for (const u of liste) {
+    const fiyat = Number(u?.enUcuzFiyat);
+    const url = u?.enUcuzUrl;
+    if (!Number.isFinite(fiyat) || fiyat <= 0 || !url) continue;
+    const ad = vitrinBaslikTemizle(u.ad);
+    if (!ad || VITRIN_TOPTAN_RE.test(ad)) continue;
+
+    const kat = (u.kategori === 'yazici' || u.kategoriSlug === '3d-yazici')
+      ? 'yazici'
+      : ((u.kategori === 'filament' || ['pla-filament', 'petg-tpu-filament', 'filament'].includes(u.kategoriSlug)) ? 'filament' : 'genel');
+
+    if (kat === 'yazici' && (parcaMi(ad) || fiyat < minYaziciFiyat)) continue;
+
+    let birimMetni = null;
+    if (kat === 'filament') {
+      const bf = birimFiyatHesapla(ad, fiyat);
+      if (bf?.makaraGram > 3500) continue;
+      if (bf?.birimFiyat > 0 && bf.birimFiyat < minFilamentKg) continue;
+      if (bf?.birimFiyat > 0) {
+        birimMetni = `${formatPara(bf.birimFiyat, paraBirimi, sz.para.yerel)} / ${bf.birim === 'L' ? 'L' : 'kg'}`;
+      }
+    }
+
+    const enPahali = Number(u.enPahaliFiyat);
+    const tasarruf = (Number.isFinite(enPahali) && enPahali > fiyat)
+      ? Math.round((enPahali - fiyat) * 100) / 100
+      : 0;
+    const hamYuzde = (Number.isFinite(enPahali) && enPahali > 0 && tasarruf > 0)
+      ? Math.round((tasarruf / enPahali) * 100)
+      : 0;
+    if (hamYuzde > 80) continue;
+    const indirimYuzde = (hamYuzde > 0 && hamYuzde <= 60) ? hamYuzde : 0;
+
+    const enIyiTeklif = Array.isArray(u.teklifler) ? u.teklifler.find(t => t.stokta && t.fiyat > 0) || u.teklifler[0] : null;
+    const kargo = vitrinKargoYerellestir(enIyiTeklif?.kargo, dil, paraBirimi, sz.para.yerel);
+    const ts = Number(u.sonTs) || Date.now();
+    if (ts > guncelleme) guncelleme = ts;
+
+    kartlar.push({
+      id: u.id || u.slug,
+      ad,
+      kategori: kat,
+      ikon: urunIkonu({ kategori: kat, ad }) || '📦',
+      site: u.enUcuzSite || enIyiTeklif?.site || null,
+      siteId: enIyiTeklif?.siteId || null,
+      market: etkinMarket,
+      paraBirimi,
+      fiyat,
+      stokta: true,
+      birimMetni,
+      kargo,
+      url,
+      afiliye: true,
+      dip: false,
+      gercekFirsat: false,
+      indirimYuzde,
+      tasarruf,
+      degisim: null,
+      seri: [],
+      ts,
+    });
+  }
+
+  return vitrinKotadanSec(kartlar, {
+    limit,
+    guncelleme,
+    toplam: kartlar.length,
+    rastgele,
+    market: etkinMarket,
+    paraBirimi,
   });
 }

@@ -673,8 +673,8 @@ for (const yol of ['/en', '/fr', '/ja']) {
     !anaHtml.includes('id="vitrinGrid" class="vitrin-grid" aria-busy="true"')
     && !anaHtml.includes('aria-label="Arama modu"'));
 }
-kontrol('app.js vitrinYukle market!==tr çıkışında aria-busy=false yapar ve modAyarla ilk yüklemede çalışır',
-  /market\s*!==\s*'tr'[\s\S]{0,80}aria-busy',\s*'false'/.test(appJsKod)
+kontrol('app.js vitrinYukle yükleme & hata sonunda aria-busy=false yapar ve modAyarla ilk yüklemede çalışır',
+  (appJsKod.match(/async function vitrinYukle[\s\S]*?\n\}/)?.[0].match(/setAttribute\('aria-busy',\s*'false'\)/g) || []).length >= 2
   && /modAyarla\(aramaModu\)/.test(appJsKod));
 
 console.log('\n17) 🏷️ Placeholder, aria-label ve % biçimi yerelleştirme kontrolleri:');
@@ -1193,6 +1193,39 @@ console.log('\n28) 🎨 Küçük UI / erişilebilirlik & slicer mağaza sayısı
   const slicerJs = fs.readFileSync('public/slicer.js', 'utf8');
   kontrol('public/slicer.js 店舗 / store sayısını v.alternatifSayisi yerine v.alternatifMagazaSayisi ile basar',
     slicerJs.includes('Number(v.alternatifMagazaSayisi)') && slicerJs.includes('件の候補'));
+}
+
+console.log('\n29) 📊 Çok dilli Canlı Borsa Vitrini (/en /fr /ja):');
+{
+  const { vitrinVerisi } = await import('../src/otonomRadar.js');
+  const { globalVitrinVerisi } = await import('../src/seoSayfalar.js');
+
+  const trVitrin = vitrinVerisi({ limit: 12, market: 'tr' });
+  kontrol('TR vitrinVerisi TRY cinsinden ürün döndürür',
+    trVitrin.ok === true && trVitrin.paraBirimi === 'TRY' && trVitrin.urunler.length > 0,
+    `len=${trVitrin.urunler.length}`);
+
+  for (const [mk, bekPara] of [['us', 'USD'], ['fr', 'EUR'], ['jp', 'JPY']]) {
+    const gv = globalVitrinVerisi({ limit: 12, market: mk });
+    const kotu = gv.urunler.filter(u =>
+      u.paraBirimi !== bekPara
+      || /\bmoq:|pre-?sale|bundle\s+sale|\((?:eu|uk|ca|au|jp|us)\s+only\)|<\/?tc>/i.test(u.ad)
+      || /Kargo sepette|Ücretsiz Kargo|kargo dahil/i.test(String(u.kargo || '')));
+    kontrol(`${mk.toUpperCase()} globalVitrinVerisi ${bekPara} cinsinden 12 temiz dengeli kart döndürür`,
+      gv.ok === true && gv.paraBirimi === bekPara && gv.urunler.length === 12
+      && gv.dagilim.filament === 6 && gv.dagilim.yazici === 4 && gv.dagilim.genel === 2
+      && kotu.length === 0,
+      JSON.stringify({ len: gv.urunler.length, dagilim: gv.dagilim, kotu: kotu.slice(0, 2) }));
+  }
+
+  const appSon = fs.readFileSync('public/app.js', 'utf8');
+  const srvSon = fs.readFileSync('server.js', 'utf8');
+  kontrol('server.js /api/vitrin market parametresi ile globalVitrinVerisi çağırır',
+    srvSon.includes("app.get('/api/vitrin'") && srvSon.includes('globalVitrinVerisi({ limit, market })'));
+  kontrol('public/app.js vitrinYukle global marketlerde gizlemez, ?market= ile çeker ve VITRIN_YEREL kullanır',
+    !/if\s*\(\s*BASKI_ORTAM\.market\s*&&\s*BASKI_ORTAM\.market\s*!==\s*'tr'\s*\)\s*\{\s*grid\.setAttribute\('aria-busy'/.test(appSon)
+    && appSon.includes('/api/vitrin?limit=12&market=')
+    && appSon.includes('VITRIN_YEREL'));
 }
 
 closeDatabase();

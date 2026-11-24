@@ -57,7 +57,7 @@ import {
   SEO_KATEGORILER, seoUrunListesi, seoUrunBul, seoUrunYedekCoz, sitemapKayitlari,
   urunSayfasiHtml, kategoriSayfasiHtml, katalogDiziniHtml, ga4HeadSnip,
   seoOnbelleginiTemizle, slugYap,
-  globalKatalogDiziniHtml, globalKategoriSayfasiHtml, globalKategoriSlugCoz,
+  globalKatalogDiziniHtml, globalKategoriSayfasiHtml, globalKategoriSlugCoz, globalVitrinVerisi,
 } from './src/seoSayfalar.js';
 import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
@@ -2754,8 +2754,12 @@ app.delete('/api/admin/dogrulanmis-magaza/:siteId', adminGerekli, (req, res) => 
 
 app.get('/api/vitrin', (req, res) => {
   try {
-    const limit = Number(req.query.limit) || 12;
-    const veri = vitrinVerisi({ limit });
+    const limit = Math.max(1, Math.min(24, Number(req.query.limit) || 12));
+    const market = normalizeMarket(req.query.market || 'tr');
+    let veri = vitrinVerisi({ limit, market });
+    if (market !== 'tr' && (!Array.isArray(veri?.urunler) || veri.urunler.length < Math.min(4, limit))) {
+      veri = globalVitrinVerisi({ limit, market });
+    }
     res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json(veri);
   } catch (e) {

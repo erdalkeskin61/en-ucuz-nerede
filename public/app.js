@@ -228,25 +228,105 @@ let vitrinTimer = null;
 let vitrinSonYukleme = 0;
 let vitrinYukleniyor = false;
 
-/** ₺1.234,56 biçimi (tabular-nums ile hizalı). */
-function vitrinPara(n) {
-  const sayi = Number(n);
-  if (!Number.isFinite(sayi)) return '—';
-  return '₺' + sayi.toLocaleString('tr-TR', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  });
+const VITRIN_YEREL = {
+  tr: {
+    azOnce: 'az önce', dkOnce: (d) => `${d} dk önce`, saOnce: (s) => `${s} sa önce`, gunOnce: (g) => `${g} gün önce`,
+    sparkAria: (n) => `Son ${n} fiyat noktası trendi`,
+    fil: (n) => `${n} filament`, yaz: (n) => `${n} yazıcı`, gen: (n) => `${n} parça/reçine`,
+    gercekFirsat: '🔥 GERÇEK FIRSAT', gercekFirsatTitle: 'Son 90 günün en düşük fiyatı — gerçek fiyat geçmişinden doğrulandı',
+    enDip: '🔥 En Dip Fiyat',
+    indirim: (p) => `Mağazalar arası %${p} fark`,
+    indirimTitle: 'Stokta olan mağazalar arasındaki en yüksek fiyata göre fark',
+    stokta: 'Stokta', stoktaYok: 'Stokta yok', stoktaYokAlt: ' · stokta yok',
+    magazaFallback: 'Mağaza', magazaGit: 'Mağazaya git',
+    henuzYok: 'henüz tarama yok',
+    radarOnEk: 'Otonom radar · ', sonTarama: (y) => `son tarama ${y}`, canliFiyatlar: 'canlı fiyatlar',
+    sayac: (s, t) => `${s} ürün stokta · ${t} kart · 60 sn'de bir yenilenir`,
+  },
+  en: {
+    azOnce: 'just now', dkOnce: (d) => `${d}m ago`, saOnce: (s) => `${s}h ago`, gunOnce: (g) => `${g}d ago`,
+    sparkAria: (n) => `Last ${n} price points trend`,
+    fil: (n) => `${n} filament`, yaz: (n) => `${n} printer${n === 1 ? '' : 's'}`, gen: (n) => `${n} parts/resin`,
+    gercekFirsat: '🔥 REAL DEAL', gercekFirsatTitle: 'Lowest price seen in the last 90 days — verified from real history',
+    enDip: '🔥 Lowest Seen',
+    indirim: (p) => `${p}% store spread`,
+    indirimTitle: 'Spread vs highest in-stock store offer',
+    stokta: 'In Stock', stoktaYok: 'Out of stock', stoktaYokAlt: ' · out of stock',
+    magazaFallback: 'Store', magazaGit: 'Visit store',
+    henuzYok: 'no scan data yet',
+    radarOnEk: 'Regional tracker · ', sonTarama: (y) => `updated ${y}`, canliFiyatlar: 'live prices',
+    sayac: (s, t) => `${s} in stock · ${t} deals · refreshes every 60s`,
+  },
+  fr: {
+    azOnce: 'à l’instant', dkOnce: (d) => `il y a ${d} min`, saOnce: (s) => `il y a ${s} h`, gunOnce: (g) => `il y a ${g} j`,
+    sparkAria: (n) => `Tendance des ${n} derniers relevés`,
+    fil: (n) => `${n} filament${n > 1 ? 's' : ''}`, yaz: (n) => `${n} imprimante${n > 1 ? 's' : ''}`, gen: (n) => `${n} pièces/résine`,
+    gercekFirsat: '🔥 VRAIE OFFRE', gercekFirsatTitle: 'Prix le plus bas sur 90 jours — vérifié sur historique réel',
+    enDip: '🔥 Prix plancher',
+    indirim: (p) => `Écart ${p} %`,
+    indirimTitle: 'Écart par rapport à l’offre en stock la plus élevée',
+    stokta: 'En stock', stoktaYok: 'Rupture', stoktaYokAlt: ' · rupture',
+    magazaFallback: 'Boutique', magazaGit: 'Voir l’offre',
+    henuzYok: 'aucune donnée pour l’instant',
+    radarOnEk: 'Suivi régional · ', sonTarama: (y) => `mis à jour ${y}`, canliFiyatlar: 'prix en direct',
+    sayac: (s, t) => `${s} en stock · ${t} offres · actualisé toutes les 60 s`,
+  },
+  ja: {
+    azOnce: 'たった今', dkOnce: (d) => `${d}分前`, saOnce: (s) => `${s}時間前`, gunOnce: (g) => `${g}日前`,
+    sparkAria: (n) => `直近 ${n} 点の価格推移`,
+    fil: (n) => `フィラメント ${n}`, yaz: (n) => `3Dプリンター ${n}`, gen: (n) => `パーツ・レジン ${n}`,
+    gercekFirsat: '🔥 お買い得', gercekFirsatTitle: '過去90日間の最安値（実価格履歴から確認）',
+    enDip: '🔥 最安値',
+    indirim: (p) => `店舗間 ${p}% 差`,
+    indirimTitle: '在庫あり最高値ストアとの価格差',
+    stokta: '在庫あり', stoktaYok: '在庫切れ', stoktaYokAlt: ' · 在庫切れ',
+    magazaFallback: 'ストア', magazaGit: 'ショップへ',
+    henuzYok: 'スキャンデータ準備中',
+    radarOnEk: '地域価格モニター · ', sonTarama: (y) => `最終更新 ${y}`, canliFiyatlar: '最新価格',
+    sayac: (s, t) => `在庫あり ${s} 件 · 全 ${t} 件 · 60秒ごとに更新`,
+  },
+};
+
+function vitrinOrtam() {
+  const o = (typeof window !== 'undefined' && window.BASKI_HESAP_ORTAM) || {};
+  const dilHam = String(o.dil || document.documentElement?.lang || 'tr').toLowerCase().slice(0, 2);
+  const dil = VITRIN_YEREL[dilHam] ? dilHam : 'tr';
+  return {
+    dil,
+    market: o.market || 'tr',
+    currency: o.currency || 'TRY',
+    yerel: o.yerel || (dil === 'tr' ? 'tr-TR' : (dil === 'fr' ? 'fr-FR' : (dil === 'ja' ? 'ja-JP' : 'en-US'))),
+  };
 }
 
-/** "az önce / 12 dk önce / 3 sa önce". */
+/** Yerel para biçimi (tabular-nums ile hizalı). */
+function vitrinPara(n, paraBirimi = null) {
+  const sayi = Number(n);
+  if (!Number.isFinite(sayi)) return '—';
+  const o = vitrinOrtam();
+  const para = paraBirimi || o.currency || 'TRY';
+  if (para === 'TRY' && o.dil === 'tr') {
+    return '₺' + sayi.toLocaleString('tr-TR', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    });
+  }
+  if (typeof window.formatPara === 'function') {
+    return window.formatPara(sayi, para, o.yerel);
+  }
+  return sayi.toLocaleString(o.yerel, { style: 'currency', currency: para });
+}
+
+/** "az önce / 12 dk önce / 3 sa önce" (yerelleştirilmiş). */
 function vitrinYas(iso) {
   const ts = Date.parse(String(iso || ''));
   if (!Number.isFinite(ts)) return null;
+  const y = VITRIN_YEREL[vitrinOrtam().dil];
   const dk = Math.max(0, Math.floor((Date.now() - ts) / 60000));
-  if (dk < 1) return 'az önce';
-  if (dk < 60) return dk + ' dk önce';
+  if (dk < 1) return y.azOnce;
+  if (dk < 60) return y.dkOnce(dk);
   const sa = Math.floor(dk / 60);
-  if (sa < 24) return sa + ' sa önce';
-  return Math.floor(sa / 24) + ' gün önce';
+  if (sa < 24) return y.saOnce(sa);
+  return y.gunOnce(Math.floor(sa / 24));
 }
 
 /** Mini sparkline: yalnızca gerçek geçmiş noktalarından SVG çizgi. */
@@ -262,8 +342,9 @@ function vitrinSparkline(seri) {
   const noktalar = seri.map((f, i) => `${x(i).toFixed(1)},${y(f).toFixed(1)}`).join(' ');
   const dusuyor = seri[n - 1] <= seri[0];
   const alan = `${P},${H - P} ${noktalar} ${W - P},${H - P}`;
+  const aria = VITRIN_YEREL[vitrinOrtam().dil].sparkAria(n);
   return `<svg class="vitrin-spark ${dusuyor ? 'dusuyor' : 'cikiyor'}" viewBox="0 0 ${W} ${H}"
-    preserveAspectRatio="none" role="img" aria-label="Son ${n} fiyat noktası trendi">
+    preserveAspectRatio="none" role="img" aria-label="${esc(aria)}">
     <polygon class="vitrin-spark-alan" points="${alan}" />
     <polyline class="vitrin-spark-cizgi" pathLength="100" points="${noktalar}" />
   </svg>`;
@@ -329,21 +410,23 @@ function vitrinCiz() {
 /** Alt başlık için kısa dağılım metni: "6 filament · 4 yazıcı · 2 parça". */
 function vitrinDagilimMetni(dagilim) {
   if (!dagilim || typeof dagilim !== 'object') return '';
+  const y = VITRIN_YEREL[vitrinOrtam().dil];
   const parcalar = [];
-  if (Number(dagilim.filament) > 0) parcalar.push(`${Number(dagilim.filament)} filament`);
-  if (Number(dagilim.yazici) > 0) parcalar.push(`${Number(dagilim.yazici)} yazıcı`);
-  if (Number(dagilim.genel) > 0) parcalar.push(`${Number(dagilim.genel)} parça/reçine`);
+  if (Number(dagilim.filament) > 0) parcalar.push(y.fil(Number(dagilim.filament)));
+  if (Number(dagilim.yazici) > 0) parcalar.push(y.yaz(Number(dagilim.yazici)));
+  if (Number(dagilim.genel) > 0) parcalar.push(y.gen(Number(dagilim.genel)));
   return parcalar.join(' · ');
 }
 
 function vitrinKartHtml(u) {
+  const y = VITRIN_YEREL[vitrinOrtam().dil];
   const rozet = u.gercekFirsat
-    ? '<span class="vitrin-rozet firsat" title="Son 90 günün en düşük fiyatı — gerçek fiyat geçmişinden doğrulandı">🔥 GERÇEK FIRSAT</span>'
+    ? `<span class="vitrin-rozet firsat" title="${esc(y.gercekFirsatTitle)}">${y.gercekFirsat}</span>`
     : (u.dip
-      ? '<span class="vitrin-rozet dip">🔥 En Dip Fiyat</span>'
+      ? `<span class="vitrin-rozet dip">${y.enDip}</span>`
       : (Number(u.indirimYuzde) >= 5
         // Bu oran mağazanın etiket indirimi DEĞİL: stoklu mağazalar arasındaki farktır.
-        ? `<span class="vitrin-rozet indirim" title="Stokta olan mağazalar arasındaki en yüksek fiyata göre fark">Mağazalar arası %${Number(u.indirimYuzde)} fark</span>`
+        ? `<span class="vitrin-rozet indirim" title="${esc(y.indirimTitle)}">${esc(y.indirim(Number(u.indirimYuzde)))}</span>`
         : ''));
   const altParcalar = [];
   if (u.birimMetni) altParcalar.push(esc(u.birimMetni));
@@ -351,23 +434,23 @@ function vitrinKartHtml(u) {
   if (u.degisim != null && Number(u.degisim) !== 0) {
     const ok = Number(u.degisim) < 0 ? '↓' : '↑';
     const sinif = Number(u.degisim) < 0 ? 'dusuk' : 'yuksek';
-    altParcalar.push(`<span class="vitrin-degisim ${sinif}">${ok} ${vitrinPara(Math.abs(u.degisim))}</span>`);
+    altParcalar.push(`<span class="vitrin-degisim ${sinif}">${ok} ${vitrinPara(Math.abs(u.degisim), u.paraBirimi)}</span>`);
   }
-  const durumMetni = u.stokta ? 'Stokta' : 'Stokta yok';
+  const durumMetni = u.stokta ? y.stokta : y.stoktaYok;
   const afiliyeAttr = u.siteId ? ` data-afiliye-site="${esc(u.siteId)}"` : '';
   return `<a class="vitrin-kart${u.dip ? ' vitrin-kart-dip' : ''}${u.stokta ? '' : ' vitrin-kart-yok'}"
     href="${esc(u.url)}" target="_blank" rel="noopener sponsored"${afiliyeAttr}>
     <span class="vitrin-kart-ust">
-      <span class="vitrin-durum ${u.stokta ? 'var' : 'yok'}" title="${durumMetni}"></span>
+      <span class="vitrin-durum ${u.stokta ? 'var' : 'yok'}" title="${esc(durumMetni)}"></span>
       <span class="vitrin-kategori" aria-hidden="true">${esc(u.ikon || '📦')}</span>
       ${rozet}
     </span>
     <span class="vitrin-urun">${esc(u.ad)}</span>
-    <span class="vitrin-fiyat">${vitrinPara(u.fiyat)}</span>
-    <span class="vitrin-magaza">${esc(u.site || 'Mağaza')}${u.stokta ? '' : ' · stokta yok'}</span>
+    <span class="vitrin-fiyat">${vitrinPara(u.fiyat, u.paraBirimi)}</span>
+    <span class="vitrin-magaza">${esc(u.site || y.magazaFallback)}${u.stokta ? '' : y.stoktaYokAlt}</span>
     ${altParcalar.length ? `<span class="vitrin-alt-satir">${altParcalar.join(' · ')}</span>` : ''}
     ${vitrinSparkline(u.seri)}
-    <span class="vitrin-cta">Mağazaya git <span aria-hidden="true">→</span></span>
+    <span class="vitrin-cta">${esc(y.magazaGit)} <span aria-hidden="true">→</span></span>
   </a>`;
 }
 
@@ -557,11 +640,8 @@ async function vitrinYukle({ sessiz = false } = {}) {
   const grid = document.getElementById('vitrinGrid');
   const bos = document.getElementById('vitrinBos');
   if (!alan || !grid || vitrinYukleniyor) return;
-  if (BASKI_ORTAM.market && BASKI_ORTAM.market !== 'tr') {
-    grid.setAttribute('aria-busy', 'false');
-    alan.hidden = true;
-    return;
-  }
+  const o = vitrinOrtam();
+  const y = VITRIN_YEREL[o.dil];
   vitrinYukleniyor = true;
   alan.hidden = false;
   if (!sessiz && !grid.children.length) {
@@ -569,7 +649,7 @@ async function vitrinYukle({ sessiz = false } = {}) {
     grid.setAttribute('aria-busy', 'true');
   }
   try {
-    const res = await fetch('/api/vitrin?limit=12', { credentials: 'same-origin' });
+    const res = await fetch(`/api/vitrin?limit=12&market=${encodeURIComponent(o.market)}`, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
     const urunler = Array.isArray(d?.urunler) ? d.urunler : [];
@@ -581,7 +661,7 @@ async function vitrinYukle({ sessiz = false } = {}) {
       vitrinUrunleri = [];
       vitrinCipleriDoldur([]);
       const sayac = document.getElementById('vitrinSayac');
-      if (sayac) sayac.textContent = 'henüz tarama yok';
+      if (sayac) sayac.textContent = y.henuzYok;
     } else {
       if (bos) bos.hidden = true;
       vitrinUrunleri = urunler;
@@ -591,14 +671,14 @@ async function vitrinYukle({ sessiz = false } = {}) {
       const guncel = document.getElementById('vitrinGuncelleme');
       if (guncel) {
         const ozet = vitrinDagilimMetni(d.dagilim);
-        guncel.textContent = 'Otonom radar · '
-          + (yas ? 'son tarama ' + yas : 'canlı fiyatlar')
+        guncel.textContent = y.radarOnEk
+          + (yas ? y.sonTarama(yas) : y.canliFiyatlar)
           + (ozet ? ' · ' + ozet : '');
       }
       const sayac = document.getElementById('vitrinSayac');
       if (sayac) {
         const stok = urunler.filter(u => u.stokta).length;
-        sayac.textContent = `${stok} ürün stokta · ${urunler.length} kart · 60 sn'de bir yenilenir`;
+        sayac.textContent = y.sayac(stok, urunler.length);
       }
     }
   } catch {

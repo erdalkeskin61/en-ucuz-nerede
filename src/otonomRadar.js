@@ -33,6 +33,7 @@ import {
   extractColorIntent, adayRenkDurumu, kritikVaryantCakismasi, muhtemelMarka, brandAyni, sadelestir,
 } from './util.js';
 import { fiyatSerisi } from './grafik.js';
+import { adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { fiyatGrafigiUret } from './fiyatGrafik.js';
 import { whatsappKartOlustur, whatsappKanalGonder } from './whatsappKanal.js';
 import { fotoGonder } from './telegramFoto.js';
@@ -2267,6 +2268,8 @@ export function vitrinVerisi(opts = {}) {
   const limit = Math.max(1, Math.min(24, Number(opts.limit) || 12));
   const seriNokta = Math.max(2, Math.min(40, Number(opts.seriNokta) || 12));
   const rastgele = typeof opts.rastgele === 'function' ? opts.rastgele : Math.random;
+  const etkinMarket = normalizeMarket(opts.market || 'tr');
+  const paraBirimi = PAZARLAR[etkinMarket]?.currency || 'TRY';
   const sadeceIdler = Array.isArray(opts.sadeceIdler) && opts.sadeceIdler.length
     ? new Set(opts.sadeceIdler.map(Number).filter(Number.isFinite))
     : null;
@@ -2281,7 +2284,7 @@ export function vitrinVerisi(opts = {}) {
       ORDER BY d.stokta DESC, d.fiyat ASC
     `).all();
   } catch {
-    return { ok: true, guncelleme: null, toplam: 0, gosterilen: 0, urunler: [], dagilim: {} };
+    return { ok: true, market: etkinMarket, paraBirimi, guncelleme: null, toplam: 0, gosterilen: 0, urunler: [], dagilim: {} };
   }
 
   // ---- 1) Her satırı karta çevir (fiyatsız / URL'siz / bozuk kayıt elenir) ----
@@ -2291,6 +2294,11 @@ export function vitrinVerisi(opts = {}) {
     let d = null;
     try { d = JSON.parse(r.veri); } catch { d = null; }
     if (!d || typeof d !== 'object') continue;
+    const sid = d.siteId || r.site_id || null;
+    const adpt = sid ? adapterById(sid) : null;
+    const rowMarket = normalizeMarket(d.market || (adpt ? adapterMarket(adpt) : 'tr'));
+    if (rowMarket !== etkinMarket) continue;
+
     const id = Number(r.katalog_id ?? d.katalogId);
     if (!Number.isFinite(id)) continue;
     if (sadeceIdler && !sadeceIdler.has(id)) continue;
@@ -2355,7 +2363,9 @@ export function vitrinVerisi(opts = {}) {
         || VITRIN_KATEGORI_IKON[guvenliKategori]
         || '📦',
       site: d.site || r.site || null,
-      siteId: d.siteId || r.site_id || null,
+      siteId: sid,
+      market: etkinMarket,
+      paraBirimi: d.paraBirimi || paraBirimi,
       fiyat,
       stokta,
       birimMetni: d.birimMetni || null,
@@ -2374,12 +2384,32 @@ export function vitrinVerisi(opts = {}) {
     });
   }
 
-  // ---- 2) Kategori havuzlarına ayır ----
-  const havuzlar = { filament: [], yazici: [], genel: [] };
-  for (const k of kartlar) havuzlar[k.kategori].push(k);
+  return vitrinKotadanSec(kartlar, {
+    limit,
+    guncelleme,
+    toplam: rows.length,
+    kota: opts.kota,
+    rastgele,
+    market: etkinMarket,
+    paraBirimi,
+  });
+}
 
-  // ---- 3) Kotayı ölçekle ve havuzlardan seç ----
-  // limit 12 → sabit kota; farklı limitlerde oran korunur (24 → 12/8/4).
+/** Kart havuzunu kategori kotası + marka sınırıyla dengeli seçerek `/api/vitrin` yanıtı üretir. */
+export function vitrinKotadanSec(kartlar = [], opts = {}) {
+  const limit = Math.max(1, Math.min(24, Number(opts.limit) || 12));
+  const rastgele = typeof opts.rastgele === 'function' ? opts.rastgele : Math.random;
+  const guncelleme = Number(opts.guncelleme) || 0;
+  const toplam = Number.isFinite(Number(opts.toplam)) ? Number(opts.toplam) : kartlar.length;
+  const market = normalizeMarket(opts.market || 'tr');
+  const paraBirimi = opts.paraBirimi || PAZARLAR[market]?.currency || 'TRY';
+
+  const havuzlar = { filament: [], yazici: [], genel: [] };
+  for (const k of kartlar) {
+    const kat = havuzlar[k?.kategori] ? k.kategori : 'genel';
+    havuzlar[kat].push(k);
+  }
+
   const taban = opts.kota && typeof opts.kota === 'object' ? opts.kota : VITRIN_KOTA;
   const olcek = limit / 12;
   const kota = {};
@@ -2388,9 +2418,6 @@ export function vitrinVerisi(opts = {}) {
     kota[anahtar] = Math.max(0, Math.round((Number.isFinite(ham) ? ham : VITRIN_KOTA[anahtar]) * olcek));
   }
 
-  // Havuz boşsa (ör. katalogda hiç reçine yok) veya kota dolmazsa, eksik
-  // kartlar diğer kategorilerden tamamlanır. Kota "sert tavan" değil,
-  // "öncelikli pay" olarak davranır.
   const secilen = [];
   const secilenIdler = new Set();
   const ekle = (liste) => {
@@ -2410,8 +2437,6 @@ export function vitrinVerisi(opts = {}) {
     }));
   }
 
-  // Backfill: eksik kalan yerler, kategori önceliğiyle (yazıcı ve genel önce —
-  // böylece "hepsi filament" durumu asla geri gelmez) tamamlanır.
   if (secilen.length < limit) {
     for (const anahtar of ['yazici', 'genel', 'filament']) {
       if (secilen.length >= limit) break;
@@ -2426,8 +2451,10 @@ export function vitrinVerisi(opts = {}) {
 
   return {
     ok: true,
+    market,
+    paraBirimi,
     guncelleme: guncelleme ? new Date(guncelleme).toISOString() : null,
-    toplam: rows.length,
+    toplam,
     havuz: {
       filament: havuzlar.filament.length,
       yazici: havuzlar.yazici.length,
