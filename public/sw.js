@@ -12,7 +12,7 @@
  *  - Görseller/vendor kütüphanesi: cache-first (nadiren değişir, bant genişliği önemli).
  *  - `/api/*`: hiç önbelleklenmez.
  */
-const SURUM = 'eun-v19';
+const SURUM = 'eun-v20';
 const KABUK_DOSYALARI = [
   '/',
   '/style.css',
@@ -68,10 +68,13 @@ self.addEventListener('fetch', (event) => {
   // API ve iş uçları: her zaman ağ (fiyat bayatlamasın)
   if (url.pathname.startsWith('/api/')) return;
 
-  // Kod/HTML: network-first, başarısızsa önbellek
+  // Kod/HTML: network-first (disk önbelleğinden eski HTML gelmesin diye no-cache)
   if (tazeOlmali(url.pathname) || istek.mode === 'navigate') {
+    const agIstegi = istek.mode === 'navigate'
+      ? new Request(istek.url, { cache: 'no-cache', credentials: istek.credentials })
+      : istek;
     event.respondWith(
-      fetch(istek)
+      fetch(agIstegi)
         .then((yanit) => {
           if (yanit && yanit.status === 200) {
             const kopya = yanit.clone();

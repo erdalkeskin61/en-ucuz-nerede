@@ -954,7 +954,7 @@
     // PWA service worker (2026-10-28): yalnızca güvenli bağlamda (https/localhost)
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=19').catch(() => { /* PWA olmadan da çalışır */ });
+        navigator.serviceWorker.register('/sw.js?v=20').catch(() => { /* PWA olmadan da çalışır */ });
       });
     }
   </script>
