@@ -636,14 +636,14 @@ html[data-theme="dark"] .mz-cta {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding: 26px 20px;
-  border: 2px dashed var(--cizgi-koyu);
+  padding: 24px 20px;
+  border: 1.5px dashed var(--cizgi-koyu);
   border-radius: var(--radius-md);
-  background: var(--zemin-2);
+  background: var(--zemin);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
-  min-height: 104px;
+  transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
+  min-height: 96px;
 }
 .stl-birak:hover {
   border-color: var(--ana-parlak);
@@ -1224,12 +1224,23 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--cizgi);
   background: var(--kart);
   box-shadow: var(--kart-golge);
   min-width: 0;
+}
+.mz-kpi-kart.kpi-satis {
+  background: var(--ana-acik);
+  border-color: rgba(30, 64, 175, 0.25);
+  border-top: 2px solid var(--ana);
+}
+.mz-kpi-kart.kpi-satis .mz-kpi-deger { color: var(--ana); font-size: clamp(22px, 2.5vw, 28px); }
+html[data-theme="dark"] .mz-kpi-kart.kpi-satis {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(96, 165, 250, 0.3);
+  border-top-color: var(--ana);
 }
 .mz-kpi-ust {
   display: flex;
@@ -1281,6 +1292,10 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   background: var(--ana);
   border-color: var(--ana);
   color: #fff;
+}
+html[data-theme="dark"] .mz-malzeme-hizli button.aktif {
+  color: #0B0F17;
+  font-weight: 600;
 }
 
 .mz-donut-kart {

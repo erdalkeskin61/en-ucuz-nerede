@@ -104,10 +104,10 @@ export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
   const kod = normalizeDil(aktifDil);
   const harita = yolHaritasi || { tr: '/', en: '/en', fr: '/fr', ja: '/ja' };
   const ogeler = [
-    { dil: 'tr', kisa: 'TR', bayrak: '🇹🇷', ad: 'Türkçe (TRY)' },
-    { dil: 'en', kisa: 'EN', bayrak: '🇺🇸', ad: 'English (USD)' },
-    { dil: 'fr', kisa: 'FR', bayrak: '🇫🇷', ad: 'Français (EUR)' },
-    { dil: 'ja', kisa: 'JA', bayrak: '🇯🇵', ad: '日本語 (JPY)' },
+    { dil: 'tr', kisa: 'TR', ad: 'TR · Türkçe (TRY)' },
+    { dil: 'en', kisa: 'EN', ad: 'EN · English (USD)' },
+    { dil: 'fr', kisa: 'FR', ad: 'FR · Français (EUR)' },
+    { dil: 'ja', kisa: 'JA', ad: 'JA · 日本語 (JPY)' },
   ];
   const secili = ogeler.find(o => o.dil === kod) || ogeler[0];
   const ariaEtiket = kod === 'en'
@@ -116,9 +116,9 @@ export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
       ? `Sélecteur de région et de langue (${secili.ad})`
       : (kod === 'ja' ? `地域と言語の選択 (${secili.ad})` : `Bölge ve dil seçici (${secili.ad})`));
   return `<details class="dil-secici" id="dilSecici">
-        <summary aria-label="${htmlKacis(ariaEtiket)}">${secili.bayrak} ${secili.kisa} ▾</summary>
+        <summary aria-label="${htmlKacis(ariaEtiket)}"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg><span>${secili.kisa}</span><span aria-hidden="true">▾</span></summary>
         <div class="dil-menu" role="menu">
-          ${ogeler.map(o => `<a href="${htmlKacis(harita[o.dil] || DIL_META[o.dil].yolOnEk || '/')}" hreflang="${o.dil}"${o.dil === kod ? ' class="etkin"' : ''} role="menuitem">${o.bayrak} ${htmlKacis(o.ad)}</a>`).join('\n          ')}
+          ${ogeler.map(o => `<a href="${htmlKacis(harita[o.dil] || DIL_META[o.dil].yolOnEk || '/')}" hreflang="${o.dil}"${o.dil === kod ? ' class="etkin"' : ''} role="menuitem">${htmlKacis(o.ad)}</a>`).join('\n          ')}
         </div>
       </details>`;
 }
@@ -2028,20 +2028,20 @@ export function kategoriSayfasiHtml(kat, tumUrunler, tabanUrl) {
     </nav>
     <section class="hero seo-hero">
       <div class="hero-ic">
-        <span class="hero-rozet">${kategoriIkonu(kat.slug)} Kargo Dahil Kategori Vitrini</span>
+        <span class="hero-rozet">Kargo Dahil Kategori Vitrini</span>
         <h1>${htmlKacis(kat.ad)}</h1>
         <p>${htmlKacis(kat.aciklama)}</p>
         <div class="hero-istatistik">
-          <span>📦 <b>${eslesen.length}</b> ürün</span>
-          ${enUcuzUrun ? `<span>🏷️ En düşük: <b>${formatTL(enUcuzUrun.enUcuzFiyat)}</b></span>` : ''}
-          <span>🚚 Kargo dahil gerçek toplam</span>
+          <span><b>${eslesen.length}</b> ürün</span>
+          ${enUcuzUrun ? `<span>En düşük: <b>${formatTL(enUcuzUrun.enUcuzFiyat)}</b></span>` : ''}
+          <span>Kargo dahil gerçek toplam</span>
         </div>
       </div>
     </section>
     <div class="katalog-kontrol">
       <div class="seo-kat-bar" style="margin:0">${katBar}</div>
       <div class="katalog-ara-sar">
-        <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+        <span class="katalog-ara-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
         <input type="search" id="katalogAraInput" placeholder="Bu kategoride filtrele…" aria-label="Kategoride ürün filtrele" />
       </div>
     </div>
@@ -2119,20 +2119,20 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <span>Ürün Kataloğu</span></nav>
       <section class="hero seo-hero">
         <div class="hero-ic">
-          <span class="hero-rozet">🗂️ 60+ Türkiye Mağazası · Canlı Katalog</span>
+          <span class="hero-rozet">60+ Türkiye Mağazası · Canlı Katalog</span>
           <h1>3D Yazıcı &amp; Filament <b>Fiyat Kataloğu</b></h1>
           <p>${htmlKacis(description)}</p>
           <div class="hero-istatistik">
-            <span>📦 <b>${tumUrunler.length}</b> takip edilen ürün</span>
-            <span>✅ <b>${stokluSayi}</b> güncel stoklu fiyat</span>
-            <span>⚖️ Birim ₺/kg &amp; kargo dahil</span>
+            <span><b>${tumUrunler.length}</b> takip edilen ürün</span>
+            <span><b>${stokluSayi}</b> güncel stoklu fiyat</span>
+            <span>Birim ₺/kg &amp; kargo dahil</span>
           </div>
         </div>
       </section>
       <div class="katalog-kontrol">
         <div class="seo-kat-bar" style="margin:0">${katBar}</div>
         <div class="katalog-ara-sar">
-          <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+          <span class="katalog-ara-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="search" id="katalogAraInput" placeholder="Katalogda hızlı filtrele (ör. Bambu, PLA, PETG)…" aria-label="Katalogda ürün filtrele" />
         </div>
       </div>
@@ -2146,11 +2146,11 @@ export function katalogDiziniHtml(tumUrunler, tabanUrl) {
           <a class="seo-tum-link" href="/rehber">Tüm Rehberler →</a>
         </div>
         <div class="seo-rehber-baglar">
-          <a href="/rehber">📖 Karşılaştırma &amp; Alım Rehberleri</a>
-          <a href="/rehber/en-ucuz-pla-filament">🏷️ En Ucuz PLA Sıralaması</a>
-          <a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚔️ P1S vs K1C</a>
-          <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
-          <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
+          <a href="/rehber">Karşılaştırma &amp; Alım Rehberleri</a>
+          <a href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Sıralaması</a>
+          <a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">P1S vs K1C</a>
+          <a href="/maliyet.html">Baskı Maliyet Hesaplayıcı</a>
+          <a href="/sepet.html">Akıllı Sepet Sihirbazı</a>
         </div>
       </section>
       ${katalogFiltreScriptHtml()}
@@ -2164,11 +2164,11 @@ const GLOBAL_KAT_CEVIRI = Object.freeze({
     desc: 'Live US store catalog tracking 3D printers, PLA/PETG/TPU filaments, UV resins, and spare parts with checkout shipping & $/kg unit prices.',
     yolAna: 'Home',
     yolKatalog: 'Product Catalog',
-    heroRozet: '🗂️ US & Global Stores · Live Catalog',
+    heroRozet: 'US &amp; Global Stores · Live Catalog',
     heroH1: '3D Printer &amp; Filament <b>Price Catalog</b>',
     istTakip: 'tracked products',
     istStok: 'live in-stock prices',
-    istBirim: '⚖️ Unit $/kg &amp; incl. shipping',
+    istBirim: 'Unit $/kg &amp; incl. shipping',
     araPlaceholder: 'Quick filter catalog (e.g. Bambu, PLA, PETG, Prusa)…',
     urunKelime: 'products',
     tumunuGor: 'View all →',
@@ -2176,7 +2176,7 @@ const GLOBAL_KAT_CEVIRI = Object.freeze({
     rehberAlt: 'Compare printer specs, calculate STL cost in USD, or optimize multi-store baskets:',
     tumRehber: 'All Guides →',
     enDusukEtiket: 'Lowest:',
-    kargoDahilEtiket: '🚚 Shipping-inclusive total',
+    kargoDahilEtiket: 'Shipping-inclusive total',
     kategoriler: {
       '3d-yazici': { kisaAd: '3D Printers', ad: '3D Printer Prices (FDM & SLA)', aciklama: 'Compare Bambu Lab, Creality, Elegoo, Prusa, Flashforge, Snapmaker, and QIDI 3D printers across verified US stores.' },
       'pla-filament': { kisaAd: 'PLA Filament', ad: 'PLA, PLA+ & Hyper PLA Filaments', aciklama: '1 kg & bulk PLA spools sorted by $/kg normalized unit price from eSun, SUNLU, Polymaker, Overture, and Bambu Lab.' },
@@ -2191,11 +2191,11 @@ const GLOBAL_KAT_CEVIRI = Object.freeze({
     desc: 'Catalogue européen de comparaison en direct pour imprimantes 3D, filaments PLA/PETG/TPU, résines UV et pièces détachées port compris en EUR (€).',
     yolAna: 'Accueil',
     yolKatalog: 'Catalogue Produits',
-    heroRozet: '🗂️ Boutiques FR &amp; EU · Catalogue Live',
+    heroRozet: 'Boutiques FR &amp; EU · Catalogue Live',
     heroH1: 'Catalogue Prix <b>Imprimantes 3D &amp; Filaments</b>',
     istTakip: 'produits suivis',
     istStok: 'prix en stock',
-    istBirim: '⚖️ Prix au €/kg &amp; livraison incluse',
+    istBirim: 'Prix au €/kg &amp; livraison incluse',
     araPlaceholder: 'Filtrer le catalogue (ex. Bambu, PLA, Prusa, Elegoo)…',
     urunKelime: 'produits',
     tumunuGor: 'Tout voir →',
@@ -2203,7 +2203,7 @@ const GLOBAL_KAT_CEVIRI = Object.freeze({
     rehberAlt: 'Comparez les modèles, calculez vos coûts en euros ou optimisez les frais de port :',
     tumRehber: 'Tous les guides →',
     enDusukEtiket: 'Dès :',
-    kargoDahilEtiket: '🚚 Total livraison incluse',
+    kargoDahilEtiket: 'Total livraison incluse',
     kategoriler: {
       '3d-yazici': { kisaAd: 'Imprimantes 3D', ad: 'Prix Imprimantes 3D (FDM & SLA)', aciklama: 'Comparez Bambu Lab, Creality, Elegoo, Prusa, Flashforge, Snapmaker et QIDI sur les boutiques françaises et européennes.' },
       'pla-filament': { kisaAd: 'Filament PLA', ad: 'Filaments PLA, PLA+ & Hyper PLA', aciklama: 'Bobines PLA 1 kg comparées au meilleur €/kg chez SUNLU, Overture, Bambu Lab, Elegoo et Amazon.fr.' },
@@ -2218,11 +2218,11 @@ const GLOBAL_KAT_CEVIRI = Object.freeze({
     desc: '日本市場の公式ストア・取扱店を対象に、3Dプリンター本体、PLA/PETG/TPUフィラメント、UVレジン、交換パーツを送料込み実勢価格で比較。',
     yolAna: 'ホーム',
     yolKatalog: '製品カタログ',
-    heroRozet: '🗂️ 日本向けストア対応 · リアルタイムカタログ',
+    heroRozet: '日本向けストア対応 · リアルタイムカタログ',
     heroH1: '3Dプリンター・フィラメント<b>価格カタログ</b>',
     istTakip: '件の登録製品',
     istStok: '件の在庫あり価格',
-    istBirim: '⚖️ kg単価 (¥/kg)＆送料込',
+    istBirim: 'kg単価 (¥/kg)＆送料込',
     araPlaceholder: 'カタログ内を絞り込み（例: Bambu, PLA, Prusa, QIDI）…',
     urunKelime: '製品',
     tumunuGor: 'すべて見る →',
@@ -2230,7 +2230,7 @@ const GLOBAL_KAT_CEVIRI = Object.freeze({
     rehberAlt: '機種比較、STL原価計算（¥）、複数ショップのまとめ買い送料最適化ツール：',
     tumRehber: 'ガイド一覧 →',
     enDusukEtiket: '最安値:',
-    kargoDahilEtiket: '🚚 送料込み合計価格',
+    kargoDahilEtiket: '送料込み合計価格',
     kategoriler: {
       '3d-yazici': { kisaAd: '3Dプリンター', ad: '3Dプリンター実勢価格 (FDM / 光造形)', aciklama: 'Bambu Lab・Creality・Prusa・QIDI・Elegooなどの日本公式サイト・EC価格を一括比較。' },
       'pla-filament': { kisaAd: 'PLAフィラメント', ad: 'PLA・PLA+・高速PLAフィラメント', aciklama: 'eSun・SUNLU・Bambu Lab・Crealityなど人気PLAスプールをkg単価 (¥/kg) で比較。' },
@@ -2342,8 +2342,8 @@ export function globalKatalogDiziniHtml(dil = 'en', tumUrunler = [], tabanUrl = 
           <h1>${tKat.heroH1}</h1>
           <p>${htmlKacis(tKat.desc)}</p>
           <div class="hero-istatistik">
-            <span>📦 <b>${gosterimUrunleri.length}</b> ${htmlKacis(tKat.istTakip)}</span>
-            <span>✅ <b>${stokluSayi}</b> ${htmlKacis(tKat.istStok)}</span>
+            <span><b>${gosterimUrunleri.length}</b> ${htmlKacis(tKat.istTakip)}</span>
+            <span><b>${stokluSayi}</b> ${htmlKacis(tKat.istStok)}</span>
             <span>${tKat.istBirim}</span>
           </div>
         </div>
@@ -2351,7 +2351,7 @@ export function globalKatalogDiziniHtml(dil = 'en', tumUrunler = [], tabanUrl = 
       <div class="katalog-kontrol">
         <div class="seo-kat-bar" style="margin:0">${katBar}</div>
         <div class="katalog-ara-sar">
-          <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+          <span class="katalog-ara-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="search" id="katalogAraInput" placeholder="${htmlKacis(tKat.araPlaceholder)}" aria-label="${htmlKacis(tKat.araPlaceholder)}" />
         </div>
       </div>
@@ -2365,10 +2365,10 @@ export function globalKatalogDiziniHtml(dil = 'en', tumUrunler = [], tabanUrl = 
           <a class="seo-tum-link" href="${nav.rehber}">${htmlKacis(tKat.tumRehber)}</a>
         </div>
         <div class="seo-rehber-baglar">
-          <a href="${nav.rehber}">📖 ${htmlKacis(sozlukGetir(kod).nav.rehberler)}</a>
-          <a href="${nav.maliyet}">🧮 ${htmlKacis(sozlukGetir(kod).nav.maliyet)}</a>
-          <a href="${nav.sepet}">🧺 ${htmlKacis(sozlukGetir(kod).nav.akilliSepet)}</a>
-          <a href="${nav.slicer}">🧩 ${htmlKacis(sozlukGetir(kod).nav.eklenti)}</a>
+          <a href="${nav.rehber}">${htmlKacis(sozlukGetir(kod).nav.rehberler)}</a>
+          <a href="${nav.maliyet}">${htmlKacis(sozlukGetir(kod).nav.maliyet)}</a>
+          <a href="${nav.sepet}">${htmlKacis(sozlukGetir(kod).nav.akilliSepet)}</a>
+          <a href="${nav.slicer}">${htmlKacis(sozlukGetir(kod).nav.eklenti)}</a>
         </div>
       </section>
       ${katalogFiltreScriptHtml()}
@@ -2423,12 +2423,12 @@ export function globalKategoriSayfasiHtml(dil = 'en', kat, tumUrunler = [], taba
       </nav>
       <section class="hero seo-hero">
         <div class="hero-ic">
-          <span class="hero-rozet">${kategoriIkonu(kat.slug)} ${htmlKacis(kc.kisaAd || kat.kisaAd)}</span>
+          <span class="hero-rozet">${htmlKacis(kc.kisaAd || kat.kisaAd)}</span>
           <h1>${htmlKacis(katAd)}</h1>
           <p>${htmlKacis(katAciklama)}</p>
           <div class="hero-istatistik">
-            <span>📦 <b>${eslesen.length}</b> ${htmlKacis(tKat.urunKelime)}</span>
-            ${enUcuzUrun ? `<span>🏷️ ${htmlKacis(tKat.enDusukEtiket)} <b>${htmlKacis(dilParaFormati(kod, enUcuzUrun.enUcuzFiyat, enUcuzUrun.paraBirimi))}</b></span>` : ''}
+            <span><b>${eslesen.length}</b> ${htmlKacis(tKat.urunKelime)}</span>
+            ${enUcuzUrun ? `<span>${htmlKacis(tKat.enDusukEtiket)} <b>${htmlKacis(dilParaFormati(kod, enUcuzUrun.enUcuzFiyat, enUcuzUrun.paraBirimi))}</b></span>` : ''}
             <span>${tKat.kargoDahilEtiket}</span>
           </div>
         </div>
@@ -2436,7 +2436,7 @@ export function globalKategoriSayfasiHtml(dil = 'en', kat, tumUrunler = [], taba
       <div class="katalog-kontrol">
         <div class="seo-kat-bar" style="margin:0">${katBar}</div>
         <div class="katalog-ara-sar">
-          <span class="katalog-ara-ikon" aria-hidden="true">🔍</span>
+          <span class="katalog-ara-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="search" id="katalogAraInput" placeholder="${htmlKacis(tKat.araPlaceholder)}" aria-label="${htmlKacis(tKat.araPlaceholder)}" />
         </div>
       </div>

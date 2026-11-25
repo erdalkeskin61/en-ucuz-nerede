@@ -106,10 +106,10 @@ function hreflangEtiketleri(tabanUrl, yolHaritasi) {
 
 function dilSeciciCubugu(aktifDil, yolHaritasi) {
   const ogeler = [
-    { dil: 'tr', etiket: '🇹🇷 TR' },
-    { dil: 'en', etiket: '🇺🇸 EN' },
-    { dil: 'fr', etiket: '🇫🇷 FR' },
-    { dil: 'ja', etiket: '🇯🇵 JA' },
+    { dil: 'tr', etiket: 'TR' },
+    { dil: 'en', etiket: 'EN' },
+    { dil: 'fr', etiket: 'FR' },
+    { dil: 'ja', etiket: 'JA' },
   ];
   return `<div class="seo-ic-linkler" aria-label="Language" style="margin:0 0 14px">
     ${ogeler.map(o => `<a class="seo-ic-link"${o.dil === aktifDil ? ' style="background:var(--ana);color:#fff;border-color:var(--ana)"' : ''} href="${htmlKacis(yolHaritasi[o.dil])}">${o.etiket}</a>`).join('')}
