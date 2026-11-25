@@ -772,6 +772,17 @@ function baskiMaliyetiRehberiHtml(tumUrunler, tabanUrl) {
     jsonLdList: [
       {
         '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: '3D Baskı Maliyeti Nasıl Hesaplanır? (2026 Formülü & Fotoğraftan Bas-Sat)',
+        description: 'Filament gramajı, elektrik, makine amortismanı, fire payı ve Fotoğraftan Bas-Sat 3 adımlı fiyatlandırma rehberi.',
+        inLanguage: 'tr',
+        mainEntityOfPage: canonicalUrl,
+        dateModified: new Date().toISOString().slice(0, 10),
+        author: { '@type': 'Organization', name: 'Baskı Hesap' },
+        publisher: { '@type': 'Organization', name: 'Baskı Hesap' },
+      },
+      {
+        '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: `${tabanUrl}/` },
@@ -981,6 +992,17 @@ function meshyVsHi3dRehberiHtml(tumUrunler, tabanUrl) {
     aktifNav: 'rehber',
     dilYolHaritasi: GLOBAL_AI_REHBER_YOLLARI,
     jsonLdList: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: 'Meshy vs Hi3D: 3D Yazıcı Baskısı & Gerçek Maliyet Rehberi',
+        description: 'Meshy AI ve Hi3D ile text/image-to-3D model üretiminin 3D baskı farkları, çok renkli purge tüketimi ve canlı Türkiye PLA fiyatlarıyla gerçek maliyet hesabı.',
+        inLanguage: 'tr',
+        mainEntityOfPage: canonicalUrl,
+        dateModified: new Date().toISOString().slice(0, 10),
+        author: { '@type': 'Organization', name: 'Baskı Hesap' },
+        publisher: { '@type': 'Organization', name: 'Baskı Hesap' },
+      },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -1809,6 +1831,17 @@ export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []
     dil: kod,
     dilYolHaritasi: GLOBAL_AI_REHBER_YOLLARI,
     jsonLdList: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: t.title.replace(/ \| Baski Hesap$/, ''),
+        description: t.desc,
+        inLanguage: kod,
+        mainEntityOfPage: canonicalUrl,
+        dateModified: new Date().toISOString().slice(0, 10),
+        author: { '@type': 'Organization', name: 'Baskı Hesap' },
+        publisher: { '@type': 'Organization', name: 'Baskı Hesap' },
+      },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',

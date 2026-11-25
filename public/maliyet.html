@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="Takeads-verification" content="25d0f656-5702-44e2-87df-5677a9773117">
   <meta name="theme-color" content="#3450D1" />
-  <title>3D Baskı Maliyet & Kârlılık Hesaplayıcı — Baskı Hesap</title>
-  <meta name="description" content="Dilimleyiciden aldığınız gramaj ve baskı süresiyle parça başı hammadde, elektrik, amortisman maliyetini ve önerilen satış fiyatını saniyeler içinde hesaplayın. Filamentin en ucuzunu canlı piyasadan bulun." />
+  <title>3D Baskı Maliyet Hesaplayıcı (STL / 3MF) &amp; Kârlılık — Baskı Hesap</title>
+  <meta name="description" content="STL ve Bambu/Orca çok parçalı 3MF dosyanızı tarayıcıda (yüklemeden) analiz edin; tek tıkla örnek STL test edin, gramaj, elektrik, fire ve satış fiyatını hesaplayıp en ucuz filamenti bulun." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Baskı Hesap" />
-  <meta property="og:title" content="3D Baskı Maliyet &amp; Kârlılık Hesaplayıcı — Baskı Hesap" />
-  <meta property="og:description" content="STL/3MF gramajı ve baskı süresiyle gerçek parça maliyeti ve satış fiyatı hesaplayın." />
+  <meta property="og:title" content="3D Baskı Maliyet Hesaplayıcı (STL / 3MF) — Baskı Hesap" />
+  <meta property="og:description" content="STL/3MF analizi, tek tıkla örnek STL testi ve Fotoğraftan Bas-Sat 3 adımlı kârlılık hesabıyla gerçek maliyetinizi saniyeler içinde çıkarın." />
   <meta property="og:image" content="/og-gorsel.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="/og-gorsel.png" />
@@ -18,10 +18,49 @@
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "Baskı Hesap 3D Baskı Maliyet Hesaplayıcı",
+    "name": "Baskı Hesap 3D Baskı Maliyet & STL/3MF Hesaplayıcı",
+    "description": "STL ve çok parçalı 3MF dosyalarını cihazınızda analiz ederek gramaj, elektrik, amortisman, kâr marjı ve canlı filament maliyetini hesaplayan ücretsiz web aracı.",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Web",
+    "featureList": [
+      "Client-side STL and multi-object 3MF mesh weight calculation",
+      "1-click built-in sample STL test models",
+      "3-step Photo-to-Print & Sell pricing workflow (Meshy / Hi3D)",
+      "Live regional filament price comparison"
+    ],
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "TRY" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Yüklediğim STL veya 3MF dosyası sunucuya gönderiliyor mu?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Hayır. STL ve Bambu Studio / OrcaSlicer çok parçalı 3MF dosyalarının hacim ve gramaj analizi %100 tarayıcınızda yerel olarak yapılır."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Hazır STL dosyam yoksa hesaplayıcıyı nasıl deneyebilirim?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sürükle-bırak alanının hemen altındaki Örnek STL ile 1 tıkta dene butonlarıyla yerleşik Masaüstü Figür (~43 g) veya Çok Renkli Rozet (~36 g) modellerini tek tıkla test edebilirsiniz."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Fotoğraftan veya metinden 3D model üretip satış fiyatı çıkarabilir miyim?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Evet. Meshy AI veya Hi3D ile ürettiğiniz STL/3MF dosyasını hesaplayıcıya atarak hammadde, elektrik, yıpranma ve kâr marjı dahil müşteri satış teklifini oluşturabilirsiniz."
+        }
+      }
+    ]
   }
   </script>
   <link rel="manifest" href="/manifest.json" />

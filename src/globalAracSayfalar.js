@@ -134,7 +134,7 @@ function crealityAracLinki(dil, sorgu = 'PLA Filament') {
 const MALIYET_KOPYA = Object.freeze({
   en: {
     title: '3D Print Cost & Profit Calculator (STL / 3MF) — Baski Hesap',
-    desc: 'Drop an STL or 3MF file directly in your browser (zero upload) to estimate part weight, filament cost, electricity, machine wear, and suggested retail price.',
+    desc: 'Drop an STL or multi-object Bambu/Orca 3MF file in your browser (zero upload) or test 1-click sample STLs to compute weight, electricity, margin, and cheapest in-stock spools.',
     rozet: '🧮 Global Workshop Tool · 100% Client-Side',
     h1: 'Calculate your <b>3D print cost</b> &amp; selling price in seconds',
     alt: 'Drop any STL/3MF file or enter slicer weight &amp; hours. Everything runs locally in your browser with editable filament, electricity and margin settings.',
@@ -480,18 +480,59 @@ function nitelikAriaYerellestir(html, kod) {
 }
 
 function ortakKlonSayfaHazirla(sablon, {
-  kod, tabanUrl, yolHaritasi, aktifNav, title, desc, ogTitle, ogDesc,
+  kod, tabanUrl, yolHaritasi, aktifNav, title, desc, ogTitle, ogDesc, faqListe = null,
 }) {
   const sz = sozlukGetir(kod);
   const nav = navYollariGetir(kod);
   const canonicalUrl = `${tabanUrl}${yolHaritasi[kod]}`;
+  const temizBaslik = String(title || '').replace(/&amp;/g, '&').replace(/\s*[—|–-]\s*Bask[ıi]\s*Hesap\s*$/i, '').trim();
   let cikti = String(sablon)
     .replace(/<html lang="tr"( data-theme="light")?>/, `<html lang="${htmlKacis(kod)}" data-theme="light">`)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`)
     .replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${htmlKacis(desc)}" />`)
     .replace(/<meta property="og:title" content="[^"]*"\s*\/>/, `<meta property="og:title" content="${ogTitle || title}" />`)
-    .replace(/<meta property="og:description" content="[^"]*"\s*\/>/, `<meta property="og:description" content="${htmlKacis(ogDesc || desc)}" />`)
-    .replace(/"priceCurrency":\s*"TRY"/g, `"priceCurrency": "${sz.para.kod}"`);
+    .replace(/<meta property="og:description" content="[^"]*"\s*\/>/, `<meta property="og:description" content="${htmlKacis(ogDesc || desc)}" />`);
+
+  let faqIslendi = false;
+  cikti = cikti.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g, (tam, icerik) => {
+    try {
+      const veri = JSON.parse(icerik);
+      if (veri?.['@type'] === 'SoftwareApplication') {
+        veri.name = temizBaslik || veri.name;
+        if (desc) veri.description = String(desc);
+        if (veri.offers && typeof veri.offers === 'object') {
+          veri.offers.priceCurrency = sz.para.kod;
+        }
+        return `<script type="application/ld+json">${JSON.stringify(veri)}</script>`;
+      }
+      if (veri?.['@type'] === 'FAQPage' && Array.isArray(faqListe) && faqListe.length) {
+        faqIslendi = true;
+        return `<script type="application/ld+json">${JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqListe.map(q => ({
+            '@type': 'Question',
+            name: q.soru,
+            acceptedAnswer: { '@type': 'Answer', text: q.cevap },
+          })),
+        })}</script>`;
+      }
+    } catch { /* geçerli JSON değilse dokunma */ }
+    return tam;
+  });
+
+  if (!faqIslendi && Array.isArray(faqListe) && faqListe.length) {
+    const faqScript = `<script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqListe.map(q => ({
+        '@type': 'Question',
+        name: q.soru,
+        acceptedAnswer: { '@type': 'Answer', text: q.cevap },
+      })),
+    })}</script>`;
+    cikti = cikti.replace('</head>', `  ${faqScript}\n</head>`);
+  }
 
   if (tabanUrl) {
     cikti = cikti.replace(/content="\/og-gorsel\.png"/g, `content="${htmlKacis(tabanUrl)}/og-gorsel.png"`);
@@ -766,7 +807,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
 
   let cikti = ortakKlonSayfaHazirla(maliyetSablonOku(), {
     kod, tabanUrl, yolHaritasi: MALIYET_YOL_HARITASI, aktifNav: 'maliyet',
-    title: c.title, desc: c.desc, ogTitle: c.title, ogDesc: c.desc,
+    title: c.title, desc: c.desc, ogTitle: c.title, ogDesc: c.desc, faqListe: c.sss,
   });
 
   cikti = cikti

@@ -1661,6 +1661,50 @@ console.log('\n34) 🏷️ Amazon gerçek marka çıkarma (#bylineInfo / Marka t
     eslesme !== null, JSON.stringify(eslesme));
 }
 
+console.log('\n35) 🔍 Yeni özellikler için SEO (robots.txt, hreflang, TechArticle/FAQPage JSON-LD, IndexNow)');
+{
+  const { globalAi3dRehberiHtml, rehberSayfasiBul } = await import('../src/rehberSayfalar.js');
+  const robotsTxt = fs.readFileSync('public/robots.txt', 'utf8');
+  const maliyetHtml = fs.readFileSync('public/maliyet.html', 'utf8');
+  const serverSrc = fs.readFileSync('server.js', 'utf8');
+
+  kontrol('robots.txt /rehber, /karsilastir/ ve /en /fr /ja yollarına açık izin verir',
+    robotsTxt.includes('Allow: /rehber')
+    && robotsTxt.includes('Allow: /karsilastir/')
+    && robotsTxt.includes('Allow: /en/')
+    && robotsTxt.includes('Allow: /fr/')
+    && robotsTxt.includes('Allow: /ja/'));
+
+  kontrol('public/maliyet.html güncel STL/3MF başlığı + SoftwareApplication + FAQPage şeması içerir',
+    maliyetHtml.includes('STL / 3MF')
+    && maliyetHtml.includes('"@type": "SoftwareApplication"')
+    && maliyetHtml.includes('"@type": "FAQPage"'));
+
+  const enMalSeo = globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://baskihesap.tech') || '';
+  kontrol('/en/cost-calculator yerelleştirilmiş SoftwareApplication ve FAQPage JSON-LD üretir (TR kalıntısı yok)',
+    enMalSeo.includes('"priceCurrency":"USD"')
+    && enMalSeo.includes('"@type":"SoftwareApplication"')
+    && enMalSeo.includes('"@type":"FAQPage"')
+    && !enMalSeo.includes('Baskı Hesap 3D Baskı Maliyet')
+    && !enMalSeo.includes('Yüklediğim STL veya 3MF dosyası sunucuya gönderiliyor mu')
+    && enMalSeo.includes('Are my STL or 3MF files uploaded to a server?'));
+
+  const trMeshySeo = rehberSayfasiBul('/rehber/meshy-vs-hi3d-3d-baski-maliyeti')?.olustur([], 'https://baskihesap.tech') || '';
+  const enMeshySeo = globalAi3dRehberiHtml('en', 'https://baskihesap.tech', []);
+  kontrol('Meshy vs Hi3D TR & EN rehberleri TechArticle + FAQPage JSON-LD içerir',
+    trMeshySeo.includes('"@type":"TechArticle"')
+    && trMeshySeo.includes('"@type":"FAQPage"')
+    && enMeshySeo.includes('"@type":"TechArticle"')
+    && enMeshySeo.includes('"inLanguage":"en"'));
+
+  kontrol('server.js /sepet.html karşılıklı global hreflang ve IndexNow global yolları içerir',
+    serverSrc.includes('GLOBAL_SEPET_YOLLARI.en')
+    && serverSrc.includes('GLOBAL_SEPET_YOLLARI.fr')
+    && serverSrc.includes('GLOBAL_SEPET_YOLLARI.ja')
+    && serverSrc.includes('function tumIndexNowYollari()')
+    && serverSrc.includes('globalRehberSitemapKayitlari()'));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

@@ -68,7 +68,7 @@ import {
 import { aiModelPartnerLinkleri } from './src/afiliye.js';
 import {
   globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
-  GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SLICER_YOLLARI,
+  GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SEPET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
@@ -607,10 +607,21 @@ app.get('/api/admin/indexnow', adminGerekli, (req, res) => {
   res.json(indexNowDurum(yayinKoku(req)));
 });
 
+function tumIndexNowYollari() {
+  const ham = [
+    ...sitemapKayitlari(),
+    ...rehberSitemapKayitlari(),
+    ...globalAracSitemapKayitlari(),
+    ...globalRehberSitemapKayitlari(),
+    ...globalKategoriSitemapKayitlari(),
+  ].map(s => s.yol).filter(Boolean);
+  return [...new Set(ham)];
+}
+
 app.post('/api/admin/indexnow', adminGerekli, async (req, res) => {
   try {
     const taban = yayinKoku(req);
-    const urller = [...sitemapKayitlari(), ...rehberSitemapKayitlari()].map(s => s.yol);
+    const urller = tumIndexNowYollari();
     const sonuc = await indexNowBildir(urller, { tabanUrl: taban, zorla: true });
     res.json({ ...sonuc, durum: indexNowDurum(taban) });
   } catch (e) {
@@ -829,8 +840,11 @@ function statikHtmlSun(req, res, next, dosyaAdi, { anaSayfa = false, canonicalEk
           ].join('\n  ');
         } else if (req.path === '/sepet.html') {
           ekAlternates = '\n  ' + [
-            `<link rel="alternate" hreflang="tr" href="${tamKok}/sepet.html" />`,
-            `<link rel="alternate" hreflang="x-default" href="${tamKok}/sepet.html" />`,
+            `<link rel="alternate" hreflang="tr" href="${tamKok}${GLOBAL_SEPET_YOLLARI.tr}" />`,
+            `<link rel="alternate" hreflang="en" href="${tamKok}${GLOBAL_SEPET_YOLLARI.en}" />`,
+            `<link rel="alternate" hreflang="fr" href="${tamKok}${GLOBAL_SEPET_YOLLARI.fr}" />`,
+            `<link rel="alternate" hreflang="ja" href="${tamKok}${GLOBAL_SEPET_YOLLARI.ja}" />`,
+            `<link rel="alternate" hreflang="x-default" href="${tamKok}${GLOBAL_SEPET_YOLLARI.en}" />`,
           ].join('\n  ');
         }
         cikti = cikti.replace(
@@ -3541,7 +3555,7 @@ app.listen(config.port, config.host, () => {
         if (!r || r.atlandi || !(r.taranan > 0)) return;
         const taban = String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
         if (!/^https:\/\//i.test(taban)) return;
-        const urller = [...sitemapKayitlari(), ...rehberSitemapKayitlari()].map(s => s.yol);
+        const urller = tumIndexNowYollari();
         const res = await indexNowBildir(urller, { tabanUrl: taban });
         if (res.ok && !res.atlandi) {
           console.log(`[indexnow] Bing/Yandex bildirildi: ${res.gonderilenSayi} URL (HTTP ${res.status})`);

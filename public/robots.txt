@@ -6,10 +6,19 @@ Allow: /
 Allow: /urunler
 Allow: /urun/
 Allow: /kategori/
+Allow: /rehber
+Allow: /rehber/
+Allow: /karsilastir/
 Allow: /maliyet.html
 Allow: /sepet.html
 Allow: /slicer.html
 Allow: /ayarlar.html
+Allow: /en
+Allow: /en/
+Allow: /fr
+Allow: /fr/
+Allow: /ja
+Allow: /ja/
 
 # Yönetici paneli (kimlik doğrulamalı, dizine girmemeli)
 Disallow: /admin
