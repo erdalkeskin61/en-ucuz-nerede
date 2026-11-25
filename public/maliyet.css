@@ -6,7 +6,7 @@
  * Mobil öncelikli: 920px altında tek sütun, bento 2 sütun.
  */
 
-.maliyet-hero .hero-ic { padding: 34px 22px 30px; }
+.maliyet-hero .hero-ic { padding: 26px 26px 22px; }
 
 .mz-duzen > *,
 .mz-bento > *,
@@ -329,23 +329,23 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: var(--halk
 }
 .mz-kart-alt { font-size: 11.5px; color: var(--gri-metin-hafif); line-height: 1.35; }
 
-.mz-kart-hammadde { background: linear-gradient(160deg, #eff6ff 0%, var(--kart-2) 70%); }
-.mz-kart-elektrik { background: linear-gradient(160deg, #fffbeb 0%, var(--kart-2) 70%); }
-.mz-kart-amort { background: linear-gradient(160deg, #f5f3ff 0%, var(--kart-2) 70%); }
+.mz-kart-hammadde { border-left: 3px solid #1E40AF; }
+.mz-kart-elektrik { border-left: 3px solid #0891B2; }
+.mz-kart-amort { border-left: 3px solid #D97706; }
 .mz-kart-toplam {
   grid-column: 1 / -1;
-  background: var(--ana-gradyan);
-  border: 0;
+  background: var(--metin);
+  border: 1px solid var(--metin);
   color: #fff;
-  box-shadow: 0 10px 26px -12px rgba(67, 56, 202, 0.7);
 }
 .mz-kart-toplam .mz-kart-ad,
-.mz-kart-toplam .mz-kart-alt { color: rgba(255, 255, 255, 0.85); }
+.mz-kart-toplam .mz-kart-alt { color: rgba(255, 255, 255, 0.78); }
 .mz-kart-toplam .mz-kart-deger { color: #fff; font-size: clamp(24px, 3.2vw, 32px); }
 
-html[data-theme="dark"] .mz-kart-hammadde { background: linear-gradient(160deg, rgba(59,130,246,0.16) 0%, var(--kart-2) 70%); }
-html[data-theme="dark"] .mz-kart-elektrik { background: linear-gradient(160deg, rgba(245,158,11,0.14) 0%, var(--kart-2) 70%); }
-html[data-theme="dark"] .mz-kart-amort { background: linear-gradient(160deg, rgba(139,92,246,0.16) 0%, var(--kart-2) 70%); }
+html[data-theme="dark"] .mz-kart-hammadde { border-left-color: #60A5FA; }
+html[data-theme="dark"] .mz-kart-elektrik { border-left-color: #22D3EE; }
+html[data-theme="dark"] .mz-kart-amort { border-left-color: #FBBF24; }
+html[data-theme="dark"] .mz-kart-toplam { background: #1E3A8A; border-color: #2563EB; }
 
 /* ---------- Fiyat panosu ---------- */
 .mz-fiyat-panosu {
@@ -406,24 +406,8 @@ html[data-theme="dark"] .mz-kart-amort { background: linear-gradient(160deg, rgb
   padding: 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--yesil-cizgi);
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 100%);
+  background: var(--yesil-acik);
   position: relative;
-  overflow: hidden;
-}
-.mz-cta::before {
-  content: '';
-  position: absolute;
-  inset: -40% -10% auto auto;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.28), transparent 70%);
-  animation: mz-parla 3.4s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes mz-parla {
-  0%, 100% { opacity: 0.55; transform: scale(0.94); }
-  50% { opacity: 1; transform: scale(1.08); }
 }
 .mz-cta-metin {
   margin: 0 0 11px;
@@ -437,22 +421,21 @@ html[data-theme="dark"] .mz-kart-amort { background: linear-gradient(160deg, rgb
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 18px;
-  border-radius: 999px;
+  padding: 10px 16px;
+  border-radius: 8px;
   background: var(--yesil);
   color: #fff;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13.5px;
   text-decoration: none;
   position: relative;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
-  box-shadow: 0 8px 20px -8px rgba(4, 120, 87, 0.85);
+  transition: filter 0.14s ease;
 }
-.mz-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(4, 120, 87, 0.9); }
+.mz-cta-btn:hover { filter: brightness(0.92); }
 .mz-cta-not { margin: 9px 0 0; font-size: 11px; color: var(--gri-metin-hafif); position: relative; }
 
 html[data-theme="dark"] .mz-cta {
-  background: linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(59,130,246,0.10) 100%);
+  background: rgba(16, 185, 129, 0.12);
 }
 
 /* ---------- Kopyala ---------- */

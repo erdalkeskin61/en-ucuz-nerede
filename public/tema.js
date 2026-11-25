@@ -65,7 +65,7 @@
     kok.style.colorScheme = tema === 'dark' ? 'dark' : 'light';
     // Mobil tarayıcı çubuğu rengi de temaya uysun.
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', tema === 'dark' ? '#0F172A' : '#4338CA');
+    if (meta) meta.setAttribute('content', tema === 'dark' ? '#0B0F17' : '#1E40AF');
     dugme.textContent = tema === 'dark' ? '☀️' : '🌓';
     dugme.setAttribute('aria-pressed', tema === 'dark' ? 'true' : 'false');
     const metin = TEMA_METNI[sayfaDili()];

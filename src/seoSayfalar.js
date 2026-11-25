@@ -1072,7 +1072,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   <title>${safeTitle}</title>
   <meta name="description" content="${safeDesc}" />
   <link rel="canonical" href="${safeUrl}" />
-  <meta name="theme-color" content="#4338CA" />
+  <meta name="theme-color" content="#1E40AF" />
   <meta property="og:type" content="${safeOgType}" />
   <meta property="og:site_name" content="${htmlKacis(sz.meta.siteAdi)}" />
   <meta property="og:locale" content="${htmlKacis(sz.meta.ogLocale)}" />
@@ -1088,7 +1088,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
   <link rel="apple-touch-icon" href="/ikon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script>
     try {
       var t = localStorage.getItem('tema');
@@ -1102,12 +1102,12 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .seo-kapsam { max-width: 1080px; margin: 24px auto 48px; padding: 0 16px; }
     .seo-yol { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--gri-metin); margin-bottom: 16px; }
     .seo-yol a { color: var(--ana); text-decoration: none; font-weight: 600; }
-    .seo-kart { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 20px; padding: 24px; box-shadow: 0 14px 34px -26px rgba(15,23,42,.3); margin-bottom: 22px; }
+    .seo-kart { background: var(--kart); border: 1px solid var(--cizgi); border-radius: var(--radius); padding: 22px; box-shadow: var(--kart-golge); margin-bottom: 20px; }
     .seo-ust { display: grid; grid-template-columns: 110px 1fr; gap: 20px; align-items: center; }
-    .seo-gorsel { width: 110px; height: 110px; border-radius: 14px; object-fit: contain; background: #fff; border: 1px solid var(--cizgi); padding: 6px; }
+    .seo-gorsel { width: 110px; height: 110px; border-radius: 10px; object-fit: contain; background: #fff; border: 1px solid var(--cizgi); padding: 6px; }
     .seo-baslik { margin: 0 0 8px; font-size: clamp(22px, 3vw, 30px); line-height: 1.2; font-weight: 800; letter-spacing: -.02em; }
     .seo-alt { margin: 0 0 14px; color: var(--gri-metin); font-size: 14.5px; line-height: 1.5; }
-    .seo-fiyat-kutu { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 14px; background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(52,80,209,.08)); border: 1px solid rgba(16,185,129,.35); margin: 14px 0; }
+    .seo-fiyat-kutu { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 18px; border-radius: var(--radius-md); background: var(--yesil-acik); border: 1px solid var(--yesil-cizgi); margin: 14px 0; }
     .seo-fiyat-ana { font-size: 28px; font-weight: 800; color: #059669; }
     html[data-theme="dark"] .seo-fiyat-ana { color: #34D399; }
     .seo-butonlar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
@@ -1267,12 +1267,12 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       </a>
       <nav class="menu">
         <a href="${htmlKacis(navYol.ana)}"${aktifNav === 'karsilastir' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.karsilastir)}</a>
-        <a href="${htmlKacis(navYol.katalog)}"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
-        <a href="${htmlKacis(navYol.rehber)}"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
-        <a href="${htmlKacis(navYol.maliyet)}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
-        <a href="${htmlKacis(navYol.sepet)}"${aktifNav === 'sepet' ? ' class="etkin"' : ''}>🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
-        <a href="${htmlKacis(navYol.slicer)}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
-        <a href="${htmlKacis(navYol.ayarlar)}">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
+        <a href="${htmlKacis(navYol.katalog)}"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.katalog)}</a>
+        <a href="${htmlKacis(navYol.rehber)}"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.rehberler)}</a>
+        <a href="${htmlKacis(navYol.maliyet)}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="${htmlKacis(navYol.sepet)}"${aktifNav === 'sepet' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.akilliSepet)}</a>
+        <a href="${htmlKacis(navYol.slicer)}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="${htmlKacis(navYol.ayarlar)}">${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(sz.meta.dil, dilYolHaritasi)}
       ${temaDugmesiHtml(sz.meta.dil)}

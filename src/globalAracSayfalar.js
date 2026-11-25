@@ -135,11 +135,11 @@ const MALIYET_KOPYA = Object.freeze({
   en: {
     title: '3D Print Cost & Profit Calculator (STL / 3MF) — Baski Hesap',
     desc: 'Drop an STL or multi-object Bambu/Orca 3MF file in your browser (zero upload) or test 1-click sample STLs to compute weight, electricity, margin, and cheapest in-stock spools.',
-    rozet: '🧮 Global Workshop Tool · 100% Client-Side',
+    rozet: 'Global Workshop Tool · 100% Client-Side',
     h1: 'Calculate your <b>3D print cost</b> &amp; selling price in seconds',
     alt: 'Drop any STL/3MF file or enter slicer weight &amp; hours. Everything runs locally in your browser with editable filament, electricity and margin settings.',
-    stlBaslik: '🧩 Drop your STL / 3MF file for instant weight estimate',
-    stlGizlilik: '🔒 Processed 100% on your device',
+    stlBaslik: 'Drop your STL / 3MF file for instant weight estimate',
+    stlGizlilik: 'Processed 100% on your device',
     stlBirakAna: 'Drag & drop an STL or 3MF file here',
     stlBirakAlt: 'or click to browse · max 100 MB · never uploaded to a server',
     ornekEtiket: '⚡ Try 1-click with a sample STL:',
@@ -194,11 +194,11 @@ const MALIYET_KOPYA = Object.freeze({
   fr: {
     title: 'Calculateur de Coût &amp; Rentabilité Impression 3D (STL / 3MF) — Baski Hesap',
     desc: 'Glissez un fichier STL ou 3MF dans votre navigateur (zéro envoi serveur) pour calculer le poids, le filament, l’électricité, l’usure et le prix de vente conseillé.',
-    rozet: '🧮 Outil Atelier · 100% Local dans le Navigateur',
+    rozet: 'Outil Atelier · 100% Local dans le Navigateur',
     h1: 'Calculez le <b>coût réel</b> et le prix de vente de vos impressions 3D',
     alt: 'Déposez un fichier STL/3MF ou saisissez les grammes et la durée. Le calcul s’exécute localement avec vos propres tarifs en euros (€).',
-    stlBaslik: '🧩 Déposez votre fichier STL / 3MF pour estimer le poids',
-    stlGizlilik: '🔒 Traité à 100% sur votre appareil',
+    stlBaslik: 'Déposez votre fichier STL / 3MF pour estimer le poids',
+    stlGizlilik: 'Traité à 100% sur votre appareil',
     stlBirakAna: 'Glissez-déposez un fichier STL ou 3MF ici',
     stlBirakAlt: 'ou cliquez pour choisir · max 100 Mo · aucun envoi serveur',
     ornekEtiket: '⚡ Tester en 1 clic avec un STL :',
@@ -253,11 +253,11 @@ const MALIYET_KOPYA = Object.freeze({
   ja: {
     title: '3Dプリント原価・販売価格シミュレーター (STL / 3MF) — Baski Hesap',
     desc: 'STL・3MFファイルをブラウザにドロップするだけで重量・フィラメント代・電気代・減価償却費・推奨販売価格を即時計算（サーバー送信なし）。',
-    rozet: '🧮 ブラウザ完結ツール · 100% ローカル処理',
+    rozet: 'ブラウザ完結ツール · 100% ローカル処理',
     h1: '3Dプリントの<b>実質原価</b>と推奨販売価格を数秒で計算',
     alt: 'STL/3MFモデルを読み込むか、スライサーのグラム数と造形時間を入力してください。すべてブラウザ内で計算され、円（¥）単位で利益率まで確認できます。',
-    stlBaslik: '🧩 STL / 3MFファイルをドロップして重量を自動見積り',
-    stlGizlilik: '🔒 端末内で100%処理（送信なし）',
+    stlBaslik: 'STL / 3MFファイルをドロップして重量を自動見積り',
+    stlGizlilik: '端末内で100%処理（送信なし）',
     stlBirakAna: 'STL または 3MF ファイルをここにドロップ',
     stlBirakAlt: 'またはクリックして選択 · 最大 100 MB · サーバーへアップロードされません',
     ornekEtiket: '⚡ サンプルSTLで1クリック試算:',
@@ -568,12 +568,12 @@ function ortakKlonSayfaHazirla(sablon, {
       </a>
       <nav class="menu">
         <a href="${htmlKacis(nav.ana)}"${aktifNav === 'karsilastir' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.karsilastir)}</a>
-        <a href="${htmlKacis(nav.katalog)}"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>🗂️ ${htmlKacis(sz.nav.katalog)}</a>
-        <a href="${htmlKacis(nav.rehber)}"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>📖 ${htmlKacis(sz.nav.rehberler)}</a>
-        <a href="${htmlKacis(nav.maliyet)}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>🧮 ${htmlKacis(sz.nav.maliyet)}</a>
-        <a href="${htmlKacis(nav.sepet)}"${aktifNav === 'sepet' ? ' class="etkin"' : ''}>🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
-        <a href="${htmlKacis(nav.slicer)}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>🧩 ${htmlKacis(sz.nav.eklenti)}</a>
-        <a href="${htmlKacis(nav.ayarlar)}"${aktifNav === 'ayarlar' ? ' class="etkin"' : ''}>🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
+        <a href="${htmlKacis(nav.katalog)}"${aktifNav === 'katalog' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.katalog)}</a>
+        <a href="${htmlKacis(nav.rehber)}"${aktifNav === 'rehber' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.rehberler)}</a>
+        <a href="${htmlKacis(nav.maliyet)}"${aktifNav === 'maliyet' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="${htmlKacis(nav.sepet)}"${aktifNav === 'sepet' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.akilliSepet)}</a>
+        <a href="${htmlKacis(nav.slicer)}"${aktifNav === 'eklenti' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="${htmlKacis(nav.ayarlar)}"${aktifNav === 'ayarlar' ? ' class="etkin"' : ''}>${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(kod, yolHaritasi)}
       ${temaDugmesiHtml(kod)}
@@ -742,7 +742,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       eylemSatis: 'Recommended selling price', secili: 'Selected price', kar: 'Profit',
       canliPiyasa: 'Live market', manuel: 'Manual',
       modelYukleAlt: 'Model file left unchanged; 100% client-side',
-      girdi: '🎛️ Inputs', cikti: '📊 Cost Breakdown', hammaddeAd: 'Material', elektrikAd: 'Electricity', amortAd: 'Depreciation', netAd: 'Net Cost',
+      girdi: 'Inputs', cikti: 'Cost Breakdown', hammaddeAd: 'Material', elektrikAd: 'Electricity', amortAd: 'Depreciation', netAd: 'Net Cost',
       kopyala: '📋 Copy Customer Quote',
       varsayimAlt: 'Electricity & depreciation are estimates shown alongside net cost. Live filament prices update from regional scans.',
       crealityBtn: '🛒 Shop Official Creality Store ↗',
@@ -762,7 +762,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       fisWa: '📲 Share via WhatsApp', fisKopya: '📋 Copy Quote', fisYaz: '🖨️ Print / PDF',
       kpiMaliyet: 'Total Real Cost', kpiKar: 'Estimated Net Profit', kpiKarAlt: 'selected price tier',
       kpiSatis: 'Suggested Selling Price', kpiSatisAlt: 'excl. tax quote', kpiMarj: 'Net Profit Margin',
-      donutBaslik: '🍩 Cost Breakdown', donutAlt: 'Per-part cost shares', donutOrta: 'Net Cost',
+      donutBaslik: 'Cost Breakdown Chart', donutAlt: 'Per-part cost shares', donutOrta: 'Net Cost',
       fireBaslik: '🛡️ Waste &amp; Failure Protection (%)', fireAd: 'Waste / Failure',
       matTumu: 'All', matRecine: 'Resin',
     },
@@ -770,7 +770,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       eylemSatis: 'Prix de vente conseillé', secili: 'Prix retenu', kar: 'Marge',
       canliPiyasa: 'Marché en direct', manuel: 'Manuel',
       modelYukleAlt: 'Fichier traité à 100% dans votre navigateur',
-      girdi: '🎛️ Paramètres', cikti: '📊 Détail des Coûts', hammaddeAd: 'Matière', elektrikAd: 'Électricité', amortAd: 'Amortissement', netAd: 'Coût net total',
+      girdi: 'Paramètres', cikti: 'Détail des Coûts', hammaddeAd: 'Matière', elektrikAd: 'Électricité', amortAd: 'Amortissement', netAd: 'Coût net total',
       kopyala: '📋 Copier le devis client',
       varsayimAlt: 'L’électricité et l’amortissement sont estimés localement (hors TVA). Les tarifs bobines proviennent des scans régionaux.',
       crealityBtn: '🛒 Boutique Officielle Creality FR ↗',
@@ -789,7 +789,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       fisWa: '📲 Envoyer sur WhatsApp', fisKopya: '📋 Copier le devis', fisYaz: '🖨️ Imprimer / PDF',
       kpiMaliyet: 'Coût Réel Total', kpiKar: 'Bénéfice Net Estimé', kpiKarAlt: 'palier de vente choisi',
       kpiSatis: 'Prix de Vente Conseillé', kpiSatisAlt: 'devis hors TVA', kpiMarj: 'Marge Nette',
-      donutBaslik: '🍩 Répartition des Coûts', donutAlt: 'Parts par pièce', donutOrta: 'Coût Net',
+      donutBaslik: 'Répartition des Coûts', donutAlt: 'Parts par pièce', donutOrta: 'Coût Net',
       fireBaslik: '🛡️ Pertes &amp; Échecs (%)', fireAd: 'Pertes / Échecs',
       matTumu: 'Tous', matRecine: 'Résine',
     },
@@ -797,7 +797,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       eylemSatis: '推奨販売価格', secili: '選択中の販売価格', kar: '利益',
       canliPiyasa: 'ライブ相場', manuel: '手動入力',
       modelYukleAlt: 'ファイルはサーバー送信されません',
-      girdi: '🎛️ 入力条件', cikti: '📊 コスト内訳', hammaddeAd: 'フィラメント材料費', elektrikAd: '電気代', amortAd: '機体償却費', netAd: '合計製造原価',
+      girdi: '入力条件', cikti: 'コスト内訳', hammaddeAd: 'フィラメント材料費', elektrikAd: '電気代', amortAd: '機体償却費', netAd: '合計製造原価',
       kopyala: '📋 見積もりテキストをコピー',
       varsayimAlt: '電気代・償却費は参考設定値です（いつでも変更可）。税抜原価として表示されます。',
       crealityBtn: '🛒 Creality 日本公式ストアを見る ↗',
@@ -816,7 +816,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       fisWa: '📲 WhatsAppで共有', fisKopya: '📋 見積書をコピー', fisYaz: '🖨️ 印刷 / PDF',
       kpiMaliyet: '合計製造原価', kpiKar: '想定純利益', kpiKarAlt: '選択中の販売価格帯',
       kpiSatis: '推奨販売価格', kpiSatisAlt: '税抜見積り', kpiMarj: '粗利益率',
-      donutBaslik: '🍩 原価内訳グラフ', donutAlt: '1個あたりの構成比', donutOrta: '合計原価',
+      donutBaslik: '原価内訳グラフ', donutAlt: '1個あたりの構成比', donutOrta: '合計原価',
       fireBaslik: '🛡️ ロス・造形失敗バッファ (%)', fireAd: 'ロス・失敗予備',
       matTumu: 'すべて', matRecine: 'レジン',
     },
@@ -841,11 +841,11 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
   });
 
   cikti = cikti
-    .replace('<span class="hero-rozet">🧮 Atölye & maker · gerçek maliyet</span>', `<span class="hero-rozet">${c.rozet}</span>`)
+    .replace('<span class="hero-rozet">Atölye &amp; Maker · Gerçek Maliyet Hesabı</span>', `<span class="hero-rozet">${c.rozet}</span>`)
     .replace('<h1>Parçanın <b>gerçek maliyetini</b> ve satış fiyatını hesapla</h1>', `<h1>${c.h1}</h1>`)
     .replace(/Dilimleyiciden aldığınız gramaj ve süreyi girin[\s\S]*?<\/p>/, `${c.alt}</p>`)
-    .replace('<h2 id="stlBaslik" class="stl-baslik">🧩 Model dosyanı bırak, gramajı görelim</h2>', `<h2 id="stlBaslik" class="stl-baslik">${c.stlBaslik}</h2>`)
-    .replace('🔒 %100 cihazında işlenir', c.stlGizlilik)
+    .replace('<h2 id="stlBaslik" class="stl-baslik">Model dosyanı bırak, gramajı görelim</h2>', `<h2 id="stlBaslik" class="stl-baslik">${c.stlBaslik}</h2>`)
+    .replace('%100 cihazında işlenir', c.stlGizlilik)
     .replace('<b>STL / 3MF dosyasını buraya sürükleyin</b>', `<b>${c.stlBirakAna}</b>`)
     .replace('<span class="stl-birak-alt">ya da tıklayıp seçin · en fazla 100 MB · sunucuya yüklenmez</span>', `<span class="stl-birak-alt">${c.stlBirakAlt}</span>`)
     .replace('⚡ Örnek STL ile 1 tıkta dene:', c.ornekEtiket)
@@ -892,7 +892,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<label for="stlMalzeme">Malzeme</label>', `<label for="stlMalzeme">${c.malzemeLabel}</label>`)
     .replace('İnce ayar: <b id="stlDolulukEtiket">%20</b>', `${c.inceAyar} <b id="stlDolulukEtiket">20%</b>`)
     .replace('⬇️ Bu gramajı hesaplayıcıya aktar', c.aktarBtn)
-    .replace('<h2 id="girdiBaslik" class="mz-baslik">🎛️ Girdiler</h2>', `<h2 id="girdiBaslik" class="mz-baslik">${k.girdi}</h2>`)
+    .replace('<h2 id="girdiBaslik" class="mz-baslik">Girdiler</h2>', `<h2 id="girdiBaslik" class="mz-baslik">${k.girdi}</h2>`)
     .replace('<label for="gramaj">⚖️ Model gramajı</label>', `<label for="gramaj">${c.gramajLabel}</label>`)
     .replace('<p class="mz-ipucu">Dilimleyicide (Bambu Studio, Cura, OrcaSlicer) “Filament used” değeri.</p>', `<p class="mz-ipucu">${k.gramajIpucu}</p>`)
     .replace('<label for="sure">⏱️ Baskı süresi (saat)</label>', `<label for="sure">${c.sureLabel}</label>`)
@@ -915,7 +915,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<label for="yipranma">🛠️ Yıpranma (₺/saat)</label>', `<label for="yipranma">${c.yipranmaLabel}</label>`)
     .replace('value="3.00" inputmode="decimal"', `value="${c.varsayilanYipranma}" inputmode="decimal"`)
     .replace('Filament fiyatları canlı radar taramasından gelir; her zaman mağazada doğrulayın.', k.footerUstNot)
-    .replace('<h2 id="ciktiBaslik" class="mz-baslik">📊 Maliyet dökümü</h2>', `<h2 id="ciktiBaslik" class="mz-baslik">${k.cikti}</h2>`)
+    .replace('<h2 id="ciktiBaslik" class="mz-baslik">Maliyet dökümü</h2>', `<h2 id="ciktiBaslik" class="mz-baslik">${k.cikti}</h2>`)
     .replace('<span class="mz-kpi-ad">Toplam Gerçek Maliyet</span>', `<span class="mz-kpi-ad">${k.kpiMaliyet}</span>`)
     .replace('<span class="mz-kpi-ad">Tahmini Net Kâr</span>', `<span class="mz-kpi-ad">${k.kpiKar}</span>`)
     .replace('<span class="mz-kpi-alt" id="kpiKarAlt">seçili satış kademesi</span>', `<span class="mz-kpi-alt" id="kpiKarAlt">${k.kpiKarAlt}</span>`)
@@ -928,7 +928,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<button type="button" class="aktif" data-mat="all">Tümü</button>', `<button type="button" class="aktif" data-mat="all">${k.matTumu}</button>`)
     .replace('<button type="button" data-mat="Resin">Reçine</button>', `<button type="button" data-mat="Resin">${k.matRecine}</button>`)
     .replace('<label for="fireYuzde">🛡️ Atık &amp; Baskı Hatası Payı (%)</label>', `<label for="fireYuzde">${k.fireBaslik}</label>`)
-    .replace('<h3 class="mz-alt-baslik" style="margin:0">🍩 Maliyet Dağılımı</h3>', `<h3 class="mz-alt-baslik" style="margin:0">${k.donutBaslik}</h3>`)
+    .replace('<h3 class="mz-alt-baslik" style="margin:0">Maliyet Dağılımı</h3>', `<h3 class="mz-alt-baslik" style="margin:0">${k.donutBaslik}</h3>`)
     .replace('<span class="mz-donut-etiket" id="donutAltEtiket">Parça başı paylar</span>', `<span class="mz-donut-etiket" id="donutAltEtiket">${k.donutAlt}</span>`)
     .replace('<strong id="donutToplam">₺0,00</strong>', `<strong id="donutToplam">${sifirPara}</strong>`)
     .replace('<span id="donutOrtaAlt">Net Maliyet</span>', `<span id="donutOrtaAlt">${k.donutOrta}</span>`)
@@ -946,7 +946,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<strong class="mz-kart-deger" id="ciktiAmortisman">₺0,00</strong>', `<strong class="mz-kart-deger" id="ciktiAmortisman">${sifirPara}</strong>`)
     .replace('<span class="mz-kart-ad">Toplam net maliyet</span>', `<span class="mz-kart-ad">${k.netAd}</span>`)
     .replace('<strong class="mz-kart-deger" id="ciktiNet">₺0,00</strong>', `<strong class="mz-kart-deger" id="ciktiNet">${sifirPara}</strong>`)
-    .replace('<h3 class="mz-alt-baslik">💰 Önerilen satış fiyatı</h3>', `<h3 class="mz-alt-baslik">💰 ${k.eylemSatis}</h3>`)
+    .replace('<h3 class="mz-alt-baslik">Önerilen satış fiyatı</h3>', `<h3 class="mz-alt-baslik">${k.eylemSatis}</h3>`)
     .replace('<span class="mz-secilen-ad">Seçili fiyat</span>', `<span class="mz-secilen-ad">${k.secili}</span>`)
     .replace('<strong id="secilenFiyat">₺0,00</strong>', `<strong id="secilenFiyat">${sifirPara}</strong>`)
     .replace('<span>Kâr</span>', `<span>${k.kar}</span>`)
@@ -1212,15 +1212,15 @@ const ANA_KOPYA = Object.freeze({
     currency: 'USD',
     title: 'Baski Hesap Global — Find the Real Lowest Price on 3D Printers &amp; Filaments',
     desc: 'Compare live 3D printer, filament &amp; spare-part prices across US official manufacturers (USD), calculate STL/3MF costs locally, and use our free Cura plugin.',
-    rozet: '⚡ 3D Printing &amp; Makers · Live Stock &amp; Real Prices (USD)',
+    rozet: '3D Printing &amp; Makers · Live Stock &amp; Real Prices (USD)',
     h1: 'Find the <b>real lowest price</b> on 3D printers &amp; filament',
     alt: 'Not just list prices — we check live stock, shipping thresholds, and $/kg unit cost across verified US 3D printing manufacturers &amp; stores.',
     statMagaza: 'stores scanned',
-    statBirim: '🧵 in-stock + $/kg unit price',
-    statEslesme: '🔍 model + color match',
-    modOto: '✨ Auto',
-    modLink: '🔗 Search by link',
-    modAd: '💬 Search by name',
+    statBirim: 'In-stock + $/kg unit price',
+    statEslesme: 'Model + color match',
+    modOto: 'Auto',
+    modLink: 'Search by link',
+    modAd: 'Search by name',
     placeholderOto: 'Paste a store link or type a product name… e.g. "Polymaker PLA", "Creality K1C"',
     placeholderLink: 'Paste product URL from store.creality.com, us.polymaker.com, printedsolid.com…',
     placeholderAd: 'Type product name… e.g. "Creality K1C", "Overture PLA"',
@@ -1257,15 +1257,15 @@ const ANA_KOPYA = Object.freeze({
     currency: 'EUR',
     title: 'Baski Hesap France — Trouvez le Vrai Meilleur Prix Imprimantes 3D &amp; Filaments',
     desc: 'Comparez en direct les prix TTC en euros (€) chez les fabricants et boutiques françaises (Creality FR, Arianeplast, Francofil, Atome3D, Makershop, Polyfab3D).',
-    rozet: '⚡ Impression 3D &amp; Makers · Stock en direct &amp; prix réels (EUR)',
+    rozet: 'Impression 3D &amp; Makers · Stock en direct &amp; prix réels (EUR)',
     h1: 'Trouvez le <b>vrai meilleur prix</b> imprimante 3D &amp; filament',
     alt: 'Plus que le prix affiché — nous comparons stock réel, frais de port et coût au €/kg chez les fabricants et distributeurs français.',
     statMagaza: 'boutiques analysées',
-    statBirim: '🧵 en stock + prix €/kg',
-    statEslesme: '🔍 modèle + couleur',
-    modOto: '✨ Automatique',
-    modLink: '🔗 Par lien',
-    modAd: '💬 Par nom de produit',
+    statBirim: 'En stock + prix €/kg',
+    statEslesme: 'Modèle + couleur',
+    modOto: 'Automatique',
+    modLink: 'Par lien',
+    modAd: 'Par nom de produit',
     placeholderOto: 'Collez un lien ou tapez un produit… ex. "Creality K1C", "Polymaker PLA", "Arianeplast"',
     placeholderLink: 'Collez l’URL d’un produit (store.creality.com/fr, makershop.fr, arianeplast.com…)',
     placeholderAd: 'Tapez un modèle… ex. "Creality K1C", "PLA Noir 1kg", "Francofil"',
@@ -1302,15 +1302,15 @@ const ANA_KOPYA = Object.freeze({
     currency: 'JPY',
     title: 'Baski Hesap 日本 — 3Dプリンター＆フィラメント実質最安値比較',
     desc: '日本国内の3Dプリンター・フィラメント専門店（Creality公式、SK本舗、サンステラ、ELEGOO JP等）の在庫と円建て（¥）価格を一括比較。',
-    rozet: '⚡ 3Dプリント最安値比較 · リアルタイム在庫＆実質価格 (JPY)',
+    rozet: '3Dプリント最安値比較 · リアルタイム在庫＆実質価格 (JPY)',
     h1: '3Dプリンター・フィラメントの<b>実質最安値</b>を比較',
     alt: '表示価格だけでなく在庫状況や¥/kg単価までチェック。日本国内の公式ストア・専門店をリアルタイムに比較します。',
     statMagaza: 'ストアを検索',
-    statBirim: '🧵 在庫あり + ¥/kg 単価',
-    statEslesme: '🔍 型番 + カラー一致',
-    modOto: '✨ 自動判定',
-    modLink: '🔗 URLで検索',
-    modAd: '💬 商品名で検索',
+    statBirim: '在庫あり + ¥/kg 単価',
+    statEslesme: '型番 + カラー一致',
+    modOto: '自動判定',
+    modLink: 'URLで検索',
+    modAd: '商品名で検索',
     placeholderOto: '商品URLを貼り付け、または商品名を入力… 例: "Creality K1C", "ELEGOO PETG"',
     placeholderLink: 'store.creality.com/jp、skhonpo.com、sunstella.co.jp 等の商品URLを入力',
     placeholderAd: '商品名を入力… 例: "Creality K1C", "PLA フィラメント"',
@@ -2219,12 +2219,12 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
       </a>
       <nav class="menu">
         <a href="${htmlKacis(nav.ana)}" class="etkin">${htmlKacis(sz.nav.karsilastir)}</a>
-        <a href="${htmlKacis(nav.katalog)}">🗂️ ${htmlKacis(sz.nav.katalog)}</a>
-        <a href="${htmlKacis(nav.rehber)}">📖 ${htmlKacis(sz.nav.rehberler)}</a>
-        <a href="${htmlKacis(nav.maliyet)}">🧮 ${htmlKacis(sz.nav.maliyet)}</a>
-        <a href="${htmlKacis(nav.sepet)}">🧺 ${htmlKacis(sz.nav.akilliSepet)}</a>
-        <a href="${htmlKacis(nav.slicer)}">🧩 ${htmlKacis(sz.nav.eklenti)}</a>
-        <a href="${htmlKacis(nav.ayarlar)}">🔔 ${htmlKacis(sz.nav.alarmlar)}</a>
+        <a href="${htmlKacis(nav.katalog)}">${htmlKacis(sz.nav.katalog)}</a>
+        <a href="${htmlKacis(nav.rehber)}">${htmlKacis(sz.nav.rehberler)}</a>
+        <a href="${htmlKacis(nav.maliyet)}">${htmlKacis(sz.nav.maliyet)}</a>
+        <a href="${htmlKacis(nav.sepet)}">${htmlKacis(sz.nav.akilliSepet)}</a>
+        <a href="${htmlKacis(nav.slicer)}">${htmlKacis(sz.nav.eklenti)}</a>
+        <a href="${htmlKacis(nav.ayarlar)}">${htmlKacis(sz.nav.alarmlar)}</a>
       </nav>
       ${dilSeciciHtml(kod, ANA_YOL_HARITASI)}
       ${temaDugmesiHtml(kod)}
@@ -2251,9 +2251,9 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
 
   cikti = cikti
     .replace('aria-label="Arama modu"', `aria-label="${htmlKacis(kod === 'fr' ? 'Mode de recherche' : (kod === 'ja' ? '検索モード' : 'Search mode'))}"`)
-    .replace('✨ Otomatik', c.modOto)
-    .replaceAll('🔗 Linkte ara', c.modLink)
-    .replaceAll('💬 Ürün adıyla ara', c.modAd)
+    .replace('Otomatik', c.modOto)
+    .replaceAll('Linkte ara', c.modLink)
+    .replaceAll('Ürün adıyla ara', c.modAd)
     .replace(
       'placeholder="Ürün linki yapıştır ya da ürün adı yaz…  ör. &quot;eSun PLA+&quot;, &quot;Bambu Lab A1 Mini&quot;"',
       `placeholder="${htmlKacis(c.placeholderOto)}"`,
@@ -2274,7 +2274,7 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   // 4) STL hızlı hesap kutusu + Alt mağaza listesi başlığı
   cikti = cikti
     .replace(/<h2 id="stlHizliBaslik" class="stl-hizli-baslik">[\s\S]*?<\/h2>/, `<h2 id="stlHizliBaslik" class="stl-hizli-baslik">${c.stlBaslik}</h2>`)
-    .replace('<span class="stl-hizli-gizlilik">🔒 Dosya cihazından çıkmaz</span>', `<span class="stl-hizli-gizlilik">${c.stlGizlilik}</span>`)
+    .replace('<span class="stl-hizli-gizlilik">Dosya cihazından çıkmaz</span>', `<span class="stl-hizli-gizlilik">${c.stlGizlilik}</span>`)
     .replace('<b>STL / 3MF dosyanı buraya bırak</b>', `<b>${c.stlBirakAna}</b>`)
     .replace('<span class="stl-hizli-alt">Modeline yetecek en ucuz filamenti ve parça başı maliyeti anında hesaplarız</span>', `<span class="stl-hizli-alt">${c.stlBirakAlt}</span>`)
     .replace('<span class="stl-hizli-rozet">⚡ Anında · sunucusuz</span>', `<span class="stl-hizli-rozet">${c.stlRozet}</span>`)

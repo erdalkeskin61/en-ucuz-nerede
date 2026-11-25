@@ -361,8 +361,8 @@ kontrol('sepet.html: ilerleme çubuğu', /role="progressbar"/.test(html));
 kontrol('sepet.html: görünüm meta viewport-fit', /viewport-fit=cover/.test(html));
 kontrol('sepet.html: ana sayfa bağlantısı', /href="\/"/.test(html));
 
-kontrol('navigasyon: index → sepet', /href="\/sepet\.html"[^>]*>🧺 Akıllı Sepet/.test(indexHtml));
-kontrol('navigasyon: maliyet → sepet', /href="\/sepet\.html"[^>]*>🧺 Akıllı Sepet/.test(maliyetHtml));
+kontrol('navigasyon: index → sepet', /href="\/sepet\.html"[^>]*>Akıllı Sepet/.test(indexHtml));
+kontrol('navigasyon: maliyet → sepet', /href="\/sepet\.html"[^>]*>Akıllı Sepet/.test(maliyetHtml));
 kontrol('navigasyon: slicer → sepet', /href="\/sepet\.html"/.test(slicerHtml));
 kontrol('navigasyon: ayarlar → sepet', /href="\/sepet\.html"/.test(ayarlarHtml));
 
