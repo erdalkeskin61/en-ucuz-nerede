@@ -1158,7 +1158,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .rehber-kart:hover { border-color: var(--ana); box-shadow: var(--kart-golge-uzerinde); }
     .rehber-kart-ust { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .rehber-ikon {
-      width: 40px; height: 40px; border-radius: 8px;
+      width: 40px; height: 40px; border-radius: 8px; color: var(--ana);
       display: grid; place-items: center; font-size: 18px;
       background: var(--ana-acik); border: 1px solid color-mix(in srgb, var(--ana) 20%, transparent);
       flex: none;
@@ -1219,7 +1219,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
     .kat-baslik-sol { display: flex; align-items: center; gap: 12px; }
     .kat-ikon {
       width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center;
-      font-size: 18px; background: var(--ana-acik); flex: none;
+      font-size: 18px; color: var(--ana); background: var(--ana-acik); flex: none;
     }
     .kat-sayac {
       display: inline-flex; align-items: center; font-family: var(--mono); font-size: 12px; font-weight: 500;
@@ -1238,12 +1238,12 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       background: #fff; border: 1px solid var(--cizgi); padding: 4px; flex: none;
     }
     .seo-urun-ikon {
-      width: 56px; height: 56px; border-radius: 11px; display: grid; place-items: center;
-      font-size: 24px; background: var(--zemin-2); border: 1px solid var(--cizgi); flex: none;
+      width: 56px; height: 56px; border-radius: 8px; display: grid; place-items: center;
+      font-size: 20px; color: var(--gri-metin); background: var(--zemin-2); border: 1px solid var(--cizgi); flex: none;
     }
     .seo-urun-etiketler { display: flex; flex-wrap: wrap; gap: 6px; }
     .seo-urun-etiket {
-      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+      font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px;
       background: var(--zemin-2); color: var(--gri-metin); border: 1px solid var(--cizgi);
     }
     .seo-urun-alt {
@@ -1301,21 +1301,22 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
 }
 
 function kategoriIkonu(slug) {
-  if (slug === '3d-yazici') return '🖨️';
-  if (slug === 'pla-filament') return '🧵';
-  if (slug === 'petg-tpu-filament') return '🦾';
-  if (slug === '3d-yazici-yedek-parca') return '⚙️';
-  if (slug === 'recine-ve-sarf') return '🧪';
-  return '🎨';
+  const s = 'class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"';
+  if (slug === '3d-yazici') return `<svg ${s}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>`;
+  if (slug === 'pla-filament') return `<svg ${s}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>`;
+  if (slug === 'petg-tpu-filament') return `<svg ${s}><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>`;
+  if (slug === '3d-yazici-yedek-parca') return `<svg ${s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.77 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+  if (slug === 'recine-ve-sarf') return `<svg ${s}><path d="M10 2v7.31l-4.6 7.67A2 2 0 0 0 7.11 20h9.78a2 2 0 0 0 1.71-3.02L14 9.31V2"/><path d="M8.5 2h7"/></svg>`;
+  return `<svg ${s}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
 }
 
 function seoUrunKartiHtml(u, gizli = false, dil = 'tr') {
   const kod = normalizeDil(dil);
   const ceviri = {
-    tr: { canli: '⚡ Canlı Tara', bekliyor: '⏳ Taranmayı bekliyor', magaza: 'mağaza', kargo: 'Kargo dahil →', bul: 'Fiyat Bul →' },
-    en: { canli: '⚡ Live Scan', bekliyor: '⏳ Ready to scan', magaza: 'stores', kargo: 'Incl. shipping →', bul: 'Find Price →' },
-    fr: { canli: '⚡ Scan en direct', bekliyor: '⏳ Prêt à scanner', magaza: 'boutiques', kargo: 'Port inclus →', bul: 'Voir le prix →' },
-    ja: { canli: '⚡ 最安値検索', bekliyor: '⏳ スキャン待機中', magaza: '店舗', kargo: '送料込 →', bul: '価格を探す →' },
+    tr: { canli: 'Canlı Tara →', bekliyor: 'Taranmayı bekliyor', magaza: 'mağaza', kargo: 'Kargo dahil →', bul: 'Fiyat Bul →' },
+    en: { canli: 'Live Scan →', bekliyor: 'Ready to scan', magaza: 'stores', kargo: 'Incl. shipping →', bul: 'Find Price →' },
+    fr: { canli: 'Scan en direct →', bekliyor: 'Prêt à scanner', magaza: 'boutiques', kargo: 'Port inclus →', bul: 'Voir le prix →' },
+    ja: { canli: '最安値検索 →', bekliyor: 'スキャン待機中', magaza: '店舗', kargo: '送料込 →', bul: '価格を探す →' },
   }[kod];
   const gorselHtml = u.gorsel
     ? `<img class="seo-urun-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad)}" width="56" height="56" loading="lazy" decoding="async" />`
@@ -1324,7 +1325,7 @@ function seoUrunKartiHtml(u, gizli = false, dil = 'tr') {
     ? `<span class="seo-mini-fiyat">${kod === 'tr' ? formatTL(u.enUcuzFiyat) : htmlKacis(dilParaFormati(kod, u.enUcuzFiyat, u.paraBirimi))}</span>`
     : `<span class="seo-mini-fiyat" style="color:var(--ana);font-size:14.5px">${ceviri.canli}</span>`;
   const magazaRozet = u.enUcuzSite
-    ? `<span class="seo-urun-etiket">🏪 ${htmlKacis(u.enUcuzSite)}</span>`
+    ? `<span class="seo-urun-etiket">${htmlKacis(u.enUcuzSite)}</span>`
     : `<span class="seo-urun-etiket">${ceviri.bekliyor}</span>`;
   const teklifRozet = u.stokluSayisi > 1
     ? `<span class="seo-urun-etiket">${u.stokluSayisi} ${ceviri.magaza}</span>`

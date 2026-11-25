@@ -27,10 +27,10 @@
       sureTahmini: (s) => `süre tahmini (${s} sa) · hammadde + elektrik + amortisman`,
       maliyetBas: 'Maliyet (Başabaş)', hobi: 'Dost İşi / Hobi', atolye: 'Standart Atölye', ticari: 'Ticari / Özel Tasarım',
       karsiz: 'kârsız', karOran: (y, x) => `%${y} kâr · ${x}x`,
-      ctaMetin: (fKg, site) => `💡 Bu modeli en ekonomik maliyetle basabileceğiniz filament şu anda <b>${fKg}/kg</b> ile <b>${site || 'mağaza'}</b> mağazasında stokta!`,
-      ctaBtn: (fKg) => `🛒 En Ucuz Filamenti Satın Al (${fKg})`,
+      ctaMetin: (fKg, site) => `Bu modeli en ekonomik maliyetle basabileceğiniz filament şu anda <b>${fKg}/kg</b> ile <b>${site || 'mağaza'}</b> mağazasında stokta.`,
+      ctaBtn: (fKg) => `En Ucuz Filamenti Satın Al (${fKg}) →`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>Kullanılan varsayımlar:</b> ${guc} W yazıcı gücü · ${el}/kWh elektrik · ${amp}/saat amortisman${sureTah ? ` · süre gramajdan tahmin edildi (${gs} g/sa)` : ''}. Fiyatlar <b>KDV hariçtir</b>. Filament fiyatı canlı radar taramasından gelir.`,
-      sureIpucuTah: (gs) => `✨ Tahmini süre — gramajdan hesaplandı (${gs} g/saat). Dilimleyiciden okuduğunuz süreyi girin.`,
+      sureIpucuTah: (gs) => `Tahmini süre — gramajdan hesaplandı (${gs} g/saat). Dilimleyiciden okuduğunuz süreyi girin.`,
       sureIpucuN: 'Dilimleyicideki tahmini süre.',
       canliYok: 'Canlı filamente ulaşılamadı. <a href="#" id="manuelGec">Manuel fiyat girin</a> ya da radarın taranmasını bekleyin.',
       ozelAd: 'Özel / Manuel giriş', ozelKisa: 'Özel',
@@ -41,10 +41,10 @@
       maliyetBas: 'Break-even Cost', hobi: 'Hobby / Friend', atolye: 'Standard Workshop', ticari: 'Commercial / Custom',
       karsiz: 'no profit', karOran: (y, x) => `${y}% margin · ${x}x`,
       dolulukKel: 'infill', karDahil: (yuz, kr) => `Includes ${yuz} workshop margin · profit ${kr}`,
-      ctaMetin: (fKg, site) => `💡 The lowest-cost in-stock spool for this print is currently <b>${fKg}/kg</b> at <b>${site || 'store'}</b>!`,
-      ctaBtn: (fKg) => `🛒 Buy Cheapest Filament (${fKg})`,
+      ctaMetin: (fKg, site) => `Lowest-cost in-stock spool for this print is currently <b>${fKg}/kg</b> at <b>${site || 'store'}</b>.`,
+      ctaBtn: (fKg) => `Buy Cheapest Filament (${fKg}) →`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>Assumptions:</b> ${guc} W printer power · ${el}/kWh electricity · ${amp}/hr depreciation${sureTah ? ` · time estimated from weight (${gs} g/hr)` : ''}. Prices exclude tax and reflect live regional scans.`,
-      sureIpucuTah: (gs) => `✨ Estimated print time from weight (${gs} g/hr). Enter your slicer time for exact results.`,
+      sureIpucuTah: (gs) => `Estimated print time from weight (${gs} g/hr). Enter your slicer time for exact results.`,
       sureIpucuN: 'Estimated print time from slicer.',
       canliYok: 'No cached live filament in this region yet. <a href="#" id="manuelGec">Enter manual price</a> or wait for scan updates.',
       ozelAd: 'Custom / Manual input', ozelKisa: 'Custom',
@@ -55,10 +55,10 @@
       maliyetBas: 'Prix coûtant', hobi: 'Loisir / Ami', atolye: 'Atelier Standard', ticari: 'Commercial / Pro',
       karsiz: 'sans marge', karOran: (y, x) => `marge ${y} % · ${x}x`,
       dolulukKel: 'remplissage', karDahil: (yuz, kr) => `Marge atelier ${yuz} incluse · marge ${kr}`,
-      ctaMetin: (fKg, site) => `💡 La bobine la plus économique en stock est actuellement à <b>${fKg}/kg</b> chez <b>${site || 'boutique'}</b> !`,
-      ctaBtn: (fKg) => `🛒 Acheter le filament le moins cher (${fKg})`,
+      ctaMetin: (fKg, site) => `La bobine la plus économique en stock est actuellement à <b>${fKg}/kg</b> chez <b>${site || 'boutique'}</b>.`,
+      ctaBtn: (fKg) => `Acheter le filament le moins cher (${fKg}) →`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>Hypothèses :</b> puissance ${guc} W · électricité ${el}/kWh · amortissement ${amp}/h${sureTah ? ` · durée estimée (${gs} g/h)` : ''}. Prix hors TVA issus de l’analyse régionale.`,
-      sureIpucuTah: (gs) => `✨ Durée estimée d’après le poids (${gs} g/h). Saisissez la durée du slicer pour plus de précision.`,
+      sureIpucuTah: (gs) => `Durée estimée d’après le poids (${gs} g/h). Saisissez la durée du slicer pour plus de précision.`,
       sureIpucuN: 'Durée estimée issue du slicer.',
       canliYok: 'Aucune bobine en cache pour cette région. <a href="#" id="manuelGec">Saisir un prix manuel</a> ou patienter.',
       ozelAd: 'Personnalisé / Saisie manuelle', ozelKisa: 'Manuel',
@@ -69,10 +69,10 @@
       maliyetBas: '原価（損益分岐）', hobi: '趣味・実費', atolye: '標準工房価格', ticari: '商用・受注販売',
       karsiz: '利益なし', karOran: (y, x) => `利益 ${y}% · ${x}倍`,
       dolulukKel: 'インフィル', karDahil: (yuz, kr) => `工房利益 ${yuz} 込み · 利益 ${kr}`,
-      ctaMetin: (fKg, site) => `💡 このモデルに最安の在庫ありフィラメントは <b>${site || 'ショップ'}</b> の <b>${fKg}/kg</b> です！`,
-      ctaBtn: (fKg) => `🛒 最安フィラメントを購入 (${fKg})`,
+      ctaMetin: (fKg, site) => `このモデルに最安の在庫ありフィラメントは <b>${site || 'ショップ'}</b> の <b>${fKg}/kg</b> です。`,
+      ctaBtn: (fKg) => `最安フィラメントを購入 (${fKg}) →`,
       varsayim: (guc, el, amp, sureTah, gs) => `<b>計算前提:</b> 消費電力 ${guc} W · 電気代 ${el}/kWh · 償却費 ${amp}/時間${sureTah ? ` · 重量から推定 (${gs} g/h)` : ''}。税抜参考値（地域スキャン連動）。`,
-      sureIpucuTah: (gs) => `✨ 重量から推定された時間 (${gs} g/h)。スライサーの時間を入力するとより正確です。`,
+      sureIpucuTah: (gs) => `重量から推定された時間 (${gs} g/h)。スライサーの時間を入力するとより正確です。`,
       sureIpucuN: 'スライサーの予想時間。',
       canliYok: 'この地域のライブ価格がまだ取得されていません。<a href="#" id="manuelGec">手動価格を入力</a>してください。',
       ozelAd: 'カスタム / 手動入力', ozelKisa: 'カスタム',
@@ -329,17 +329,17 @@
     // --- Fiyat panosu ---
     const pano = $('fiyatPanosu');
     const sira = [
-      ['maliyet', '🟢', M_SZ.maliyetBas || 'Maliyet (Başabaş)'],
-      ['hobi', '🟡', M_SZ.hobi || 'Dost İşi / Hobi'],
-      ['atolye', '🔵', M_SZ.atolye || 'Standart Atölye'],
-      ['ticari', '🟣', M_SZ.ticari || 'Ticari / Özel Tasarım'],
+      ['maliyet', M_SZ.maliyetBas || 'Maliyet (Başabaş)'],
+      ['hobi', M_SZ.hobi || 'Dost İşi / Hobi'],
+      ['atolye', M_SZ.atolye || 'Standart Atölye'],
+      ['ticari', M_SZ.ticari || 'Ticari / Özel Tasarım'],
     ];
     pano.innerHTML = '';
-    for (const [anahtar, ikon, ad] of sira) {
+    for (const [anahtar, ad] of sira) {
       const v = h.satis[anahtar];
       const kutu = el('div', `mz-fiyat f-${anahtar}` + (durum.seciliKar === anahtar ? ' secili' : ''));
       kutu.innerHTML = `
-        <span class="mz-fiyat-ad">${ikon} ${ad}</span>
+        <span class="mz-fiyat-ad">${ad}</span>
         <span class="mz-fiyat-tutar">${kacis(fPara(v.fiyat))}</span>
         <span class="mz-fiyat-kar">${v.karYuzde === 0 ? (M_SZ.karsiz || 'kârsız') : (M_SZ.karOran ? M_SZ.karOran(v.karYuzde, v.carpan) : `%${v.karYuzde} kâr · ${v.carpan}x`)} · +${kacis(fPara(v.kar))}</span>`;
       kutu.setAttribute('role', 'button');
@@ -384,10 +384,10 @@
       cta.hidden = false;
       $('ctaMetin').innerHTML = M_SZ.ctaMetin
         ? M_SZ.ctaMetin(kacis(fPara(f.tlKg)), kacis(f.site))
-        : (`💡 Bu modeli en ekonomik maliyetle basabileceğiniz filament şu anda <b>${kacis(fPara(f.tlKg))}/kg</b> ile <b>${kacis(f.site || 'mağaza')}</b> mağazasında stokta!`);
+        : (`Bu modeli en ekonomik maliyetle basabileceğiniz filament şu anda <b>${kacis(fPara(f.tlKg))}/kg</b> ile <b>${kacis(f.site || 'mağaza')}</b> mağazasında stokta.`);
       const btn = $('ctaBtn');
       btn.href = f.url;
-      btn.textContent = M_SZ.ctaBtn ? M_SZ.ctaBtn(fPara(f.tlKg)) : `🛒 En Ucuz Filamenti Satın Al (${fPara(f.tlKg)})`;
+      btn.textContent = M_SZ.ctaBtn ? M_SZ.ctaBtn(fPara(f.tlKg)) : `En Ucuz Filamenti Satın Al (${fPara(f.tlKg)}) →`;
     } else {
       cta.hidden = true;
     }
@@ -405,7 +405,7 @@
     $('gucEtiket').textContent = `${h.gucW} W`;
     $('karEtiket').textContent = `${yuzdeMetni(Math.round((h.carpan - 1) * 100))} · ${h.carpan}x`;
     $('sureIpucu').textContent = h.sureTahmini
-      ? (M_SZ.sureIpucuTah ? M_SZ.sureIpucuTah(GRAM_SAAT) : `✨ Tahmini süre — gramajdan hesaplandı (${GRAM_SAAT} g/saat). Dilimleyiciden okuduğunuz süreyi girin.`)
+      ? (M_SZ.sureIpucuTah ? M_SZ.sureIpucuTah(GRAM_SAAT) : `Tahmini süre — gramajdan hesaplandı (${GRAM_SAAT} g/saat). Dilimleyiciden okuduğunuz süreyi girin.`)
       : (M_SZ.sureIpucuN || 'Dilimleyicideki tahmini süre.');
 
     return h;
@@ -503,7 +503,7 @@
       const opt = document.createElement('option');
       opt.value = y.id;
       const ad = y.id === 'ozel' && M_SZ.ozelAd ? M_SZ.ozelAd : y.ad;
-      opt.textContent = `${y.ikon || ''} ${ad}${y.gucW ? ` (${y.gucW} W)` : ''}`.trim();
+      opt.textContent = `${ad}${y.gucW ? ` (${y.gucW} W)` : ''}`;
       sel.appendChild(opt);
     }
 

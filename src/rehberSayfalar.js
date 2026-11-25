@@ -1205,12 +1205,12 @@ export function rehberDiziniHtml(tabanUrl, tumUrunler = []) {
     const canliNot = typeof r.canliOzet === 'function' ? r.canliOzet(tumUrunler) : '';
     return `<a class="rehber-kart" href="${htmlKacis(r.yol)}">
       <div class="rehber-kart-ust">
-        <span class="rehber-ikon" aria-hidden="true">${r.ikon || '📖'}</span>
+        <span class="rehber-ikon" aria-hidden="true">${rehberIkonSvg(r.id || r.yol)}</span>
         <span class="rehber-rozet">${htmlKacis(r.tur)}</span>
       </div>
       <h2 class="rehber-baslik">${htmlKacis(r.baslik)}</h2>
       <p class="rehber-ozet">${htmlKacis(r.ozet)}</p>
-      ${canliNot ? `<div class="rehber-canli-band">⚡ ${htmlKacis(canliNot)}</div>` : ''}
+      ${canliNot ? `<div class="rehber-canli-band">${htmlKacis(canliNot)}</div>` : ''}
       <span class="rehber-cta">Rehberi İncele →</span>
     </a>`;
   }).join('');
@@ -1232,13 +1232,13 @@ export function rehberDiziniHtml(tabanUrl, tumUrunler = []) {
     govdeHtml: `
       <nav class="seo-yol"><a href="/">Ana Sayfa</a> › <span>Rehber &amp; Karşılaştırmalar</span></nav>
       ${heroAlani({
-        rozet: '📖 Canlı Fiyatlı Karşılaştırmalar · 2026',
+        rozet: 'Canlı Fiyatlı Karşılaştırmalar · 2026',
         baslikHtml: 'Doğru 3D yazıcıyı <b>gerçek fiyatla</b> seç',
         altMetin: 'Statik blog yazıları değil — her karşılaştırma ve alım rehberi veritabanımızdaki kargo dahil güncel Türkiye mağaza fiyatlarını otomatik çeker.',
         istatistikler: [
-          `📚 <b>${REHBER_SAYFALARI.length}</b> canlı rehber`,
-          '⚖️ Yan yana VS kıyaslama',
-          '🔄 Fiyatlar radardan otomatik güncellenir',
+          `<b>${REHBER_SAYFALARI.length}</b> canlı rehber`,
+          'Yan yana VS kıyaslama',
+          'Fiyatlar radardan otomatik güncellenir',
         ],
       })}
       <div class="rehber-izgara">${kartlar}</div>
@@ -1251,25 +1251,35 @@ export function rehberSayfasiBul(yol) {
   return REHBER_SAYFALARI.find(r => r.yol === temiz) || null;
 }
 
+function rehberIkonSvg(id) {
+  const v = String(id || '');
+  const s = 'class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"';
+  if (v === 'guide-printers' || v.includes('3d-yazicilar')) return `<svg ${s}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>`;
+  if (v === 'guide-pla' || v.includes('filament')) return `<svg ${s}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>`;
+  if (v === 'guide-cost' || v.includes('maliyet')) return `<svg ${s}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="16" y1="14" y2="14"/><line x1="8" x2="12" y1="18" y2="18"/></svg>`;
+  if (v === 'guide-ai-3d' || v.includes('meshy') || v.includes('hi3d')) return `<svg ${s}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`;
+  return `<svg ${s}><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>`;
+}
+
 const GLOBAL_REHBER_KOPYA = Object.freeze({
   en: {
     title: '3D Printer Comparisons & Filament Buying Guides | Baski Hesap',
     desc: 'Live-priced 3D printer head-to-head comparisons, cheapest USD filament guides, and print cost calculation walkthroughs across verified US stores.',
     yolAna: 'Home',
     yolAd: 'Guides & Comparisons',
-    rozet: '📖 Live-Priced Buying Guides · 2026',
+    rozet: 'Live-Priced Buying Guides · 2026',
     h1: 'Choose the right 3D printer with <b>live market pricing</b>',
     alt: 'Not static blog posts — compare Bambu Lab, Creality, Elegoo, and Prusa printers plus real USD filament unit costs across US stores.',
     ist1: 'live buying guides',
-    ist2: '⚖️ Head-to-head VS specs',
-    ist3: '🔄 Real USD store checks',
+    ist2: 'Head-to-head VS specs',
+    ist3: 'Real USD store checks',
     cta: 'Read Guide →',
     aracBaslik: 'Tools to Estimate & Optimize Your Print',
     aracAlt: 'Jump straight to STL cost estimation, smart basket splitting, or the full US product catalog:',
-    aracLink1: '🗂️ US Product Catalog',
-    aracLink2: '🧮 STL Cost Calculator ($)',
-    aracLink3: '🧺 Smart Basket Optimizer',
-    aracLink4: '🧩 Cura & Slicer Plugin',
+    aracLink1: 'US Product Catalog',
+    aracLink2: 'STL Cost Calculator ($)',
+    aracLink3: 'Smart Basket Optimizer',
+    aracLink4: 'Cura & Slicer Plugin',
     kartlar: [
       {
         id: 'vs-p1s-k1c',
@@ -1363,19 +1373,19 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
     desc: 'Duels techniques, classements des filaments PLA au meilleur prix au €/kg et calculateur de coût réel dans les boutiques européennes.',
     yolAna: 'Accueil',
     yolAd: 'Guides & Comparatifs',
-    rozet: '📖 Guides d’Achat & Comparatifs · 2026',
+    rozet: 'Guides d’Achat & Comparatifs · 2026',
     h1: 'Choisissez la bonne imprimante 3D au <b>prix réel (€)</b>',
     alt: 'Comparez Bambu Lab, Creality, Elegoo et Prusa ainsi que le coût réel au kilogramme de vos bobines sur les boutiques EU/FR.',
     ist1: 'guides pratiques',
-    ist2: '⚖️ Comparatifs côte à côte',
-    ist3: '🔄 Prix vérifiés en EUR (€)',
+    ist2: 'Comparatifs côte à côte',
+    ist3: 'Prix vérifiés en EUR (€)',
     cta: 'Lire le guide →',
     aracBaslik: 'Outils d’estimation et d’optimisation',
     aracAlt: 'Accédez directement au calculateur de coût STL, au panier intelligent ou au catalogue européen :',
-    aracLink1: '🗂️ Catalogue Produits EU',
-    aracLink2: '🧮 Calculateur de Coût (€)',
-    aracLink3: '🧺 Panier Intelligent',
-    aracLink4: '🧩 Extension Cura & Slicer',
+    aracLink1: 'Catalogue Produits EU',
+    aracLink2: 'Calculateur de Coût (€)',
+    aracLink3: 'Panier Intelligent',
+    aracLink4: 'Extension Cura & Slicer',
     kartlar: [
       {
         id: 'vs-p1s-k1c',
@@ -1469,19 +1479,19 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
     desc: '人気3Dプリンターのスペック比較、kg単価ベースの最安PLAフィラメント、3Dプリント原価計算方法を日本市場の円（¥）基準で解説。',
     yolAna: 'ホーム',
     yolAd: 'ガイド・徹底比較',
-    rozet: '📖 3Dプリント購入ガイド・比較 · 2026',
+    rozet: '3Dプリント購入ガイド・比較 · 2026',
     h1: '<b>実勢価格（円）</b>と性能で失敗しない3Dプリンター選び',
     alt: 'Bambu Lab・Creality・Elegoo・Prusaのスペック比較や、日本国内ストア対応のkgあたり最安フィラメント選びをサポートします。',
     ist1: '件の比較・ガイド',
-    ist2: '⚖️ 人気機種の徹底比較',
-    ist3: '🔄 日本円（¥）リアルタイム検索対応',
+    ist2: '人気機種の徹底比較',
+    ist3: '日本円（¥）リアルタイム検索対応',
     cta: 'ガイドを見る →',
     aracBaslik: '見積もり・まとめ買いツール',
     aracAlt: 'STL原価シミュレーターやスマートカート、日本製品カタログへ直接移動できます：',
-    aracLink1: '🗂️ 日本向け製品カタログ',
-    aracLink2: '🧮 原価シミュレーター (¥)',
-    aracLink3: '🧺 スマートカート＆送料最適化',
-    aracLink4: '🧩 Cura・スライサー連携',
+    aracLink1: '日本向け製品カタログ',
+    aracLink2: '原価シミュレーター (¥)',
+    aracLink3: 'スマートカート＆送料最適化',
+    aracLink4: 'Cura・スライサー連携',
     kartlar: [
       {
         id: 'vs-p1s-k1c',
@@ -1629,17 +1639,17 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
       : g.band;
     return `<article class="rehber-kart" id="${htmlKacis(g.id)}">
       <div class="rehber-kart-ust">
-        <span class="rehber-ikon" aria-hidden="true">${g.ikon}</span>
+        <span class="rehber-ikon" aria-hidden="true">${rehberIkonSvg(g.id)}</span>
         <span class="rehber-rozet">${htmlKacis(g.tur)}</span>
       </div>
       <h2 class="rehber-baslik">${htmlKacis(g.baslik)}</h2>
       <p class="rehber-ozet">${htmlKacis(g.ozet)}</p>
       <p class="rehber-ozet" style="font-size:12.5px;opacity:.92">${htmlKacis(g.detay)}</p>
-      <div class="rehber-canli-band">⚡ ${htmlKacis(canliSatir)}</div>
+      <div class="rehber-canli-band">${htmlKacis(canliSatir)}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
         ${g.detayYolu ? `<a class="rehber-cta" href="${htmlKacis(g.detayYolu)}">${htmlKacis(k.cta)}</a>` : ''}
-        <a class="rehber-cta" href="${htmlKacis(araLinkA)}">🔍 ${htmlKacis(g.urunA)} →</a>
-        <a class="rehber-cta" href="${htmlKacis(araLinkB)}">⚖️ ${htmlKacis(g.urunB)} →</a>
+        <a class="rehber-cta" href="${htmlKacis(araLinkA)}">${htmlKacis(g.urunA)} →</a>
+        <a class="rehber-cta" href="${htmlKacis(araLinkB)}">${htmlKacis(g.urunB)} →</a>
       </div>
     </article>`;
   }).join('');
@@ -1667,7 +1677,7 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
           <h1>${k.h1}</h1>
           <p>${htmlKacis(k.alt)}</p>
           <div class="hero-istatistik">
-            <span>📚 <b>${k.kartlar.length}</b> ${htmlKacis(k.ist1)}</span>
+            <span><b>${k.kartlar.length}</b> ${htmlKacis(k.ist1)}</span>
             <span>${k.ist2}</span>
             <span>${k.ist3}</span>
           </div>
@@ -1697,10 +1707,10 @@ const GLOBAL_AI_REHBER_KOPYA = Object.freeze({
     title: 'Meshy vs Hi3D: AI 3D Print Weight & Filament Cost Guide | Baski Hesap',
     desc: 'Compare Meshy AI and Hi3D for 3D printing: single-color Image-to-3D figurines vs multi-color purge overhead (+15–25%) with live USD filament pricing.',
     home: 'Home', guides: 'Guides', crumb: 'Meshy vs Hi3D',
-    rozet: '🤖 AI 3D Generation &amp; Real Print Cost',
+    rozet: 'AI 3D Generation &amp; Real Print Cost',
     h1: 'Meshy vs Hi3D: <b>Real 3D Print Weight &amp; Filament Cost</b>',
     alt: 'Generating a 3D mesh from text or an image is step one — real cost depends on slicer grams, support waste, and multi-color purge swaps.',
-    ctaCalc: '🧮 Test Sample STL in Cost Calculator →',
+    ctaCalc: 'Test Sample STL in Cost Calculator →',
     ctaMeshy: 'Try Meshy AI ↗',
     ctaHi3d: 'Try Hi3D ↗',
     vsH2: 'Meshy vs Hi3D: Which Fits Your 3D Printer?',
@@ -1728,10 +1738,10 @@ const GLOBAL_AI_REHBER_KOPYA = Object.freeze({
     title: 'Meshy vs Hi3D : Poids Réel et Coût d’Impression 3D | Baski Hesap',
     desc: 'Comparatif Meshy AI vs Hi3D pour l’impression 3D : mono-couleur vs surcoût de purge multicouleur (+15–25 %) et prix des bobines en EUR.',
     home: 'Accueil', guides: 'Guides', crumb: 'Meshy vs Hi3D',
-    rozet: '🤖 Génération 3D IA &amp; Coût Réel',
+    rozet: 'Génération 3D IA &amp; Coût Réel',
     h1: 'Meshy vs Hi3D : <b>Poids Réel et Coût d’Impression 3D</b>',
     alt: 'Générer un maillage 3D depuis un texte ou une photo n’est que la première étape : le coût réel dépend des grammes, des supports et de la purge multicouleur.',
-    ctaCalc: '🧮 Tester un STL dans le Calculateur →',
+    ctaCalc: 'Tester un STL dans le Calculateur →',
     ctaMeshy: 'Découvrir Meshy AI ↗',
     ctaHi3d: 'Découvrir Hi3D ↗',
     vsH2: 'Meshy vs Hi3D : Quelle approche pour votre imprimante ?',
@@ -1759,10 +1769,10 @@ const GLOBAL_AI_REHBER_KOPYA = Object.freeze({
     title: 'Meshy vs Hi3D：3Dプリント実重量・フィラメント原価ガイド | Baski Hesap',
     desc: 'Meshy AIとHi3Dの3Dプリント比較：単色造形と多色パージ増分（+15〜25%）を含む日本円（¥）での実質コスト試算。',
     home: 'ホーム', guides: 'ガイド', crumb: 'Meshy vs Hi3D',
-    rozet: '🤖 AI 3Dモデル生成 &amp; 実造形原価',
+    rozet: 'AI 3Dモデル生成 &amp; 実造形原価',
     h1: 'Meshy vs Hi3D：<b>3Dプリント実重量と原価比較</b>',
     alt: 'テキストや画像から3Dモデルを生成した後、実際の造形コストはスライサー上のグラム数・サポート材・多色印刷時のパージロスで決まります。',
-    ctaCalc: '🧮 原価シミュレーターでサンプルSTLを試算 →',
+    ctaCalc: '原価シミュレーターでサンプルSTLを試算 →',
     ctaMeshy: 'Meshy AI を見る ↗',
     ctaHi3d: 'Hi3D を見る ↗',
     vsH2: 'Meshy vs Hi3D：3Dプリンター用途別の使い分け',
@@ -1860,17 +1870,17 @@ export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []
         baslikHtml: t.h1,
         altMetin: t.alt,
         istatistikler: [
-          `🧵 PLA: <b>${formatPara(plaKg, paraKodu)}/kg</b>`,
-          '🗿 43.3 g &amp; 36.2 g STLs',
-          '🎨 +15–25% purge',
+          `PLA: <b>${formatPara(plaKg, paraKodu)}/kg</b>`,
+          '43.3 g &amp; 36.2 g STLs',
+          '+15–25% purge',
         ],
       })}
       <section class="seo-kart">
-        <div class="seo-fiyat-kutu"><div>💡 ${canliMetin}</div></div>
+        <div class="seo-fiyat-kutu"><div>${canliMetin}</div></div>
         <div class="seo-butonlar">
           <a class="seo-cta" href="${htmlKacis(malYol)}">${t.ctaCalc}</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">${t.ctaMeshy}${aiLink.meshyPromo ? ` · 🎁 ${htmlKacis(aiLink.meshyPromo)}` : ''}</a>
-          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${t.ctaHi3d}${aiLink.hi3dPromo ? ` · 🎁 ${htmlKacis(aiLink.hi3dPromo)}` : ''}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">${t.ctaMeshy}${aiLink.meshyPromo ? ` · ${htmlKacis(aiLink.meshyPromo)}` : ''}</a>
+          <a class="seo-cta ikincil" href="${htmlKacis(aiLink.hi3dUrl)}" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">${t.ctaHi3d}${aiLink.hi3dPromo ? ` · ${htmlKacis(aiLink.hi3dPromo)}` : ''}</a>
         </div>
       </section>
       <section class="seo-kart">
