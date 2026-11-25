@@ -315,16 +315,16 @@ const SLICER_KOPYA = Object.freeze({
   en: {
     title: 'UltiMaker Cura &amp; Slicer Plugin — Baski Hesap',
     desc: 'Free plugin for UltiMaker Cura, OrcaSlicer, Bambu Studio and PrusaSlicer. Read filament weight directly after slicing and open the cost calculator or store links.',
-    rozet: '🧩 Cura · OrcaSlicer · Bambu Studio · PrusaSlicer',
+    rozet: 'Cura · OrcaSlicer · Bambu Studio · PrusaSlicer',
     h1: 'See print weight &amp; filament deals <b>right after slicing</b>',
     alt: 'Install BaskiHesap.curapackage in UltiMaker Cura or drop any .gcode file below to inspect filament usage instantly.',
     dropBaslik: 'Drop a .gcode file here (or click) for instant client-side inspection',
     dropAlt: 'Reads ; filament used [g] and material tags locally in your browser.',
-    indirBaslik: '📦 Download &amp; Install',
-    curaBtn: '⬇️ Download Cura Plugin (BaskiHesap.curapackage)',
-    pyBtn: '⬇️ Download Python Post-Processor (en_ucuz_slicer.py)',
-    maliyetBtn: '🧮 Open STL Cost Calculator →',
-    magazaBtn: '🛒 Check Creality Official Store ↗',
+    indirBaslik: 'Download &amp; Install',
+    curaBtn: 'Download Cura Plugin (BaskiHesap.curapackage)',
+    pyBtn: 'Download Python Post-Processor (en_ucuz_slicer.py)',
+    maliyetBtn: 'Open STL Cost Calculator →',
+    magazaBtn: 'Check Creality Official Store ↗',
     adimlar: [
       'Download <b>BaskiHesap.curapackage</b> and drag it into the UltiMaker Cura window (or install from UltiMaker Marketplace).',
       'Restart Cura, slice any 3D model, and click <b>Extensions → Baski Hesap</b>.',
@@ -334,16 +334,16 @@ const SLICER_KOPYA = Object.freeze({
   fr: {
     title: 'Extension UltiMaker Cura &amp; Slicer — Baski Hesap',
     desc: 'Plugin gratuit pour UltiMaker Cura, OrcaSlicer, Bambu Studio et PrusaSlicer. Affiche la consommation de filament juste après le tranchage.',
-    rozet: '🧩 Cura · OrcaSlicer · Bambu Studio · PrusaSlicer',
+    rozet: 'Cura · OrcaSlicer · Bambu Studio · PrusaSlicer',
     h1: 'Affichez le poids et le prix du filament <b>dès le tranchage</b>',
     alt: 'Installez BaskiHesap.curapackage dans UltiMaker Cura ou déposez un fichier .gcode ci-dessous pour analyser votre impression.',
     dropBaslik: 'Déposez un fichier .gcode ici (ou cliquez) pour l’analyser localement',
     dropAlt: 'Lit les métadonnées ; filament used [g] directement dans votre navigateur.',
-    indirBaslik: '📦 Téléchargement &amp; Installation',
-    curaBtn: '⬇️ Télécharger l’extension Cura (BaskiHesap.curapackage)',
-    pyBtn: '⬇️ Script Post-Traitement Python (en_ucuz_slicer.py)',
-    maliyetBtn: '🧮 Ouvrir le Calculateur de Coût STL →',
-    magazaBtn: '🛒 Boutique Officielle Creality FR ↗',
+    indirBaslik: 'Téléchargement &amp; Installation',
+    curaBtn: 'Télécharger l’extension Cura (BaskiHesap.curapackage)',
+    pyBtn: 'Script Post-Traitement Python (en_ucuz_slicer.py)',
+    maliyetBtn: 'Ouvrir le Calculateur de Coût STL →',
+    magazaBtn: 'Boutique Officielle Creality FR ↗',
     adimlar: [
       'Téléchargez <b>BaskiHesap.curapackage</b> et glissez le fichier dans UltiMaker Cura.',
       'Redémarrez Cura, tranchez un modèle 3D et ouvrez <b>Extensions → Baski Hesap</b>.',
@@ -353,16 +353,16 @@ const SLICER_KOPYA = Object.freeze({
   ja: {
     title: 'UltiMaker Cura &amp; スライサー連携プラグイン — Baski Hesap',
     desc: 'UltiMaker Cura、OrcaSlicer、Bambu Studio、PrusaSlicer対応の無料プラグイン。スライス直後にフィラメント消費量と原価・ショップリンクを確認できます。',
-    rozet: '🧩 Cura · OrcaSlicer · Bambu Studio · PrusaSlicer',
+    rozet: 'Cura · OrcaSlicer · Bambu Studio · PrusaSlicer',
     h1: 'スライス完了と同時に<b>フィラメント消費量とコスト</b>を表示',
     alt: 'BaskiHesap.curapackage を UltiMaker Cura に導入するか、下のボックスに .gcode ファイルをドロップして即座に解析できます。',
     dropBaslik: '.gcode ファイルをドロップ（またはクリック）してブラウザ内で解析',
     dropAlt: '使用フィラメント量・素材・造形時間メタデータをローカルで読み取ります。',
-    indirBaslik: '📦 ダウンロード・導入手順',
-    curaBtn: '⬇️ Cura プラグインを入手 (BaskiHesap.curapackage)',
-    pyBtn: '⬇️ Python ポスト処理スクリプト (en_ucuz_slicer.py)',
-    maliyetBtn: '🧮 STL 原価シミュレーターを開く →',
-    magazaBtn: '🛒 Creality 公式ストア（日本）を見る ↗',
+    indirBaslik: 'ダウンロード・導入手順',
+    curaBtn: 'Cura プラグインを入手 (BaskiHesap.curapackage)',
+    pyBtn: 'Python ポスト処理スクリプト (en_ucuz_slicer.py)',
+    maliyetBtn: 'STL 原価シミュレーターを開く →',
+    magazaBtn: 'Creality 公式ストア（日本）を見る ↗',
     adimlar: [
       '<b>BaskiHesap.curapackage</b> をダウンロードし、UltiMaker Cura のウィンドウへドラッグ＆ドロップします。',
       'Cura を再起動してモデルをスライス後、メニューの <b>Extensions → Baski Hesap</b> を開きます。',
@@ -592,13 +592,13 @@ const SEPET_KOPYA = Object.freeze({
   en: {
     title: 'Smart Basket &amp; Shipping Optimizer — Baski Hesap',
     desc: 'Compare single-store convenience, hybrid 2-3 store split, and absolute cheapest multi-store checkout across US 3D print retailers.',
-    rozet: '🧺 Shipping thresholds · 3 scenarios · 1-click packs',
+    rozet: 'Shipping thresholds · 3 scenarios · 1-click packs',
     h1: 'Split smart, <b>zero out shipping</b>, see real checkout totals',
     alt: 'Each US retailer has a different free-shipping threshold. Compare single-store checkout vs smart split vs cheapest per item side by side.',
-    paketBaslik: '🎨 Ready Filament Packs',
+    paketBaslik: 'Ready Filament Packs',
     paketIpucu: '1-click fill · live regional catalog prices',
-    paketYukle: '⏳ Reading live filament catalog…',
-    sepetim: '🧺 My Basket',
+    paketYukle: 'Reading live filament catalog…',
+    sepetim: 'My Basket',
     temizle: 'Clear basket',
     aramaPh: 'Type product name (e.g. eSun PLA+ black) or paste a product URL…',
     ekleBtn: 'Add',
@@ -606,26 +606,26 @@ const SEPET_KOPYA = Object.freeze({
     bosAlt: 'Compare between 2 and 10 items.',
     tahminiEtiket: 'Estimated item subtotal',
     altNot: 'Shipping varies by chosen scenario',
-    hesaplaBtn: '⚡ Compare 3 Scenarios',
+    hesaplaBtn: 'Compare 3 Scenarios',
     fazBekle: 'Preparing…',
     durdur: 'Stop',
-    senaryoBaslik: '🏆 3 Scenarios, 3 Real Totals',
-    paylasBtn: '🔗 Share Basket',
+    senaryoBaslik: '3 Scenarios, 3 Real Totals',
+    paylasBtn: 'Share Basket',
     dipnot: 'Prices come from live store scans; store availability and shipping rules apply at checkout. Affiliate links may earn commission at zero extra cost.',
-    kargoBaslik: '🚚 Free Shipping Saver',
+    kargoBaslik: 'Free Shipping Saver',
     kargoIpucu: 'Add a small item instead of paying shipping',
     footerNot: 'Multi-item shipping thresholds and stock counts are checked live across regional stores.',
   },
   fr: {
     title: 'Panier Intelligent &amp; Optimisation Port — Baski Hesap',
     desc: 'Comparez achat mono-boutique, panier hybride (2–3 boutiques) et prix le plus bas frais de port compris sur les boutiques FR/EU.',
-    rozet: '🧺 Seuils de port · 3 scénarios · packs 1-clic',
+    rozet: 'Seuils de port · 3 scénarios · packs 1-clic',
     h1: 'Répartissez le panier, <b>annulez le port</b>, payez le vrai total',
     alt: 'Chaque boutique fixe ses frais et seuils de livraison gratuite. Comparez l’achat groupé, le panier optimisé et le moins cher par article.',
-    paketBaslik: '🎨 Packs Filaments Prêts',
+    paketBaslik: 'Packs Filaments Prêts',
     paketIpucu: 'Ajout en 1 clic · prix catalogue en direct',
-    paketYukle: '⏳ Chargement du catalogue filaments…',
-    sepetim: '🧺 Mon Panier',
+    paketYukle: 'Chargement du catalogue filaments…',
+    sepetim: 'Mon Panier',
     temizle: 'Vider le panier',
     aramaPh: 'Nom du produit (ex. eSun PLA+ noir) ou collez un lien produit…',
     ekleBtn: 'Ajouter',
@@ -633,26 +633,26 @@ const SEPET_KOPYA = Object.freeze({
     bosAlt: 'Comparez de 2 à 10 articles.',
     tahminiEtiket: 'Sous-total articles estimé',
     altNot: 'Les frais de port dépendent du scénario choisi',
-    hesaplaBtn: '⚡ Comparer les 3 Scénarios',
+    hesaplaBtn: 'Comparer les 3 Scénarios',
     fazBekle: 'Préparation…',
     durdur: 'Arrêter',
-    senaryoBaslik: '🏆 3 Scénarios, 3 Totaux Réels',
-    paylasBtn: '🔗 Partager le Panier',
+    senaryoBaslik: '3 Scénarios, 3 Totaux Réels',
+    paylasBtn: 'Partager le Panier',
     dipnot: 'Prix issus d’un scan en direct ; les conditions réelles de livraison s’appliquent au panier marchand. Les liens affiliés ne changent pas votre prix.',
-    kargoBaslik: '🚚 Optimisation Seuil de Port Gratuit',
+    kargoBaslik: 'Optimisation Seuil de Port Gratuit',
     kargoIpucu: 'Ajoutez un article plutôt que de payer la livraison',
     footerNot: 'Les seuils de livraison gratuite et stocks sont vérifiés en direct selon les boutiques européennes.',
   },
   ja: {
     title: 'スマートカート＆送料最適化シミュレーター — Baski Hesap',
     desc: '1店舗まとめ買い・2〜3店舗ハイブリッド・最安分散の3シナリオで送料込の実質支払額を比較。',
-    rozet: '🧺 送料無料ライン計算 · 3シナリオ · ワンクリックセット',
+    rozet: '送料無料ライン計算 · 3シナリオ · ワンクリックセット',
     h1: 'カートを最適化して<b>送料をゼロ</b>に、実質総額を比較',
     alt: 'ショップごとに送料無料ラインや送料が異なります。1店舗まとめ買い・最適分割・単品最安の3通りを横並びで比較できます。',
-    paketBaslik: '🎨 おすすめフィラメントセット',
+    paketBaslik: 'おすすめフィラメントセット',
     paketIpucu: 'ワンクリック追加 · リアルタイム価格連動',
-    paketYukle: '⏳ ライブカタログを読み込み中…',
-    sepetim: '🧺 カート内容',
+    paketYukle: 'ライブカタログを読み込み中…',
+    sepetim: 'カート内容',
     temizle: 'カートを空にする',
     aramaPh: '商品名を入力（例: eSun PLA+ ブラック）または商品URLを貼付…',
     ekleBtn: '追加',
@@ -660,13 +660,13 @@ const SEPET_KOPYA = Object.freeze({
     bosAlt: '2〜10点の商品で比較できます。',
     tahminiEtiket: '商品小計（目安）',
     altNot: '送料は選択した購入シナリオにより変動します',
-    hesaplaBtn: '⚡ 3つのシナリオを比較',
+    hesaplaBtn: '3つのシナリオを比較',
     fazBekle: '準備中…',
     durdur: '停止',
-    senaryoBaslik: '🏆 3つの購入シナリオ比較',
-    paylasBtn: '🔗 カートを共有',
+    senaryoBaslik: '3つの購入シナリオ比較',
+    paylasBtn: 'カートを共有',
     dipnot: '価格はリアルタイム取得結果です。最終金額・送料条件は各ストアのレジにてご確認ください。',
-    kargoBaslik: '🚚 送料無料ライン達成アドバイス',
+    kargoBaslik: '送料無料ライン達成アドバイス',
     kargoIpucu: '送料を払う代わりに小物追加で送料無料に',
     footerNot: '複数ショップの送料無料条件と在庫状況をリアルタイムで照合しています。',
   },
@@ -692,13 +692,13 @@ export function globalSepetSayfasiHtml(dil = 'en', tabanUrl = '') {
   });
 
   cikti = cikti
-    .replace('<span class="hero-rozet">🧺 Kargo eşikleri · 3 senaryo · tek tıkla paket</span>', `<span class="hero-rozet">${c.rozet}</span>`)
+    .replace('<span class="hero-rozet">Kargo eşikleri · 3 senaryo · tek tıkla paket</span>', `<span class="hero-rozet">${c.rozet}</span>`)
     .replace('<h1>Sepeti böl, <b>kargoyu sıfırla</b>, gerçek toplamı gör</h1>', `<h1>${c.h1}</h1>`)
     .replace(/Birden fazla filament alırken her mağazanın kargo eşiği ayrı hesaplanır\.[\s\S]*?<\/p>/, `${c.alt}</p>`)
-    .replace('<h2 id="paketBaslik" class="sepet-baslik">🎨 Hazır Filament Paketleri</h2>', `<h2 id="paketBaslik" class="sepet-baslik">${c.paketBaslik}</h2>`)
+    .replace('<h2 id="paketBaslik" class="sepet-baslik">Hazır Filament Paketleri</h2>', `<h2 id="paketBaslik" class="sepet-baslik">${c.paketBaslik}</h2>`)
     .replace('<span class="sepet-ipucu">Tek tıkla sepete dolar · canlı katalog fiyatları</span>', `<span class="sepet-ipucu">${c.paketIpucu}</span>`)
-    .replace('<div class="paket-kart paket-yukleniyor">⏳ Canlı filament kataloğu okunuyor…</div>', `<div class="paket-kart paket-yukleniyor">${c.paketYukle}</div>`)
-    .replace('<h2 id="sepetBaslik" class="sepet-baslik">🧺 Sepetim <span class="sepet-sayac" id="sepetSayac">0/10</span></h2>', `<h2 id="sepetBaslik" class="sepet-baslik">${c.sepetim} <span class="sepet-sayac" id="sepetSayac">0/10</span></h2>`)
+    .replace('<div class="paket-kart paket-yukleniyor">Canlı filament kataloğu okunuyor…</div>', `<div class="paket-kart paket-yukleniyor">${c.paketYukle}</div>`)
+    .replace('<h2 id="sepetBaslik" class="sepet-baslik">Sepetim <span class="sepet-sayac" id="sepetSayac">0/10</span></h2>', `<h2 id="sepetBaslik" class="sepet-baslik">${c.sepetim} <span class="sepet-sayac" id="sepetSayac">0/10</span></h2>`)
     .replace('Sepeti boşalt</button>', `${c.temizle}</button>`)
     .replace('placeholder="Ürün adı yaz (ör. Porima PLA siyah) ya da ürün linki yapıştır…"', `placeholder="${htmlKacis(c.aramaPh)}"`)
     .replace('>Ekle</button>', `>${c.ekleBtn}</button>`)
@@ -707,13 +707,13 @@ export function globalSepetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<span class="sepet-alt-etiket">Tahmini ürün toplamı</span>', `<span class="sepet-alt-etiket">${c.tahminiEtiket}</span>`)
     .replace('<strong id="sepetToplam">0,00 TL</strong>', `<strong id="sepetToplam">${sifirPara}</strong>`)
     .replace('<span class="sepet-alt-alt" id="sepetAltNot">Kargo seçilen senaryoya göre değişir</span>', `<span class="sepet-alt-alt" id="sepetAltNot">${c.altNot}</span>`)
-    .replace('⚡ 3 Senaryoyu Karşılaştır', c.hesaplaBtn)
+    .replace('3 Senaryoyu Karşılaştır', c.hesaplaBtn)
     .replace('<span id="sepetFaz">Hazırlanıyor…</span>', `<span id="sepetFaz">${c.fazBekle}</span>`)
     .replace('>Durdur</button>', `>${c.durdur}</button>`)
-    .replace('<h2 id="senaryoBaslik" class="sepet-baslik">🏆 3 Senaryo, 3 Farklı Toplam</h2>', `<h2 id="senaryoBaslik" class="sepet-baslik">${c.senaryoBaslik}</h2>`)
-    .replace('>🔗 Sepeti Paylaş</button>', `>${c.paylasBtn}</button>`)
+    .replace('<h2 id="senaryoBaslik" class="sepet-baslik">3 Senaryo, 3 Farklı Toplam</h2>', `<h2 id="senaryoBaslik" class="sepet-baslik">${c.senaryoBaslik}</h2>`)
+    .replace('>Sepeti Paylaş</button>', `>${c.paylasBtn}</button>`)
     .replace(/Fiyatlar canlı tarama sonucudur;[\s\S]*?<\/p>/, `${c.dipnot}</p>`)
-    .replace('<h2 id="kargoBaslik" class="sepet-baslik">🚚 Kargo Eşiği Kurtarıcı</h2>', `<h2 id="kargoBaslik" class="sepet-baslik">${c.kargoBaslik}</h2>`)
+    .replace('<h2 id="kargoBaslik" class="sepet-baslik">Kargo Eşiği Kurtarıcı</h2>', `<h2 id="kargoBaslik" class="sepet-baslik">${c.kargoBaslik}</h2>`)
     .replace('<span class="sepet-ipucu">Eşiğe az kaldıysa kargo yerine ürün alın</span>', `<span class="sepet-ipucu">${c.kargoIpucu}</span>`)
     .replace('<p>Çoklu ürün alımlarında mağazaların güncel kargo eşiği ve stok bilgisi gerçek taramadan okunur.</p>', `<p>${htmlKacis(c.footerNot)}</p>`)
     .replace(
@@ -881,9 +881,9 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       </div>
     </section>`,
     )
-    .replace('<span class="stl-metrik-ad">📏 Boyutlar</span>', `<span class="stl-metrik-ad">📏 ${c.boyut}</span>`)
-    .replace('<span class="stl-metrik-ad">🧊 Hacim</span>', `<span class="stl-metrik-ad">🧊 ${c.hacim}</span>`)
-    .replace('<span class="stl-metrik-ad">⚖️ Ağırlık</span>', `<span class="stl-metrik-ad">⚖️ ${c.agirlik}</span>`)
+    .replace('<span class="stl-metrik-ad">Boyutlar</span>', `<span class="stl-metrik-ad">${c.boyut}</span>`)
+    .replace('<span class="stl-metrik-ad">Hacim</span>', `<span class="stl-metrik-ad">${c.hacim}</span>`)
+    .replace('<span class="stl-metrik-ad">Ağırlık</span>', `<span class="stl-metrik-ad">${c.agirlik}</span>`)
     .replace('<label for="stlDoluluk">Doluluk</label>', `<label for="stlDoluluk">${c.dolulukLabel}</label>`)
     .replace('<option value="10">%10 — taslak</option>', `<option value="10">${k.dolulukSecenek[0]}</option>`)
     .replace('<option value="20" selected>%20 — standart</option>', `<option value="20" selected>${k.dolulukSecenek[1]}</option>`)
@@ -891,7 +891,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<option value="100">%100 — katı</option>', `<option value="100">${k.dolulukSecenek[3]}</option>`)
     .replace('<label for="stlMalzeme">Malzeme</label>', `<label for="stlMalzeme">${c.malzemeLabel}</label>`)
     .replace('İnce ayar: <b id="stlDolulukEtiket">%20</b>', `${c.inceAyar} <b id="stlDolulukEtiket">20%</b>`)
-    .replace('⬇️ Bu gramajı hesaplayıcıya aktar', c.aktarBtn)
+    .replace('Bu gramajı hesaplayıcıya aktar', c.aktarBtn)
     .replace('<h2 id="girdiBaslik" class="mz-baslik">Girdiler</h2>', `<h2 id="girdiBaslik" class="mz-baslik">${k.girdi}</h2>`)
     .replace('<label for="gramaj">Model gramajı</label>', `<label for="gramaj">${c.gramajLabel}</label>`)
     .replace('<p class="mz-ipucu">Dilimleyicide (Bambu Studio, Cura, OrcaSlicer) “Filament used” değeri.</p>', `<p class="mz-ipucu">${k.gramajIpucu}</p>`)
@@ -956,11 +956,11 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<aside class="mz-varsayim" id="varsayimKutu"></aside>', `<aside class="mz-varsayim" id="varsayimKutu"></aside>\n        <div class="mz-cta" style="margin-top:12px">\n          <p class="mz-cta-metin">${c.magazaMetin}</p>\n          <a class="mz-cta-btn" href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">${k.crealityBtn}</a>\n        </div>`)
     .replace(/Elektrik ve amortisman <b>varsayımdır<\/b>[\s\S]*?<\/p>/, `${k.varsayimAlt}</p>`)
     .replace('<h3 id="fisBaslik" class="fis-baslik">3D Baskı Maliyet &amp; Teklif Özeti</h3>', `<h3 id="fisBaslik" class="fis-baslik">${k.fisBaslik}</h3>`)
-    .replace('<div class="fis-fiyat-etiket">ÖNERİLEN SATIŞ FİYATI</div>', `<div class="fis-fiyat-etiket">${k.fisOnerilen}</div>`)
+    .replace('<div class="fis-fiyat-etiket">Önerilen satış fiyatı</div>', `<div class="fis-fiyat-etiket">${k.fisOnerilen}</div>`)
     .replace('<div class="fis-fiyat-tutar" id="fisSatisFiyat">₺0,00</div>', `<div class="fis-fiyat-tutar" id="fisSatisFiyat">${sifirPara}</div>`)
-    .replace('>📲 WhatsApp ile Gönder</button>', `>${k.fisWa}</button>`)
-    .replace('>📋 Fişi Kopyala</button>', `>${k.fisKopya}</button>`)
-    .replace('>🖨️ Yazdır / PDF</button>', `>${k.fisYaz}</button>`)
+    .replace('>WhatsApp ile Gönder</button>', `>${k.fisWa}</button>`)
+    .replace('>Fişi Kopyala</button>', `>${k.fisKopya}</button>`)
+    .replace('>Yazdır / PDF</button>', `>${k.fisYaz}</button>`)
     .replace(
       '<script src="/maliyet.js"></script>',
       `<script>window.BASKI_HESAP_ORTAM = ${JSON.stringify(ortam)};</script>\n  <script src="/para.js"></script>\n  <script src="/i18n-global.js"></script>\n  <script src="/maliyet.js"></script>`,
@@ -1163,12 +1163,12 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
   });
 
   cikti = cikti
-    .replace('<span class="hero-rozet">🧩 Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>', `<span class="hero-rozet">${c.rozet}</span>`)
+    .replace('<span class="hero-rozet">Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>', `<span class="hero-rozet">${c.rozet}</span>`)
     .replace('<h1>Dilimleme bittiği anda<br><b>en ucuz filamenti</b> göster</h1>', `<h1>${c.h1}</h1>`)
     .replace(/Web sitesine gitmeye gerek yok\.[\s\S]*?<\/p>/, `${c.alt}</p>`)
-    .replace('<span>🔒 Yalnızca gramaj + malzeme gönderilir</span>', `<span>${k.heroGuven1}</span>`)
-    .replace('<span>🆓 Ücretsiz, hesap gerekmez</span>', `<span>${k.heroGuven2}</span>`)
-    .replace('<h2 id="slCanliBaslik">🔎 Canlı örnek &amp; anında G-Code analizi</h2>', `<h2 id="slCanliBaslik">${k.canliBaslik}</h2>`)
+    .replace('<span>Yalnızca gramaj + malzeme gönderilir</span>', `<span>${k.heroGuven1}</span>`)
+    .replace('<span>Ücretsiz, hesap gerekmez</span>', `<span>${k.heroGuven2}</span>`)
+    .replace('<h2 id="slCanliBaslik">Canlı örnek &amp; anında G-Code analizi</h2>', `<h2 id="slCanliBaslik">${k.canliBaslik}</h2>`)
     .replace('<span class="sl-canli-etiket">68 mağaza · gerçek veri</span>', `<span class="sl-canli-etiket">${k.canliEtiket}</span>`)
     .replace('<b>İsterseniz bir <code>.gcode</code> dosyasını buraya bırakın (veya tıklayın)</b>', `<b>${c.dropBaslik}</b>`)
     .replace('<span>Bambu Studio, OrcaSlicer, PrusaSlicer, Cura meta verisi tarayıcıda okunur; dosya sunucuya yüklenmez.</span>', `<span>${k.dropMeta}</span>`)
@@ -1177,23 +1177,23 @@ export function globalSlicerSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('Renk (isteğe bağlı)', k.renkLbl)
     .replace('value="Siyah" maxlength="30" placeholder="Siyah"', `value="${k.renkVal}" maxlength="30" placeholder="${k.renkVal}"`)
     .replace('>{ } API JSON çıktısını göster</button>', `>${k.jsonBtn}</button>`)
-    .replace('<h2 id="slIndirmeBaslik" class="sl-bolum-baslik">📥 İndir ve kur</h2>', `<h2 id="slIndirmeBaslik" class="sl-bolum-baslik">${k.indirmeBaslik}</h2>`)
+    .replace('<h2 id="slIndirmeBaslik" class="sl-bolum-baslik">İndir ve kur</h2>', `<h2 id="slIndirmeBaslik" class="sl-bolum-baslik">${k.indirmeBaslik}</h2>`)
     .replace('<p class="sl-kart-alt">Cura 4.13 ve üzeri</p>', `<p class="sl-kart-alt">${k.curaAlt}</p>`)
-    .replace('⬇️ Baskı Hesap — Cura paketi', c.curaBtn)
+    .replace('Baskı Hesap — Cura paketi indir', c.curaBtn)
     .replace('<p class="sl-kart-alt">Post-processing script</p>', `<p class="sl-kart-alt">${k.bambuAlt}</p>`)
-    .replace('⬇️ en_ucuz_slicer.py', c.pyBtn)
+    .replace('en_ucuz_slicer.py indir', c.pyBtn)
     .replace(/<li><code>\.curapackage<\/code>[\s\S]*?<\/ol>/, `<li>${k.curaAdim1}</li><li>${k.curaAdim2}</li><li>${k.curaAdim3}</li></ol>`)
     .replace(/<li>Dosyayı bilgisayarınıza kaydedin[\s\S]*?<\/ol>/, `<li>${k.bambuAdim1}</li><li>${k.bambuAdim2}</li><li>${k.bambuAdim3}</li></ol>`)
-    .replace(/<summary>🐍 Python yok mu\? \(Windows\)<\/summary>[\s\S]*?<\/details>/, `<summary>${k.pySum}</summary><p>${k.pyP1}</p><pre class="sl-kod">python "C:\\BaskiHesap\\en_ucuz_slicer.py"</pre><p class="sl-not">${k.pyP2}</p><pre class="sl-kod">pip install pyinstaller\npyinstaller --onefile --noconsole en_ucuz_slicer.py</pre><p class="sl-not">${k.pyP3}</p></details>`)
-    .replace(/<summary>✅ Kurulumu doğrula<\/summary>[\s\S]*?<\/details>/, `<summary>${k.testSum}</summary><p>${k.testP1}</p><pre class="sl-kod">python en_ucuz_slicer.py --test</pre><p class="sl-not">${k.testP2}</p></details>`)
-    .replace('<h2 id="slNasilBaslik" class="sl-bolum-baslik">⚙️ Nasıl çalışır?</h2>', `<h2 id="slNasilBaslik" class="sl-bolum-baslik">${k.nasilBaslik}</h2>`)
+    .replace(/<summary>Python yok mu\? \(Windows\)<\/summary>[\s\S]*?<\/details>/, `<summary>${k.pySum}</summary><p>${k.pyP1}</p><pre class="sl-kod">python "C:\\BaskiHesap\\en_ucuz_slicer.py"</pre><p class="sl-not">${k.pyP2}</p><pre class="sl-kod">pip install pyinstaller\npyinstaller --onefile --noconsole en_ucuz_slicer.py</pre><p class="sl-not">${k.pyP3}</p></details>`)
+    .replace(/<summary>Kurulumu doğrula<\/summary>[\s\S]*?<\/details>/, `<summary>${k.testSum}</summary><p>${k.testP1}</p><pre class="sl-kod">python en_ucuz_slicer.py --test</pre><p class="sl-not">${k.testP2}</p></details>`)
+    .replace('<h2 id="slNasilBaslik" class="sl-bolum-baslik">Nasıl çalışır</h2>', `<h2 id="slNasilBaslik" class="sl-bolum-baslik">${k.nasilBaslik}</h2>`)
     .replace(/<b>Dilimleme biter<\/b>[\s\S]*?<span>Slicer gramajı[\s\S]*?<\/span>/, `<b>${k.adim1t}</b>\n          <span>${k.adim1d}</span>`)
     .replace(/<b>Eklenti okur<\/b>[\s\S]*?<span>Yalnızca[\s\S]*?<\/span>/, `<b>${k.adim2t}</b>\n          <span>${k.adim2d}</span>`)
     .replace(/<b>API sorgular<\/b>[\s\S]*?<span>68 mağazadaki[\s\S]*?<\/span>/, `<b>${k.adim3t}</b>\n          <span>${k.adim3d}</span>`)
     .replace(/<b>Bildirim gelir<\/b>[\s\S]*?<span>“Bu baskı[\s\S]*?<\/span>/, `<b>${k.adim4t}</b>\n          <span>${k.adim4d}</span>`)
-    .replace('<h2 id="slGuvenBaslik" class="sl-bolum-baslik">🔒 Gizlilik ve dürüstlük</h2>', `<h2 id="slGuvenBaslik" class="sl-bolum-baslik">${k.guvenBaslik}</h2>`)
+    .replace('<h2 id="slGuvenBaslik" class="sl-bolum-baslik">Gizlilik ve dürüstlük</h2>', `<h2 id="slGuvenBaslik" class="sl-bolum-baslik">${k.guvenBaslik}</h2>`)
     .replace(/<ul class="sl-liste">[\s\S]*?<\/ul>/, `<ul class="sl-liste">${k.guvenHtml}</ul>`)
-    .replace('<h2 id="slApiBaslik" class="sl-bolum-baslik">🔌 API (kendi entegrasyonunuz için)</h2>', `<h2 id="slApiBaslik" class="sl-bolum-baslik">${k.apiBaslik}</h2>`)
+    .replace('<h2 id="slApiBaslik" class="sl-bolum-baslik">API (kendi entegrasyonunuz için)</h2>', `<h2 id="slApiBaslik" class="sl-bolum-baslik">${k.apiBaslik}</h2>`)
     .replace('<p class="sl-api-not">Herkese açık, CORS destekli, 60 sn önbellekli.</p>', `<p class="sl-api-not">${k.apiNot} <a href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">${k.crealityBtn}</a></p>`)
     .replace(/GET \/api\/embed\/oner\?malzeme=PLA[\s\S]*?"bildirimMetni": "[^"]*"/, k.apiOrnek)
     .replace(/<p class="sl-api-not">Parametreler:[\s\S]*?<\/p>/, `<p class="sl-api-not">${k.apiParamHtml}</p>`)
@@ -1227,25 +1227,25 @@ const ANA_KOPYA = Object.freeze({
     araBtn: 'Find Prices',
     populerEtiket: 'Popular:',
     ornekler: ['Polymaker PLA', 'Overture PLA', 'Creality K1C', 'Elegoo PLA'],
-    ipucu: '⚡ Paste any product link or type a name to compare live stock &amp; total price across US stores · Free browser STL calculator below.',
+    ipucu: 'Paste any product link or type a name to compare live stock &amp; total price across US stores · Free browser STL calculator below.',
     durumBaslik: 'Scanning regional stores…',
     iptalBtn: '✕ Cancel',
     ozetEnUcuz: 'Best Total Price',
-    stoktaLabel: '✅ In Stock',
-    tukendiLabel: '❌ Out of Stock',
+    stoktaLabel: 'In Stock',
+    tukendiLabel: 'Out of Stock',
     fiyatYokLabel: 'Price on store',
-    stlBaslik: '🧩 Drop your 3D model, see <b>part cost</b>',
-    stlGizlilik: '🔒 Never leaves your device',
+    stlBaslik: 'Drop your 3D model, see <b>part cost</b>',
+    stlGizlilik: 'Never leaves your device',
     stlBirakAna: 'Drop an STL / 3MF file here',
     stlBirakAlt: 'Instant local weight, volume &amp; filament estimate — zero server upload',
-    stlRozet: '⚡ Instant · Serverless',
-    stlDetay: '📊 Full profit, electricity &amp; depreciation calculator ➔',
+    stlRozet: 'Instant · Serverless',
+    stlDetay: 'Full profit, electricity &amp; depreciation calculator →',
     aracBaslik: 'Global Maker Toolkit',
-    kartMaliyetBaslik: '🧮 STL / 3MF Cost Calculator',
+    kartMaliyetBaslik: 'STL / 3MF Cost Calculator',
     kartMaliyetMetin: 'Calculate filament weight, electricity, machine wear and suggested selling price in USD/EUR/JPY — 100% locally.',
-    kartSlicerBaslik: '🧩 UltiMaker Cura &amp; Slicer Plugin',
+    kartSlicerBaslik: 'UltiMaker Cura &amp; Slicer Plugin',
     kartSlicerMetin: 'Automatically read filament usage right after slicing in Cura, OrcaSlicer, Bambu Studio or PrusaSlicer.',
-    kartStoreBaslik: '🛒 Creality Official Store (US)',
+    kartStoreBaslik: 'Creality Official Store (US)',
     kartStoreMetin: 'Browse K3 Multi-Color, K1C, Ender 3 V3 series and official filaments directly on store.creality.com.',
     araniyor: 'Scanning regional stores…',
     bulunamadi: 'No in-stock matching offer found for this query right now. Try browsing the official store directly:',
@@ -1272,25 +1272,25 @@ const ANA_KOPYA = Object.freeze({
     araBtn: 'Trouver les prix',
     populerEtiket: 'Populaires :',
     ornekler: ['Creality K1C', 'Polymaker PLA', 'Arianeplast PLA', 'Francofil PLA'],
-    ipucu: '⚡ Collez un lien ou saisissez un nom pour comparer le stock et le prix total en France · Calculateur STL 100 % local ci-dessous.',
+    ipucu: 'Collez un lien ou saisissez un nom pour comparer le stock et le prix total en France · Calculateur STL 100 % local ci-dessous.',
     durumBaslik: 'Analyse des boutiques françaises…',
     iptalBtn: '✕ Annuler',
     ozetEnUcuz: 'Meilleur Prix Total',
-    stoktaLabel: '✅ En stock',
-    tukendiLabel: '❌ Rupture',
+    stoktaLabel: 'En stock',
+    tukendiLabel: 'Rupture',
     fiyatYokLabel: 'Voir boutique',
-    stlBaslik: '🧩 Déposez votre modèle 3D, voyez le <b>coût réel</b>',
-    stlGizlilik: '🔒 Reste sur votre appareil',
+    stlBaslik: 'Déposez votre modèle 3D, voyez le <b>coût réel</b>',
+    stlGizlilik: 'Reste sur votre appareil',
     stlBirakAna: 'Glissez un fichier STL / 3MF ici',
     stlBirakAlt: 'Estimation locale instantanée du poids, du volume et du coût matière sans envoi serveur',
-    stlRozet: '⚡ Instantané · Local',
-    stlDetay: '📊 Calculateur complet électricité, usure &amp; marge (€) ➔',
+    stlRozet: 'Instantané · Local',
+    stlDetay: 'Calculateur complet électricité, usure &amp; marge (€) →',
     aracBaslik: 'Outils Gratuits Impression 3D',
-    kartMaliyetBaslik: '🧮 Calculateur de Coût STL / 3MF',
+    kartMaliyetBaslik: 'Calculateur de Coût STL / 3MF',
     kartMaliyetMetin: 'Calculez poids, électricité, amortissement et prix de vente en € — 100 % local dans votre navigateur.',
-    kartSlicerBaslik: '🧩 Extension UltiMaker Cura &amp; Slicer',
+    kartSlicerBaslik: 'Extension UltiMaker Cura &amp; Slicer',
     kartSlicerMetin: 'Obtenez la consommation exacte dès le tranchage sur Cura, OrcaSlicer, Bambu Studio ou PrusaSlicer.',
-    kartStoreBaslik: '🛒 Boutique Officielle Creality FR',
+    kartStoreBaslik: 'Boutique Officielle Creality FR',
     kartStoreMetin: 'Découvrez les imprimantes, plateaux PEI, buses et filaments sur store.creality.com/fr.',
     araniyor: 'Analyse en cours…',
     bulunamadi: 'Aucune offre correspondante en stock pour le moment. Consultez la boutique officielle :',
@@ -1317,25 +1317,25 @@ const ANA_KOPYA = Object.freeze({
     araBtn: '最安値を検索',
     populerEtiket: '人気検索:',
     ornekler: ['Creality K1C', 'ELEGOO PETG', 'Bambu Lab', 'PLA フィラメント'],
-    ipucu: '⚡ URLまたは商品名を入力して日本国内ストアの在庫・価格を比較。下のボックスでSTL/3MFの重量・原価もすぐ計算できます。',
+    ipucu: 'URLまたは商品名を入力して日本国内ストアの在庫・価格を比較。下のボックスでSTL/3MFの重量・原価もすぐ計算できます。',
     durumBaslik: '国内ストアを検索中…',
     iptalBtn: '✕ 中止',
     ozetEnUcuz: '実質最安値',
-    stoktaLabel: '✅ 在庫あり',
-    tukendiLabel: '❌ 在庫切れ',
+    stoktaLabel: '在庫あり',
+    tukendiLabel: '在庫切れ',
     fiyatYokLabel: 'ショップで確認',
-    stlBaslik: '🧩 3Dモデルをドロップして<b>印刷コスト</b>を試算',
-    stlGizlilik: '🔒 端末内で完結（アップロードなし）',
+    stlBaslik: '3Dモデルをドロップして<b>印刷コスト</b>を試算',
+    stlGizlilik: '端末内で完結（アップロードなし）',
     stlBirakAna: 'STL / 3MF ファイルをここにドロップ',
     stlBirakAlt: 'ブラウザ上で瞬時に体積・重量・フィラメント消費量を計算します',
-    stlRozet: '⚡ 即時計算 · ローカル',
-    stlDetay: '📊 電気代・償却費・利益率を含む詳細原価計算 ➔',
+    stlRozet: '即時計算 · ローカル',
+    stlDetay: '電気代・償却費・利益率を含む詳細原価計算 →',
     aracBaslik: '無料3Dプリントツール',
-    kartMaliyetBaslik: '🧮 STL / 3MF 原価シミュレーター',
+    kartMaliyetBaslik: 'STL / 3MF 原価シミュレーター',
     kartMaliyetMetin: 'STL/3MFを読み込んでフィラメント代・電気代・償却費・推奨販売価格を円（¥）で即時計算します。',
-    kartSlicerBaslik: '🧩 UltiMaker Cura &amp; スライサープラグイン',
+    kartSlicerBaslik: 'UltiMaker Cura &amp; スライサープラグイン',
     kartSlicerMetin: 'Cura、OrcaSlicer、Bambu Studio等でのスライス直後に使用グラム数を自動取得します。',
-    kartStoreBaslik: '🛒 Creality 公式ストア（日本）',
+    kartStoreBaslik: 'Creality 公式ストア（日本）',
     kartStoreMetin: 'store.creality.com/jp で3Dプリンター本体や純正ノズル・フィラメントを確認。',
     araniyor: 'ストアを確認中…',
     bulunamadi: '現在一致する在庫オファーが見つかりませんでした。公式ストアをご確認ください:',
@@ -1352,16 +1352,16 @@ function anaSeoRehberKartHtml(kod) {
       baslik: '3D Printer &amp; Filament Categories',
       alt: 'Browse tracked 3D printer, filament, resin &amp; part category pages with shipping included:',
       tum: 'Full Catalog →',
-      y: '🖨️ 3D Printer Prices',
-      pla: '🧵 PLA &amp; PLA+ Filament',
-      petg: '🦾 PETG, TPU &amp; ABS Filament',
-      yedek: '⚙️ Spare Parts (Nozzle, Hotend, Board)',
-      recine: '🧪 UV Resin &amp; Dryers',
-      mal: '🧮 3D Print Cost Calculator',
-      sep: '🧺 Smart Basket Optimizer',
-      reh: '📖 Guides &amp; Versus',
-      ucuzPla: '🏷️ Cheapest PLA ($/kg)',
-      vs: '⚖️ P1S vs K1C',
+      y: '3D Printer Prices',
+      pla: 'PLA &amp; PLA+ Filament',
+      petg: 'PETG, TPU &amp; ABS Filament',
+      yedek: 'Spare Parts (Nozzle, Hotend, Board)',
+      recine: 'UV Resin &amp; Dryers',
+      mal: '3D Print Cost Calculator',
+      sep: 'Smart Basket Optimizer',
+      reh: 'Guides &amp; Versus',
+      ucuzPla: 'Cheapest PLA ($/kg)',
+      vs: 'P1S vs K1C',
       q1: 'Is shipping included in shown prices?',
       a1: 'Yes. For stores with known shipping fees or free-shipping thresholds, delivery costs are automatically factored into the total; stores that calculate shipping only at checkout are clearly marked "+Shipping calculated at checkout".',
       q2: 'How is filament unit price ($/kg) compared?',
@@ -1372,16 +1372,16 @@ function anaSeoRehberKartHtml(kod) {
       baslik: 'Catégories Imprimantes 3D &amp; Filaments',
       alt: 'Parcourez tous nos comparatifs produits et catégories livraison incluse en EUR (€) :',
       tum: 'Catalogue complet →',
-      y: '🖨️ Prix Imprimantes 3D',
-      pla: '🧵 Filament PLA &amp; PLA+',
-      petg: '🦾 Filament PETG, TPU &amp; ABS',
-      yedek: '⚙️ Pièces Détachées (Buses, Hotends)',
-      recine: '🧪 Résine UV &amp; Séchoirs',
-      mal: '🧮 Calculateur de Coût STL',
-      sep: '🧺 Panier Intelligent',
-      reh: '📖 Guides &amp; Comparatifs',
-      ucuzPla: '🏷️ PLA le moins cher (€/kg)',
-      vs: '⚖️ P1S vs K1C',
+      y: 'Prix Imprimantes 3D',
+      pla: 'Filament PLA &amp; PLA+',
+      petg: 'Filament PETG, TPU &amp; ABS',
+      yedek: 'Pièces Détachées (Buses, Hotends)',
+      recine: 'Résine UV &amp; Séchoirs',
+      mal: 'Calculateur de Coût STL',
+      sep: 'Panier Intelligent',
+      reh: 'Guides &amp; Comparatifs',
+      ucuzPla: 'PLA le moins cher (€/kg)',
+      vs: 'P1S vs K1C',
       q1: 'Les frais de livraison sont-ils inclus dans les prix ?',
       a1: 'Oui. Dès que les frais ou seuils de gratuité sont connus, la livraison est intégrée au total ; les boutiques qui calculent le port uniquement au panier affichent clairement « +Frais de port calculés au panier ».',
       q2: 'Comment le prix au kilo (€/kg) est-il calculé ?',
@@ -1392,16 +1392,16 @@ function anaSeoRehberKartHtml(kod) {
       baslik: '3Dプリンター・フィラメント カテゴリー',
       alt: '送料込みの実勢価格を追跡している製品カテゴリー・購入ガイドをご覧ください:',
       tum: '製品カタログ一覧 →',
-      y: '🖨️ 3Dプリンター価格',
-      pla: '🧵 PLA・PLA+ フィラメント',
-      petg: '🦾 PETG・TPU・ABS フィラメント',
-      yedek: '⚙️ 交換パーツ（ノズル・ホットエンド）',
-      recine: '🧪 UVレジン＆乾燥機',
-      mal: '🧮 3Dプリント原価計算',
-      sep: '🧺 スマートカート＆送料最適化',
-      reh: '📖 比較ガイド＆記事一覧',
-      ucuzPla: '🏷️ 最安PLA (¥/kg)',
-      vs: '⚖️ P1S vs K1C',
+      y: '3Dプリンター価格',
+      pla: 'PLA・PLA+ フィラメント',
+      petg: 'PETG・TPU・ABS フィラメント',
+      yedek: '交換パーツ（ノズル・ホットエンド）',
+      recine: 'UVレジン＆乾燥機',
+      mal: '3Dプリント原価計算',
+      sep: 'スマートカート＆送料最適化',
+      reh: '比較ガイド＆記事一覧',
+      ucuzPla: '最安PLA (¥/kg)',
+      vs: 'P1S vs K1C',
       q1: '表示価格に送料は含まれていますか？',
       a1: 'はい。送料や送料無料ラインが公開されているストアでは送料込みの実質総額を計算して比較し、レジ計算のみ対応のストアには「レジ計算（送料別途）」と明記しています。',
       q2: 'フィラメントのkg単価（¥/kg）はどう比較されますか？',
@@ -1445,15 +1445,15 @@ const ANA_BOLUM_KOPYA = Object.freeze({
   en: {
     vitrinBaslik: 'Live Filament &amp; 3D Printer Deals',
     vitrinAlt: 'Latest in-stock low prices tracked regionally',
-    vitrinKatalog: '🗂️ Full Catalog',
-    vitrinFirsat: '📢 Deals',
+    vitrinKatalog: 'Full Catalog',
+    vitrinFirsat: 'Deals',
     vitrinYenileAria: 'Refresh deals board',
     vitrinYenileTitle: 'Refresh',
     vitrinKatAria: 'Deal categories',
     vitrinHepsi: 'All',
-    vitrinFilament: '🧵 Filament',
-    vitrinYazici: '🖨️ 3D Printers',
-    vitrinParca: '⚙️ Parts &amp; Resin',
+    vitrinFilament: 'Filament',
+    vitrinYazici: '3D Printers',
+    vitrinParca: 'Parts &amp; Resin',
     vitrinBosBaslik: 'No regional deals cached yet.',
     vitrinBosAlt: 'Once regional scanning completes, the lowest in-stock prices appear here.',
     vitrinDipnot: 'Prices come from the latest regional scan',
@@ -1467,19 +1467,19 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     sepetSayac: '0/10 items',
     sepetDurumBaslik: 'Calculating basket…',
     sepetSonucBaslik: 'Basket scenarios',
-    sepetKuponBaslik: '🎟️ Matching coupons',
+    sepetKuponBaslik: 'Matching coupons',
     sepetKuponAlt: 'Copy code in one click and paste at checkout',
-    sepetPaylasBaslik: '📤 Share basket',
+    sepetPaylasBaslik: 'Share basket',
     sepetPaylasAlt: 'Send list via WhatsApp or create a shareable link',
-    sepetWaBtn: '💬 Share via WhatsApp',
-    sepetLinkBtn: '🔗 Create Share Link',
-    sepetKopyaBtn: '📋 Copy Link',
+    sepetWaBtn: 'Share via WhatsApp',
+    sepetLinkBtn: 'Create Share Link',
+    sepetKopyaBtn: 'Copy Link',
     sepetNot: 'Prices reflect item totals before shipping; each scenario calculates the store free-shipping threshold separately. Coupon discounts appear in the panel above.',
     tarayiciBaslik: 'In-store? Scan the barcode',
     tarayiciAciklama: 'Point your camera at the product barcode (EAN-13/UPC) to check live online prices in seconds. Enter the shelf price to see <b>how much you save</b>.',
-    sekmeBarkod: '📷 Scan barcode',
-    sekmeGorsel: '🖼️ Search by photo',
-    sekmeElle: '⌨️ Enter barcode',
+    sekmeBarkod: 'Scan barcode',
+    sekmeGorsel: 'Search by photo',
+    sekmeElle: 'Enter barcode',
     kameraBaslat: 'Start camera',
     kameraDurdur: 'Stop camera',
     rafEtiket: 'Shelf price ($):',
@@ -1487,7 +1487,7 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     kameraNot: 'Camera permission required. Must run over HTTPS or localhost.',
     gorselSecHtml: '<b>Take a photo</b>, drag &amp; drop, or paste with <kbd>Ctrl</kbd>+<kbd>V</kbd>',
     gorselAltIpucu: '3D part, hotend, nozzle, stepper motor, or filament spool (max 4 MB)',
-    gorselBirak: '📥 Drop photo here',
+    gorselBirak: 'Drop photo here',
     gorselOnizlemeAlt: 'Selected part photo',
     gorselIpucuEtiket: 'Hint (optional):',
     gorselIpucuPh: 'e.g. Bambu P1S hotend 0.4mm, Polymaker PLA black',
@@ -1506,54 +1506,54 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     altAlarmAria: 'My price alerts — tracked products',
     altTercih: 'Preferences',
     modalKapatAria: 'Close',
-    fisRozet: '🧾 3D PRINT QUOTE RECEIPT',
+    fisRozet: '3D Print Quote Receipt',
     fisKapatAria: 'Close quote receipt',
     fisBaslik: '3D Print Cost &amp; Quote Summary',
-    fisModel: '📦 Model:',
-    fisEbat: '📐 Dimensions:',
-    fisGramaj: '⚖️ Weight:',
-    fisMalzeme: '🧵 Material:',
-    fisSure: '⏱️ Est. Time:',
+    fisModel: 'Model:',
+    fisEbat: 'Dimensions:',
+    fisGramaj: 'Weight:',
+    fisMalzeme: 'Material:',
+    fisSure: 'Est. Time:',
     fisFilament: 'Filament Cost:',
     fisElektrik: 'Electricity Cost:',
     fisAmortisman: 'Printer Depreciation:',
     fisNet: 'Net Production Cost:',
-    fisOnerilen: 'RECOMMENDED SELLING PRICE',
+    fisOnerilen: 'Recommended Selling Price',
     fisKarNot: 'Includes workshop profit margin',
-    fisDipnot: '⚡ Price Verification: <b>Baskı Hesap</b> · live multi-store radar',
-    fisWa: '📲 Send via WhatsApp',
-    fisKopyala: '📋 Copy Receipt',
-    fisYazdir: '🖨️ Print / PDF',
+    fisDipnot: 'Price Verification: <b>Baskı Hesap</b> · live multi-store radar',
+    fisWa: 'Send via WhatsApp',
+    fisKopyala: 'Copy Receipt',
+    fisYazdir: 'Print / PDF',
     oneriBaslik: 'Recommended models for you',
-    oneriDurdur: '⏹️ Stop &amp; Show Found',
+    oneriDurdur: 'Stop &amp; Show Found',
     sifirdanTara: '↻ Fresh Rescan',
-    dogrulama: '🕒 Just verified live across regional stores',
-    nedenUcuz: '💡 Why Is It Cheaper? (AI Analysis)',
+    dogrulama: 'Just verified live across regional stores',
+    nedenUcuz: 'Why Is It Cheaper (Price Analysis)',
     birimBaslik: 'Price per kilogram',
     muadilBaslik: 'Alternative product suggestions',
     muadilBtn: 'Search alternatives',
     trendBaslik: '30-Day Price Trend &amp; Discount Analysis',
     trendAlt: 'Price fluctuations and market analytics',
-    trendRozet: '🔥 At Lowest Level',
-    trendDusuk: '🟢 30-Day Low',
+    trendRozet: 'At Lowest Level',
+    trendDusuk: '30-Day Low',
     trendDusukAlt: 'Market floor',
-    trendOrt: '📊 30-Day Average',
-    trendYuksek: '🔴 30-Day High',
+    trendOrt: '30-Day Average',
+    trendYuksek: '30-Day High',
     trendYuksekAlt: 'Market ceiling',
-    trendIndirim: '🎯 Discount Rate',
+    trendIndirim: 'Discount Rate',
     trendIndirimAlt: 'Vs. 30-day average',
     filtreEtiket: 'Filter:',
     filtreTumu: 'All',
-    filtreStokta: '🟢 In Stock',
-    filtreYok: '🔴 Out of Stock',
-    filtreKargo: '📦 Free Shipping',
-    filtreResmi: '🏢 Official Store',
-    filtreTaksit: '💳 0% APR Installments',
-    filtreBirim: '🏷️ Lowest $/kg',
+    filtreStokta: 'In Stock',
+    filtreYok: 'Out of Stock',
+    filtreKargo: 'Free Shipping',
+    filtreResmi: 'Official Store',
+    filtreTaksit: '0% APR Installments',
+    filtreBirim: 'Lowest $/kg',
     lejant1: '<span class="ok-isaret">✓</span> <b>Real price</b> = list price − universal discounts + shipping',
-    lejant2: '<span class="uyari-isaret">⚠</span> <b>Conditional promos</b> (app / card / membership) are excluded',
-    lejant3: '<span class="uyari-isaret">🚚</span> Shipping: known rates &amp; free-shipping thresholds are factored in',
-    lejant4: '<span class="uyari-isaret">🎨</span> Different colors are excluded from the lowest-price comparison',
+    lejant2: '<span class="uyari-isaret">!</span> <b>Conditional promos</b> (app / card / membership) are excluded',
+    lejant3: '<span class="uyari-isaret">•</span> Shipping: known rates &amp; free-shipping thresholds are factored in',
+    lejant4: '<span class="uyari-isaret">•</span> Different colors are excluded from the lowest-price comparison',
     tabloOzet: 'Summary table (store, item, color, stock, total, promos, shipping, requests)',
     thSite: 'Store', thUrun: 'Found Item', thRenk: 'Color', thStok: 'Stock', thToplam: 'Total (incl. shipping)', thKamp: 'Promos', thKargo: 'Shipping', thIstek: 'Req',
     alarmBaslik: 'Set a price alert',
@@ -1561,29 +1561,29 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     alarmPh: 'e.g. 25.00',
     alarmBtn: 'Track this product',
     alarmIpucu: 'Configure notification email or Telegram in Alerts.',
-    pushBtn: '🔔 Send Alert to This Device',
+    pushBtn: 'Send Alert to This Device',
     stlDoluluk: 'Infill',
     stlMalzeme: 'Material',
     stlEbatKucuk: 'size (mm)',
     stlHacimKucuk: 'volume',
     stlGramKucuk: 'filament',
-    stlCta: '⚡ Buy This Filament ➔',
-    stlTeklif: '🧾 Generate Print Quote',
-    sponsorRozet: '⭐ FEATURED DEAL OF THE WEEK',
-    sponsorCta: '⚡ View Deal',
+    stlCta: 'Buy This Filament →',
+    stlTeklif: 'Generate Print Quote',
+    sponsorRozet: 'Featured Deal of the Week',
+    sponsorCta: 'View Deal',
   },
   fr: {
     vitrinBaslik: 'Offres Filaments &amp; Imprimantes 3D en Direct',
     vitrinAlt: 'Derniers prix bas en stock relevés en Europe',
-    vitrinKatalog: '🗂️ Catalogue complet',
-    vitrinFirsat: '📢 Bons plans',
+    vitrinKatalog: 'Catalogue complet',
+    vitrinFirsat: 'Bons plans',
     vitrinYenileAria: 'Actualiser les offres',
     vitrinYenileTitle: 'Actualiser',
     vitrinKatAria: 'Catégories d’offres',
     vitrinHepsi: 'Tout',
-    vitrinFilament: '🧵 Filaments',
-    vitrinYazici: '🖨️ Imprimantes 3D',
-    vitrinParca: '⚙️ Pièces &amp; Résine',
+    vitrinFilament: 'Filaments',
+    vitrinYazici: 'Imprimantes 3D',
+    vitrinParca: 'Pièces &amp; Résine',
     vitrinBosBaslik: 'Aucune offre régionale en cache pour l’instant.',
     vitrinBosAlt: 'Les meilleurs prix en stock apparaîtront ici dès la fin de l’analyse régionale.',
     vitrinDipnot: 'Prix issus de la dernière analyse régionale',
@@ -1597,19 +1597,19 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     sepetSayac: '0/10 produits',
     sepetDurumBaslik: 'Calcul du panier…',
     sepetSonucBaslik: 'Scénarios de panier',
-    sepetKuponBaslik: '🎟️ Codes promo compatibles',
+    sepetKuponBaslik: 'Codes promo compatibles',
     sepetKuponAlt: 'Copiez le code en un clic et collez-le au paiement',
-    sepetPaylasBaslik: '📤 Partager le panier',
+    sepetPaylasBaslik: 'Partager le panier',
     sepetPaylasAlt: 'Envoyez la liste sur WhatsApp ou créez un lien public',
-    sepetWaBtn: '💬 Partager sur WhatsApp',
-    sepetLinkBtn: '🔗 Créer un lien de partage',
-    sepetKopyaBtn: '📋 Copier le lien',
+    sepetWaBtn: 'Partager sur WhatsApp',
+    sepetLinkBtn: 'Créer un lien de partage',
+    sepetKopyaBtn: 'Copier le lien',
     sepetNot: 'Prix hors frais de port ; chaque scénario calcule le seuil de livraison gratuite de chaque boutique séparément. Les codes promo sont affichés à part.',
     tarayiciBaslik: 'En magasin ? Scannez le code-barres',
     tarayiciAciklama: 'Visez le code-barres (EAN-13/UPC) avec votre caméra pour voir le prix en ligne en quelques secondes. Indiquez le prix en rayon pour calculer <b>vos économies</b>.',
-    sekmeBarkod: '📷 Scanner code-barres',
-    sekmeGorsel: '🖼️ Chercher par photo',
-    sekmeElle: '⌨️ Saisir le code',
+    sekmeBarkod: 'Scanner code-barres',
+    sekmeGorsel: 'Chercher par photo',
+    sekmeElle: 'Saisir le code',
     kameraBaslat: 'Activer la caméra',
     kameraDurdur: 'Arrêter la caméra',
     rafEtiket: 'Prix rayon (€) :',
@@ -1617,7 +1617,7 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     kameraNot: 'Autorisation caméra requise. Doit fonctionner en HTTPS ou localhost.',
     gorselSecHtml: '<b>Prenez une photo</b>, glissez-déposez ou collez avec <kbd>Ctrl</kbd>+<kbd>V</kbd>',
     gorselAltIpucu: 'Pièce 3D, buse, hotend, moteur pas à pas ou bobine de filament (max 4 Mo)',
-    gorselBirak: '📥 Déposez la photo ici',
+    gorselBirak: 'Déposez la photo ici',
     gorselOnizlemeAlt: 'Photo sélectionnée',
     gorselIpucuEtiket: 'Indice (facultatif) :',
     gorselIpucuPh: 'ex. Buse Bambulab 0.4mm, Polymaker PLA noir',
@@ -1636,54 +1636,54 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     altAlarmAria: 'Mes alertes prix — produits suivis',
     altTercih: 'Préférences',
     modalKapatAria: 'Fermer',
-    fisRozet: '🧾 DEVIS D’IMPRESSION 3D',
+    fisRozet: 'Devis d’impression 3D',
     fisKapatAria: 'Fermer le devis',
     fisBaslik: 'Résumé Coût &amp; Devis 3D',
-    fisModel: '📦 Modèle :',
-    fisEbat: '📐 Dimensions :',
-    fisGramaj: '⚖️ Masse :',
-    fisMalzeme: '🧵 Matériau :',
-    fisSure: '⏱️ Durée est. :',
+    fisModel: 'Modèle :',
+    fisEbat: 'Dimensions :',
+    fisGramaj: 'Masse :',
+    fisMalzeme: 'Matériau :',
+    fisSure: 'Durée est. :',
     fisFilament: 'Coût filament :',
     fisElektrik: 'Électricité :',
     fisAmortisman: 'Amortissement :',
     fisNet: 'Coût de revient net :',
-    fisOnerilen: 'PRIX DE VENTE RECOMMANDÉ',
+    fisOnerilen: 'Prix de vente recommandé',
     fisKarNot: 'Inclut la marge de l’atelier',
-    fisDipnot: '⚡ Vérification : <b>Baskı Hesap</b> · radar boutiques Europe',
-    fisWa: '📲 Envoyer sur WhatsApp',
-    fisKopyala: '📋 Copier le devis',
-    fisYazdir: '🖨️ Imprimer / PDF',
+    fisDipnot: 'Vérification : <b>Baskı Hesap</b> · radar boutiques Europe',
+    fisWa: 'Envoyer sur WhatsApp',
+    fisKopyala: 'Copier le devis',
+    fisYazdir: 'Imprimer / PDF',
     oneriBaslik: 'Modèles recommandés pour vous',
-    oneriDurdur: '⏹️ Arrêter &amp; Afficher',
+    oneriDurdur: 'Arrêter &amp; Afficher',
     sifirdanTara: '↻ Nouvelle analyse',
-    dogrulama: '🕒 Vérifié en direct auprès des boutiques européennes',
-    nedenUcuz: '💡 Pourquoi est-ce moins cher ? (Analyse IA)',
+    dogrulama: 'Vérifié en direct auprès des boutiques européennes',
+    nedenUcuz: 'Pourquoi est-ce moins cher (Analyse)',
     birimBaslik: 'Prix au kilogramme',
     muadilBaslik: 'Alternatives en stock',
     muadilBtn: 'Chercher des alternatives',
     trendBaslik: 'Tendance sur 30 jours &amp; Analyse',
     trendAlt: 'Variations de prix et historique du marché',
-    trendRozet: '🔥 Au plus bas',
-    trendDusuk: '🟢 Plus bas (30j)',
+    trendRozet: 'Au plus bas',
+    trendDusuk: 'Plus bas (30j)',
     trendDusukAlt: 'Plancher du marché',
-    trendOrt: '📊 Moyenne (30j)',
-    trendYuksek: '🔴 Plus haut (30j)',
+    trendOrt: 'Moyenne (30j)',
+    trendYuksek: 'Plus haut (30j)',
     trendYuksekAlt: 'Plafond du marché',
-    trendIndirim: '🎯 Remise',
+    trendIndirim: 'Remise',
     trendIndirimAlt: 'Par rapport à la moyenne',
     filtreEtiket: 'Filtrer :',
     filtreTumu: 'Tout',
-    filtreStokta: '🟢 En stock',
-    filtreYok: '🔴 Rupture',
-    filtreKargo: '📦 Port gratuit',
-    filtreResmi: '🏢 Boutique officielle',
-    filtreTaksit: '💳 Paiement sans frais',
-    filtreBirim: '🏷️ €/kg le moins cher',
+    filtreStokta: 'En stock',
+    filtreYok: 'Rupture',
+    filtreKargo: 'Port gratuit',
+    filtreResmi: 'Boutique officielle',
+    filtreTaksit: 'Paiement sans frais',
+    filtreBirim: '€/kg le moins cher',
     lejant1: '<span class="ok-isaret">✓</span> <b>Prix réel</b> = prix affiché − remises publiques + livraison',
-    lejant2: '<span class="uyari-isaret">⚠</span> <b>Offres conditionnelles</b> (appli / carte / membre) exclues',
-    lejant3: '<span class="uyari-isaret">🚚</span> Livraison : tarifs connus et seuils de gratuité intégrés au total',
-    lejant4: '<span class="uyari-isaret">🎨</span> Les coloris différents sont exclus de la comparaison directe',
+    lejant2: '<span class="uyari-isaret">!</span> <b>Offres conditionnelles</b> (appli / carte / membre) exclues',
+    lejant3: '<span class="uyari-isaret">•</span> Livraison : tarifs connus et seuils de gratuité intégrés au total',
+    lejant4: '<span class="uyari-isaret">•</span> Les coloris différents sont exclus de la comparaison directe',
     tabloOzet: 'Tableau récapitulatif (boutique, article, couleur, stock, total, promos, livraison, req.)',
     thSite: 'Boutique', thUrun: 'Article trouvé', thRenk: 'Couleur', thStok: 'Stock', thToplam: 'Total (port inclus)', thKamp: 'Promos', thKargo: 'Livraison', thIstek: 'Req',
     alarmBaslik: 'Créer une alerte prix',
@@ -1691,29 +1691,29 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     alarmPh: 'ex. 24,00',
     alarmBtn: 'Suivre ce produit',
     alarmIpucu: 'Configurez votre e-mail ou Telegram dans Alertes.',
-    pushBtn: '🔔 Recevoir une alerte sur cet appareil',
+    pushBtn: 'Recevoir une alerte sur cet appareil',
     stlDoluluk: 'Remplissage',
     stlMalzeme: 'Matériau',
     stlEbatKucuk: 'taille (mm)',
     stlHacimKucuk: 'volume',
     stlGramKucuk: 'filament',
-    stlCta: '⚡ Acheter ce filament ➔',
-    stlTeklif: '🧾 Générer un devis',
-    sponsorRozet: '⭐ OFFRE SPONSORISÉE DE LA SEMAINE',
-    sponsorCta: '⚡ Voir l’offre',
+    stlCta: 'Acheter ce filament →',
+    stlTeklif: 'Générer un devis',
+    sponsorRozet: 'Offre sponsorisée de la semaine',
+    sponsorCta: 'Voir l’offre',
   },
   ja: {
     vitrinBaslik: 'ライブ 3Dプリンター・フィラメント特価ボード',
     vitrinAlt: '日本向けストアで追跡中の最安値速報',
-    vitrinKatalog: '🗂️ カタログ一覧',
-    vitrinFirsat: '📢 特価情報',
+    vitrinKatalog: 'カタログ一覧',
+    vitrinFirsat: '特価情報',
     vitrinYenileAria: '特価ボードを更新',
     vitrinYenileTitle: '更新',
     vitrinKatAria: '特価カテゴリ',
     vitrinHepsi: 'すべて',
-    vitrinFilament: '🧵 フィラメント',
-    vitrinYazici: '🖨️ 3Dプリンター',
-    vitrinParca: '⚙️ パーツ・レジン',
+    vitrinFilament: 'フィラメント',
+    vitrinYazici: '3Dプリンター',
+    vitrinParca: 'パーツ・レジン',
     vitrinBosBaslik: 'この地域の特価キャッシュはまだありません。',
     vitrinBosAlt: '地域スキャンが完了すると在庫ありの最安値がここに表示されます。',
     vitrinDipnot: '最新の地域スキャン結果に基づく価格です',
@@ -1727,19 +1727,19 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     sepetSayac: '0/10 件',
     sepetDurumBaslik: 'カートを計算中…',
     sepetSonucBaslik: 'カート購入プラン',
-    sepetKuponBaslik: '🎟️ 利用可能なクーポン',
+    sepetKuponBaslik: '利用可能なクーポン',
     sepetKuponAlt: 'ワンクリックでコピーして決済画面で入力',
-    sepetPaylasBaslik: '📤 カートを共有',
+    sepetPaylasBaslik: 'カートを共有',
     sepetPaylasAlt: 'WhatsAppで送信または共有リンクを作成',
-    sepetWaBtn: '💬 WhatsAppで共有',
-    sepetLinkBtn: '🔗 共有リンクを作成',
-    sepetKopyaBtn: '📋 リンクをコピー',
+    sepetWaBtn: 'WhatsAppで共有',
+    sepetLinkBtn: '共有リンクを作成',
+    sepetKopyaBtn: 'リンクをコピー',
     sepetNot: '価格は送料込み条件計算前の商品合計です。送料無料ラインは各プランで自動計算され、クーポン割引は別枠で表示されます。',
     tarayiciBaslik: '店頭でお買い物中？バーコードをスキャン',
     tarayiciAciklama: 'パッケージのバーコード（JAN/EAN/UPC）をカメラにかざすと数秒でネット最安値を表示。店頭価格を入力すると<b>節約額</b>も計算できます。',
-    sekmeBarkod: '📷 バーコードスキャン',
-    sekmeGorsel: '🖼️ 写真から検索',
-    sekmeElle: '⌨️ コード手入力',
+    sekmeBarkod: 'バーコードスキャン',
+    sekmeGorsel: '写真から検索',
+    sekmeElle: 'コード手入力',
     kameraBaslat: 'カメラを起動',
     kameraDurdur: 'カメラを停止',
     rafEtiket: '店頭価格 (¥):',
@@ -1747,7 +1747,7 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     kameraNot: 'カメラの許可が必要です。HTTPS または localhost で動作します。',
     gorselSecHtml: '<b>写真を撮影</b>、ドラッグ＆ドロップ、または <kbd>Ctrl</kbd>+<kbd>V</kbd> で貼り付け',
     gorselAltIpucu: '3Dパーツ・ホットエンド・ノズル・ステッピングモーター・スプール等（最大4MB）',
-    gorselBirak: '📥 ここに写真をドロップ',
+    gorselBirak: 'ここに写真をドロップ',
     gorselOnizlemeAlt: '選択した写真',
     gorselIpucuEtiket: 'ヒント (任意):',
     gorselIpucuPh: '例: Bambu P1S ノズル 0.4mm, PLA ブラック',
@@ -1766,54 +1766,54 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     altAlarmAria: '追跡中の価格アラート',
     altTercih: '設定',
     modalKapatAria: '閉じる',
-    fisRozet: '🧾 3Dプリントお見積書',
+    fisRozet: '3Dプリントお見積書',
     fisKapatAria: '見積書を閉じる',
     fisBaslik: '3Dプリント原価・お見積り概要',
-    fisModel: '📦 モデル:',
-    fisEbat: '📐 サイズ:',
-    fisGramaj: '⚖️ 重量:',
-    fisMalzeme: '🧵 素材:',
-    fisSure: '⏱️ 予想時間:',
+    fisModel: 'モデル:',
+    fisEbat: 'サイズ:',
+    fisGramaj: '重量:',
+    fisMalzeme: '素材:',
+    fisSure: '予想時間:',
     fisFilament: 'フィラメント代:',
     fisElektrik: '電気代:',
     fisAmortisman: '機体償却費:',
     fisNet: '製造原価合計:',
     fisOnerilen: '推奨販売価格',
     fisKarNot: '工房マージン込み',
-    fisDipnot: '⚡ 価格参照: <b>Baskı Hesap</b> · 日本ストアライブスキャン',
-    fisWa: '📲 WhatsAppで送る',
-    fisKopyala: '📋 見積書をコピー',
-    fisYazdir: '🖨️ 印刷 / PDF',
+    fisDipnot: '価格参照: <b>Baskı Hesap</b> · 日本ストアライブスキャン',
+    fisWa: 'WhatsAppで送る',
+    fisKopyala: '見積書をコピー',
+    fisYazdir: '印刷 / PDF',
     oneriBaslik: 'おすすめモデル',
-    oneriDurdur: '⏹️ 停止して結果を表示',
+    oneriDurdur: '停止して結果を表示',
     sifirdanTara: '↻ 再スキャン',
-    dogrulama: '🕒 地域ストアからライブ確認済み',
-    nedenUcuz: '💡 安い理由（AI分析）',
+    dogrulama: '地域ストアからライブ確認済み',
+    nedenUcuz: '安い理由（価格分析）',
     birimBaslik: '1kgあたりの単価',
     muadilBaslik: '在庫ありの代替モデル',
     muadilBtn: '代替品を探す',
     trendBaslik: '30日間の価格推移・割引分析',
     trendAlt: '価格変動と相場分析',
-    trendRozet: '🔥 最安水準',
-    trendDusuk: '🟢 30日間最安値',
+    trendRozet: '最安水準',
+    trendDusuk: '30日間最安値',
     trendDusukAlt: '市場最安水準',
-    trendOrt: '📊 30日間平均価格',
-    trendYuksek: '🔴 30日間最高値',
+    trendOrt: '30日間平均価格',
+    trendYuksek: '30日間最高値',
     trendYuksekAlt: '市場最高水準',
-    trendIndirim: '🎯 割引率',
+    trendIndirim: '割引率',
     trendIndirimAlt: '平均比',
     filtreEtiket: '絞り込み:',
     filtreTumu: 'すべて',
-    filtreStokta: '🟢 在庫あり',
-    filtreYok: '🔴 在庫切れ',
-    filtreKargo: '📦 送料無料',
-    filtreResmi: '🏢 公式ストア',
-    filtreTaksit: '💳 分割払い対応',
-    filtreBirim: '🏷️ ¥/kg 最安値順',
+    filtreStokta: '在庫あり',
+    filtreYok: '在庫切れ',
+    filtreKargo: '送料無料',
+    filtreResmi: '公式ストア',
+    filtreTaksit: '分割払い対応',
+    filtreBirim: '¥/kg 最安値順',
     lejant1: '<span class="ok-isaret">✓</span> <b>実質価格</b> = 本体価格 − 一般割引 + 送料',
-    lejant2: '<span class="uyari-isaret">⚠</span> <b>条件付き特典</b>（アプリ・カード・会員限定）は含まれません',
-    lejant3: '<span class="uyari-isaret">🚚</span> 送料：判明分・送料無料ラインを合計に自動反映',
-    lejant4: '<span class="uyari-isaret">🎨</span> 色違い商品は最安比較対象から除外されます',
+    lejant2: '<span class="uyari-isaret">!</span> <b>条件付き特典</b>（アプリ・カード・会員限定）は含まれません',
+    lejant3: '<span class="uyari-isaret">•</span> 送料：判明分・送料無料ラインを合計に自動反映',
+    lejant4: '<span class="uyari-isaret">•</span> 色違い商品は最安比較対象から除外されます',
     tabloOzet: '比較一覧表（ストア・商品名・色・在庫・送料込み合計・キャンペーン・送料・リクエスト）',
     thSite: 'ストア', thUrun: '商品', thRenk: '色', thStok: '在庫', thToplam: '送料込み合計', thKamp: '特典', thKargo: '送料', thIstek: '回数',
     alarmBaslik: '価格アラートを設定',
@@ -1821,16 +1821,16 @@ const ANA_BOLUM_KOPYA = Object.freeze({
     alarmPh: '例: 3500',
     alarmBtn: 'この商品を追跡',
     alarmIpucu: '通知先メール・Telegramはアラート設定画面で管理できます。',
-    pushBtn: '🔔 この端末へ通知',
+    pushBtn: 'この端末へ通知',
     stlDoluluk: '充填率',
     stlMalzeme: '素材',
     stlEbatKucuk: 'サイズ (mm)',
     stlHacimKucuk: '体積',
     stlGramKucuk: 'フィラメント',
-    stlCta: '⚡ このフィラメントを購入 ➔',
-    stlTeklif: '🧾 見積書を作成',
-    sponsorRozet: '⭐ 今週の注目プロモーション',
-    sponsorCta: '⚡ セールを見る',
+    stlCta: 'このフィラメントを購入 →',
+    stlTeklif: '見積書を作成',
+    sponsorRozet: '今週の注目プロモーション',
+    sponsorCta: 'セールを見る',
   },
 });
 
@@ -1881,7 +1881,7 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
       </div>
       <div id="vitrinGrid" class="vitrin-grid" aria-busy="false" aria-live="polite"></div>
       <div id="vitrinBos" class="vitrin-bos" hidden>
-        <span class="vitrin-bos-ikon" aria-hidden="true">📡</span>
+        <span class="vitrin-bos-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg></span>
         <div>
           <b>${b.vitrinBosBaslik}</b>
           <div class="vitrin-bos-alt">${b.vitrinBosAlt}</div>
@@ -1895,7 +1895,7 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
     .replace(
       /<section class="giris-kart sepet-kart">[\s\S]*?<\/section>/,
       `<section class="giris-kart sepet-kart">
-      <h2 class="kart-ana-baslik"><span class="kart-ikon">🛒</span> ${b.sepetBaslik}</h2>
+      <h2 class="kart-ana-baslik"><span class="kart-ikon"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span> ${b.sepetBaslik}</h2>
       <p class="aciklama">${b.sepetAciklama}
         <br><span class="ipucu">${b.sepetIpucu}</span></p>
       <div class="sepet-giris">
@@ -1954,7 +1954,7 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
     .replace(
       /<section class="giris-kart tarayici-kart">[\s\S]*?<\/section>/,
       `<section class="giris-kart tarayici-kart">
-      <h2 class="kart-ana-baslik"><span class="kart-ikon">📱</span> ${b.tarayiciBaslik}</h2>
+      <h2 class="kart-ana-baslik"><span class="kart-ikon"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg></span> ${b.tarayiciBaslik}</h2>
       <p class="aciklama">${b.tarayiciAciklama}</p>
       <div class="tarayici-sekmeler">
         <button type="button" class="tarayici-sekme aktif" data-tarayici-sekme="barkod">${b.sekmeBarkod}</button>
@@ -1978,7 +1978,7 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
         <div class="gorsel-yukle-alani" id="gorselBirak">
           <input type="file" id="gorselDosya" accept="image/*" capture="environment" hidden />
           <button type="button" id="gorselSecBtn" class="gorsel-sec-btn">
-            <span class="gorsel-ikon">📸</span>
+            <span class="gorsel-ikon"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>
             <span>${b.gorselSecHtml}</span>
             <span class="ipucu">${b.gorselAltIpucu}</span>
           </button>
@@ -2020,16 +2020,16 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
       /<nav id="altNav"[\s\S]*?<\/nav>/,
       `<nav id="altNav" class="alt-nav" aria-label="${htmlKacis(b.altNavAria)}">
     <button type="button" class="alt-nav-oge aktif" data-nav="karsilastir" aria-current="page">
-      <span class="alt-nav-ikon" aria-hidden="true">🔍</span><span>${b.altAra}</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span><span>${b.altAra}</span>
     </button>
     <button type="button" class="alt-nav-oge" data-nav="borsa" aria-label="${htmlKacis(b.altBorsaAria)}">
-      <span class="alt-nav-ikon" aria-hidden="true">🔥</span><span>${b.altBorsa}</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span><span>${b.altBorsa}</span>
     </button>
     <button type="button" class="alt-nav-oge" data-nav="takipler" aria-label="${htmlKacis(b.altAlarmAria)}">
-      <span class="alt-nav-ikon" aria-hidden="true">🔔</span><span>${b.altAlarm}</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span>${b.altAlarm}</span>
     </button>
     <a class="alt-nav-oge" data-nav="ayarlar" href="${htmlKacis(nav.ayarlar)}">
-      <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>${b.altTercih}</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span>${b.altTercih}</span>
     </a>
   </nav>`,
     )
@@ -2082,29 +2082,29 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
     .replace('<h2 class="bolum-baslik" id="oneriBaslik">Sana uygun modeller</h2>', `<h2 class="bolum-baslik" id="oneriBaslik">${b.oneriBaslik}</h2>`)
     .replace(/<button type="button" id="oneriDurdurBtn"[^>]*>[\s\S]*?<\/button>/, `<button type="button" id="oneriDurdurBtn" class="oneri-durdur-btn" hidden>${b.oneriDurdur}</button>`)
     .replace('<button type="button" id="sifirdanTaraBtn" class="sifirdan-tara-btn" hidden>↻ Sıfırdan Tara</button>', `<button type="button" id="sifirdanTaraBtn" class="sifirdan-tara-btn" hidden>${b.sifirdanTara}</button>`)
-    .replace('<span id="dogrulamaMetin">🕒 Az önce 62 mağazadan canlı doğrulandı</span>', `<span id="dogrulamaMetin">${b.dogrulama}</span>`)
-    .replace('<div class="neden-ucuz-baslik">💡 Neden Daha Ucuz? (Yapay Zeka Analizi)</div>', `<div class="neden-ucuz-baslik">${b.nedenUcuz}</div>`)
+    .replace('<span id="dogrulamaMetin">Az önce 62 mağazadan canlı doğrulandı</span>', `<span id="dogrulamaMetin">${b.dogrulama}</span>`)
+    .replace('<div class="neden-ucuz-baslik">Neden Daha Ucuz (Fiyat Analizi)</div>', `<div class="neden-ucuz-baslik">${b.nedenUcuz}</div>`)
     .replace('<h3 class="birim-baslik" id="birimBaslik">Kilogram başına fiyat</h3>', `<h3 class="birim-baslik" id="birimBaslik">${b.birimBaslik}</h3>`)
     .replace('<h3 class="muadil-baslik" id="muadilBaslik">Muadil ürün önerileri</h3>', `<h3 class="muadil-baslik" id="muadilBaslik">${b.muadilBaslik}</h3>`)
     .replace('<button type="button" class="ikincil-btn" id="muadilYenileBtn">Muadili ara</button>', `<button type="button" class="ikincil-btn" id="muadilYenileBtn">${b.muadilBtn}</button>`)
-    .replace('<h3 class="fiyat-gecmisi-baslik">30 Günlük Fiyat Trendi & İndirim Analizi</h3>', `<h3 class="fiyat-gecmisi-baslik">${b.trendBaslik}</h3>`)
+    .replace('<h3 class="fiyat-gecmisi-baslik">30 Günlük Fiyat Trendi &amp; İndirim Analizi</h3>', `<h3 class="fiyat-gecmisi-baslik">${b.trendBaslik}</h3>`)
     .replace('<span id="fiyatTrendOzetMetin" class="fiyat-trend-altmetin">Fiyat dalgalanmaları ve piyasa analizi</span>', `<span id="fiyatTrendOzetMetin" class="fiyat-trend-altmetin">${b.trendAlt}</span>`)
-    .replace('<div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">🔥 En Düşük Seviyede</div>', `<div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">${b.trendRozet}</div>`)
-    .replace('<div class="istatistik-etiket" id="istatistikEtiketDusuk">🟢 Son 30 Günün En Düşüğü</div>', `<div class="istatistik-etiket" id="istatistikEtiketDusuk">${b.trendDusuk}</div>`)
+    .replace('<div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">En Düşük Seviyede</div>', `<div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">${b.trendRozet}</div>`)
+    .replace('<div class="istatistik-etiket" id="istatistikEtiketDusuk">Son 30 Günün En Düşüğü</div>', `<div class="istatistik-etiket" id="istatistikEtiketDusuk">${b.trendDusuk}</div>`)
     .replace('<div class="istatistik-alt">Piyasa dip noktası</div>', `<div class="istatistik-alt">${b.trendDusukAlt}</div>`)
-    .replace('<div class="istatistik-etiket" id="istatistikEtiketOrtalama">📊 Son 30 Günün Ortalaması</div>', `<div class="istatistik-etiket" id="istatistikEtiketOrtalama">${b.trendOrt}</div>`)
-    .replace('<div class="istatistik-etiket" id="istatistikEtiketYuksek">🔴 Son 30 Günün En Yükseği</div>', `<div class="istatistik-etiket" id="istatistikEtiketYuksek">${b.trendYuksek}</div>`)
+    .replace('<div class="istatistik-etiket" id="istatistikEtiketOrtalama">Son 30 Günün Ortalaması</div>', `<div class="istatistik-etiket" id="istatistikEtiketOrtalama">${b.trendOrt}</div>`)
+    .replace('<div class="istatistik-etiket" id="istatistikEtiketYuksek">Son 30 Günün En Yükseği</div>', `<div class="istatistik-etiket" id="istatistikEtiketYuksek">${b.trendYuksek}</div>`)
     .replace('<div class="istatistik-alt">Piyasa tavanı</div>', `<div class="istatistik-alt">${b.trendYuksekAlt}</div>`)
-    .replace('<div class="istatistik-etiket">🎯 İndirim Oranı</div>', `<div class="istatistik-etiket">${b.trendIndirim}</div>`)
+    .replace('<div class="istatistik-etiket">İndirim Oranı</div>', `<div class="istatistik-etiket">${b.trendIndirim}</div>`)
     .replace('<div class="istatistik-alt">Ortalamaya göre</div>', `<div class="istatistik-alt">${b.trendIndirimAlt}</div>`)
     .replace('<span class="filtre-etiket">Filtrele:</span>', `<span class="filtre-etiket">${b.filtreEtiket}</span>`)
     .replace('<button type="button" class="filtre-chip aktif" data-filtre="hepsi">Tümü</button>', `<button type="button" class="filtre-chip aktif" data-filtre="hepsi">${b.filtreTumu}</button>`)
-    .replace('<button type="button" class="filtre-chip" data-filtre="stokta_var">🟢 Stokta Var</button>', `<button type="button" class="filtre-chip" data-filtre="stokta_var">${b.filtreStokta}</button>`)
-    .replace('<button type="button" class="filtre-chip" data-filtre="stokta_yok">🔴 Stokta Yok</button>', `<button type="button" class="filtre-chip" data-filtre="stokta_yok">${b.filtreYok}</button>`)
-    .replace('<button type="button" class="filtre-chip" data-filtre="kargo">📦 Kargo Bedava</button>', `<button type="button" class="filtre-chip" data-filtre="kargo">${b.filtreKargo}</button>`)
-    .replace('<button type="button" class="filtre-chip" data-filtre="resmi">🏢 Resmi Satıcı</button>', `<button type="button" class="filtre-chip" data-filtre="resmi">${b.filtreResmi}</button>`)
-    .replace('<button type="button" class="filtre-chip" data-filtre="taksit">💳 Vade Farksız Taksit</button>', `<button type="button" class="filtre-chip" data-filtre="taksit">${b.filtreTaksit}</button>`)
-    .replace('<button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">🏷️ ₺/kg En Ucuz</button>', `<button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">${b.filtreBirim}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="stokta_var">Stokta Var</button>', `<button type="button" class="filtre-chip" data-filtre="stokta_var">${b.filtreStokta}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="stokta_yok">Stokta Yok</button>', `<button type="button" class="filtre-chip" data-filtre="stokta_yok">${b.filtreYok}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="kargo">Kargo Bedava</button>', `<button type="button" class="filtre-chip" data-filtre="kargo">${b.filtreKargo}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="resmi">Resmi Satıcı</button>', `<button type="button" class="filtre-chip" data-filtre="resmi">${b.filtreResmi}</button>`)
+    .replace('<button type="button" class="filtre-chip" data-filtre="taksit">Vade Farksız Taksit</button>', `<button type="button" class="filtre-chip" data-filtre="taksit">${b.filtreTaksit}</button>`)
+    .replace('<button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">₺/kg En Ucuz</button>', `<button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">${b.filtreBirim}</button>`)
     .replace(
       /<div class="sonuc-lejant">[\s\S]*?<\/div>/,
       `<div class="sonuc-lejant">
@@ -2153,10 +2153,10 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
     .replace('<small>filament</small>', `<small>${b.stlGramKucuk}</small>`)
     .replace('<label>Doluluk', `<label>${b.stlDoluluk}`)
     .replace('<label>Malzeme', `<label>${b.stlMalzeme}`)
-    .replace(/⚡ Bu Filamenti Satın Al ➔/g, b.stlCta)
-    .replace(/🧾 Baskı Teklif Fişi Çıkar/g, b.stlTeklif)
-    .replace('⭐ HAFTANIN SPONSORLU FIRSATI', b.sponsorRozet)
-    .replace('⚡ Kampanyayı İncele', b.sponsorCta)
+    .replace(/Bu Filamenti Satın Al →/g, b.stlCta)
+    .replace(/Baskı Teklif Fişi Çıkar/g, b.stlTeklif)
+    .replace('Sponsorlu Kampanya', b.sponsorRozet)
+    .replace('Kampanyayı İncele', b.sponsorCta)
     .replace('<a class="stl-hizli-detay" id="stlHizliDetay" href="/maliyet.html">', `<a class="stl-hizli-detay" id="stlHizliDetay" href="${htmlKacis(nav.maliyet)}">`)
     .replace('<button type="button" class="alt-modal-kapat" data-modal-kapat aria-label="Kapat">✕</button>', `<button type="button" class="alt-modal-kapat" data-modal-kapat aria-label="${htmlKacis(b.modalKapatAria)}">✕</button>`);
 }
@@ -2277,8 +2277,8 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
     .replace('<span class="stl-hizli-gizlilik">Dosya cihazından çıkmaz</span>', `<span class="stl-hizli-gizlilik">${c.stlGizlilik}</span>`)
     .replace('<b>STL / 3MF dosyanı buraya bırak</b>', `<b>${c.stlBirakAna}</b>`)
     .replace('<span class="stl-hizli-alt">Modeline yetecek en ucuz filamenti ve parça başı maliyeti anında hesaplarız</span>', `<span class="stl-hizli-alt">${c.stlBirakAlt}</span>`)
-    .replace('<span class="stl-hizli-rozet">⚡ Anında · sunucusuz</span>', `<span class="stl-hizli-rozet">${c.stlRozet}</span>`)
-    .replace(/📊 Kâr, elektrik ve amortismanla tam maliyet hesabı ➔/g, c.stlDetay)
+    .replace('<span class="stl-hizli-rozet">Anında · sunucusuz</span>', `<span class="stl-hizli-rozet">${c.stlRozet}</span>`)
+    .replace(/Kâr, elektrik ve amortismanla tam maliyet hesabı →/g, c.stlDetay)
     .replace('<h2 class="bolum-baslik">Siteler araştırılıyor…</h2>', `<h2 class="bolum-baslik">${c.durumBaslik}</h2>`)
     .replace('<button type="button" id="iptalBtn" class="iptal-btn">✕ İptal</button>', `<button type="button" id="iptalBtn" class="iptal-btn">${c.iptalBtn}</button>`)
     .replace(/<section class="seo-rehber-kart"[\s\S]*?<\/section>/, anaSeoRehberKartHtml(kod))
@@ -2317,41 +2317,41 @@ export function globalAyarlarSayfasiHtml(dil = 'en', tabanUrl = '') {
   const c = {
     en: {
       title: 'Price Alerts &amp; Preferences — Baski Hesap',
-      h1a: '📈 Tracked Products &amp; Price Alerts',
+      h1a: 'Tracked Products &amp; Price Alerts',
       p1: 'Tracked product prices are re-checked automatically throughout the day; you receive an instant browser notification whenever a price drops below your target or the cheapest store changes. You can update target prices anytime.',
       yukleniyor: 'Loading…',
-      h1b: '🔔 Notifications &amp; Display Preferences',
+      h1b: 'Notifications &amp; Display Preferences',
       p2: 'No sign-up or email required: receive instant price-drop alerts via browser Web Push on this device and switch between light or dark themes.',
       durumBekle: 'Checking browser notification status…',
-      aboneBtn: '🔔 Enable Notifications',
-      testBtn: '🧪 Send Test Notification',
-      temaBtn: '🌓 Toggle Theme',
+      aboneBtn: 'Enable Notifications',
+      testBtn: 'Send Test Notification',
+      temaBtn: 'Toggle Theme',
       footerSitelerBaslik: 'Stores compared in this region',
     },
     fr: {
       title: 'Alertes Prix &amp; Préférences — Baski Hesap',
-      h1a: '📈 Produits suivis &amp; Alertes prix',
+      h1a: 'Produits suivis &amp; Alertes prix',
       p1: 'Les prix des produits suivis sont vérifiés régulièrement ; vous recevez une alerte navigateur instantanée dès que le tarif passe sous votre prix cible ou qu’une boutique moins chère apparaît. Modifiez votre prix cible à tout moment.',
       yukleniyor: 'Chargement…',
-      h1b: '🔔 Notifications &amp; Apparence',
+      h1b: 'Notifications &amp; Apparence',
       p2: 'Aucun compte ni e-mail requis : activez les alertes Web Push directement sur cet appareil et choisissez le thème clair ou sombre.',
       durumBekle: 'Vérification de l’état des notifications…',
-      aboneBtn: '🔔 Activer les notifications',
-      testBtn: '🧪 Envoyer une notification test',
-      temaBtn: '🌓 Changer de thème',
+      aboneBtn: 'Activer les notifications',
+      testBtn: 'Envoyer une notification test',
+      temaBtn: 'Changer de thème',
       footerSitelerBaslik: 'Boutiques comparées dans cette région',
     },
     ja: {
       title: '価格アラート &amp; 設定 — Baski Hesap',
-      h1a: '📈 追跡中の商品 &amp; 価格アラート',
+      h1a: '追跡中の商品 &amp; 価格アラート',
       p1: '追跡設定した商品の価格は日中に定期チェックされ、目標価格を下回った際や最安ショップが入れ替わった際にブラウザへ即時通知されます。目標価格はいつでも更新できます。',
       yukleniyor: '読み込み中…',
-      h1b: '🔔 通知 &amp; 表示設定',
+      h1b: '通知 &amp; 表示設定',
       p2: '会員登録やメールアドレスは不要です。この端末のブラウザ通知（Web Push）で値下げを受け取り、ライト／ダークテーマを切り替えられます。',
       durumBekle: 'ブラウザ通知の状態を確認中…',
-      aboneBtn: '🔔 通知を有効にする',
-      testBtn: '🧪 テスト通知を送信',
-      temaBtn: '🌓 テーマを切り替え',
+      aboneBtn: '通知を有効にする',
+      testBtn: 'テスト通知を送信',
+      temaBtn: 'テーマを切り替え',
       footerSitelerBaslik: 'この地域の比較対象ストア',
     },
   }[kod];
@@ -2370,15 +2370,15 @@ export function globalAyarlarSayfasiHtml(dil = 'en', tabanUrl = '') {
   });
 
   cikti = cikti
-    .replace('<h1>📈 Takip edilen ürünler &amp; fiyat alarmlarım</h1>', `<h1>${c.h1a}</h1>`)
+    .replace('<h1>Takip edilen ürünler &amp; fiyat alarmlarım</h1>', `<h1>${c.h1a}</h1>`)
     .replace(/Takibe aldığınız ürünlerin fiyatları gün içinde düzenli kontrol edilir;[\s\S]*?<\/p>/, `${c.p1}</p>`)
     .replace('<div id="takipListesi"><p class="alt-not">Yükleniyor…</p></div>', `<div id="takipListesi"><p class="alt-not">${c.yukleniyor}</p></div>`)
-    .replace('<h2>🔔 Bildirimler &amp; görünüm tercihleri</h2>', `<h2>${c.h1b}</h2>`)
+    .replace('<h2>Bildirimler &amp; görünüm tercihleri</h2>', `<h2>${c.h1b}</h2>`)
     .replace(/Üyelik veya e-posta gerekmez:[\s\S]*?<\/p>/, `${c.p2}</p>`)
     .replace('<div class="gorev-durumu" id="pushDurumKutusu">Tarayıcı bildirim durumu kontrol ediliyor…</div>', `<div class="gorev-durumu" id="pushDurumKutusu">${c.durumBekle}</div>`)
-    .replace('<button type="button" class="kaydet-btn" id="pushAboneBtn">🔔 Bildirimleri Etkinleştir</button>', `<button type="button" class="kaydet-btn" id="pushAboneBtn">${c.aboneBtn}</button>`)
-    .replace('<button type="button" class="kaydet-btn ikincil" id="pushTestBtn">🧪 Örnek Bildirim Gönder</button>', `<button type="button" class="kaydet-btn ikincil" id="pushTestBtn">${c.testBtn}</button>`)
-    .replace('<button type="button" class="ikincil-btn" id="temaTercihBtn">🌓 Temayı Değiştir</button>', `<button type="button" class="ikincil-btn" id="temaTercihBtn">${c.temaBtn}</button>`)
+    .replace('<button type="button" class="kaydet-btn" id="pushAboneBtn">Bildirimleri Etkinleştir</button>', `<button type="button" class="kaydet-btn" id="pushAboneBtn">${c.aboneBtn}</button>`)
+    .replace('<button type="button" class="kaydet-btn ikincil" id="pushTestBtn">Örnek Bildirim Gönder</button>', `<button type="button" class="kaydet-btn ikincil" id="pushTestBtn">${c.testBtn}</button>`)
+    .replace('<button type="button" class="ikincil-btn" id="temaTercihBtn">Temayı Değiştir</button>', `<button type="button" class="ikincil-btn" id="temaTercihBtn">${c.temaBtn}</button>`)
     .replace(/<p>\s*Fiyatlar sitelerden anlık okunur;[\s\S]*?<\/p>/, `<p>${htmlKacis(sz.baslik.footerNot)}</p>`)
     .replace('Karşılaştırılan siteler (<span id="footerSiteSayisi">—</span>):', `${htmlKacis(c.footerSitelerBaslik)} (<span id="footerSiteSayisi">${taramaMagazalari.length}</span>):`)
     .replace(

@@ -32,7 +32,7 @@
   <meta name="apple-mobile-web-app-title" content="Baskı Hesap" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <script>
     // Tema, ilk boyamadan ÖNCE uygulanır (karanlık modda beyaz parlama olmasın).
     try {
@@ -116,7 +116,7 @@
           <a href="/ja" hreflang="ja" role="menuitem">🇯🇵 日本語 (JPY)</a>
         </div>
       </details>
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir"><svg class="svg-ik tema-ikon-ay" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="svg-ik tema-ikon-gun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-15.66 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg></button>
     </div>
   </header>
 
@@ -151,7 +151,7 @@
 
       <div class="hibrit-sarmal">
         <form id="karsilastirForm" class="hibrit-form" role="search" autocomplete="off">
-          <span class="hibrit-ikon" aria-hidden="true">🔎</span>
+          <span class="hibrit-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="text" id="urunUrl" autocomplete="off" spellcheck="false"
             role="combobox" aria-autocomplete="list" aria-expanded="false"
             aria-controls="onerilerKutusu" aria-haspopup="listbox"
@@ -159,21 +159,21 @@
           <button type="submit" id="araBtn">Fiyatları Bul</button>
         </form>
 
-        <!-- 🔍 Canlı öneriler (typeahead) — klavye ile gezilebilir -->
+        <!-- Canlı öneriler (typeahead) — klavye ile gezilebilir -->
         <div id="onerilerKutusu" class="oneriler-kutusu arama-onerileri" role="listbox"
           aria-label="Arama önerileri" hidden></div>
       </div>
 
       <!-- Link algılandığında canlı önizleme (mağaza + ürün adı) -->
       <div id="linkOnizleme" class="link-onizleme" hidden>
-        <span class="link-onizleme-ikon" id="linkOnizlemeIkon">🔗</span>
+        <span class="link-onizleme-ikon" id="linkOnizlemeIkon"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
         <div class="link-onizleme-metin">
           <div class="link-onizleme-baslik" id="linkOnizlemeBaslik"></div>
           <div class="link-onizleme-alt" id="linkOnizlemeAlt"></div>
         </div>
         <div class="link-onizleme-eylem">
-          <button type="button" class="link-eylem-btn" id="linkteAraBtn" hidden>🔗 Linkte Ara</button>
-          <button type="button" class="link-eylem-btn ikincil-link" id="linkAdiylaAraBtn" hidden>💬 Ürün adıyla ara</button>
+          <button type="button" class="link-eylem-btn" id="linkteAraBtn" hidden>Linkte Ara</button>
+          <button type="button" class="link-eylem-btn ikincil-link" id="linkAdiylaAraBtn" hidden>Ürün adıyla ara</button>
         </div>
       </div>
 
@@ -186,8 +186,8 @@
       </div>
 
       <p class="hibrit-ipucu">
-        ⚡ <b>Link yapıştır</b> ya da <b>ürün adı yaz</b>, <b id="kartSiteSayisi">60</b> mağazada stoklu en ucuz fiyatı bulalım ·
-        💬 Danışmak istersen yapay zekaya ihtiyacını yaz (ör. "20 bin TL altı kapalı kasa 3D yazıcı").
+        <b>Link yapıştır</b> ya da <b>ürün adı yaz</b>, <b id="kartSiteSayisi">60</b> mağazada stoklu en ucuz fiyatı bulalım ·
+        İhtiyacını yazarak da öneri alabilirsin (ör. "20 bin TL altı kapalı kasa 3D yazıcı").
       </p>
 
       <!-- Doğal dil / öneri akışı: aynı form kimlikleri korunur, görsel olarak gizlidir -->
@@ -213,12 +213,12 @@
       <div id="stlHizliBirak" class="stl-hizli-birak" role="button" tabindex="0"
            aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin">
         <input type="file" id="stlHizliDosya" accept=".stl,.3mf,model/stl,model/3mf" hidden />
-        <span class="stl-hizli-ikon" aria-hidden="true">📥</span>
+        <span class="stl-hizli-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span>
         <span class="stl-hizli-metin">
           <b>STL / 3MF dosyanı buraya bırak</b>
           <span class="stl-hizli-alt">Modeline yetecek en ucuz filamenti ve parça başı maliyeti anında hesaplarız</span>
         </span>
-        <span class="stl-hizli-rozet">⚡ Anında · sunucusuz</span>
+        <span class="stl-hizli-rozet">Anında · sunucusuz</span>
       </div>
 
       <p class="stl-hizli-durum" id="stlHizliDurum" role="status" aria-live="polite"></p>
@@ -258,38 +258,33 @@
           </label>
         </div>
         <a class="stl-hizli-cta" id="stlHizliCta" target="_blank" rel="noopener sponsored" hidden>
-          ⚡ Bu Filamenti Satın Al ➔
+          Bu Filamenti Satın Al →
         </a>
-        <!-- 🧾 Baskı Teklif Fişi (2026-11-12) -->
         <button type="button" class="stl-hizli-teklif-btn" id="stlTeklifFisBtn" hidden>
-          🧾 Baskı Teklif Fişi Çıkar
+          Baskı Teklif Fişi Çıkar
         </button>
         <a class="stl-hizli-detay" id="stlHizliDetay" href="/maliyet.html">
-          📊 Kâr, elektrik ve amortismanla tam maliyet hesabı ➔
+          Kâr, elektrik ve amortismanla tam maliyet hesabı →
         </a>
       </div>
     </section>
 
-    <!-- ⭐ Sponsorlu Vitrin / Günün Fırsatı (2026-11-08)
-         Aktif kampanya yoksa ya da süresi dolduysa tamamen gizlenir. -->
     <section id="sponsorVitrinAlani" class="sponsor-hero-banner" aria-labelledby="sponsorVitrinBaslik" hidden>
       <div class="sponsor-parilti" aria-hidden="true"></div>
       <div class="sponsor-icerik">
         <div class="sponsor-medya">
           <div class="sponsor-gorsel-sar">
-            <!-- 2026-11-12: LCP önceliği. Sabit 140×140 kutu → CLS yok;
-                 fetchpriority="high" ile hero görseli ilk sırada indirilir. -->
             <img id="sponsorGorsel" class="sponsor-gorsel" alt=""
                  src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                  width="140" height="140" hidden
                  loading="eager" decoding="async" fetchpriority="high" />
-            <span class="sponsor-gorsel-yok" id="sponsorGorselYok" aria-hidden="true">🧵</span>
+            <span class="sponsor-gorsel-yok" id="sponsorGorselYok" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg></span>
           </div>
           <span class="sponsor-marka" id="sponsorMarka">—</span>
         </div>
 
         <div class="sponsor-metin">
-          <span class="sponsor-rozet" id="sponsorRozet">⭐ HAFTANIN SPONSORLU FIRSATI</span>
+          <span class="sponsor-rozet" id="sponsorRozet">Sponsorlu Kampanya</span>
           <h2 class="sponsor-baslik" id="sponsorVitrinBaslik">—</h2>
           <p class="sponsor-aciklama" id="sponsorAciklama"></p>
           <div class="sponsor-fiyat-satiri">
@@ -298,15 +293,14 @@
             <span class="sponsor-indirim" id="sponsorIndirim" hidden></span>
           </div>
           <a class="sponsor-cta" id="sponsorCta" target="_blank" rel="noopener sponsored">
-            <span id="sponsorCtaMetin">⚡ Kampanyayı İncele</span>
-            <span class="sponsor-cta-ok" aria-hidden="true">➔</span>
+            <span id="sponsorCtaMetin">Kampanyayı İncele</span>
+            <span class="sponsor-cta-ok" aria-hidden="true">→</span>
           </a>
           <p class="sponsor-dipnot" id="sponsorBitis"></p>
         </div>
       </div>
     </section>
 
-    <!-- 📊 Canlı "Filament & 3D Yazıcı Borsası" vitrini — 2026-11-03 -->
     <section id="vitrinAlani" class="vitrin" aria-labelledby="vitrinBaslik" hidden>
       <div class="vitrin-ust">
         <div class="vitrin-baslik-grup">
@@ -317,34 +311,32 @@
           <p class="vitrin-alt" id="vitrinGuncelleme">Otonom radarın son stoklu dip fiyatları</p>
         </div>
         <div class="vitrin-eylemler">
-          <a class="vitrin-cip" href="/urunler" style="text-decoration:none">🗂️ Tüm Katalog</a>
-          <button type="button" class="vitrin-cip" data-firsat-ac>📢 Fırsatlar</button>
+          <a class="vitrin-cip" href="/urunler" style="text-decoration:none">Tüm Katalog</a>
+          <button type="button" class="vitrin-cip" data-firsat-ac>Fırsatlar</button>
           <button type="button" class="vitrin-yenile" id="vitrinYenile"
             aria-label="Borsayı yenile" title="Yenile">↻</button>
         </div>
       </div>
 
-      <!-- 🗂️ Kategori çipleri (2026-11-10): vitrin artık kategori dengeli.
-           Sayılar sunucudan gelen gerçek dağılımdan yazılır; boş kategori gizlenir. -->
       <div id="vitrinCipleri" class="vitrin-filtre" role="tablist" aria-label="Borsa kategorileri" hidden>
         <button type="button" class="vitrin-filtre-cip aktif" data-vitrin-kategori="hepsi" role="tab" aria-selected="true">
           Hepsi <span class="vitrin-filtre-sayi" data-sayi="hepsi">0</span>
         </button>
         <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="filament" role="tab" aria-selected="false">
-          🧵 Filamentler <span class="vitrin-filtre-sayi" data-sayi="filament">0</span>
+          Filamentler <span class="vitrin-filtre-sayi" data-sayi="filament">0</span>
         </button>
         <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="yazici" role="tab" aria-selected="false">
-          🖨️ 3D Yazıcılar <span class="vitrin-filtre-sayi" data-sayi="yazici">0</span>
+          3D Yazıcılar <span class="vitrin-filtre-sayi" data-sayi="yazici">0</span>
         </button>
         <button type="button" class="vitrin-filtre-cip" data-vitrin-kategori="genel" role="tab" aria-selected="false">
-          ⚙️ Parça &amp; Reçine <span class="vitrin-filtre-sayi" data-sayi="genel">0</span>
+          Parça &amp; Reçine <span class="vitrin-filtre-sayi" data-sayi="genel">0</span>
         </button>
       </div>
 
       <div id="vitrinGrid" class="vitrin-grid" aria-busy="true" aria-live="polite"></div>
 
       <div id="vitrinBos" class="vitrin-bos" hidden>
-        <span class="vitrin-bos-ikon" aria-hidden="true">📡</span>
+        <span class="vitrin-bos-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span>
         <div>
           <b>Borsa henüz açılmadı.</b>
           <div class="vitrin-bos-alt">
@@ -431,7 +423,7 @@
            Kullanıcı ilk 0.2 sn'de kaç TL kazandığını ve verinin tazeliğini görür. -->
       <div id="tasarrufVurguBanti" class="tasarruf-vurgu-banti" hidden>
         <div class="tasarruf-vurgu-sol">
-          <span class="tasarruf-vurgu-ikon" aria-hidden="true">🎉</span>
+          <span class="tasarruf-vurgu-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
           <div>
             <div class="tasarruf-vurgu-tutar" id="tasarrufVurguTutar">—</div>
             <div class="tasarruf-vurgu-detay" id="tasarrufVurguDetay">—</div>
@@ -440,18 +432,16 @@
         <div class="tasarruf-vurgu-sag">
           <div class="dogrulama-muhru" id="dogrulamaMuhru">
             <span class="dogrulama-nokta" aria-hidden="true"></span>
-            <span id="dogrulamaMetin">🕒 Az önce 62 mağazadan canlı doğrulandı</span>
+            <span id="dogrulamaMetin">Az önce 62 mağazadan canlı doğrulandı</span>
           </div>
         </div>
       </div>
 
-      <!-- 🧱 Bento özet: spotlight + fiyat trendi + dağılım (2026-11-01) -->
       <div id="bentoOzet" class="bento-ozet" hidden aria-live="polite"></div>
 
-      <!-- 🧠 Alışveriş Zekası Karar Paneli — 2026-10-30 -->
       <div id="fiyatZekaAlani" class="fiyat-zeka-kart" hidden>
         <div class="fiyat-zeka-sol">
-          <span class="fiyat-zeka-ikon">🧠</span>
+          <span class="fiyat-zeka-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
           <div>
             <div class="fiyat-zeka-rozet" id="fiyatZekaRozet">—</div>
             <div class="fiyat-zeka-alt" id="fiyatZekaAlt"></div>
@@ -465,18 +455,15 @@
         <div class="fiyat-zeka-mesaj" id="fiyatZekaMesaj"></div>
       </div>
 
-      
-      <!-- Neden Daha Ucuz? Açıklayıcı Kartı -->
       <div id="nedenUcuzAlani" class="neden-ucuz-kart" hidden>
-        <div class="neden-ucuz-baslik">💡 Neden Daha Ucuz? (Yapay Zeka Analizi)</div>
+        <div class="neden-ucuz-baslik">Neden Daha Ucuz (Fiyat Analizi)</div>
         <p id="nedenUcuzMetin"></p>
       </div>
 
-      <!-- Birim fiyat (₺/kg / ₺/L) + "sahte ucuz" uyarısı — 2026-10-29 -->
       <div id="birimAlani" class="birim-kart" hidden>
         <div class="birim-ust">
           <div class="birim-baslik-alani">
-            <span class="birim-ikon">⚖️</span>
+            <span class="birim-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg></span>
             <div>
               <h3 class="birim-baslik" id="birimBaslik">Kilogram başına fiyat</h3>
               <span class="birim-aciklama" id="birimAciklama"></span>
@@ -486,11 +473,10 @@
         <div id="birimIcerik"></div>
       </div>
 
-      <!-- Muadil (alternatif) ürün önerileri — stok yoksa / bütçe aşılırsa -->
       <div id="muadilAlani" class="muadil-kart" hidden>
         <div class="muadil-ust">
           <div class="muadil-baslik-alani">
-            <span class="muadil-ikon" id="muadilIkon">🔄</span>
+            <span class="muadil-ikon" id="muadilIkon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span>
             <div>
               <h3 class="muadil-baslik" id="muadilBaslik">Muadil ürün önerileri</h3>
               <span class="muadil-altmetin" id="muadilAciklama"></span>
@@ -501,37 +487,36 @@
         <div id="muadilIcerik"></div>
       </div>
 
-      <!-- 30 Günlük Fiyat Trendi ve İndirim Analizi Kartı -->
       <div id="fiyatGecmisiAlani" class="fiyat-gecmisi-karti" hidden>
         <div class="fiyat-gecmisi-ust">
           <div class="fiyat-gecmisi-baslik-alani">
-            <span class="fiyat-gecmisi-ikon">📈</span>
+            <span class="fiyat-gecmisi-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
             <div>
-              <h3 class="fiyat-gecmisi-baslik">30 Günlük Fiyat Trendi & İndirim Analizi</h3>
+              <h3 class="fiyat-gecmisi-baslik">30 Günlük Fiyat Trendi &amp; İndirim Analizi</h3>
               <span id="fiyatTrendOzetMetin" class="fiyat-trend-altmetin">Fiyat dalgalanmaları ve piyasa analizi</span>
             </div>
           </div>
-          <div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">🔥 En Düşük Seviyede</div>
+          <div id="fiyatTavsiyeRozeti" class="fiyat-tavsiye-rozet badge-yesil">En Düşük Seviyede</div>
         </div>
 
         <div class="fiyat-istatistik-izgarasi">
           <div class="istatistik-kutu">
-            <div class="istatistik-etiket" id="istatistikEtiketDusuk">🟢 Son 30 Günün En Düşüğü</div>
+            <div class="istatistik-etiket" id="istatistikEtiketDusuk">Son 30 Günün En Düşüğü</div>
             <div id="istatistikEnDusuk" class="istatistik-deger">—</div>
             <div class="istatistik-alt">Piyasa dip noktası</div>
           </div>
           <div class="istatistik-kutu">
-            <div class="istatistik-etiket" id="istatistikEtiketOrtalama">📊 Son 30 Günün Ortalaması</div>
+            <div class="istatistik-etiket" id="istatistikEtiketOrtalama">Son 30 Günün Ortalaması</div>
             <div id="istatistikOrtalama" class="istatistik-deger">—</div>
             <div id="istatistikFark" class="istatistik-alt">—</div>
           </div>
           <div class="istatistik-kutu">
-            <div class="istatistik-etiket" id="istatistikEtiketYuksek">🔴 Son 30 Günün En Yükseği</div>
+            <div class="istatistik-etiket" id="istatistikEtiketYuksek">Son 30 Günün En Yükseği</div>
             <div id="istatistikEnYuksek" class="istatistik-deger">—</div>
             <div class="istatistik-alt">Piyasa tavanı</div>
           </div>
           <div class="istatistik-kutu">
-            <div class="istatistik-etiket">🎯 İndirim Oranı</div>
+            <div class="istatistik-etiket">İndirim Oranı</div>
             <div id="istatistikIndirimOrani" class="istatistik-deger font-yesil">—</div>
             <div class="istatistik-alt">Ortalamaya göre</div>
           </div>
@@ -541,25 +526,20 @@
           <canvas id="fiyatGrafigiCanvas"></canvas>
         </div>
 
-        <!-- Veri yetersizse grafik yerine dürüst açıklama gösterilir (uydurma çizgi yok) -->
         <p id="fiyatGecmisNotu" class="fiyat-trend-notu" hidden></p>
       </div>
-
 
       <!-- Filtre Barı -->
       <div id="filtreBar" class="filtre-bar" hidden>
         <span class="filtre-etiket">Filtrele:</span>
         <button type="button" class="filtre-chip aktif" data-filtre="hepsi">Tümü</button>
-        <button type="button" class="filtre-chip" data-filtre="stokta_var">🟢 Stokta Var</button>
-        <button type="button" class="filtre-chip" data-filtre="stokta_yok">🔴 Stokta Yok</button>
-        <button type="button" class="filtre-chip" data-filtre="kargo">📦 Kargo Bedava</button>
-        <button type="button" class="filtre-chip" data-filtre="resmi">🏢 Resmi Satıcı</button>
-        <button type="button" class="filtre-chip" data-filtre="taksit">💳 Vade Farksız Taksit</button>
-        <!-- 🧵 Birim fiyata göre sıralama (₺/kg en ucuz) — 2026-11-01 -->
-        <button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">🏷️ ₺/kg En Ucuz</button>
-        <!-- 🖨️ Çap filtresi (1.75mm / 2.85mm) — sonuca göre doldurulur -->
+        <button type="button" class="filtre-chip" data-filtre="stokta_var">Stokta Var</button>
+        <button type="button" class="filtre-chip" data-filtre="stokta_yok">Stokta Yok</button>
+        <button type="button" class="filtre-chip" data-filtre="kargo">Kargo Bedava</button>
+        <button type="button" class="filtre-chip" data-filtre="resmi">Resmi Satıcı</button>
+        <button type="button" class="filtre-chip" data-filtre="taksit">Vade Farksız Taksit</button>
+        <button type="button" class="filtre-chip birim-sirala-chip" data-filtre="birim_kg">₺/kg En Ucuz</button>
         <span id="capFiltreleri" class="filtre-grup"></span>
-        <!-- 🧪 Hammadde türü filtresi (PLA, PETG, reçine…) — sonuca göre doldurulur -->
         <span id="hammaddeFiltreleri" class="filtre-grup"></span>
       </div>
 
@@ -595,8 +575,8 @@
           <span class="ipucu">Alarm e-postası Ayarlar sayfasından atanır.</span>
         </div>
         <!-- 🔔 Web Push (2026-11-01): e-posta/Telegram'dan bağımsız cihaz bildirimi -->
-        <div class="push-satir">
-          <button type="button" id="pushBtn" class="push-btn">🔔 Bu Cihaza Bildirim Gönder</button>
+        <div class="tarayici-butonlar">
+          <button type="button" id="pushBtn" class="push-btn">Bu Cihaza Bildirim Gönder</button>
           <span id="pushDurum" class="push-durum" aria-live="polite"></span>
         </div>
         <div id="takipMesaj" class="takip-mesaj"></div>
@@ -604,7 +584,7 @@
     </section>
 
     <section class="giris-kart sepet-kart">
-      <h2 class="kart-ana-baslik"><span class="kart-ikon">🛒</span> Sepetini böl — daha az öde</h2>
+      <h2 class="kart-ana-baslik"><span class="kart-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span> Sepetini böl — daha az öde</h2>
       <p class="aciklama">2–10 ürün linki ekle. Motor her ürünü sitelerde arar, <b>kargo eşiklerini
         hesaplayarak</b> üç senaryo çıkarır: tek mağaza kolaylığı, akıllı bölünmüş sepet ve maksimum tasarruf.
         <br><span class="ipucu">Her ürün ayrı ayrı aranır: 2 ürün ≈ 2–4 dk, 5 ürün ≈ 8–10 dk. İlerlemeyi aşağıda görürsün, dilediğin an iptal edebilirsin.</span></p>
@@ -664,14 +644,14 @@
     </section>
 
     <section class="giris-kart tarayici-kart">
-      <h2 class="kart-ana-baslik"><span class="kart-ikon">📱</span> Mağazada mısın? Barkodu okut</h2>
+      <h2 class="kart-ana-baslik"><span class="kart-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg></span> Mağazada mısın? Barkodu okut</h2>
       <p class="aciklama">Raftaki ürünün barkodunu (EAN-13/UPC) kameraya tut; internet fiyatını
         saniyeler içinde gör. Raftaki fiyatı da yazarsan <b>ne kadar tasarruf edeceğin</b> hesaplanır.</p>
 
       <div class="tarayici-sekmeler">
-        <button type="button" class="tarayici-sekme aktif" data-tarayici-sekme="barkod">📷 Barkod okut</button>
-        <button type="button" class="tarayici-sekme" data-tarayici-sekme="gorsel">🖼️ Fotoğraftan ara</button>
-        <button type="button" class="tarayici-sekme" data-tarayici-sekme="elle">⌨️ Barkodu yaz</button>
+        <button type="button" class="tarayici-sekme aktif" data-tarayici-sekme="barkod">Barkod okut</button>
+        <button type="button" class="tarayici-sekme" data-tarayici-sekme="gorsel">Fotoğraftan ara</button>
+        <button type="button" class="tarayici-sekme" data-tarayici-sekme="elle">Barkodu yaz</button>
       </div>
 
       <!-- Barkod kamera -->
@@ -776,16 +756,16 @@
         <a class="seo-tum-link" href="/urunler">Tüm Ürün Kataloğu →</a>
       </div>
       <div class="seo-rehber-baglar">
-        <a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a>
-        <a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a>
-        <a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a>
-        <a href="/kategori/3d-yazici-yedek-parca">⚙️ Yedek Parça (Nozzle, Hotend, Anakart)</a>
-        <a href="/kategori/recine-ve-sarf">🧪 Reçine &amp; Kurutucu</a>
-        <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
-        <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
-        <a href="/rehber">📖 Karşılaştırma &amp; Rehberler</a>
-        <a href="/rehber/en-ucuz-pla-filament">🏷️ En Ucuz PLA Sıralaması</a>
-        <a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚖️ P1S vs K1C</a>
+        <a href="/kategori/3d-yazici">3D Yazıcı Fiyatları</a>
+        <a href="/kategori/pla-filament">PLA &amp; PLA+ Filament</a>
+        <a href="/kategori/petg-tpu-filament">PETG, TPU &amp; ABS Filament</a>
+        <a href="/kategori/3d-yazici-yedek-parca">Yedek Parça (Nozzle, Hotend, Anakart)</a>
+        <a href="/kategori/recine-ve-sarf">Reçine &amp; Kurutucu</a>
+        <a href="/maliyet.html">Baskı Maliyet Hesaplayıcı</a>
+        <a href="/sepet.html">Akıllı Sepet Sihirbazı</a>
+        <a href="/rehber">Karşılaştırma &amp; Rehberler</a>
+        <a href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Sıralaması</a>
+        <a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">P1S vs K1C</a>
       </div>
       <div class="seo-sss">
         <details>
@@ -810,33 +790,33 @@
         <div>
           <h3 class="footer-hub-baslik">Kategoriler</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a></li>
-            <li><a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a></li>
-            <li><a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a></li>
-            <li><a href="/kategori/3d-yazici-yedek-parca">⚙️ 3D Yazıcı Yedek Parça</a></li>
-            <li><a href="/kategori/recine-ve-sarf">🧪 UV Reçine &amp; Kurutucu</a></li>
-            <li><a href="/urunler">🗂️ Tüm Ürün Kataloğu</a></li>
+            <li><a href="/kategori/3d-yazici">3D Yazıcı Fiyatları</a></li>
+            <li><a href="/kategori/pla-filament">PLA &amp; PLA+ Filament</a></li>
+            <li><a href="/kategori/petg-tpu-filament">PETG, TPU &amp; ABS Filament</a></li>
+            <li><a href="/kategori/3d-yazici-yedek-parca">3D Yazıcı Yedek Parça</a></li>
+            <li><a href="/kategori/recine-ve-sarf">UV Reçine &amp; Kurutucu</a></li>
+            <li><a href="/urunler">Tüm Ürün Kataloğu</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Rehber &amp; Kıyaslama</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚖️ Bambu Lab P1S vs Creality K1C</a></li>
-            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">🚀 A1 Mini vs Ender 3 V3 KE</a></li>
-            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">⚡ Ender 3 V3 KE vs Neptune 4 Pro</a></li>
-            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">🏗️ Creality K1 Max vs P1S</a></li>
-            <li><a href="/rehber/en-ucuz-pla-filament">🥇 En Ucuz PLA Filamentler</a></li>
-            <li><a href="/rehber">📖 Tüm 3D Rehberler</a></li>
+            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">Bambu Lab P1S vs Creality K1C</a></li>
+            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">A1 Mini vs Ender 3 V3 KE</a></li>
+            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">Ender 3 V3 KE vs Neptune 4 Pro</a></li>
+            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">Creality K1 Max vs P1S</a></li>
+            <li><a href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Filamentler</a></li>
+            <li><a href="/rehber">Tüm 3D Rehberler</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Araçlar</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/">🔍 Canlı Fiyat Karşılaştırma</a></li>
-            <li><a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a></li>
-            <li><a href="/sepet.html">🧺 Akıllı Sepet &amp; Kargo</a></li>
-            <li><a href="/slicer.html">🧩 Cura &amp; Slicer Eklentisi</a></li>
-            <li><a href="/ayarlar.html">🔔 Fiyat Alarmlarım</a></li>
+            <li><a href="/">Canlı Fiyat Karşılaştırma</a></li>
+            <li><a href="/maliyet.html">Baskı Maliyet Hesaplayıcı</a></li>
+            <li><a href="/sepet.html">Akıllı Sepet &amp; Kargo</a></li>
+            <li><a href="/slicer.html">Cura &amp; Slicer Eklentisi</a></li>
+            <li><a href="/ayarlar.html">Fiyat Alarmlarım</a></li>
           </ul>
         </div>
       </nav>
@@ -854,22 +834,22 @@
     </div>
   </footer>
 
-  <!-- 📱 Mobil alt navigasyon (yalnızca <768px) — 2026-11-01 / 2026-11-03 -->
+  <!-- Mobil alt navigasyon (yalnızca <768px) -->
   <nav id="altNav" class="alt-nav" aria-label="Hızlı gezinme">
     <button type="button" class="alt-nav-oge aktif" data-nav="karsilastir" aria-current="page">
-      <span class="alt-nav-ikon" aria-hidden="true">🔍</span><span>Ara &amp; Kıyasla</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span><span>Ara &amp; Kıyasla</span>
     </button>
     <button type="button" class="alt-nav-oge" data-nav="borsa"
       aria-label="Günün dip fırsatları — canlı fiyat borsası">
-      <span class="alt-nav-ikon" aria-hidden="true">🔥</span><span>Dip Fırsatlar</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/></svg></span><span>Dip Fırsatlar</span>
     </button>
     <button type="button" class="alt-nav-oge" data-nav="takipler"
       aria-label="Fiyat alarmlarım — takip ettiğim ürünler">
-      <span class="alt-nav-ikon" aria-hidden="true">🔔</span><span>Alarmlarım</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span>Alarmlarım</span>
     </button>
 
     <a class="alt-nav-oge" data-nav="ayarlar" href="/ayarlar.html">
-      <span class="alt-nav-ikon" aria-hidden="true">⚙️</span><span>Tercihler</span>
+      <span class="alt-nav-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span><span>Tercihler</span>
     </a>
   </nav>
 
@@ -906,21 +886,20 @@
     <div class="teklif-modal-perde" id="teklifModalKapat"></div>
     <div class="teklif-fis-kutu" role="dialog" aria-modal="true" aria-labelledby="fisBaslik">
       <div class="fis-ust-eylemler">
-        <span class="fis-rozet">🧾 3D BASKI TEKLİF FİŞİ</span>
+        <span class="fis-rozet">3D Baskı Teklif Fişi</span>
         <button type="button" class="fis-kapat-btn" id="fisKapatBtn" aria-label="Teklif fişini kapat">✕</button>
       </div>
-      <!-- Yazdırma alanı: @media print yalnızca bu bloğu görünür bırakır -->
       <div class="fis-govde" id="fisYazdirAlani">
         <div class="fis-baslik-satiri">
           <h3 id="fisBaslik" class="fis-baslik">3D Baskı Maliyet &amp; Teklif Özeti</h3>
           <span class="fis-tarih" id="fisTarih">—</span>
         </div>
         <div class="fis-model-bilgi">
-          <div class="fis-satir"><span>📦 Model:</span> <b id="fisModelAd">—</b></div>
-          <div class="fis-satir"><span>📐 Ebat:</span> <b id="fisEbat">—</b></div>
-          <div class="fis-satir"><span>⚖️ Gramaj:</span> <b id="fisGramaj">—</b></div>
-          <div class="fis-satir"><span>🧵 Malzeme:</span> <b id="fisMalzeme">—</b></div>
-          <div class="fis-satir"><span>⏱️ Tahmini Süre:</span> <b id="fisSure">—</b></div>
+          <div class="fis-satir"><span>Model:</span> <b id="fisModelAd">—</b></div>
+          <div class="fis-satir"><span>Ebat:</span> <b id="fisEbat">—</b></div>
+          <div class="fis-satir"><span>Gramaj:</span> <b id="fisGramaj">—</b></div>
+          <div class="fis-satir"><span>Malzeme:</span> <b id="fisMalzeme">—</b></div>
+          <div class="fis-satir"><span>Tahmini Süre:</span> <b id="fisSure">—</b></div>
         </div>
         <div class="fis-cizgi"></div>
         <div class="fis-kalemler">
@@ -931,18 +910,18 @@
         </div>
         <div class="fis-cizgi-cift"></div>
         <div class="fis-fiyat-alani">
-          <div class="fis-fiyat-etiket">ÖNERİLEN SATIŞ FİYATI</div>
+          <div class="fis-fiyat-etiket">Önerilen satış fiyatı</div>
           <div class="fis-fiyat-tutar" id="fisSatisFiyat">₺0,00</div>
           <div class="fis-fiyat-not" id="fisKarNotu">Atölye kâr marjı dahildir</div>
         </div>
         <div class="fis-dipnot">
-          <span>⚡ Fiyat Doğrulama: <b>Baskı Hesap</b> · 62 mağaza canlı radar</span>
+          <span>Fiyat Doğrulama: <b>Baskı Hesap</b> · 62 mağaza canlı radar</span>
         </div>
       </div>
       <div class="fis-alt-butonlar">
-        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">📲 WhatsApp ile Gönder</button>
-        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">📋 Fişi Kopyala</button>
-        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">🖨️ Yazdır / PDF</button>
+        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">WhatsApp ile Gönder</button>
+        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">Fişi Kopyala</button>
+        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">Yazdır / PDF</button>
       </div>
     </div>
   </div>
@@ -951,7 +930,7 @@
     // PWA service worker (2026-10-28): yalnızca güvenli bağlamda (https/localhost)
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=12').catch(() => { /* PWA olmadan da çalışır */ });
+        navigator.serviceWorker.register('/sw.js?v=13').catch(() => { /* PWA olmadan da çalışır */ });
       });
     }
   </script>

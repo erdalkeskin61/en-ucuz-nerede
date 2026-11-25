@@ -28,7 +28,7 @@
   <link rel="icon" href="/ikon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/slicer.css" />
   <script>
@@ -59,36 +59,35 @@
           <a href="/ja/slicer" hreflang="ja" role="menuitem">🇯🇵 日本語 (JPY)</a>
         </div>
       </details>
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Tema değiştir" title="Tema değiştir">🌓</button>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Tema değiştir" title="Tema değiştir"><svg class="svg-ik tema-ikon-ay" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="svg-ik tema-ikon-gun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-15.66 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg></button>
     </div>
   </header>
 
   <main class="kap">
     <section class="hero sl-hero">
       <div class="hero-ic">
-        <span class="hero-rozet">🧩 Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>
+        <span class="hero-rozet">Cura · Bambu Studio · OrcaSlicer · PrusaSlicer</span>
         <h1>Dilimleme bittiği anda<br><b>en ucuz filamenti</b> göster</h1>
         <p>Web sitesine gitmeye gerek yok. Slice tuşuna bastığında harcanacak gramajı
           okur, 68 mağazadaki stoklu en ucuz makarayı bulur ve tek tıkla satın alma
           bağlantısı verir.</p>
         <div class="hero-istatistik">
-          <span>⚡ &lt; 50 ms API</span>
-          <span>🔒 Yalnızca gramaj + malzeme gönderilir</span>
-          <span>🆓 Ücretsiz, hesap gerekmez</span>
+          <span>&lt; 50 ms API</span>
+          <span>Yalnızca gramaj + malzeme gönderilir</span>
+          <span>Ücretsiz, hesap gerekmez</span>
         </div>
       </div>
     </section>
 
-    <!-- Canlı API örneği & G-Code sürükle-bırak (gerçek veri) -->
     <section class="sl-canli" aria-labelledby="slCanliBaslik">
       <div class="sl-canli-ust">
-        <h2 id="slCanliBaslik">🔎 Canlı örnek &amp; anında G-Code analizi</h2>
+        <h2 id="slCanliBaslik">Canlı örnek &amp; anında G-Code analizi</h2>
         <span class="sl-canli-etiket">68 mağaza · gerçek veri</span>
       </div>
 
       <div class="sl-drop" id="slDropAlani" tabindex="0" role="button" aria-label="G-Code dosyasını sürükleyip bırakın veya seçin">
         <input type="file" id="slGcodeInput" accept=".gcode,.gco,.g,.txt" hidden />
-        <span class="sl-drop-ikon" aria-hidden="true">📂</span>
+        <span class="sl-drop-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span>
         <div class="sl-drop-metin">
           <b>İsterseniz bir <code>.gcode</code> dosyasını buraya bırakın (veya tıklayın)</b>
           <span>Bambu Studio, OrcaSlicer, PrusaSlicer, Cura meta verisi tarayıcıda okunur; dosya sunucuya yüklenmez.</span>
@@ -118,7 +117,7 @@
         </label>
       </div>
       <div class="sl-canli-sonuc" id="slSonuc" aria-live="polite">
-        <span class="sl-bekle">⏳ Sorgulanıyor…</span>
+        <span class="sl-bekle">Sorgulanıyor…</span>
       </div>
       <div class="sl-json-bar" id="slJsonBar" hidden>
         <button type="button" class="sl-mini-btn" id="slJsonToggle">{ } API JSON çıktısını göster</button>
@@ -126,22 +125,21 @@
       <pre class="sl-json" id="slJson" hidden></pre>
     </section>
 
-    <!-- İndirme kartları -->
     <section class="sl-indirme" aria-labelledby="slIndirmeBaslik">
-      <h2 id="slIndirmeBaslik" class="sl-bolum-baslik">📥 İndir ve kur</h2>
+      <h2 id="slIndirmeBaslik" class="sl-bolum-baslik">İndir ve kur</h2>
 
       <div class="sl-kartlar">
         <!-- CURA -->
         <article class="sl-kart">
           <header class="sl-kart-ust">
-            <span class="sl-kart-ikon" aria-hidden="true">🖨️</span>
+            <span class="sl-kart-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span>
             <div>
               <h3>UltiMaker Cura</h3>
               <p class="sl-kart-alt">Cura 4.13 ve üzeri</p>
             </div>
           </header>
           <a class="sl-indir-btn" href="/indir/BaskiHesap.curapackage" download>
-            ⬇️ Baskı Hesap — Cura paketi
+            Baskı Hesap — Cura paketi indir
           </a>
           <ol class="sl-adimlar">
             <li><code>.curapackage</code> dosyasını Cura penceresine <b>sürükleyip bırakın</b>.</li>
@@ -153,24 +151,24 @@
         <!-- BAMBU / ORCA / PRUSA -->
         <article class="sl-kart">
           <header class="sl-kart-ust">
-            <span class="sl-kart-ikon" aria-hidden="true">🧩</span>
+            <span class="sl-kart-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
             <div>
               <h3>Bambu Studio · OrcaSlicer · PrusaSlicer</h3>
               <p class="sl-kart-alt">Post-processing script</p>
             </div>
           </header>
           <a class="sl-indir-btn" href="/indir/en_ucuz_slicer.py" download>
-            ⬇️ en_ucuz_slicer.py
+            en_ucuz_slicer.py indir
           </a>
           <ol class="sl-adimlar">
             <li>Dosyayı bilgisayarınıza kaydedin (ör. <code>C:\EnUcuz\en_ucuz_slicer.py</code>).</li>
-            <li>Slicer'da <b>Print Settings ➔ Output options ➔ Post-processing scripts</b> kutusuna
+            <li>Slicer'da <b>Print Settings → Output options → Post-processing scripts</b> kutusuna
               dosyanın <b>tam yolunu</b> yapıştırın.</li>
             <li>Dilimleyip kaydedin — bildirim otomatik gelir.</li>
           </ol>
 
           <details class="sl-yardim">
-            <summary>🐍 Python yok mu? (Windows)</summary>
+            <summary>Python yok mu? (Windows)</summary>
             <p>Betik Python 3 ile çalışır. Kurulu değilse
               <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a>'dan
               kurun ve <b>"Add python.exe to PATH"</b> seçeneğini işaretleyin.
@@ -179,12 +177,12 @@
             <p class="sl-not">Kendi <code>.exe</code> dosyanızı üretmek isterseniz:</p>
             <pre class="sl-kod">pip install pyinstaller
 pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
-            <p class="sl-not">⚠️ <code>--noconsole</code> ile derlerseniz <code>--test</code> çıktısını
+            <p class="sl-not"><code>--noconsole</code> ile derlerseniz <code>--test</code> çıktısını
               görmezsiniz; bildirimler yine çalışır.</p>
           </details>
 
           <details class="sl-yardim">
-            <summary>✅ Kurulumu doğrula</summary>
+            <summary>Kurulumu doğrula</summary>
             <p>Terminalde şunu çalıştırın:</p>
             <pre class="sl-kod">python en_ucuz_slicer.py --test</pre>
             <p class="sl-not">API'ye ulaşırsa bir test bildirimi gösterir. Bağlantı yoksa
@@ -194,9 +192,8 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
       </div>
     </section>
 
-    <!-- Nasıl çalışır -->
     <section class="sl-nasil" aria-labelledby="slNasilBaslik">
-      <h2 id="slNasilBaslik" class="sl-bolum-baslik">⚙️ Nasıl çalışır?</h2>
+      <h2 id="slNasilBaslik" class="sl-bolum-baslik">Nasıl çalışır</h2>
       <div class="sl-akis">
         <div class="sl-akis-adim">
           <span class="sl-akis-no">1</span>
@@ -221,9 +218,8 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
       </div>
     </section>
 
-    <!-- Gizlilik ve dürüstlük -->
     <section class="sl-guven" aria-labelledby="slGuvenBaslik">
-      <h2 id="slGuvenBaslik" class="sl-bolum-baslik">🔒 Gizlilik ve dürüstlük</h2>
+      <h2 id="slGuvenBaslik" class="sl-bolum-baslik">Gizlilik ve dürüstlük</h2>
       <ul class="sl-liste">
         <li><b>Ne gönderilir:</b> yalnızca malzeme türü (PLA/PETG…), gramaj ve kaynak etiketi
           (<code>cura</code>, <code>bambu</code>…). Renk isteğe bağlı.</li>
@@ -239,9 +235,8 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
       </ul>
     </section>
 
-    <!-- API belgesi -->
     <section class="sl-api" aria-labelledby="slApiBaslik">
-      <h2 id="slApiBaslik" class="sl-bolum-baslik">🔌 API (kendi entegrasyonunuz için)</h2>
+      <h2 id="slApiBaslik" class="sl-bolum-baslik">API (kendi entegrasyonunuz için)</h2>
       <p class="sl-api-not">Herkese açık, CORS destekli, 60 sn önbellekli.</p>
       <pre class="sl-kod sl-kod-blok">GET /api/embed/oner?malzeme=PLA&amp;gramaj=340&amp;renk=Siyah&amp;kaynak=cura
 
@@ -275,33 +270,33 @@ pyinstaller --onefile --noconsole en_ucuz_slicer.py</pre>
         <div>
           <h3 class="footer-hub-baslik">Kategoriler</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a></li>
-            <li><a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a></li>
-            <li><a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a></li>
-            <li><a href="/kategori/3d-yazici-yedek-parca">⚙️ 3D Yazıcı Yedek Parça</a></li>
-            <li><a href="/kategori/recine-ve-sarf">🧪 UV Reçine &amp; Kurutucu</a></li>
-            <li><a href="/urunler">🗂️ Tüm Ürün Kataloğu</a></li>
+            <li><a href="/kategori/3d-yazici">3D Yazıcı Fiyatları</a></li>
+            <li><a href="/kategori/pla-filament">PLA &amp; PLA+ Filament</a></li>
+            <li><a href="/kategori/petg-tpu-filament">PETG, TPU &amp; ABS Filament</a></li>
+            <li><a href="/kategori/3d-yazici-yedek-parca">3D Yazıcı Yedek Parça</a></li>
+            <li><a href="/kategori/recine-ve-sarf">UV Reçine &amp; Kurutucu</a></li>
+            <li><a href="/urunler">Tüm Ürün Kataloğu</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Rehber &amp; Kıyaslama</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚖️ Bambu Lab P1S vs Creality K1C</a></li>
-            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">🚀 A1 Mini vs Ender 3 V3 KE</a></li>
-            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">⚡ Ender 3 V3 KE vs Neptune 4 Pro</a></li>
-            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">🏗️ Creality K1 Max vs P1S</a></li>
-            <li><a href="/rehber/en-ucuz-pla-filament">🥇 En Ucuz PLA Filamentler</a></li>
-            <li><a href="/rehber">📖 Tüm 3D Rehberler</a></li>
+            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">Bambu Lab P1S vs Creality K1C</a></li>
+            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">A1 Mini vs Ender 3 V3 KE</a></li>
+            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">Ender 3 V3 KE vs Neptune 4 Pro</a></li>
+            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">Creality K1 Max vs P1S</a></li>
+            <li><a href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Filamentler</a></li>
+            <li><a href="/rehber">Tüm 3D Rehberler</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Araçlar</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/">🔍 Canlı Fiyat Karşılaştırma</a></li>
-            <li><a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a></li>
-            <li><a href="/sepet.html">🧺 Akıllı Sepet &amp; Kargo</a></li>
-            <li><a href="/slicer.html">🧩 Cura &amp; Slicer Eklentisi</a></li>
-            <li><a href="/ayarlar.html">🔔 Fiyat Alarmlarım</a></li>
+            <li><a href="/">Canlı Fiyat Karşılaştırma</a></li>
+            <li><a href="/maliyet.html">Baskı Maliyet Hesaplayıcı</a></li>
+            <li><a href="/sepet.html">Akıllı Sepet &amp; Kargo</a></li>
+            <li><a href="/slicer.html">Cura &amp; Slicer Eklentisi</a></li>
+            <li><a href="/ayarlar.html">Fiyat Alarmlarım</a></li>
           </ul>
         </div>
       </nav>

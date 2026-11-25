@@ -1178,8 +1178,8 @@ console.log('\n28) 🎨 Küçük UI / erişilebilirlik & slicer mağaza sayısı
   const frGuides = globalRehberDiziniHtml('fr', 'https://baskihesap.tech');
   const jaGuides = globalRehberDiziniHtml('ja', 'https://baskihesap.tech');
   kontrol('/fr/guides ve /ja/guides alt araç bağlantısında "Compare" yerine yerel etiket kullanır',
-    frGuides.includes('🔍 Comparer →') && !frGuides.includes('🔍 Compare →')
-    && jaGuides.includes('🔍 価格比較 →') && !jaGuides.includes('🔍 Compare →'));
+    frGuides.includes('Comparer →') && !frGuides.includes('Compare →')
+    && jaGuides.includes('価格比較 →') && !jaGuides.includes('Compare →'));
 
   const { slicerOneri } = await import('../src/slicerApi.js');
   const jpSlicer = slicerOneri({ malzeme: 'PLA', gramaj: 340, market: 'jp' });

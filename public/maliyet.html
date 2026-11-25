@@ -68,7 +68,7 @@
   <link rel="icon" href="/ikon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/maliyet.css" />
   <script>
@@ -100,7 +100,7 @@
           <a href="/ja/cost-calculator" hreflang="ja" role="menuitem">🇯🇵 日本語 (JPY)</a>
         </div>
       </details>
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir"><svg class="svg-ik tema-ikon-ay" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="svg-ik tema-ikon-gun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-15.66 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg></button>
     </div>
   </header>
 
@@ -126,7 +126,7 @@
       <div id="stlBirak" class="stl-birak" role="button" tabindex="0"
            aria-label="STL veya 3MF dosyasını sürükleyip bırakın ya da seçin">
         <input type="file" id="stlDosya" accept=".stl,.3mf,model/stl,model/3mf" hidden />
-        <span class="stl-birak-ikon" aria-hidden="true">📥</span>
+        <span class="stl-birak-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span>
         <span class="stl-birak-metin">
           <b>STL / 3MF dosyasını buraya sürükleyin</b>
           <span class="stl-birak-alt">ya da tıklayıp seçin · en fazla 100 MB · sunucuya yüklenmez</span>
@@ -154,17 +154,17 @@
                   aria-label="Modelin izometrik tel çerçeve silüeti" role="img"></canvas>
           <div class="stl-metrikler">
           <div class="stl-metrik">
-            <span class="stl-metrik-ad">📏 Boyutlar</span>
+            <span class="stl-metrik-ad">Boyutlar</span>
             <strong id="stlBoyut">—</strong>
             <span class="stl-metrik-alt" id="stlBoyutAlt">G × D × Y mm</span>
           </div>
           <div class="stl-metrik">
-            <span class="stl-metrik-ad">🧊 Hacim</span>
+            <span class="stl-metrik-ad">Hacim</span>
             <strong id="stlHacim">—</strong>
             <span class="stl-metrik-alt" id="stlHacimAlt">cm³</span>
           </div>
           <div class="stl-metrik stl-metrik-vurgu">
-            <span class="stl-metrik-ad">⚖️ Ağırlık</span>
+            <span class="stl-metrik-ad">Ağırlık</span>
             <strong id="stlGram">—</strong>
             <span class="stl-metrik-alt" id="stlGramAlt">%20 doluluk</span>
           </div>
@@ -200,37 +200,35 @@
           </div>
         </div>
 
-        <!-- Akıllı satın alma kartı -->
         <div class="stl-satin" id="stlSatin" hidden>
-          <p class="stl-satin-baslik">🏷️ Bu model için en ekonomik filament tavsiyesi</p>
-          <!-- Tek cümlelik karar özeti (mobilde de tek bakışta okunur) -->
+          <p class="stl-satin-baslik">Bu model için en ekonomik filament tavsiyesi</p>
           <p class="stl-satin-ozet" id="stlSatinOzet"></p>
           <div class="stl-satin-govde">
             <div class="stl-satin-bilgi">
               <span class="stl-satin-satir">
-                <span class="stl-satin-etiket">🏬 Mağaza</span>
+                <span class="stl-satin-etiket">Mağaza</span>
                 <span class="stl-satin-site" id="stlSatinSite">—</span>
               </span>
               <span class="stl-satin-satir">
-                <span class="stl-satin-etiket">🧵 Ürün</span>
+                <span class="stl-satin-etiket">Ürün</span>
                 <span class="stl-satin-urun" id="stlSatinUrun">—</span>
               </span>
               <span class="stl-satin-satir">
-                <span class="stl-satin-etiket">💰 Makara fiyatı</span>
+                <span class="stl-satin-etiket">Makara fiyatı</span>
                 <span class="stl-satin-fiyat" id="stlSatinFiyat">—</span>
               </span>
               <span class="stl-satin-satir">
-                <span class="stl-satin-etiket">📊 Parça başı hammadde</span>
+                <span class="stl-satin-etiket">Parça başı hammadde</span>
                 <strong class="stl-satin-parca" id="stlSatinParca">—</strong>
               </span>
               <span class="stl-satin-satir">
-                <span class="stl-satin-etiket">📦 Makara verimi</span>
+                <span class="stl-satin-etiket">Makara verimi</span>
                 <span class="stl-satin-detay" id="stlSatinDetay">—</span>
               </span>
             </div>
             <a class="stl-satin-btn" id="stlSatinBtn" target="_blank" rel="noopener sponsored"
                aria-describedby="stlSatinDipnot">
-              ⚡ Bu Filamenti Satın Al ➔
+              Bu Filamenti Satın Al →
             </a>
           </div>
           <p class="stl-satin-dipnot" id="stlSatinDipnot">
@@ -239,12 +237,11 @@
         </div>
 
         <button type="button" class="stl-gramaj-aktar" id="stlAktar">
-          ⬇️ Bu gramajı hesaplayıcıya aktar
+          Bu gramajı hesaplayıcıya aktar
         </button>
 
-        <!-- 🧾 Baskı Teklif Fişi (2026-11-12) -->
         <button type="button" class="stl-hizli-teklif-btn" id="stlTeklifFisBtn" hidden>
-          🧾 Baskı Teklif Fişi Çıkar
+          Baskı Teklif Fişi Çıkar
         </button>
       </div>
     </section>
@@ -411,28 +408,24 @@
 
         <div class="mz-bento">
           <article class="mz-kart mz-kart-hammadde">
-            <span class="mz-kart-ikon">🧵</span>
             <span class="mz-kart-ad">Hammadde</span>
             <strong class="mz-kart-deger" id="ciktiHammadde">₺0,00</strong>
             <span class="mz-kart-alt" id="ciktiHammaddeAlt">160 g × ₺0/kg</span>
           </article>
 
           <article class="mz-kart mz-kart-elektrik">
-            <span class="mz-kart-ikon">💡</span>
             <span class="mz-kart-ad">Elektrik</span>
             <strong class="mz-kart-deger" id="ciktiElektrik">₺0,00</strong>
             <span class="mz-kart-alt" id="ciktiElektrikAlt">0,60 kWh</span>
           </article>
 
           <article class="mz-kart mz-kart-amort">
-            <span class="mz-kart-ikon">🛠️</span>
             <span class="mz-kart-ad">Amortisman</span>
             <strong class="mz-kart-deger" id="ciktiAmortisman">₺0,00</strong>
             <span class="mz-kart-alt" id="ciktiAmortismanAlt">4 sa × ₺3</span>
           </article>
 
           <article class="mz-kart mz-kart-toplam">
-            <span class="mz-kart-ikon">🏷️</span>
             <span class="mz-kart-ad">Toplam net maliyet</span>
             <strong class="mz-kart-deger" id="ciktiNet">₺0,00</strong>
             <span class="mz-kart-alt" id="ciktiNetAlt">hammadde + elektrik + amortisman</span>
@@ -482,11 +475,10 @@
           </div>
         </div>
 
-        <!-- CTA -->
         <div class="mz-cta" id="ctaKart" hidden>
           <p class="mz-cta-metin" id="ctaMetin"></p>
           <a class="mz-cta-btn" id="ctaBtn" target="_blank" rel="noopener sponsored">
-            🛒 En Ucuz Filamenti Satın Al
+            En Ucuz Filamenti Satın Al →
           </a>
           <p class="mz-cta-not">Bağlantı komisyonlu olabilir; fiyatınızı değiştirmez.</p>
         </div>
@@ -506,15 +498,15 @@
       </div>
       <div class="mz-akis-adimlar">
         <article class="mz-akis-adim">
-          <div class="mz-akis-no">1️⃣ Fotoğraf / Fikir → Baskıya Hazır 3D Model</div>
+          <div class="mz-akis-no">1. Fotoğraf / Fikir → Baskıya Hazır 3D Model</div>
           <p>Müşteriden gelen fotoğrafı veya fikri <a href="https://www.meshy.ai" class="mz-akis-partner-meshy" target="_blank" rel="noopener" data-afiliye-site="meshy">Meshy AI</a> (tek renk figür/prototip) veya <a href="https://www.hi3d.ai" class="mz-akis-partner-hi3d" target="_blank" rel="noopener" data-afiliye-site="hi3d">Hi3D</a> (model bölmeden çok renkli baskı) ile <code>.stl/.3mf</code> dosyasına dönüştür.</p>
         </article>
         <article class="mz-akis-adim">
-          <div class="mz-akis-no">2️⃣ Maliyet + Kâr Marjı &amp; Teklif Çıkar</div>
+          <div class="mz-akis-no">2. Maliyet + Kâr Marjı &amp; Teklif Çıkar</div>
           <p>Modeli yukarıdaki STL analizörüne bırak; filament gramajı, fire, elektrik, amortisman ve hedef kâr çarpanıyla net satış fiyatını &amp; müşteri fişini anında oluştur.</p>
         </article>
         <article class="mz-akis-adim">
-          <div class="mz-akis-no">3️⃣ Gereken Renkte En Ucuz Makarayı Seç</div>
+          <div class="mz-akis-no">3. Gereken Renkte En Ucuz Makarayı Seç</div>
           <p>Canlı mağazalardan <a href="/">en ucuz filament rengini</a> bul ya da çok renkli baskı için <a href="/sepet.html">Akıllı Sepet</a> ile 3–4 makarayı kargosuz birleştir.</p>
         </article>
       </div>
@@ -531,33 +523,33 @@
         <div>
           <h3 class="footer-hub-baslik">Kategoriler</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a></li>
-            <li><a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a></li>
-            <li><a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a></li>
-            <li><a href="/kategori/3d-yazici-yedek-parca">⚙️ 3D Yazıcı Yedek Parça</a></li>
-            <li><a href="/kategori/recine-ve-sarf">🧪 UV Reçine &amp; Kurutucu</a></li>
-            <li><a href="/urunler">🗂️ Tüm Ürün Kataloğu</a></li>
+            <li><a href="/kategori/3d-yazici">3D Yazıcı Fiyatları</a></li>
+            <li><a href="/kategori/pla-filament">PLA &amp; PLA+ Filament</a></li>
+            <li><a href="/kategori/petg-tpu-filament">PETG, TPU &amp; ABS Filament</a></li>
+            <li><a href="/kategori/3d-yazici-yedek-parca">3D Yazıcı Yedek Parça</a></li>
+            <li><a href="/kategori/recine-ve-sarf">UV Reçine &amp; Kurutucu</a></li>
+            <li><a href="/urunler">Tüm Ürün Kataloğu</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Rehber &amp; Kıyaslama</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚖️ Bambu Lab P1S vs Creality K1C</a></li>
-            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">🚀 A1 Mini vs Ender 3 V3 KE</a></li>
-            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">⚡ Ender 3 V3 KE vs Neptune 4 Pro</a></li>
-            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">🏗️ Creality K1 Max vs P1S</a></li>
-            <li><a href="/rehber/en-ucuz-pla-filament">🥇 En Ucuz PLA Filamentler</a></li>
-            <li><a href="/rehber">📖 Tüm 3D Rehberler</a></li>
+            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">Bambu Lab P1S vs Creality K1C</a></li>
+            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">A1 Mini vs Ender 3 V3 KE</a></li>
+            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">Ender 3 V3 KE vs Neptune 4 Pro</a></li>
+            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">Creality K1 Max vs P1S</a></li>
+            <li><a href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Filamentler</a></li>
+            <li><a href="/rehber">Tüm 3D Rehberler</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Araçlar</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/">🔍 Canlı Fiyat Karşılaştırma</a></li>
-            <li><a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a></li>
-            <li><a href="/sepet.html">🧺 Akıllı Sepet &amp; Kargo</a></li>
-            <li><a href="/slicer.html">🧩 Cura &amp; Slicer Eklentisi</a></li>
-            <li><a href="/ayarlar.html">🔔 Fiyat Alarmlarım</a></li>
+            <li><a href="/">Canlı Fiyat Karşılaştırma</a></li>
+            <li><a href="/maliyet.html">Baskı Maliyet Hesaplayıcı</a></li>
+            <li><a href="/sepet.html">Akıllı Sepet &amp; Kargo</a></li>
+            <li><a href="/slicer.html">Cura &amp; Slicer Eklentisi</a></li>
+            <li><a href="/ayarlar.html">Fiyat Alarmlarım</a></li>
           </ul>
         </div>
       </nav>
@@ -566,12 +558,12 @@
     </div>
   </footer>
 
-  <!-- 🧾 Baskı Teklif Fişi modalı (2026-11-12) -->
+  <!-- Baskı Teklif Fişi modalı -->
   <div id="teklifFisModal" class="teklif-modal" hidden>
     <div class="teklif-modal-perde" id="teklifModalKapat"></div>
     <div class="teklif-fis-kutu" role="dialog" aria-modal="true" aria-labelledby="fisBaslik">
       <div class="fis-ust-eylemler">
-        <span class="fis-rozet">🧾 3D BASKI TEKLİF FİŞİ</span>
+        <span class="fis-rozet">3D Baskı Teklif Fişi</span>
         <button type="button" class="fis-kapat-btn" id="fisKapatBtn" aria-label="Teklif fişini kapat">✕</button>
       </div>
       <div class="fis-govde" id="fisYazdirAlani">
@@ -585,11 +577,11 @@
           <span class="fis-tarih" id="fisTarih">—</span>
         </div>
         <div class="fis-model-bilgi">
-          <div class="fis-satir"><span>📦 Model:</span> <b id="fisModelAd">—</b></div>
-          <div class="fis-satir"><span>📐 Ebat:</span> <b id="fisEbat">—</b></div>
-          <div class="fis-satir"><span>⚖️ Gramaj:</span> <b id="fisGramaj">—</b></div>
-          <div class="fis-satir"><span>🧵 Malzeme:</span> <b id="fisMalzeme">—</b></div>
-          <div class="fis-satir"><span>⏱️ Tahmini Süre:</span> <b id="fisSure">—</b></div>
+          <div class="fis-satir"><span>Model:</span> <b id="fisModelAd">—</b></div>
+          <div class="fis-satir"><span>Ebat:</span> <b id="fisEbat">—</b></div>
+          <div class="fis-satir"><span>Gramaj:</span> <b id="fisGramaj">—</b></div>
+          <div class="fis-satir"><span>Malzeme:</span> <b id="fisMalzeme">—</b></div>
+          <div class="fis-satir"><span>Tahmini Süre:</span> <b id="fisSure">—</b></div>
         </div>
         <div class="fis-cizgi"></div>
         <div class="fis-kalemler">
@@ -600,18 +592,18 @@
         </div>
         <div class="fis-cizgi-cift"></div>
         <div class="fis-fiyat-alani">
-          <div class="fis-fiyat-etiket">ÖNERİLEN SATIŞ FİYATI</div>
+          <div class="fis-fiyat-etiket">Önerilen satış fiyatı</div>
           <div class="fis-fiyat-tutar" id="fisSatisFiyat">₺0,00</div>
           <div class="fis-fiyat-not" id="fisKarNotu">Atölye kâr marjı dahildir</div>
         </div>
         <div class="fis-dipnot">
-          <span>⚡ Fiyat Doğrulama: <b>Baskı Hesap</b> · 62 mağaza canlı radar</span>
+          <span>Fiyat Doğrulama: <b>Baskı Hesap</b> · 62 mağaza canlı radar</span>
         </div>
       </div>
       <div class="fis-alt-butonlar">
-        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">📲 WhatsApp ile Gönder</button>
-        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">📋 Fişi Kopyala</button>
-        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">🖨️ Yazdır / PDF</button>
+        <button type="button" class="fis-btn fis-whatsapp" id="fisWhatsappBtn">WhatsApp ile Gönder</button>
+        <button type="button" class="fis-btn fis-kopyala" id="fisKopyalaBtn">Fişi Kopyala</button>
+        <button type="button" class="fis-btn fis-yazdir" id="fisYazdirBtn">Yazdır / PDF</button>
       </div>
     </div>
   </div>

@@ -66,7 +66,6 @@
     // Mobil tarayıcı çubuğu rengi de temaya uysun.
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', tema === 'dark' ? '#0B0F17' : '#1E40AF');
-    dugme.textContent = tema === 'dark' ? '☀️' : '🌓';
     dugme.setAttribute('aria-pressed', tema === 'dark' ? 'true' : 'false');
     const metin = TEMA_METNI[sayfaDili()];
     dugme.title = tema === 'dark' ? metin.dark : metin.light;
@@ -80,6 +79,36 @@
   dugme.addEventListener('click', () => {
     uygula(simdiki() === 'dark' ? 'light' : 'dark');
   });
+
+  // Mobil (<=860px) tek satır üst bar için menü çekmece düğmesi
+  try {
+    const ustKap = document.querySelector?.('.ustbar .kap');
+    const anaMenu = ustKap?.querySelector?.('.menu');
+    if (ustKap && anaMenu && !document.getElementById('menuAcBtn')) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'menuAcBtn';
+      btn.className = 'menu-ac';
+      const menuLbl = { tr: 'Gezinme menüsü', en: 'Navigation menu', fr: 'Menu de navigation', ja: 'ナビゲーション' }[sayfaDili()] || 'Menü';
+      btn.setAttribute('aria-label', menuLbl);
+      btn.setAttribute('aria-expanded', 'false');
+      btn.innerHTML = '<svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>';
+      const dilSecici = ustKap.querySelector('.dil-secici');
+      ustKap.insertBefore(btn, dilSecici || dugme);
+      const toggle = (acik) => {
+        const durum = typeof acik === 'boolean' ? acik : !anaMenu.classList.contains('acik');
+        anaMenu.classList.toggle('acik', durum);
+        btn.setAttribute('aria-expanded', durum ? 'true' : 'false');
+      };
+      btn.addEventListener('click', () => toggle());
+      document.addEventListener('click', (e) => {
+        if (anaMenu.classList.contains('acik') && !ustKap.contains(e.target)) toggle(false);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && anaMenu.classList.contains('acik')) toggle(false);
+      });
+    }
+  } catch { /* eski tarayici */ }
 
   try {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {

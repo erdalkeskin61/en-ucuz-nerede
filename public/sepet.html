@@ -28,7 +28,7 @@
   <link rel="apple-touch-icon" href="/ikon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <script>
     try {
       const t = localStorage.getItem('tema');
@@ -63,42 +63,40 @@
           <a href="/ja/basket" hreflang="ja" role="menuitem">🇯🇵 日本語 (JPY)</a>
         </div>
       </details>
-      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir">🌓</button>
+      <button type="button" class="tema-degistir" id="temaDegistir" aria-label="Karanlık / aydınlık temayı değiştir" title="Tema değiştir"><svg class="svg-ik tema-ikon-ay" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="svg-ik tema-ikon-gun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-15.66 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg></button>
     </div>
   </header>
 
   <main class="kap sepet-sayfa">
     <section class="hero sepet-hero">
       <div class="hero-ic">
-        <span class="hero-rozet">🧺 Kargo eşikleri · 3 senaryo · tek tıkla paket</span>
+        <span class="hero-rozet">Kargo eşikleri · 3 senaryo · tek tıkla paket</span>
         <h1>Sepeti böl, <b>kargoyu sıfırla</b>, gerçek toplamı gör</h1>
         <p>Birden fazla filament alırken her mağazanın kargo eşiği ayrı hesaplanır.
           Tek mağaza mı, hibrit bölünme mi, yoksa her ürün en ucuzundan mı? <b>Üçünü yan yana</b> görün.</p>
       </div>
     </section>
 
-    <!-- ================= 🎨 Hazır filament paketleri ================= -->
     <section class="sepet-bolum" aria-labelledby="paketBaslik">
       <div class="sepet-bolum-ust">
-        <h2 id="paketBaslik" class="sepet-baslik">🎨 Hazır Filament Paketleri</h2>
+        <h2 id="paketBaslik" class="sepet-baslik">Hazır Filament Paketleri</h2>
         <span class="sepet-ipucu">Tek tıkla sepete dolar · canlı katalog fiyatları</span>
       </div>
       <div id="paketler" class="paket-izgara" aria-busy="true">
-        <div class="paket-kart paket-yukleniyor">⏳ Canlı filament kataloğu okunuyor…</div>
+        <div class="paket-kart paket-yukleniyor">Canlı filament kataloğu okunuyor…</div>
       </div>
       <p class="sepet-not" id="paketNot" role="status" aria-live="polite"></p>
     </section>
 
-    <!-- ================= 🧺 Sepet ================= -->
     <section class="sepet-bolum" aria-labelledby="sepetBaslik">
       <div class="sepet-bolum-ust">
-        <h2 id="sepetBaslik" class="sepet-baslik">🧺 Sepetim <span class="sepet-sayac" id="sepetSayac">0/10</span></h2>
+        <h2 id="sepetBaslik" class="sepet-baslik">Sepetim <span class="sepet-sayac" id="sepetSayac">0/10</span></h2>
         <button type="button" class="sepet-temizle" id="sepetTemizle" hidden>Sepeti boşalt</button>
       </div>
 
       <div class="sepet-ekle">
         <div class="sepet-arama-sar">
-          <span class="sepet-arama-ikon" aria-hidden="true">🔎</span>
+          <span class="sepet-arama-ikon" aria-hidden="true"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="text" id="sepetArama" autocomplete="off" spellcheck="false"
             role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sepetOneriler"
             placeholder="Ürün adı yaz (ör. Porima PLA siyah) ya da ürün linki yapıştır…" />
@@ -110,7 +108,7 @@
 
       <div id="sepetListe" class="sepet-liste" aria-live="polite"></div>
       <div class="sepet-bos" id="sepetBos">
-        <span class="sepet-bos-ikon" aria-hidden="true">🧺</span>
+        <span class="sepet-bos-ikon" aria-hidden="true"><svg class="svg-ik svg-ik-18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span>
         <p>Sepetiniz boş. Yukarıdan hazır bir paket seçin ya da ürün arayın.</p>
         <p class="sepet-bos-alt">En az 2, en fazla 10 ürün karşılaştırılır.</p>
       </div>
@@ -122,13 +120,12 @@
           <span class="sepet-alt-alt" id="sepetAltNot">Kargo seçilen senaryoya göre değişir</span>
         </div>
         <button type="button" class="sepet-hesapla-btn" id="sepetHesapla">
-          ⚡ 3 Senaryoyu Karşılaştır
+          3 Senaryoyu Karşılaştır
         </button>
       </div>
 
       <div id="sepetHata" class="sepet-hata" role="alert" hidden></div>
 
-      <!-- İlerleme -->
       <div id="sepetIlerlemeAlani" class="sepet-ilerleme" hidden>
         <div class="sepet-ilerleme-ust">
           <span id="sepetFaz">Hazırlanıyor…</span>
@@ -141,22 +138,21 @@
       </div>
     </section>
 
-    <!-- ================= 🏆 Senaryolar ================= -->
     <section id="senaryoAlani" class="sepet-bolum" hidden aria-labelledby="senaryoBaslik">
       <div class="sepet-bolum-ust">
-        <h2 id="senaryoBaslik" class="sepet-baslik">🏆 3 Senaryo, 3 Farklı Toplam</h2>
+        <h2 id="senaryoBaslik" class="sepet-baslik">3 Senaryo, 3 Farklı Toplam</h2>
         <span class="sepet-ipucu" id="senaryoMeta"></span>
       </div>
 
       <div class="tasarruf-bant" id="tasarrufBant" hidden>
-        <span class="tasarruf-rozet" id="tasarrufRozet">💡 —</span>
+        <span class="tasarruf-rozet" id="tasarrufRozet">—</span>
         <span class="tasarruf-metin" id="tasarrufMetin"></span>
       </div>
 
       <div class="senaryo-kaydirici" id="senaryoKartlari"></div>
 
       <div class="sepet-paylas-bar">
-        <button type="button" class="sepet-paylas-btn" id="sepetPaylas">🔗 Sepeti Paylaş</button>
+        <button type="button" class="sepet-paylas-btn" id="sepetPaylas">Sepeti Paylaş</button>
         <span class="sepet-paylas-sonuc" id="sepetPaylasSonuc" role="status" aria-live="polite"></span>
       </div>
 
@@ -166,10 +162,9 @@
       </p>
     </section>
 
-    <!-- ================= 🚚 Kargo kurtarıcı ================= -->
     <section id="kargoKurtarici" class="sepet-bolum" hidden aria-labelledby="kargoBaslik">
       <div class="sepet-bolum-ust">
-        <h2 id="kargoBaslik" class="sepet-baslik">🚚 Kargo Eşiği Kurtarıcı</h2>
+        <h2 id="kargoBaslik" class="sepet-baslik">Kargo Eşiği Kurtarıcı</h2>
         <span class="sepet-ipucu">Eşiğe az kaldıysa kargo yerine ürün alın</span>
       </div>
       <div id="kargoKurtariciIcerik"></div>
@@ -186,33 +181,33 @@
         <div>
           <h3 class="footer-hub-baslik">Kategoriler</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a></li>
-            <li><a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filament</a></li>
-            <li><a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS Filament</a></li>
-            <li><a href="/kategori/3d-yazici-yedek-parca">⚙️ 3D Yazıcı Yedek Parça</a></li>
-            <li><a href="/kategori/recine-ve-sarf">🧪 UV Reçine &amp; Kurutucu</a></li>
-            <li><a href="/urunler">🗂️ Tüm Ürün Kataloğu</a></li>
+            <li><a href="/kategori/3d-yazici">3D Yazıcı Fiyatları</a></li>
+            <li><a href="/kategori/pla-filament">PLA &amp; PLA+ Filament</a></li>
+            <li><a href="/kategori/petg-tpu-filament">PETG, TPU &amp; ABS Filament</a></li>
+            <li><a href="/kategori/3d-yazici-yedek-parca">3D Yazıcı Yedek Parça</a></li>
+            <li><a href="/kategori/recine-ve-sarf">UV Reçine &amp; Kurutucu</a></li>
+            <li><a href="/urunler">Tüm Ürün Kataloğu</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Rehber &amp; Kıyaslama</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">⚖️ Bambu Lab P1S vs Creality K1C</a></li>
-            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">🚀 A1 Mini vs Ender 3 V3 KE</a></li>
-            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">⚡ Ender 3 V3 KE vs Neptune 4 Pro</a></li>
-            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">🏗️ Creality K1 Max vs P1S</a></li>
-            <li><a href="/rehber/en-ucuz-pla-filament">🥇 En Ucuz PLA Filamentler</a></li>
-            <li><a href="/rehber">📖 Tüm 3D Rehberler</a></li>
+            <li><a href="/karsilastir/bambu-lab-p1s-vs-creality-k1c">Bambu Lab P1S vs Creality K1C</a></li>
+            <li><a href="/karsilastir/bambu-lab-a1-mini-vs-creality-ender-3-v3-ke">A1 Mini vs Ender 3 V3 KE</a></li>
+            <li><a href="/karsilastir/ender-3-v3-ke-vs-elegoo-neptune-4-pro">Ender 3 V3 KE vs Neptune 4 Pro</a></li>
+            <li><a href="/karsilastir/creality-k1-max-vs-bambu-lab-p1s">Creality K1 Max vs P1S</a></li>
+            <li><a href="/rehber/en-ucuz-pla-filament">En Ucuz PLA Filamentler</a></li>
+            <li><a href="/rehber">Tüm 3D Rehberler</a></li>
           </ul>
         </div>
         <div>
           <h3 class="footer-hub-baslik">Araçlar</h3>
           <ul class="footer-hub-liste">
-            <li><a href="/">🔍 Canlı Fiyat Karşılaştırma</a></li>
-            <li><a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a></li>
-            <li><a href="/sepet.html">🧺 Akıllı Sepet &amp; Kargo</a></li>
-            <li><a href="/slicer.html">🧩 Cura &amp; Slicer Eklentisi</a></li>
-            <li><a href="/ayarlar.html">🔔 Fiyat Alarmlarım</a></li>
+            <li><a href="/">Canlı Fiyat Karşılaştırma</a></li>
+            <li><a href="/maliyet.html">Baskı Maliyet Hesaplayıcı</a></li>
+            <li><a href="/sepet.html">Akıllı Sepet &amp; Kargo</a></li>
+            <li><a href="/slicer.html">Cura &amp; Slicer Eklentisi</a></li>
+            <li><a href="/ayarlar.html">Fiyat Alarmlarım</a></li>
           </ul>
         </div>
       </nav>

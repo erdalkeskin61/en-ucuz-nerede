@@ -12,7 +12,7 @@
  *  - Görseller/vendor kütüphanesi: cache-first (nadiren değişir, bant genişliği önemli).
  *  - `/api/*`: hiç önbelleklenmez.
  */
-const SURUM = 'eun-v12';
+const SURUM = 'eun-v13';
 const KABUK_DOSYALARI = [
   '/',
   '/style.css',

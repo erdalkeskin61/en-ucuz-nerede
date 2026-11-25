@@ -385,7 +385,7 @@ $('#pushAboneBtn')?.addEventListener('click', async () => {
     const izin = await Notification.requestPermission();
     pushDurumunuGuncelle();
     if (izin !== 'granted') throw new Error(AY_SZ.izinVerilmedi);
-    const reg = await navigator.serviceWorker.register('/sw.js?v=12');
+    const reg = await navigator.serviceWorker.register('/sw.js?v=13');
     await navigator.serviceWorker.ready;
     const keyRes = await fetch('/api/push/vapid-key');
     const keyData = await keyRes.json();

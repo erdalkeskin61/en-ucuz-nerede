@@ -60,7 +60,7 @@ function canliKarsilastirmaKutusu(solUrun, sagUrun, solBaslik, sagBaslik, solSor
       : 'Anlık fiyatları 60+ mağazada kontrol et';
     const detayHref = u ? u.yol : `/?url=${encodeURIComponent(sorgu)}`;
     return `<div class="seo-mini-kart seo-vs-kart${kazananMi ? ' kazanan' : ''}" style="gap:10px">
-      ${kazananMi ? '<span class="seo-vs-etiket">🏷️ BUGÜN EN UCUZ</span>' : ''}
+      ${kazananMi ? '<span class="seo-vs-etiket">Bugün En Ucuz</span>' : ''}
       <div class="seo-vs-baslik">
         ${u?.gorsel ? `<img class="seo-vs-img" src="${htmlKacis(u.gorsel)}" alt="${htmlKacis(u.ad || baslik)}" loading="lazy" />` : ''}
         <div class="seo-mini-ad">${htmlKacis(u?.ad || baslik)}</div>
@@ -68,7 +68,7 @@ function canliKarsilastirmaKutusu(solUrun, sagUrun, solBaslik, sagBaslik, solSor
       <div class="seo-mini-fiyat">${fiyatMetin}</div>
       <div class="seo-mini-alt">${altMetin}</div>
       <div class="seo-butonlar" style="margin-top:auto">
-        <a class="seo-cta" style="padding:8px 14px;font-size:13px" href="${htmlKacis(detayHref)}">${u ? 'Tüm Teklifleri Gör' : 'Canlı Tara ⚡'}</a>
+        <a class="seo-cta" style="padding:8px 14px;font-size:13px" href="${htmlKacis(detayHref)}">${u ? 'Tüm Teklifleri Gör' : 'Canlı Tara'}</a>
         ${u?.enUcuzUrl ? `<a class="seo-cta ikincil" style="padding:8px 12px;font-size:13px" href="${htmlKacis(u.enUcuzUrl)}" target="_blank" rel="noopener sponsored nofollow">Mağaza ↗</a>` : ''}
       </div>
     </div>`;
@@ -92,7 +92,7 @@ function canliKarsilastirmaKutusu(solUrun, sagUrun, solBaslik, sagBaslik, solSor
 function sssBolumu(sssListesi) {
   if (!sssListesi?.length) return { html: '', jsonLd: null };
   const html = `<section class="seo-kart">
-    <h2 style="margin-top:0">❓ Sık Sorulan Sorular</h2>
+    <h2 style="margin-top:0">Sık Sorulan Sorular</h2>
     <div class="seo-sss">
       ${sssListesi.map((s, idx) => `<details${idx === 0 ? ' open' : ''}>
         <summary>${htmlKacis(s.soru)}</summary>
@@ -123,11 +123,11 @@ function altAraclarCubugu() {
       <a class="seo-tum-link" href="/urunler">Tüm Ürün Kataloğu →</a>
     </div>
     <div class="seo-rehber-baglar">
-      <a href="/rehber">📖 Tüm Rehberler</a>
-      <a href="/rehber/meshy-vs-hi3d-3d-baski-maliyeti">🤖 Meshy vs Hi3D Maliyet Rehberi</a>
-      <a href="/kategori/3d-yazici">🖨️ 3D Yazıcı Fiyatları</a>
-      <a href="/kategori/pla-filament">🧵 PLA &amp; PLA+ Filamentler</a>
-      <a href="/kategori/petg-tpu-filament">🦾 PETG, TPU &amp; ABS</a>
+      <a href="/rehber">Tüm Rehberler</a>
+      <a href="/rehber/meshy-vs-hi3d-3d-baski-maliyeti">Meshy vs Hi3D Maliyet Rehberi</a>
+      <a href="/kategori/3d-yazici">3D Yazıcı Fiyatları</a>
+      <a href="/kategori/pla-filament">PLA &amp; PLA+ Filamentler</a>
+      <a href="/kategori/petg-tpu-filament">PETG, TPU &amp; ABS</a>
       <a href="/kategori/3d-yazici-yedek-parca">⚙️ Yedek Parça</a>
       <a href="/maliyet.html">🧮 Baskı Maliyet Hesaplayıcı</a>
       <a href="/sepet.html">🧺 Akıllı Sepet Sihirbazı</a>
@@ -1618,7 +1618,7 @@ export function globalRehberDiziniHtml(dil = 'en', tabanUrl = '', tumUrunler = [
   const malYol = kod === 'fr' ? '/fr/calculateur-cout' : (kod === 'ja' ? '/ja/cost-calculator' : '/en/cost-calculator');
   const sepYol = kod === 'fr' ? '/fr/panier' : (kod === 'ja' ? '/ja/basket' : '/en/basket');
   const slcYol = `/${kod}/slicer`;
-  const karsilastirEtiket = kod === 'fr' ? '🔍 Comparer →' : (kod === 'ja' ? '🔍 価格比較 →' : '🔍 Compare →');
+  const karsilastirEtiket = kod === 'fr' ? 'Comparer →' : (kod === 'ja' ? '価格比較 →' : 'Compare →');
 
   const kartlarHtml = k.kartlar.map((g) => {
     const araLinkA = `${onEk}?url=${encodeURIComponent(g.urunA)}`;
