@@ -142,10 +142,10 @@ const MALIYET_KOPYA = Object.freeze({
     stlGizlilik: 'Processed 100% on your device',
     stlBirakAna: 'Drag & drop an STL or 3MF file here',
     stlBirakAlt: 'or click to browse · max 100 MB · never uploaded to a server',
-    ornekEtiket: '⚡ Try 1-click with a sample STL:',
-    ornekFigur: '🗿 Tabletop Figurine (~43 g)',
-    ornekRozet: '🎨 Multi-Color Badge (~36 g)',
-    aiIpucu: '✨ No STL yet? Create from text or photo:',
+    ornekEtiket: 'Try 1-click with a sample STL:',
+    ornekFigur: 'Tabletop Figurine (~43 g)',
+    ornekRozet: 'Multi-Color Badge (~36 g)',
+    aiIpucu: 'No STL yet? Create from text or photo:',
     akisBaslik: '💼 Photo-to-Print &amp; Sell Workflow (3 Steps)',
     akisRehberLink: '📖 Meshy vs Hi3D Cost Guide →',
     akisAdim1Bas: '1️⃣ Photo / Idea → 3D Printable Model',
@@ -162,13 +162,13 @@ const MALIYET_KOPYA = Object.freeze({
     inceAyar: 'Fine tune:',
     aktarBtn: '⬇️ Apply this weight to cost calculator',
     girdiBaslik: '🎛️ Print Inputs (Editable)',
-    gramajLabel: '⚖️ Model Weight (g)',
-    sureLabel: '⏱️ Print Time (hours)',
-    gucLabel: '⚡ Printer Power (W)',
-    filamentFiyatLabel: '🧵 Filament Price ($ / kg)',
-    elektrikLabel: '🔌 Electricity ($ / kWh)',
-    yipranmaLabel: '🔧 Machine Wear ($ / hour)',
-    fireLabel: '♻️ Waste / Failure Allowance (%)',
+    gramajLabel: 'Model Weight (g)',
+    sureLabel: 'Print Time (hours)',
+    gucLabel: 'Printer Power (W)',
+    filamentFiyatLabel: 'Filament Price ($ / kg)',
+    elektrikLabel: 'Electricity ($ / kWh)',
+    yipranmaLabel: 'Machine Wear ($ / hour)',
+    fireLabel: 'Waste / Failure Allowance (%)',
     varsayilanFilamentKg: 20,
     varsayilanElektrikKwh: 0.16,
     varsayilanYipranma: 0.25,
@@ -201,10 +201,10 @@ const MALIYET_KOPYA = Object.freeze({
     stlGizlilik: 'Traité à 100% sur votre appareil',
     stlBirakAna: 'Glissez-déposez un fichier STL ou 3MF ici',
     stlBirakAlt: 'ou cliquez pour choisir · max 100 Mo · aucun envoi serveur',
-    ornekEtiket: '⚡ Tester en 1 clic avec un STL :',
-    ornekFigur: '🗿 Figurine bureau (~43 g)',
-    ornekRozet: '🎨 Badge multicouleur (~36 g)',
-    aiIpucu: '✨ Pas de STL ? Générez-en un :',
+    ornekEtiket: 'Tester en 1 clic avec un STL :',
+    ornekFigur: 'Figurine bureau (~43 g)',
+    ornekRozet: 'Badge multicouleur (~36 g)',
+    aiIpucu: 'Pas de STL ? Générez-en un :',
     akisBaslik: '💼 Flux Photo-à-Vente 3D (en 3 étapes)',
     akisRehberLink: '📖 Guide Coût Meshy vs Hi3D →',
     akisAdim1Bas: '1️⃣ Photo / Idée → Modèle 3D imprimable',
@@ -221,13 +221,13 @@ const MALIYET_KOPYA = Object.freeze({
     inceAyar: 'Réglage fin :',
     aktarBtn: '⬇️ Appliquer ce poids au calculateur',
     girdiBaslik: '🎛️ Paramètres d’impression',
-    gramajLabel: '⚖️ Poids du modèle (g)',
-    sureLabel: '⏱️ Durée d’impression (h)',
-    gucLabel: '⚡ Puissance imprimante (W)',
-    filamentFiyatLabel: '🧵 Prix du filament (€ / kg)',
-    elektrikLabel: '🔌 Électricité (€ / kWh)',
-    yipranmaLabel: '🔧 Usure machine (€ / heure)',
-    fireLabel: '♻️ Marge de perte / supports (%)',
+    gramajLabel: 'Poids du modèle (g)',
+    sureLabel: 'Durée d’impression (h)',
+    gucLabel: 'Puissance imprimante (W)',
+    filamentFiyatLabel: 'Prix du filament (€ / kg)',
+    elektrikLabel: 'Électricité (€ / kWh)',
+    yipranmaLabel: 'Usure machine (€ / heure)',
+    fireLabel: 'Marge de perte / supports (%)',
     varsayilanFilamentKg: 20,
     varsayilanElektrikKwh: 0.25,
     varsayilanYipranma: 0.25,
@@ -260,10 +260,10 @@ const MALIYET_KOPYA = Object.freeze({
     stlGizlilik: '端末内で100%処理（送信なし）',
     stlBirakAna: 'STL または 3MF ファイルをここにドロップ',
     stlBirakAlt: 'またはクリックして選択 · 最大 100 MB · サーバーへアップロードされません',
-    ornekEtiket: '⚡ サンプルSTLで1クリック試算:',
-    ornekFigur: '🗿 フィギュア例 (~43 g)',
-    ornekRozet: '🎨 多色バッジ例 (~36 g)',
-    aiIpucu: '✨ STLがない場合はAIで作成:',
+    ornekEtiket: 'サンプルSTLで1クリック試算:',
+    ornekFigur: 'フィギュア例 (~43 g)',
+    ornekRozet: '多色バッジ例 (~36 g)',
+    aiIpucu: 'STLがない場合はAIで作成:',
     akisBaslik: '💼 写真・アイデアから造形＆販売ワークフロー（3ステップ）',
     akisRehberLink: '📖 Meshy vs Hi3D 原価ガイド →',
     akisAdim1Bas: '1️⃣ 写真・アイデア → 造形用3Dモデル',
@@ -280,13 +280,13 @@ const MALIYET_KOPYA = Object.freeze({
     inceAyar: '微調整:',
     aktarBtn: '⬇️ この重量を原価計算に反映する',
     girdiBaslik: '🎛️ 造形条件の入力',
-    gramajLabel: '⚖️ 使用フィラメント量 (g)',
-    sureLabel: '⏱️ 造形時間 (時間)',
-    gucLabel: '⚡ 消費電力 (W)',
-    filamentFiyatLabel: '🧵 フィラメント単価 (¥ / kg)',
-    elektrikLabel: '🔌 電気料金単価 (¥ / kWh)',
-    yipranmaLabel: '🔧 機体消耗・保守費 (¥ / 時間)',
-    fireLabel: '♻️ サポート・ロス率 (%)',
+    gramajLabel: '使用フィラメント量 (g)',
+    sureLabel: '造形時間 (時間)',
+    gucLabel: '消費電力 (W)',
+    filamentFiyatLabel: 'フィラメント単価 (¥ / kg)',
+    elektrikLabel: '電気料金単価 (¥ / kWh)',
+    yipranmaLabel: '機体消耗・保守費 (¥ / 時間)',
+    fireLabel: 'サポート・ロス率 (%)',
     varsayilanFilamentKg: 2800,
     varsayilanElektrikKwh: 31,
     varsayilanYipranma: 40,
@@ -743,19 +743,19 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       canliPiyasa: 'Live market', manuel: 'Manual',
       modelYukleAlt: 'Model file left unchanged; 100% client-side',
       girdi: 'Inputs', cikti: 'Cost Breakdown', hammaddeAd: 'Material', elektrikAd: 'Electricity', amortAd: 'Depreciation', netAd: 'Net Cost',
-      kopyala: '📋 Copy Customer Quote',
+      kopyala: 'Copy Customer Quote',
       varsayimAlt: 'Electricity & depreciation are estimates shown alongside net cost. Live filament prices update from regional scans.',
       crealityBtn: '🛒 Shop Official Creality Store ↗',
       gramajIpucu: '“Filament used” value reported by Bambu Studio, Cura, or OrcaSlicer.',
-      yaziciLbl: '⚡ 3D printer model',
+      yaziciLbl: '3D printer model',
       malzemeAdLbl: 'Material name',
-      gelismisSum: '⚙️ Advanced settings (electricity · depreciation · profit margin)',
-      hedefKarLbl: '💰 Target profit margin',
+      gelismisSum: 'Advanced settings (electricity · depreciation · waste · profit margin)',
+      hedefKarLbl: 'Target profit margin',
       footerUstNot: 'Live filament pricing is scanned from regional stores; always verify final checkout totals.',
-      birimSira: ['Weight', 'Time', 'Printer power', 'Filament', 'Advanced settings (electricity · depreciation · profit margin)', 'Target profit margin', 'Material price', 'Material name', 'Estimated print time.', 'Filament Used from your slicer.'],
+      birimSira: ['Weight', 'Time', 'Printer power', 'Filament', 'Advanced settings (electricity · depreciation · waste · profit margin)', 'Target profit margin', 'Material price', 'Material name', 'Estimated print time.', 'Filament Used from your slicer.'],
       dolulukSecenek: ['10% — draft', '20% — standard', '40% — strong', '100% — solid'],
-      sureTahminBtn: '✨ Estimate', sureTahminTitle: 'Auto-estimate print time from weight',
-      filamentLbl: '🧵 Filament', filamentAria: 'Filament price source', gucLbl: 'Power (W)',
+      sureTahminBtn: 'Estimate', sureTahminTitle: 'Auto-estimate print time from weight',
+      filamentLbl: 'Filament', filamentAria: 'Filament price source', gucLbl: 'Power (W)',
       kaydiriciAria: 'Profit margin slider', carpanAria: 'Quick profit multiplier',
       ctaNot: 'Affiliate links may earn a commission at zero extra cost to you.',
       fisBaslik: '3D Print Cost &amp; Quote Summary', fisOnerilen: 'RECOMMENDED SELLING PRICE',
@@ -763,7 +763,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       kpiMaliyet: 'Total Real Cost', kpiKar: 'Estimated Net Profit', kpiKarAlt: 'selected price tier',
       kpiSatis: 'Suggested Selling Price', kpiSatisAlt: 'excl. tax quote', kpiMarj: 'Net Profit Margin',
       donutBaslik: 'Cost Breakdown Chart', donutAlt: 'Per-part cost shares', donutOrta: 'Net Cost',
-      fireBaslik: '🛡️ Waste &amp; Failure Protection (%)', fireAd: 'Waste / Failure',
+      fireBaslik: 'Waste &amp; Failure Protection (%)', fireAd: 'Waste / Failure',
       matTumu: 'All', matRecine: 'Resin',
     },
     fr: {
@@ -771,18 +771,18 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       canliPiyasa: 'Marché en direct', manuel: 'Manuel',
       modelYukleAlt: 'Fichier traité à 100% dans votre navigateur',
       girdi: 'Paramètres', cikti: 'Détail des Coûts', hammaddeAd: 'Matière', elektrikAd: 'Électricité', amortAd: 'Amortissement', netAd: 'Coût net total',
-      kopyala: '📋 Copier le devis client',
+      kopyala: 'Copier le devis client',
       varsayimAlt: 'L’électricité et l’amortissement sont estimés localement (hors TVA). Les tarifs bobines proviennent des scans régionaux.',
       crealityBtn: '🛒 Boutique Officielle Creality FR ↗',
       gramajIpucu: 'Valeur « Filament used » indiquée par Bambu Studio, Cura ou OrcaSlicer.',
-      yaziciLbl: '⚡ Modèle d’imprimante 3D',
+      yaziciLbl: 'Modèle d’imprimante 3D',
       malzemeAdLbl: 'Nom du matériau',
-      gelismisSum: '⚙️ Paramètres avancés (électricité · amortissement · marge bénéficiaire)',
-      hedefKarLbl: '💰 Marge bénéficiaire cible',
+      gelismisSum: 'Paramètres avancés (électricité · amortissement · pertes · marge)',
+      hedefKarLbl: 'Marge bénéficiaire cible',
       footerUstNot: 'Les prix des filaments proviennent de l’analyse régionale en direct ; vérifiez toujours chez le marchand.',
       dolulukSecenek: ['10 % — brouillon', '20 % — standard', '40 % — solide', '100 % — plein'],
-      sureTahminBtn: '✨ Estimer', sureTahminTitle: 'Estimer automatiquement depuis le poids',
-      filamentLbl: '🧵 Filament', filamentAria: 'Source de prix du filament', gucLbl: 'Puissance (W)',
+      sureTahminBtn: 'Estimer', sureTahminTitle: 'Estimer automatiquement depuis le poids',
+      filamentLbl: 'Filament', filamentAria: 'Source de prix du filament', gucLbl: 'Puissance (W)',
       kaydiriciAria: 'Curseur de marge bénéficiaire', carpanAria: 'Multiplicateur de marge rapide',
       ctaNot: 'Liens possiblement affiliés ; votre prix reste inchangé.',
       fisBaslik: 'Résumé Coût &amp; Devis Impression 3D', fisOnerilen: 'PRIX DE VENTE CONSEILLÉ',
@@ -790,7 +790,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       kpiMaliyet: 'Coût Réel Total', kpiKar: 'Bénéfice Net Estimé', kpiKarAlt: 'palier de vente choisi',
       kpiSatis: 'Prix de Vente Conseillé', kpiSatisAlt: 'devis hors TVA', kpiMarj: 'Marge Nette',
       donutBaslik: 'Répartition des Coûts', donutAlt: 'Parts par pièce', donutOrta: 'Coût Net',
-      fireBaslik: '🛡️ Pertes &amp; Échecs (%)', fireAd: 'Pertes / Échecs',
+      fireBaslik: 'Pertes &amp; Échecs (%)', fireAd: 'Pertes / Échecs',
       matTumu: 'Tous', matRecine: 'Résine',
     },
     ja: {
@@ -798,18 +798,18 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       canliPiyasa: 'ライブ相場', manuel: '手動入力',
       modelYukleAlt: 'ファイルはサーバー送信されません',
       girdi: '入力条件', cikti: 'コスト内訳', hammaddeAd: 'フィラメント材料費', elektrikAd: '電気代', amortAd: '機体償却費', netAd: '合計製造原価',
-      kopyala: '📋 見積もりテキストをコピー',
+      kopyala: '見積もりテキストをコピー',
       varsayimAlt: '電気代・償却費は参考設定値です（いつでも変更可）。税抜原価として表示されます。',
       crealityBtn: '🛒 Creality 日本公式ストアを見る ↗',
       gramajIpucu: 'Bambu Studio・Cura・OrcaSlicerに表示される「Filament used」の値を入力してください。',
-      yaziciLbl: '⚡ 3Dプリンター機種',
+      yaziciLbl: '3Dプリンター機種',
       malzemeAdLbl: '素材名',
-      gelismisSum: '⚙️ 詳細設定（電気代・償却費・目標利益率）',
-      hedefKarLbl: '💰 目標利益率',
+      gelismisSum: '詳細設定（電気代・償却費・ロス・目標利益率）',
+      hedefKarLbl: '目標利益率',
       footerUstNot: 'フィラメント価格は地域ライブスキャン結果です。購入前にショップ画面で最終金額をご確認ください。',
       dolulukSecenek: ['10% — 下書き', '20% — 標準', '40% — 高強度', '100% — ソリッド'],
-      sureTahminBtn: '✨ 自動推定', sureTahminTitle: 'モデル重量から印刷時間を自動推定',
-      filamentLbl: '🧵 フィラメント', filamentAria: 'フィラメント価格ソース', gucLbl: '消費電力 (W)',
+      sureTahminBtn: '自動推定', sureTahminTitle: 'モデル重量から印刷時間を自動推定',
+      filamentLbl: 'フィラメント', filamentAria: 'フィラメント価格ソース', gucLbl: '消費電力 (W)',
       kaydiriciAria: '利益率スライダー', carpanAria: '利益倍率プリセット',
       ctaNot: '※一部アフィリエイトリンクを含みますが、購入価格は変わりません。',
       fisBaslik: '3Dプリント原価・お見積り書', fisOnerilen: '推奨販売価格',
@@ -817,7 +817,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       kpiMaliyet: '合計製造原価', kpiKar: '想定純利益', kpiKarAlt: '選択中の販売価格帯',
       kpiSatis: '推奨販売価格', kpiSatisAlt: '税抜見積り', kpiMarj: '粗利益率',
       donutBaslik: '原価内訳グラフ', donutAlt: '1個あたりの構成比', donutOrta: '合計原価',
-      fireBaslik: '🛡️ ロス・造形失敗バッファ (%)', fireAd: 'ロス・失敗予備',
+      fireBaslik: 'ロス・造形失敗バッファ (%)', fireAd: 'ロス・失敗予備',
       matTumu: 'すべて', matRecine: 'レジン',
     },
   }[kod];
@@ -848,9 +848,9 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('%100 cihazında işlenir', c.stlGizlilik)
     .replace('<b>STL / 3MF dosyasını buraya sürükleyin</b>', `<b>${c.stlBirakAna}</b>`)
     .replace('<span class="stl-birak-alt">ya da tıklayıp seçin · en fazla 100 MB · sunucuya yüklenmez</span>', `<span class="stl-birak-alt">${c.stlBirakAlt}</span>`)
-    .replace('⚡ Örnek STL ile 1 tıkta dene:', c.ornekEtiket)
-    .replace('🗿 Masaüstü Figür (~43 g)', c.ornekFigur)
-    .replace('🎨 Çok Renkli Rozet (~36 g)', c.ornekRozet)
+    .replace('Örnek STL ile 1 tıkta dene:', c.ornekEtiket)
+    .replace('Masaüstü Figür (~43 g)', c.ornekFigur)
+    .replace('Çok Renkli Rozet (~36 g)', c.ornekRozet)
     .replace(
       /<span class="stl-ai-ipucu" id="stlAiIpucu">[\s\S]*?<\/span>/,
       `<span class="stl-ai-ipucu" id="stlAiIpucu">${c.aiIpucu} <a href="${htmlKacis(aiLink.meshyUrl)}" id="aiLinkMeshy" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">Meshy AI</a>${meshyPromoHtml} · <a href="${htmlKacis(aiLink.hi3dUrl)}" id="aiLinkHi3d" target="_blank" rel="${hi3dRel}" data-afiliye-site="hi3d">Hi3D</a>${hi3dPromoHtml}</span>`,
@@ -893,26 +893,26 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('İnce ayar: <b id="stlDolulukEtiket">%20</b>', `${c.inceAyar} <b id="stlDolulukEtiket">20%</b>`)
     .replace('⬇️ Bu gramajı hesaplayıcıya aktar', c.aktarBtn)
     .replace('<h2 id="girdiBaslik" class="mz-baslik">Girdiler</h2>', `<h2 id="girdiBaslik" class="mz-baslik">${k.girdi}</h2>`)
-    .replace('<label for="gramaj">⚖️ Model gramajı</label>', `<label for="gramaj">${c.gramajLabel}</label>`)
+    .replace('<label for="gramaj">Model gramajı</label>', `<label for="gramaj">${c.gramajLabel}</label>`)
     .replace('<p class="mz-ipucu">Dilimleyicide (Bambu Studio, Cura, OrcaSlicer) “Filament used” değeri.</p>', `<p class="mz-ipucu">${k.gramajIpucu}</p>`)
-    .replace('<label for="sure">⏱️ Baskı süresi (saat)</label>', `<label for="sure">${c.sureLabel}</label>`)
-    .replace('<button type="button" class="mz-mini-btn" id="sureTahmin" title="Gramajdan otomatik tahmin et">✨ Tahmin et</button>', `<button type="button" class="mz-mini-btn" id="sureTahmin" title="${htmlKacis(k.sureTahminTitle)}">${k.sureTahminBtn}</button>`)
-    .replace('<label for="yazici">⚡ 3D yazıcı modeli</label>', `<label for="yazici">${k.yaziciLbl}</label>`)
+    .replace('<label for="sure">Baskı süresi (saat)</label>', `<label for="sure">${c.sureLabel}</label>`)
+    .replace('<button type="button" class="mz-mini-btn" id="sureTahmin" title="Gramajdan otomatik tahmin et">Tahmin et</button>', `<button type="button" class="mz-mini-btn" id="sureTahmin" title="${htmlKacis(k.sureTahminTitle)}">${k.sureTahminBtn}</button>`)
+    .replace('<label for="yazici">3D yazıcı modeli</label>', `<label for="yazici">${k.yaziciLbl}</label>`)
     .replace('<label for="gucW">Güç (W)</label>', `<label for="gucW">${k.gucLbl}</label>`)
-    .replace('<label>🧵 Filament</label>', `<label>${k.filamentLbl}</label>`)
+    .replace('<label>Filament</label>', `<label>${k.filamentLbl}</label>`)
     .replace('aria-label="Filament fiyat kaynağı"', `aria-label="${htmlKacis(k.filamentAria)}"`)
     .replace('<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">Canlı piyasa</button>', `<button type="button" class="mz-sekme-btn aktif" data-mod="canli" role="tab" aria-selected="true">${k.canliPiyasa}</button>`)
     .replace('<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">Manuel</button>', `<button type="button" class="mz-sekme-btn" data-mod="manuel" role="tab" aria-selected="false">${k.manuel}</button>`)
     .replace('<label for="manuelTlKg">Fiyat (₺/kg)</label>', `<label for="manuelTlKg">${c.filamentFiyatLabel}</label>`)
     .replace('<label for="manuelAd">Malzeme adı</label>', `<label for="manuelAd">${k.malzemeAdLbl}</label>`)
-    .replace('<summary>⚙️ Gelişmiş ayarlar (elektrik · amortisman · kâr marjı)</summary>', `<summary>${k.gelismisSum}</summary>`)
-    .replace('<label for="karCarpani">💰 Hedef kâr marjı</label>', `<label for="karCarpani">${k.hedefKarLbl}</label>`)
+    .replace('<summary>Gelişmiş ayarlar (elektrik · amortisman · atık · kâr marjı)</summary>', `<summary>${k.gelismisSum}</summary>`)
+    .replace('<label for="karCarpani">Hedef kâr marjı</label>', `<label for="karCarpani">${k.hedefKarLbl}</label>`)
     .replace('aria-label="Kâr marjı kaydırıcı"', `aria-label="${htmlKacis(k.kaydiriciAria)}"`)
     .replace('aria-label="Hızlı kâr çarpanı"', `aria-label="${htmlKacis(k.carpanAria)}"`)
     .replace('value="600" inputmode="decimal"', `value="${c.varsayilanFilamentKg}" inputmode="decimal"`)
-    .replace('<label for="kwhTl">💡 Elektrik (₺/kWh)</label>', `<label for="kwhTl">${c.elektrikLabel}</label>`)
+    .replace('<label for="kwhTl">Elektrik (₺/kWh)</label>', `<label for="kwhTl">${c.elektrikLabel}</label>`)
     .replace('value="2.90" inputmode="decimal"', `value="${c.varsayilanElektrikKwh}" inputmode="decimal"`)
-    .replace('<label for="yipranma">🛠️ Yıpranma (₺/saat)</label>', `<label for="yipranma">${c.yipranmaLabel}</label>`)
+    .replace('<label for="yipranma">Yıpranma (₺/saat)</label>', `<label for="yipranma">${c.yipranmaLabel}</label>`)
     .replace('value="3.00" inputmode="decimal"', `value="${c.varsayilanYipranma}" inputmode="decimal"`)
     .replace('Filament fiyatları canlı radar taramasından gelir; her zaman mağazada doğrulayın.', k.footerUstNot)
     .replace('<h2 id="ciktiBaslik" class="mz-baslik">Maliyet dökümü</h2>', `<h2 id="ciktiBaslik" class="mz-baslik">${k.cikti}</h2>`)
@@ -927,7 +927,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<strong class="mz-kpi-deger" id="kpiSatis">₺0,00</strong>', `<strong class="mz-kpi-deger" id="kpiSatis">${sifirPara}</strong>`)
     .replace('<button type="button" class="aktif" data-mat="all">Tümü</button>', `<button type="button" class="aktif" data-mat="all">${k.matTumu}</button>`)
     .replace('<button type="button" data-mat="Resin">Reçine</button>', `<button type="button" data-mat="Resin">${k.matRecine}</button>`)
-    .replace('<label for="fireYuzde">🛡️ Atık &amp; Baskı Hatası Payı (%)</label>', `<label for="fireYuzde">${k.fireBaslik}</label>`)
+    .replace('<label for="fireYuzde">Atık &amp; Baskı Hatası Payı (%)</label>', `<label for="fireYuzde">${k.fireBaslik}</label>`)
     .replace('<h3 class="mz-alt-baslik" style="margin:0">Maliyet Dağılımı</h3>', `<h3 class="mz-alt-baslik" style="margin:0">${k.donutBaslik}</h3>`)
     .replace('<span class="mz-donut-etiket" id="donutAltEtiket">Parça başı paylar</span>', `<span class="mz-donut-etiket" id="donutAltEtiket">${k.donutAlt}</span>`)
     .replace('<strong id="donutToplam">₺0,00</strong>', `<strong id="donutToplam">${sifirPara}</strong>`)
@@ -952,7 +952,7 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('<span>Kâr</span>', `<span>${k.kar}</span>`)
     .replace('<strong id="secilenKar">₺0,00</strong>', `<strong id="secilenKar">${sifirPara}</strong>`)
     .replace('<p class="mz-cta-not">Bağlantı komisyonlu olabilir; fiyatınızı değiştirmez.</p>', `<p class="mz-cta-not">${k.ctaNot}</p>`)
-    .replace('📋 Müşteri Fiyat Teklifini Kopyala', k.kopyala)
+    .replace('<button type="button" class="mz-kopyala" id="kopyalaBtn">Müşteri Fiyat Teklifini Kopyala</button>', `<button type="button" class="mz-kopyala" id="kopyalaBtn">${k.kopyala}</button>`)
     .replace('<aside class="mz-varsayim" id="varsayimKutu"></aside>', `<aside class="mz-varsayim" id="varsayimKutu"></aside>\n        <div class="mz-cta" style="margin-top:12px">\n          <p class="mz-cta-metin">${c.magazaMetin}</p>\n          <a class="mz-cta-btn" href="${htmlKacis(cr.storeUrl)}" target="_blank" rel="noopener sponsored nofollow" data-afiliye-site="${htmlKacis(cr.siteId)}">${k.crealityBtn}</a>\n        </div>`)
     .replace(/Elektrik ve amortisman <b>varsayımdır<\/b>[\s\S]*?<\/p>/, `${k.varsayimAlt}</p>`)
     .replace('<h3 id="fisBaslik" class="fis-baslik">3D Baskı Maliyet &amp; Teklif Özeti</h3>', `<h3 id="fisBaslik" class="fis-baslik">${k.fisBaslik}</h3>`)

@@ -554,9 +554,9 @@ const enMalHtml = globalAracSayfasiBul('/en/cost-calculator')?.olustur('https://
 const frMalHtml = globalAracSayfasiBul('/fr/calculateur-cout')?.olustur('https://baskihesap.tech') || '';
 const jaMalHtml = globalAracSayfasiBul('/ja/cost-calculator')?.olustur('https://baskihesap.tech') || '';
 kontrol('EN/FR/JA Maliyet süre tahmin butonu yerelleşir (Tahmin et kalmaz)',
-  enMalHtml.includes('>✨ Estimate</button>')
-  && frMalHtml.includes('>✨ Estimer</button>')
-  && jaMalHtml.includes('>✨ 自動推定</button>')
+  enMalHtml.includes('>Estimate</button>')
+  && frMalHtml.includes('>Estimer</button>')
+  && jaMalHtml.includes('>自動推定</button>')
   && !/Tahmin et/.test(enMalHtml + frMalHtml + jaMalHtml));
 
 const appJsKod = fs.readFileSync('public/app.js', 'utf8');
@@ -992,9 +992,9 @@ console.log('\n23) 🧮 Maliyet Hesaplayıcı yuvarlama tutarlılığı, metin t
     JSON.stringify(us));
 
   for (const [yol, beklenenEtiket] of [
-    ['/en/cost-calculator', '<label>🧵 Filament</label>'],
-    ['/fr/calculateur-cout', '<label>🧵 Filament</label>'],
-    ['/ja/cost-calculator', '<label>🧵 フィラメント</label>'],
+    ['/en/cost-calculator', '<label>Filament</label>'],
+    ['/fr/calculateur-cout', '<label>Filament</label>'],
+    ['/ja/cost-calculator', '<label>フィラメント</label>'],
   ]) {
     const html = globalAracSayfasiBul(yol)?.olustur('https://baskihesap.tech') || '';
     kontrol(`${yol}: komisyon bildirimi & Filament etiketi yerelleştirilmiştir`,
@@ -1712,7 +1712,11 @@ console.log('\n35) 🔍 Yeni özellikler için SEO (robots.txt, hreflang, TechAr
     && enMalSeo.includes('Total Real Cost')
     && enMalSeo.includes('Cost Breakdown')
     && enMalSeo.includes('Waste &amp; Failure Protection')
-    && !enMalSeo.includes('Toplam Gerçek Maliyet'));
+    && !enMalSeo.includes('Toplam Gerçek Maliyet')
+    && !enMalSeo.includes('Model gramajı')
+    && !enMalSeo.includes('Gelişmiş ayarlar')
+    && !maliyetHtml.includes('mz-kpi-cubuk')
+    && !fs.readFileSync('public/maliyet.css', 'utf8').includes('#6366f1'));
 }
 
 closeDatabase();

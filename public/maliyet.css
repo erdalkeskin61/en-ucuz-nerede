@@ -318,10 +318,10 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: var(--halk
   overflow: hidden;
 }
 .mz-kart-ikon { font-size: 15px; line-height: 1; }
-.mz-kart-ad { font-size: 11.5px; font-weight: 600; color: var(--gri-metin); text-transform: uppercase; letter-spacing: 0.03em; }
+.mz-kart-ad { font-size: 12px; font-weight: 600; color: var(--gri-metin); }
 .mz-kart-deger {
   font-size: clamp(19px, 2.4vw, 24px);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--metin);
@@ -1215,6 +1215,8 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
+.sayfa-maliyet .menu { min-width: 0; }
+
 /* ---------- 4'lü KPI Özet Şeridi & Donut Görselleştirici ---------- */
 .mz-kpi-serit {
   display: grid;
@@ -1243,53 +1245,26 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   gap: 8px;
 }
 .mz-kpi-ad {
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--gri-metin);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
-.mz-kpi-nokta { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.kpi-maliyet .mz-kpi-nokta { background: #6366f1; }
-.kpi-kar .mz-kpi-nokta { background: #10b981; }
-.kpi-satis .mz-kpi-nokta { background: #f59e0b; }
-.kpi-marj .mz-kpi-nokta { background: #06b6d4; }
 
 .mz-kpi-deger {
   font-size: clamp(20px, 2.2vw, 26px);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--metin);
   line-height: 1.15;
 }
 .mz-kpi-alt {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--gri-metin-hafif);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.mz-kpi-cubuk {
-  position: relative;
-  height: 8px;
-  margin-top: 6px;
-  border-radius: 999px;
-  background: var(--zemin-2, rgba(148, 163, 184, 0.16));
-  overflow: hidden;
-}
-.mz-kpi-cubuk > span {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.25s ease;
-  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 11px);
-  mask-image: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 11px);
-}
-.kpi-maliyet .mz-kpi-cubuk > span { background: #6366f1; }
-.kpi-kar .mz-kpi-cubuk > span { background: #10b981; }
-.kpi-satis .mz-kpi-cubuk > span { background: #f59e0b; }
-.kpi-marj .mz-kpi-cubuk > span { background: #06b6d4; }
 
 .mz-malzeme-hizli {
   display: flex;
@@ -1299,14 +1274,14 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
 }
 .mz-malzeme-hizli button {
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--cizgi);
   background: var(--zemin);
   color: var(--metin-hafif);
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .mz-malzeme-hizli button:hover { border-color: var(--ana); color: var(--ana); }
 .mz-malzeme-hizli button.aktif {
@@ -1317,7 +1292,7 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
 
 .mz-donut-kart {
   margin-top: 14px;
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--cizgi);
   background: var(--kart);
@@ -1329,7 +1304,7 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   gap: 10px;
   margin-bottom: 12px;
 }
-.mz-donut-etiket { font-size: 11.5px; color: var(--gri-metin); font-weight: 600; }
+.mz-donut-etiket { font-size: 12px; color: var(--gri-metin); font-weight: 500; }
 .mz-donut-govde {
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
@@ -1348,10 +1323,10 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
 .mz-donut-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .mz-donut-iz { fill: none; stroke: var(--cizgi); stroke-width: 16; }
 .mz-donut-dilim { fill: none; stroke-width: 16; transition: stroke-dasharray 0.25s ease, stroke-dashoffset 0.25s ease; }
-.d-ham { stroke: #6366f1; background-color: #6366f1; }
-.d-el { stroke: #06b6d4; background-color: #06b6d4; }
-.d-am { stroke: #f59e0b; background-color: #f59e0b; }
-.d-fire { stroke: #ec4899; background-color: #ec4899; }
+.d-ham { stroke: #1E40AF; background-color: #1E40AF; }
+.d-el { stroke: #0891B2; background-color: #0891B2; }
+.d-am { stroke: #D97706; background-color: #D97706; }
+.d-fire { stroke: #BE123C; background-color: #BE123C; }
 .mz-donut-svg .mz-donut-dilim { background-color: transparent; }
 
 .mz-donut-orta {

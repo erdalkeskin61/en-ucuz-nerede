@@ -105,7 +105,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  letter-spacing: -0.011em;
+  letter-spacing: 0;
 }
 
 /* Başlıklar: sıkı harf aralığı, yüksek kontrast */
@@ -2074,8 +2074,8 @@ main.kap { padding-top: 8px; }
 
 .hizli-arama { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; padding: 11px 4px 2px; }
 .hizli-etiket {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--gri-secil); margin-right: 2px;
+  font-size: 12px; font-weight: 600;
+  color: var(--gri-secil); margin-right: 2px;
 }
 .hizli-cip {
   font-family: inherit; font-size: 12px; font-weight: 600;
@@ -2116,7 +2116,7 @@ main.kap { padding-top: 8px; }
 .ozet-kutu.tukendi .etiket { color: var(--kirmizi); opacity: 0.85; }
 .ozet-kutu.tukendi .fiyat { color: var(--kirmizi); }
 .ozet-kutu.tukendi .yer { color: var(--kirmizi); opacity: 0.9; }
-.ozet-kutu .etiket { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gri-metin); }
+.ozet-kutu .etiket { font-size: 12px; font-weight: 600; color: var(--gri-metin); }
 .ozet-kutu .fiyat { font-size: 28px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .ozet-kutu .yer { font-size: 13px; color: var(--gri-metin); }
 
