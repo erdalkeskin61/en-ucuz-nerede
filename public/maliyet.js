@@ -106,6 +106,8 @@
     gucW: VARSAYILAN.gucW,
     kwhTl: VARSAYILAN.kwhTl,
     yipranmaSaatTl: VARSAYILAN.yipranmaSaatTl,
+    fireYuzde: 0,
+    malzemeFiltre: 'all',
     karCarpani: VARSAYILAN.karCarpani,
     seciliKar: 'atolye',
   };
@@ -220,26 +222,30 @@
     const elektrik = paraYuvarla(kwh * kwhTl);
     const amortisman = paraYuvarla(sure * yipranma);
     const net = paraYuvarla(hammadde + elektrik + amortisman);
+    const fireYuzde = Math.max(0, Math.min(100, Number(durum.fireYuzde) || 0));
+    const fireTutar = fireYuzde > 0 ? paraYuvarla(net * (fireYuzde / 100)) : 0;
+    const toplamMaliyet = paraYuvarla(net + fireTutar);
 
     const fiyat = (c) => {
       const fTutar = paraYuvarla(net * c);
+      const nihaiFiyat = fireTutar > 0 ? paraYuvarla(toplamMaliyet * c) : fTutar;
       return {
         carpan: c,
-        fiyat: fTutar,
-        kar: paraYuvarla(fTutar - net),
+        fiyat: nihaiFiyat,
+        kar: paraYuvarla(nihaiFiyat - toplamMaliyet),
         karYuzde: Math.round((c - 1) * 100),
       };
     };
 
-    const secilenFiyat = paraYuvarla(net * carpan);
+    const secilenFiyat = paraYuvarla(toplamMaliyet * carpan);
     return {
       gramaj: g, sureSaat: Math.round(sure * 100) / 100,
       sureTahmini: durum.sureOtomatik === true || !(Number(durum.sureSaat) > 0),
       gucW: guc, kwhTl, yipranmaSaatTl: yipranma, tlKg, kwh,
-      hammadde, elektrik, amortisman, net,
+      hammadde, elektrik, amortisman, fireYuzde, fireTutar, net: toplamMaliyet,
       carpan,
       secilen: secilenFiyat,
-      karTl: paraYuvarla(secilenFiyat - net),
+      karTl: paraYuvarla(secilenFiyat - toplamMaliyet),
       satis: {
         maliyet: fiyat(1), hobi: fiyat(2), atolye: fiyat(2.5), ticari: fiyat(3),
       },
@@ -288,9 +294,37 @@
     const netNormal = ORTAM_DIL === 'ja' ? '材料 + 電気 + 償却' : (ORTAM_DIL === 'fr' ? 'matière + électricité + amortissement' : (ORTAM_DIL === 'en' ? 'material + electricity + depreciation' : 'hammadde + elektrik + amortisman'));
     $('ciktiAmortismanAlt').textContent = `${h.sureSaat} ${saBirim} × ${fPara(h.yipranmaSaatTl)}`;
     vurgula('ciktiNet', fPara(h.net));
-    $('ciktiNetAlt').textContent = h.sureTahmini
+    const fireEki = h.fireYuzde > 0 ? ` + ${yuzdeMetni(h.fireYuzde)}` : '';
+    $('ciktiNetAlt').textContent = (h.sureTahmini
       ? (M_SZ.sureTahmini ? M_SZ.sureTahmini(h.sureSaat) : `süre tahmini (${h.sureSaat} sa) · hammadde + elektrik + amortisman`)
-      : netNormal;
+      : netNormal) + fireEki;
+
+    // --- Donut Maliyet Dağılımı ---
+    const dToplam = Math.max(0.0001, h.hammadde + h.elektrik + h.amortisman + h.fireTutar);
+    const C = 326.73;
+    const paylar = [
+      ['donutHammadde', 'legHamYuzde', 'legHamTutar', h.hammadde],
+      ['donutElektrik', 'legElYuzde', 'legElTutar', h.elektrik],
+      ['donutAmort', 'legAmYuzde', 'legAmTutar', h.amortisman],
+      ['donutFire', 'legFireYuzde', 'legFireTutar', h.fireTutar],
+    ];
+    let birikim = 0;
+    for (const [cId, yId, tId, deger] of paylar) {
+      const oran = h.net > 0 ? deger / dToplam : 0;
+      const yay = Math.max(0, oran * C);
+      const circle = $(cId);
+      if (circle) {
+        circle.setAttribute('stroke-dasharray', `${yay.toFixed(2)} ${C}`);
+        circle.setAttribute('stroke-dashoffset', (-birikim).toFixed(2));
+      }
+      birikim += yay;
+      const yEl = $(yId);
+      if (yEl) yEl.textContent = yuzdeMetni(Math.round(oran * 100));
+      const tEl = $(tId);
+      if (tEl) tEl.textContent = fPara(deger);
+    }
+    const dTopEl = $('donutToplam');
+    if (dTopEl) dTopEl.textContent = fPara(h.net);
 
     // --- Fiyat panosu ---
     const pano = $('fiyatPanosu');
@@ -326,10 +360,23 @@
       pano.appendChild(kutu);
     }
 
-    // --- Seçili fiyat ---
+    // --- Seçili fiyat + KPI Üst Şerit ---
     const secili = h.satis[durum.seciliKar] || h.satis.atolye;
     vurgula('secilenFiyat', fPara(secili.fiyat));
     vurgula('secilenKar', fPara(secili.kar));
+
+    const netMarjYuzde = secili.fiyat > 0 ? Math.round((secili.kar / secili.fiyat) * 1000) / 10 : 0;
+    vurgula('kpiMaliyet', fPara(h.net));
+    vurgula('kpiKar', fPara(secili.kar));
+    vurgula('kpiSatis', fPara(secili.fiyat));
+    vurgula('kpiMarj', yuzdeMetni(netMarjYuzde));
+    if ($('kpiMaliyetAlt')) $('kpiMaliyetAlt').textContent = $('ciktiNetAlt').textContent;
+    if ($('kpiMarjAlt')) $('kpiMarjAlt').textContent = `${h.carpan}x · +${yuzdeMetni(Math.round((h.carpan - 1) * 100))}`;
+    if ($('kpiBarMaliyet')) $('kpiBarMaliyet').style.width = `${secili.fiyat > 0 ? Math.max(10, Math.min(100, Math.round((h.net / secili.fiyat) * 100))) : 35}%`;
+    if ($('kpiBarKar')) $('kpiBarKar').style.width = `${Math.max(10, Math.min(100, Math.round(netMarjYuzde)))}%`;
+    if ($('kpiBarSatis')) $('kpiBarSatis').style.width = `${Math.max(20, Math.min(100, Math.round((h.carpan / 4) * 100)))}%`;
+    if ($('kpiBarMarj')) $('kpiBarMarj').style.width = `${Math.max(10, Math.min(100, Math.round(netMarjYuzde)))}%`;
+    if ($('fireEtiket')) $('fireEtiket').textContent = yuzdeMetni(h.fireYuzde);
 
     // --- CTA: yalnızca canlı filament seçili ve gerçek kayıt varsa ---
     const cta = $('ctaKart');
@@ -372,22 +419,39 @@
     ? `%${y}`
     : (ORTAM_DIL === 'fr' ? `${y} %` : `${y}%`));
 
+  function filamentMalzemeUygunMu(f, filtre) {
+    if (!filtre || filtre === 'all') return true;
+    const baglam = `${f.malzeme || ''} ${f.ad || ''}`.toLowerCase();
+    if (filtre === 'PLA+') return /\bpla\+|pla\s*plus/i.test(baglam);
+    if (filtre === 'PLA') return /\bpla\b/i.test(baglam) && !/\bpla\+|pla\s*plus|pla-cf/i.test(baglam);
+    if (filtre === 'CF') return /\bcf\b|karbon|carbon/i.test(baglam);
+    if (filtre === 'Resin') return /reçine|recine|resin/i.test(baglam);
+    return baglam.includes(filtre.toLowerCase());
+  }
+
   /* ================= FİLAMENT LİSTESİ ================= */
   function filamentleriCiz() {
     const kap = $('filamentCanli');
     kap.innerHTML = '';
 
-    if (!durum.filamentler.length) {
+    const gosterilecek = durum.filamentler.filter(f => filamentMalzemeUygunMu(f, durum.malzemeFiltre));
+    if (!gosterilecek.length) {
       const p = el('p', 'mz-bos');
-      p.innerHTML = M_SZ.canliYok || ('Canlı filamente ulaşılamadı. '
-        + '<a href="#" id="manuelGec">Manuel fiyat girin</a> ya da radarın taranmasını bekleyin.');
+      p.innerHTML = durum.filamentler.length
+        ? (`${kacis(durum.malzemeFiltre)} · ` + (M_SZ.canliYok || 'Canlı stokta eşleşen makara yok. <a href="#" id="manuelGec">Manuel fiyat girin</a>.'))
+        : (M_SZ.canliYok || ('Canlı filamente ulaşılamadı. '
+          + '<a href="#" id="manuelGec">Manuel fiyat girin</a> ya da radarın taranmasını bekleyin.'));
       kap.appendChild(p);
       const a = $('manuelGec');
       if (a) a.addEventListener('click', (e) => { e.preventDefault(); modSec('manuel'); });
       return;
     }
 
-    for (const f of durum.filamentler) {
+    if (!gosterilecek.some(f => f.id === durum.secilenFilamentId)) {
+      durum.secilenFilamentId = gosterilecek[0].id;
+    }
+
+    for (const f of gosterilecek) {
       const btn = el('button', 'mz-fil' + (f.id === durum.secilenFilamentId ? ' aktif' : ''));
       btn.type = 'button';
       btn.setAttribute('aria-pressed', f.id === durum.secilenFilamentId ? 'true' : 'false');
@@ -598,6 +662,38 @@
     $('yipranma').addEventListener('input', (e) => {
       durum.yipranmaSaatTl = Number(e.target.value) || 0;
       render();
+    });
+
+    // Atık & baskı hatası koruma payı (%)
+    const fireUygula = (v) => {
+      const y = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+      durum.fireYuzde = y;
+      if ($('fireKaydirici')) $('fireKaydirici').value = String(Math.min(40, y));
+      if ($('fireYuzde')) $('fireYuzde').value = String(y);
+      document.querySelectorAll('#firePresetler button').forEach(b => {
+        b.classList.toggle('aktif', Number(b.dataset.fire) === y);
+      });
+      render();
+    };
+    $('fireKaydirici')?.addEventListener('input', (e) => fireUygula(e.target.value));
+    $('fireYuzde')?.addEventListener('input', (e) => fireUygula(e.target.value));
+    document.querySelectorAll('#firePresetler button').forEach(b => {
+      b.addEventListener('click', () => fireUygula(b.dataset.fire));
+    });
+
+    // Hızlı malzeme filtre hapları
+    document.querySelectorAll('#mzMalzemeHizli button').forEach(b => {
+      b.addEventListener('click', () => {
+        const mat = b.dataset.mat || 'all';
+        durum.malzemeFiltre = mat;
+        document.querySelectorAll('#mzMalzemeHizli button').forEach(x => x.classList.toggle('aktif', x === b));
+        if (mat !== 'all') {
+          durum.manuelAd = mat;
+          if ($('manuelAd')) $('manuelAd').value = mat;
+        }
+        filamentleriCiz();
+        render();
+      });
     });
 
     // Kâr marjı slider (yüzde) + hızlı çarpanlar

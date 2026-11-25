@@ -415,6 +415,11 @@ const GLOBAL_ARIA_NITELIK = Object.freeze({
     ['aria-label="Kâr marjı kaydırıcı"', 'aria-label="Profit margin slider"'],
     ['aria-label="Hızlı kâr çarpanı"', 'aria-label="Quick profit multiplier"'],
     ['aria-label="Karanlık / aydınlık temayı değiştir"', 'aria-label="Toggle dark / light theme"'],
+    ['aria-label="Özet Finansal Göstergeler"', 'aria-label="Summary Financial KPIs"'],
+    ['aria-label="Hızlı malzeme seçimi"', 'aria-label="Quick material selection"'],
+    ['aria-label="Atık ve baskı hatası koruma payı (%)"', 'aria-label="Waste and failure protection (%)"'],
+    ['aria-label="Hızlı atık ve hata payı"', 'aria-label="Quick waste and failure presets"'],
+    ['aria-label="Maliyet Dağılım Grafiği"', 'aria-label="Cost Breakdown Chart"'],
     ['placeholder="ör. PETG Siyah"', 'placeholder="e.g. PETG Black"'],
     ['placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"', 'placeholder="e.g. quiet beginner 3D printer under $400"'],
     ['>%150 · 2.5x<', '>150% · 2.5x<'],
@@ -440,6 +445,11 @@ const GLOBAL_ARIA_NITELIK = Object.freeze({
     ['aria-label="Kâr marjı kaydırıcı"', 'aria-label="Curseur marge bénéficiaire"'],
     ['aria-label="Hızlı kâr çarpanı"', 'aria-label="Multiplicateur de marge rapide"'],
     ['aria-label="Karanlık / aydınlık temayı değiştir"', 'aria-label="Changer de thème clair / sombre"'],
+    ['aria-label="Özet Finansal Göstergeler"', 'aria-label="Indicateurs financiers résumés"'],
+    ['aria-label="Hızlı malzeme seçimi"', 'aria-label="Sélection rapide de matériau"'],
+    ['aria-label="Atık ve baskı hatası koruma payı (%)"', 'aria-label="Marge pertes et échecs (%)"'],
+    ['aria-label="Hızlı atık ve hata payı"', 'aria-label="Préréglages pertes et échecs"'],
+    ['aria-label="Maliyet Dağılım Grafiği"', 'aria-label="Graphique de répartition des coûts"'],
     ['placeholder="ör. PETG Siyah"', 'placeholder="ex. PETG Noir"'],
     ['placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"', 'placeholder="ex. imprimante 3D silencieuse pour débuter, budget 400 €"'],
     ['>%150 · 2.5x<', '>150 % · 2,5x<'],
@@ -465,6 +475,11 @@ const GLOBAL_ARIA_NITELIK = Object.freeze({
     ['aria-label="Kâr marjı kaydırıcı"', 'aria-label="利益率スライダー"'],
     ['aria-label="Hızlı kâr çarpanı"', 'aria-label="利益倍率プリセット"'],
     ['aria-label="Karanlık / aydınlık temayı değiştir"', 'aria-label="ライト／ダークテーマ切替"'],
+    ['aria-label="Özet Finansal Göstergeler"', 'aria-label="収益・原価サマリー"'],
+    ['aria-label="Hızlı malzeme seçimi"', 'aria-label="クイック素材選択"'],
+    ['aria-label="Atık ve baskı hatası koruma payı (%)"', 'aria-label="ロス・造形失敗バッファ (%)"'],
+    ['aria-label="Hızlı atık ve hata payı"', 'aria-label="クイックロス率設定"'],
+    ['aria-label="Maliyet Dağılım Grafiği"', 'aria-label="原価内訳グラフ"'],
     ['placeholder="ör. PETG Siyah"', 'placeholder="例: PETG ブラック"'],
     ['placeholder="Örn. sessiz başlangıç 3D yazıcısı, bütçem 15.000 TL"', 'placeholder="例: 予算5万円以内、静音な初心者向け3Dプリンター"'],
     ['>%150 · 2.5x<', '>150% · 2.5x<'],
@@ -745,6 +760,11 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       ctaNot: 'Affiliate links may earn a commission at zero extra cost to you.',
       fisBaslik: '3D Print Cost &amp; Quote Summary', fisOnerilen: 'RECOMMENDED SELLING PRICE',
       fisWa: '📲 Share via WhatsApp', fisKopya: '📋 Copy Quote', fisYaz: '🖨️ Print / PDF',
+      kpiMaliyet: 'Total Real Cost', kpiKar: 'Estimated Net Profit', kpiKarAlt: 'selected price tier',
+      kpiSatis: 'Suggested Selling Price', kpiSatisAlt: 'excl. tax quote', kpiMarj: 'Net Profit Margin',
+      donutBaslik: '🍩 Cost Breakdown', donutAlt: 'Per-part cost shares', donutOrta: 'Net Cost',
+      fireBaslik: '🛡️ Waste &amp; Failure Protection (%)', fireAd: 'Waste / Failure',
+      matTumu: 'All', matRecine: 'Resin',
     },
     fr: {
       eylemSatis: 'Prix de vente conseillé', secili: 'Prix retenu', kar: 'Marge',
@@ -767,6 +787,11 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       ctaNot: 'Liens possiblement affiliés ; votre prix reste inchangé.',
       fisBaslik: 'Résumé Coût &amp; Devis Impression 3D', fisOnerilen: 'PRIX DE VENTE CONSEILLÉ',
       fisWa: '📲 Envoyer sur WhatsApp', fisKopya: '📋 Copier le devis', fisYaz: '🖨️ Imprimer / PDF',
+      kpiMaliyet: 'Coût Réel Total', kpiKar: 'Bénéfice Net Estimé', kpiKarAlt: 'palier de vente choisi',
+      kpiSatis: 'Prix de Vente Conseillé', kpiSatisAlt: 'devis hors TVA', kpiMarj: 'Marge Nette',
+      donutBaslik: '🍩 Répartition des Coûts', donutAlt: 'Parts par pièce', donutOrta: 'Coût Net',
+      fireBaslik: '🛡️ Pertes &amp; Échecs (%)', fireAd: 'Pertes / Échecs',
+      matTumu: 'Tous', matRecine: 'Résine',
     },
     ja: {
       eylemSatis: '推奨販売価格', secili: '選択中の販売価格', kar: '利益',
@@ -789,6 +814,11 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
       ctaNot: '※一部アフィリエイトリンクを含みますが、購入価格は変わりません。',
       fisBaslik: '3Dプリント原価・お見積り書', fisOnerilen: '推奨販売価格',
       fisWa: '📲 WhatsAppで共有', fisKopya: '📋 見積書をコピー', fisYaz: '🖨️ 印刷 / PDF',
+      kpiMaliyet: '合計製造原価', kpiKar: '想定純利益', kpiKarAlt: '選択中の販売価格帯',
+      kpiSatis: '推奨販売価格', kpiSatisAlt: '税抜見積り', kpiMarj: '粗利益率',
+      donutBaslik: '🍩 原価内訳グラフ', donutAlt: '1個あたりの構成比', donutOrta: '合計原価',
+      fireBaslik: '🛡️ ロス・造形失敗バッファ (%)', fireAd: 'ロス・失敗予備',
+      matTumu: 'すべて', matRecine: 'レジン',
     },
   }[kod];
 
@@ -886,7 +916,28 @@ export function globalMaliyetSayfasiHtml(dil = 'en', tabanUrl = '') {
     .replace('value="3.00" inputmode="decimal"', `value="${c.varsayilanYipranma}" inputmode="decimal"`)
     .replace('Filament fiyatları canlı radar taramasından gelir; her zaman mağazada doğrulayın.', k.footerUstNot)
     .replace('<h2 id="ciktiBaslik" class="mz-baslik">📊 Maliyet dökümü</h2>', `<h2 id="ciktiBaslik" class="mz-baslik">${k.cikti}</h2>`)
-    .replace('<span class="mz-kart-ad">Hammadde</span>', `<span class="mz-kart-ad">${k.hammaddeAd}</span>`)
+    .replace('<span class="mz-kpi-ad">Toplam Gerçek Maliyet</span>', `<span class="mz-kpi-ad">${k.kpiMaliyet}</span>`)
+    .replace('<span class="mz-kpi-ad">Tahmini Net Kâr</span>', `<span class="mz-kpi-ad">${k.kpiKar}</span>`)
+    .replace('<span class="mz-kpi-alt" id="kpiKarAlt">seçili satış kademesi</span>', `<span class="mz-kpi-alt" id="kpiKarAlt">${k.kpiKarAlt}</span>`)
+    .replace('<span class="mz-kpi-ad">Önerilen Satış Fiyatı</span>', `<span class="mz-kpi-ad">${k.kpiSatis}</span>`)
+    .replace('<span class="mz-kpi-alt" id="kpiSatisAlt">KDV hariç teklif</span>', `<span class="mz-kpi-alt" id="kpiSatisAlt">${k.kpiSatisAlt}</span>`)
+    .replace('<span class="mz-kpi-ad">Net Kâr Marjı</span>', `<span class="mz-kpi-ad">${k.kpiMarj}</span>`)
+    .replace('<strong class="mz-kpi-deger" id="kpiMaliyet">₺0,00</strong>', `<strong class="mz-kpi-deger" id="kpiMaliyet">${sifirPara}</strong>`)
+    .replace('<strong class="mz-kpi-deger" id="kpiKar">₺0,00</strong>', `<strong class="mz-kpi-deger" id="kpiKar">${sifirPara}</strong>`)
+    .replace('<strong class="mz-kpi-deger" id="kpiSatis">₺0,00</strong>', `<strong class="mz-kpi-deger" id="kpiSatis">${sifirPara}</strong>`)
+    .replace('<button type="button" class="aktif" data-mat="all">Tümü</button>', `<button type="button" class="aktif" data-mat="all">${k.matTumu}</button>`)
+    .replace('<button type="button" data-mat="Resin">Reçine</button>', `<button type="button" data-mat="Resin">${k.matRecine}</button>`)
+    .replace('<label for="fireYuzde">🛡️ Atık &amp; Baskı Hatası Payı (%)</label>', `<label for="fireYuzde">${k.fireBaslik}</label>`)
+    .replace('<h3 class="mz-alt-baslik" style="margin:0">🍩 Maliyet Dağılımı</h3>', `<h3 class="mz-alt-baslik" style="margin:0">${k.donutBaslik}</h3>`)
+    .replace('<span class="mz-donut-etiket" id="donutAltEtiket">Parça başı paylar</span>', `<span class="mz-donut-etiket" id="donutAltEtiket">${k.donutAlt}</span>`)
+    .replace('<strong id="donutToplam">₺0,00</strong>', `<strong id="donutToplam">${sifirPara}</strong>`)
+    .replace('<span id="donutOrtaAlt">Net Maliyet</span>', `<span id="donutOrtaAlt">${k.donutOrta}</span>`)
+    .replace('<span id="legHamAd">Hammadde</span>', `<span id="legHamAd">${k.hammaddeAd}</span>`)
+    .replace('<span id="legElAd">Elektrik</span>', `<span id="legElAd">${k.elektrikAd}</span>`)
+    .replace('<span id="legAmAd">Amortisman</span>', `<span id="legAmAd">${k.amortAd}</span>`)
+    .replace('<span id="legFireAd">Atık / Hata</span>', `<span id="legFireAd">${k.fireAd}</span>`)
+    .replace(/id="(legHamTutar|legElTutar|legAmTutar|legFireTutar)">₺0,00<\/span>/g, (_, id) => `id="${id}">${sifirPara}</span>`)
+    .replace(/<span class="mz-kart-ad">Hammadde<\/span>/, `<span class="mz-kart-ad">${k.hammaddeAd}</span>`)
     .replace('<strong class="mz-kart-deger" id="ciktiHammadde">₺0,00</strong>', `<strong class="mz-kart-deger" id="ciktiHammadde">${sifirPara}</strong>`)
     .replace('<span class="mz-kart-alt" id="ciktiHammaddeAlt">160 g × ₺0/kg</span>', `<span class="mz-kart-alt" id="ciktiHammaddeAlt">160 g × ${sembol}0/kg</span>`)
     .replace('<span class="mz-kart-ad">Elektrik</span>', `<span class="mz-kart-ad">${k.elektrikAd}</span>`)

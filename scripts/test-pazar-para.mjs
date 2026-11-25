@@ -1703,6 +1703,16 @@ console.log('\n35) 🔍 Yeni özellikler için SEO (robots.txt, hreflang, TechAr
     && serverSrc.includes('GLOBAL_SEPET_YOLLARI.ja')
     && serverSrc.includes('function tumIndexNowYollari()')
     && serverSrc.includes('globalRehberSitemapKayitlari()'));
+
+  kontrol('Maliyet Hesaplayıcı (TR/EN/FR/JA) 4-kart KPI şeridi, Donut grafiği, malzeme hapları ve fire payı taşır',
+    maliyetHtml.includes('id="mzKpiSerit"')
+    && maliyetHtml.includes('id="mzDonutKart"')
+    && maliyetHtml.includes('id="mzMalzemeHizli"')
+    && maliyetHtml.includes('id="fireKaydirici"')
+    && enMalSeo.includes('Total Real Cost')
+    && enMalSeo.includes('Cost Breakdown')
+    && enMalSeo.includes('Waste &amp; Failure Protection')
+    && !enMalSeo.includes('Toplam Gerçek Maliyet'));
 }
 
 closeDatabase();

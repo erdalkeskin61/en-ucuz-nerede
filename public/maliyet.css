@@ -1231,3 +1231,182 @@ html[data-theme="dark"] .stl-satin-dipnot { color: #9CA3AF; border-top-color: rg
   background: rgba(16, 185, 129, 0.14);
   border: 1px solid rgba(16, 185, 129, 0.35);
 }
+
+/* ---------- 4'lü KPI Özet Şeridi & Donut Görselleştirici ---------- */
+.mz-kpi-serit {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 6px;
+}
+@media (max-width: 920px) { .mz-kpi-serit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .mz-kpi-serit { grid-template-columns: 1fr; } }
+
+.mz-kpi-kart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--cizgi);
+  background: var(--kart);
+  box-shadow: var(--kart-golge);
+  min-width: 0;
+}
+.mz-kpi-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mz-kpi-ad {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gri-metin);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.mz-kpi-nokta { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.kpi-maliyet .mz-kpi-nokta { background: #6366f1; }
+.kpi-kar .mz-kpi-nokta { background: #10b981; }
+.kpi-satis .mz-kpi-nokta { background: #f59e0b; }
+.kpi-marj .mz-kpi-nokta { background: #06b6d4; }
+
+.mz-kpi-deger {
+  font-size: clamp(20px, 2.2vw, 26px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--metin);
+  line-height: 1.15;
+}
+.mz-kpi-alt {
+  font-size: 11px;
+  color: var(--gri-metin-hafif);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mz-kpi-cubuk {
+  position: relative;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--zemin-2, rgba(148, 163, 184, 0.16));
+  overflow: hidden;
+}
+.mz-kpi-cubuk > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 11px);
+  mask-image: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 11px);
+}
+.kpi-maliyet .mz-kpi-cubuk > span { background: #6366f1; }
+.kpi-kar .mz-kpi-cubuk > span { background: #10b981; }
+.kpi-satis .mz-kpi-cubuk > span { background: #f59e0b; }
+.kpi-marj .mz-kpi-cubuk > span { background: #06b6d4; }
+
+.mz-malzeme-hizli {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.mz-malzeme-hizli button {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--cizgi);
+  background: var(--zemin);
+  color: var(--metin-hafif);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.mz-malzeme-hizli button:hover { border-color: var(--ana); color: var(--ana); }
+.mz-malzeme-hizli button.aktif {
+  background: var(--ana);
+  border-color: var(--ana);
+  color: #fff;
+}
+
+.mz-donut-kart {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--cizgi);
+  background: var(--kart);
+}
+.mz-donut-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.mz-donut-etiket { font-size: 11.5px; color: var(--gri-metin); font-weight: 600; }
+.mz-donut-govde {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+@media (max-width: 480px) {
+  .mz-donut-govde { grid-template-columns: 1fr; justify-items: center; }
+  .mz-donut-liste { width: 100%; }
+}
+.mz-donut-sar {
+  position: relative;
+  width: 132px;
+  height: 132px;
+}
+.mz-donut-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.mz-donut-iz { fill: none; stroke: var(--cizgi); stroke-width: 16; }
+.mz-donut-dilim { fill: none; stroke-width: 16; transition: stroke-dasharray 0.25s ease, stroke-dashoffset 0.25s ease; }
+.d-ham { stroke: #6366f1; background-color: #6366f1; }
+.d-el { stroke: #06b6d4; background-color: #06b6d4; }
+.d-am { stroke: #f59e0b; background-color: #f59e0b; }
+.d-fire { stroke: #ec4899; background-color: #ec4899; }
+.mz-donut-svg .mz-donut-dilim { background-color: transparent; }
+
+.mz-donut-orta {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 14px;
+}
+.mz-donut-orta strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--metin);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.mz-donut-orta span { font-size: 10.5px; color: var(--gri-metin); font-weight: 600; }
+
+.mz-donut-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mz-donut-liste li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--metin-hafif);
+}
+.mz-leg-sol { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+.leg-renk { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.mz-leg-sag { font-variant-numeric: tabular-nums; color: var(--gri-metin); white-space: nowrap; }
+.mz-leg-sag b { color: var(--metin); }

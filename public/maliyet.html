@@ -249,6 +249,33 @@
       </div>
     </section>
 
+    <section class="mz-kpi-serit" id="mzKpiSerit" aria-label="Özet Finansal Göstergeler">
+      <article class="mz-kpi-kart kpi-maliyet">
+        <div class="mz-kpi-ust"><span class="mz-kpi-ad">Toplam Gerçek Maliyet</span><span class="mz-kpi-nokta"></span></div>
+        <strong class="mz-kpi-deger" id="kpiMaliyet">₺0,00</strong>
+        <span class="mz-kpi-alt" id="kpiMaliyetAlt">hammadde + elektrik + amortisman</span>
+        <div class="mz-kpi-cubuk" aria-hidden="true"><span id="kpiBarMaliyet" style="width:35%"></span></div>
+      </article>
+      <article class="mz-kpi-kart kpi-kar">
+        <div class="mz-kpi-ust"><span class="mz-kpi-ad">Tahmini Net Kâr</span><span class="mz-kpi-nokta"></span></div>
+        <strong class="mz-kpi-deger" id="kpiKar">₺0,00</strong>
+        <span class="mz-kpi-alt" id="kpiKarAlt">seçili satış kademesi</span>
+        <div class="mz-kpi-cubuk" aria-hidden="true"><span id="kpiBarKar" style="width:60%"></span></div>
+      </article>
+      <article class="mz-kpi-kart kpi-satis">
+        <div class="mz-kpi-ust"><span class="mz-kpi-ad">Önerilen Satış Fiyatı</span><span class="mz-kpi-nokta"></span></div>
+        <strong class="mz-kpi-deger" id="kpiSatis">₺0,00</strong>
+        <span class="mz-kpi-alt" id="kpiSatisAlt">KDV hariç teklif</span>
+        <div class="mz-kpi-cubuk" aria-hidden="true"><span id="kpiBarSatis" style="width:85%"></span></div>
+      </article>
+      <article class="mz-kpi-kart kpi-marj">
+        <div class="mz-kpi-ust"><span class="mz-kpi-ad">Net Kâr Marjı</span><span class="mz-kpi-nokta"></span></div>
+        <strong class="mz-kpi-deger" id="kpiMarj">%60,0</strong>
+        <span class="mz-kpi-alt" id="kpiMarjAlt">2.5x · +%150 kâr çarpanı</span>
+        <div class="mz-kpi-cubuk" aria-hidden="true"><span id="kpiBarMarj" style="width:60%"></span></div>
+      </article>
+    </section>
+
     <div class="mz-duzen">
       <!-- ============ SOL: GİRDİLER ============ -->
       <section class="giris-kart mz-girdi" aria-labelledby="girdiBaslik">
@@ -304,6 +331,19 @@
             </div>
           </div>
 
+          <div class="mz-malzeme-hizli" id="mzMalzemeHizli" role="group" aria-label="Hızlı malzeme seçimi">
+            <button type="button" class="aktif" data-mat="all">Tümü</button>
+            <button type="button" data-mat="PLA">PLA</button>
+            <button type="button" data-mat="PLA+">PLA+</button>
+            <button type="button" data-mat="PETG">PETG</button>
+            <button type="button" data-mat="ABS">ABS</button>
+            <button type="button" data-mat="TPU">TPU</button>
+            <button type="button" data-mat="ASA">ASA</button>
+            <button type="button" data-mat="Silk">Silk</button>
+            <button type="button" data-mat="CF">CF</button>
+            <button type="button" data-mat="Resin">Reçine</button>
+          </div>
+
           <div id="filamentCanli" class="mz-filament-liste" aria-live="polite">
             <p class="mz-yukleniyor">⏳ Canlı filament fiyatları yükleniyor…</p>
           </div>
@@ -336,6 +376,21 @@
                 <input type="number" id="yipranma" min="0" max="500" step="0.5" value="3.00" inputmode="decimal" />
               </div>
             </div>
+
+            <div class="mz-alan-ust mz-kar-ust">
+              <label for="fireYuzde">🛡️ Atık &amp; Baskı Hatası Payı (%)</label>
+              <span class="mz-rozet-veri" id="fireEtiket">%0</span>
+            </div>
+            <div class="mz-sayı-slider">
+              <input type="range" id="fireKaydirici" min="0" max="40" step="1" value="0" aria-label="Atık ve baskı hatası koruma payı (%)" />
+              <div class="mz-carpanlar" id="firePresetler" role="group" aria-label="Hızlı atık ve hata payı">
+                <button type="button" data-fire="0" class="aktif">%0</button>
+                <button type="button" data-fire="5">%5</button>
+                <button type="button" data-fire="10">%10</button>
+                <button type="button" data-fire="15">%15</button>
+              </div>
+            </div>
+            <input type="number" id="fireYuzde" min="0" max="100" step="1" value="0" hidden />
 
             <div class="mz-alan-ust mz-kar-ust">
               <label for="karCarpani">💰 Hedef kâr marjı</label>
@@ -386,6 +441,35 @@
             <strong class="mz-kart-deger" id="ciktiNet">₺0,00</strong>
             <span class="mz-kart-alt" id="ciktiNetAlt">hammadde + elektrik + amortisman</span>
           </article>
+        </div>
+
+        <!-- 📊 Maliyet Dağılımı Görselleştirici (Donut) -->
+        <div class="mz-donut-kart" id="mzDonutKart" aria-label="Maliyet Dağılım Grafiği">
+          <div class="mz-donut-ust">
+            <h3 class="mz-alt-baslik" style="margin:0">🍩 Maliyet Dağılımı</h3>
+            <span class="mz-donut-etiket" id="donutAltEtiket">Parça başı paylar</span>
+          </div>
+          <div class="mz-donut-govde">
+            <div class="mz-donut-sar">
+              <svg viewBox="0 0 140 140" class="mz-donut-svg" aria-hidden="true">
+                <circle class="mz-donut-iz" cx="70" cy="70" r="52" />
+                <circle class="mz-donut-dilim d-ham" id="donutHammadde" cx="70" cy="70" r="52" stroke-dasharray="0 327" stroke-dashoffset="0" />
+                <circle class="mz-donut-dilim d-el" id="donutElektrik" cx="70" cy="70" r="52" stroke-dasharray="0 327" stroke-dashoffset="0" />
+                <circle class="mz-donut-dilim d-am" id="donutAmort" cx="70" cy="70" r="52" stroke-dasharray="0 327" stroke-dashoffset="0" />
+                <circle class="mz-donut-dilim d-fire" id="donutFire" cx="70" cy="70" r="52" stroke-dasharray="0 327" stroke-dashoffset="0" />
+              </svg>
+              <div class="mz-donut-orta">
+                <strong id="donutToplam">₺0,00</strong>
+                <span id="donutOrtaAlt">Net Maliyet</span>
+              </div>
+            </div>
+            <ul class="mz-donut-liste">
+              <li><span class="mz-leg-sol"><i class="leg-renk d-ham"></i><span id="legHamAd">Hammadde</span></span><span class="mz-leg-sag"><b id="legHamYuzde">0%</b> · <span id="legHamTutar">₺0,00</span></span></li>
+              <li><span class="mz-leg-sol"><i class="leg-renk d-el"></i><span id="legElAd">Elektrik</span></span><span class="mz-leg-sag"><b id="legElYuzde">0%</b> · <span id="legElTutar">₺0,00</span></span></li>
+              <li><span class="mz-leg-sol"><i class="leg-renk d-am"></i><span id="legAmAd">Amortisman</span></span><span class="mz-leg-sag"><b id="legAmYuzde">0%</b> · <span id="legAmTutar">₺0,00</span></span></li>
+              <li><span class="mz-leg-sol"><i class="leg-renk d-fire"></i><span id="legFireAd">Atık / Hata</span></span><span class="mz-leg-sag"><b id="legFireYuzde">0%</b> · <span id="legFireTutar">₺0,00</span></span></li>
+            </ul>
+          </div>
         </div>
 
         <h3 class="mz-alt-baslik">💰 Önerilen satış fiyatı</h3>
