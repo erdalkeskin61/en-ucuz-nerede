@@ -31,13 +31,14 @@
 }
 .sl-canli-ust h2 { margin: 0; font-size: 16px; letter-spacing: -0.01em; }
 .sl-canli-etiket {
+  font-family: var(--mono);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--yesil);
   background: var(--yesil-acik);
   border: 1px solid var(--yesil-cizgi);
-  border-radius: 999px;
-  padding: 3px 10px;
+  border-radius: 6px;
+  padding: 3px 8px;
 }
 
 .sl-canli-form {
@@ -135,6 +136,7 @@
 }
 .sl-sonuc-btn:hover { filter: brightness(1.06); }
 .sl-sonuc-btn:active { transform: scale(0.98); }
+html[data-theme="dark"] .sl-sonuc-btn { color: #0B0F17; font-weight: 600; }
 .sl-sonuc-not { margin: 12px 0 0; font-size: 12.5px; color: var(--gri-metin); line-height: 1.5; }
 .sl-sonuc-sure { margin: 8px 0 0; font-size: 11.5px; color: var(--gri-metin-hafif); }
 

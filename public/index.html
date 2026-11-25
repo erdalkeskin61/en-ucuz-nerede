@@ -122,15 +122,39 @@
 
   <main class="kap">
     <section class="hero">
-      <div class="hero-ic">
-        <span class="hero-rozet">3D Baskı &amp; E-Ticaret · Stok ve Kargo Dahil Fiyatlar</span>
-        <h1>3D yazıcı ve filamentte <b>gerçek en ucuz</b> fiyatı bul</h1>
-        <p>Etiket fiyatı değil — kargo, kupon ve canlı stok kontrolü sonrası filament, 3D yazıcı ve yedek parçada <b>gerçekte ödeyeceğin</b> tutar karşılaştırılır.</p>
-        <div class="hero-istatistik">
-          <span><b id="heroSiteSayisi">70</b> mağaza taranır</span>
-          <span>Stokta + ₺/kg birim fiyat</span>
-          <span>Model ve renk eşleştirme</span>
+      <div class="hero-ic hero-ic-split">
+        <div class="hero-sol">
+          <span class="hero-rozet">3D Baskı &amp; E-Ticaret · Stok ve Kargo Dahil Fiyatlar</span>
+          <h1>3D yazıcı ve filamentte <b>gerçek en ucuz</b> fiyatı bul</h1>
+          <p>Etiket fiyatı değil — kargo, kupon ve canlı stok kontrolü sonrası filament, 3D yazıcı ve yedek parçada <b>gerçekte ödeyeceğin</b> tutar karşılaştırılır.</p>
+          <div class="hero-istatistik">
+            <span><b id="heroSiteSayisi">70</b> mağaza taranır</span>
+            <span>Stokta + ₺/kg birim fiyat</span>
+            <span>Model ve renk eşleştirme</span>
+          </div>
         </div>
+        <aside class="hero-sag" aria-label="Hesaplama yöntemi özeti">
+          <div class="hero-blueprint">
+            <div class="hero-bp-ust">
+              <span class="hero-bp-baslik"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> Hesaplama Şeması</span>
+              <span class="hero-bp-etiket">Canlı Kontrol</span>
+            </div>
+            <div class="hero-bp-satirlar">
+              <div class="hero-bp-satir">
+                <span class="hero-bp-ad">Gerçek Tutar</span>
+                <span class="hero-bp-deger">Etiket − İndirim + Kargo</span>
+              </div>
+              <div class="hero-bp-satir">
+                <span class="hero-bp-ad">Birim Maliyet</span>
+                <span class="hero-bp-deger">₺/kg · $/kg · €/kg</span>
+              </div>
+              <div class="hero-bp-satir">
+                <span class="hero-bp-ad">STL / 3MF Motoru</span>
+                <span class="hero-bp-deger">Tarayıcı içi · 0 B yükleme</span>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -930,7 +954,7 @@
     // PWA service worker (2026-10-28): yalnızca güvenli bağlamda (https/localhost)
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=15').catch(() => { /* PWA olmadan da çalışır */ });
+        navigator.serviceWorker.register('/sw.js?v=16').catch(() => { /* PWA olmadan da çalışır */ });
       });
     }
   </script>

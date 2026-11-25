@@ -2233,18 +2233,47 @@ export function globalAnaSayfaHtml(dil = 'en', tabanUrl = '') {
   );
 
   // 3) Hero + Hibrit arama kartı (index.html ile birebir CSS/ID yapısı, seçili dilde)
+  const bpKopya = {
+    en: { baslik: 'Pricing Method', etiket: 'Live Check', r1k: 'Real Total', r1v: 'List − Promo + Ship', r2k: 'Unit Cost', r2v: '$/kg · €/kg · ¥/kg', r3k: 'STL / 3MF Engine', r3v: 'In-browser · 0 B upload' },
+    fr: { baslik: 'Méthode de Calcul', etiket: 'En Direct', r1k: 'Total Réel', r1v: 'Prix − Promo + Port', r2k: 'Coût Unitaire', r2v: '€/kg · $/kg normalisés', r3k: 'Moteur STL / 3MF', r3v: 'Local · 0 o envoyé' },
+    ja: { baslik: '実質価格の算出ロジック', etiket: 'ライブ確認', r1k: '実質総額', r1v: '本体 − 割引 + 送料', r2k: '単価比較', r2v: '¥/kg・¥/L 正規化', r3k: 'STL / 3MF 解析', r3v: 'ブラウザ完結 · 送信なし' },
+  }[kod];
   cikti = cikti.replace(
     /<section class="hero">[\s\S]*?<\/section>/,
     `<section class="hero">
-      <div class="hero-ic">
-        <span class="hero-rozet">${c.rozet}</span>
-        <h1>${c.h1}</h1>
-        <p>${c.alt}</p>
-        <div class="hero-istatistik">
-          <span><b id="heroSiteSayisi">${taramaMagazalari.length}</b> ${c.statMagaza}</span>
-          <span>${c.statBirim}</span>
-          <span>${c.statEslesme}</span>
+      <div class="hero-ic hero-ic-split">
+        <div class="hero-sol">
+          <span class="hero-rozet">${c.rozet}</span>
+          <h1>${c.h1}</h1>
+          <p>${c.alt}</p>
+          <div class="hero-istatistik">
+            <span><b id="heroSiteSayisi">${taramaMagazalari.length}</b> ${c.statMagaza}</span>
+            <span>${c.statBirim}</span>
+            <span>${c.statEslesme}</span>
+          </div>
         </div>
+        <aside class="hero-sag" aria-label="${htmlKacis(bpKopya.baslik)}">
+          <div class="hero-blueprint">
+            <div class="hero-bp-ust">
+              <span class="hero-bp-baslik"><svg class="svg-ik" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> ${htmlKacis(bpKopya.baslik)}</span>
+              <span class="hero-bp-etiket">${htmlKacis(bpKopya.etiket)}</span>
+            </div>
+            <div class="hero-bp-satirlar">
+              <div class="hero-bp-satir">
+                <span class="hero-bp-ad">${htmlKacis(bpKopya.r1k)}</span>
+                <span class="hero-bp-deger">${htmlKacis(bpKopya.r1v)}</span>
+              </div>
+              <div class="hero-bp-satir">
+                <span class="hero-bp-ad">${htmlKacis(bpKopya.r2k)}</span>
+                <span class="hero-bp-deger">${htmlKacis(bpKopya.r2v)}</span>
+              </div>
+              <div class="hero-bp-satir">
+                <span class="hero-bp-ad">${htmlKacis(bpKopya.r3k)}</span>
+                <span class="hero-bp-deger">${htmlKacis(bpKopya.r3v)}</span>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>`,
   );

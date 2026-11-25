@@ -2029,7 +2029,48 @@ html[data-theme="dark"] .hero {
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 80%);
   -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 80%);
 }
-.hero-ic { position: relative; z-index: 1; padding: 36px 32px 44px; max-width: 100%; }
+.hero-ic { position: relative; z-index: 1; padding: 36px 32px 46px; max-width: 100%; }
+.hero-ic-split {
+  display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(290px, 0.85fr);
+  gap: 28px; align-items: center;
+}
+.hero-sol { min-width: 0; }
+.hero-sag { min-width: 0; }
+.hero-blueprint {
+  background: rgba(15, 23, 42, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 16px;
+}
+.hero-bp-ust {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-bottom: 10px; margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+.hero-bp-baslik {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+.hero-bp-baslik svg { color: #93C5FD; }
+.hero-bp-etiket {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: #6EE7B7;
+}
+.hero-bp-satirlar { display: flex; flex-direction: column; gap: 8px; }
+.hero-bp-satir {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-size: 12px;
+}
+.hero-bp-ad { color: rgba(255, 255, 255, 0.72); font-weight: 500; }
+.hero-bp-deger {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  color: #fff; text-align: right; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 960px) {
+  .hero-ic-split { grid-template-columns: 1fr; gap: 16px; }
+  .hero-sag { display: none; }
+}
 .hero-rozet {
   display: inline-flex; align-items: center; gap: 8px;
   font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.01em;
@@ -2942,8 +2983,8 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
 .footer-siteler-baslik { margin-top: 16px; font-weight: 700; color: var(--gri-metin); }
 .footer-siteler { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 8px 0 0; }
 .footer-siteler li {
-  font-size: 11px; font-weight: 600; color: var(--gri-metin-hafif);
-  background: var(--zemin-2); border-radius: 999px; padding: 4px 10px;
+  font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--gri-metin-hafif);
+  background: var(--zemin); border: 1px solid var(--cizgi); border-radius: 6px; padding: 4px 8px;
 }
 
 /* ---------- Ayarlar sayfası ---------- */
@@ -2954,20 +2995,20 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
 }
 .ayar-kart h1,
 .ayar-kart h2 {
-  margin: 0 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -0.02em;
+  margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: -0.02em;
   display: flex; align-items: center; gap: 8px;
 }
 .ayar-kart h3 { color: var(--metin); }
-.ayar-kart label { font-size: 12.5px; font-weight: 700; color: var(--gri-metin); }
+.ayar-kart label { font-size: 12.5px; font-weight: 600; color: var(--gri-metin); }
 .form-satir .ikili { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #kaydetBtn, .kaydet-btn {
-  font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
-  background: var(--ana-gradyan); border: 0; border-radius: 12px;
-  padding: 12px 22px; cursor: pointer;
-  box-shadow: 0 10px 22px -12px rgba(67, 56, 202, 0.9);
-  transition: transform .14s ease, filter .18s ease;
+  font-family: inherit; font-size: 14px; font-weight: 500; color: #fff;
+  background: var(--ana); border: 0; border-radius: var(--radius-md);
+  padding: 10px 18px; cursor: pointer;
+  box-shadow: var(--golge-yumusak);
+  transition: transform .14s var(--ease), background-color .16s var(--ease);
 }
-#kaydetBtn:hover, .kaydet-btn:hover { filter: brightness(1.06); }
+#kaydetBtn:hover, .kaydet-btn:hover { background: var(--ana-koyu); }
 #kaydetBtn:active, .kaydet-btn:active { transform: scale(.98); }
 
 /* ---------- Sepet / tarayıcı yüzeyleri ---------- */
@@ -2981,23 +3022,23 @@ html[data-theme="dark"] .gecmis-tekrar { background: var(--zemin-2); color: var(
   border-color: var(--cizgi-koyu); box-shadow: var(--kart-golge);
 }
 .tarayici-sekmeler {
-  display: flex; gap: 4px; padding: 5px; background: var(--zemin-2);
-  border-radius: 13px; flex-wrap: wrap;
+  display: flex; gap: 4px; padding: 4px; background: var(--zemin-2);
+  border: 1px solid var(--cizgi); border-radius: var(--radius-md); flex-wrap: wrap;
 }
 .tarayici-sekme {
-  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  font-family: inherit; font-size: 12.5px; font-weight: 500;
   color: var(--gri-metin); background: transparent; border: 0;
-  padding: 8px 14px; border-radius: 9px; cursor: pointer;
-  transition: background .16s ease, color .16s ease, box-shadow .16s ease;
+  padding: 8px 14px; border-radius: 6px; cursor: pointer;
+  transition: background .16s var(--ease), color .16s var(--ease);
 }
 .tarayici-sekme:hover { color: var(--metin); }
-.tarayici-sekme.aktif { background: var(--kart); color: var(--ana); box-shadow: var(--golge-yumusak); }
+.tarayici-sekme.aktif { background: var(--kart); color: var(--ana); font-weight: 600; box-shadow: var(--golge-yumusak); }
 
 .kupon-kod-btn {
-  font-family: inherit;
+  font-family: var(--mono);
   background: var(--zemin-2); border: 1px dashed var(--cizgi-koyu);
-  color: var(--ana); border-radius: 8px; padding: 4px 9px;
-  font-size: 12px; font-weight: 800; cursor: pointer;
+  color: var(--ana); border-radius: 6px; padding: 4px 9px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
 }
 .kupon-kod-btn:hover { background: var(--ana-acik); }
 
@@ -3939,70 +3980,31 @@ html[data-theme="dark"] .vitrin-kart-dip:hover {
 .vitrin-rozet {
   margin-left: auto;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
+  font-family: var(--mono);
   font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .01em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.vitrin-rozet.dip { color: #065F46; background: #D1FAE5; }
-.vitrin-rozet.indirim { color: var(--kirmizi); background: var(--kirmizi-acik); }
-/* V2: gerçek fırsat — yeşil parlayan (2026-11-05) */
+.vitrin-rozet.dip { color: var(--yesil); background: var(--yesil-acik); border: 1px solid var(--yesil-cizgi); }
+.vitrin-rozet.indirim { color: var(--kirmizi); background: var(--kirmizi-acik); border: 1px solid var(--kirmizi-cizgi); }
 .vitrin-rozet.firsat {
-  color: #065F46;
-  background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-  border: 1px solid #6EE7B7;
-  animation: gf-parla 2.6s ease-in-out infinite;
-  font-weight: 800;
+  color: var(--yesil);
+  background: var(--yesil-acik);
+  border: 1px solid var(--yesil-cizgi);
+  font-weight: 600;
 }
 
-/* --- 🏷️ Rozet tipografisi + yumuşak nabız (2026-11-11) ---
- * Amaç: fırsat rozetleri dikkat çeksin ama göz yormasın. 2.8 sn'lik çok
- * hafif scale(1.03) + halka. Yalnızca transform/box-shadow → compositor. */
 .vitrin-rozet.dip,
 .vitrin-rozet.indirim,
 .gercek-firsat-rozet,
 .sahte-indirim-rozet,
 .ucuz-serit {
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
-/* Yeşil "En Dip Fiyat" nabzı */
-.vitrin-rozet.dip {
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45);
-  animation: rozetNabizYesil 2.8s ease-in-out infinite;
-  will-change: transform;
-}
-@keyframes rozetNabizYesil {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
-  50% { transform: scale(1.03); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
-}
-/* Kırmızı "Mağazalar arası fark" nabzı */
-.vitrin-rozet.indirim {
-  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
-  animation: rozetNabizKirmizi 2.8s ease-in-out infinite;
-  will-change: transform;
-}
-@keyframes rozetNabizKirmizi {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
-  50% { transform: scale(1.03); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
-}
-/* Şişirilmiş liste fiyatı uyarısı: turuncu rengiyle uyumlu nabız. */
-.sahte-indirim-rozet {
-  animation: rozetNabizTuruncu 2.8s ease-in-out infinite;
-}
-@keyframes rozetNabizTuruncu {
-  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px -3px rgba(234, 88, 12, 0.45), 0 0 0 0 rgba(234, 88, 12, 0.3); }
-  50% { transform: scale(1.02); box-shadow: 0 2px 10px -3px rgba(234, 88, 12, 0.55), 0 0 0 5px rgba(234, 88, 12, 0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .vitrin-rozet.dip,
-  .vitrin-rozet.indirim,
-  .sahte-indirim-rozet {
-    animation: none;
-    transform: none;
-  }
-}
+.sahte-indirim-rozet { animation: none; }
 
 .vitrin-urun {
   font-size: 13.5px;
