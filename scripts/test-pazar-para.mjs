@@ -1357,11 +1357,17 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
     const ffLink = afiliyeLink('flashforge_us', 'https://www.flashforge.com/products/flashforge-creator-5');
     const sovolLink = afiliyeLink('sovol_us', 'https://www.sovol3d.com/products/sovol-sv08-3d-printer');
     const crealityLink = afiliyeLink('creality_us', 'https://store.creality.com/products/creality-k1c-3d-printer');
-    kontrol('Varsayılan Impact ortaklıkları (Flashforge, Sovol 3D, Creality Official) ?u= ile çalışır',
+    const elegooUsLink = afiliyeLink('elegoo_us', 'https://us.elegoo.com/products/elegoo-neptune-4-pro');
+    const elegooEuLink = afiliyeLink('elegoo_eu', 'https://eu.elegoo.com/products/elegoo-neptune-4-pro');
+    const elegooJpLink = afiliyeLink('elegoo_jp', 'https://jp.elegoo.com/products/elegoo-neptune-4-pro');
+    kontrol('Varsayılan Impact ortaklıkları (Flashforge, Sovol 3D, Creality Official, ELEGOO) ?u= ile çalışır',
       ffLink.startsWith('https://flashforge.sjv.io/c/8295867/3092803/38200?u=')
       && sovolLink.startsWith('https://sovol3d.sjv.io/c/8295867/3963679/55332?u=')
-      && crealityLink.startsWith('https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u='),
-      JSON.stringify({ ffLink, sovolLink, crealityLink }));
+      && crealityLink.startsWith('https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u=')
+      && elegooUsLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
+      && elegooEuLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
+      && elegooJpLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u='),
+      JSON.stringify({ ffLink, sovolLink, crealityLink, elegooUsLink, elegooEuLink, elegooJpLink }));
 
     const { createHash } = await import('node:crypto');
     const cCode = 'challenge_123';

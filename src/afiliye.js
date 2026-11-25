@@ -38,6 +38,9 @@ export const SITE_AGLARI = {
   creality_fr: 'impact',
   creality_eu: 'impact',
   creality_jp: 'impact',
+  elegoo_us: 'impact',
+  elegoo_eu: 'impact',
+  elegoo_jp: 'impact',
 };
 
 /**
@@ -156,6 +159,9 @@ const VARSAYILAN_SITE_SABLONLARI = Object.freeze({
   flashforge_fr: 'https://flashforge.sjv.io/c/8295867/3092803/38200?u={url}',
   flashforge_eu: 'https://flashforge.sjv.io/c/8295867/3092803/38200?u={url}',
   sovol_us: 'https://sovol3d.sjv.io/c/8295867/3963679/55332?u={url}',
+  elegoo_us: 'https://elegoo.sjv.io/c/8295867/1692726/19663?u={url}',
+  elegoo_eu: 'https://elegoo.sjv.io/c/8295867/1692726/19663?u={url}',
+  elegoo_jp: 'https://elegoo.sjv.io/c/8295867/1692726/19663?u={url}',
 });
 
 /** Kayıtlı ayarları varsayılanlarla birleştirir (eksik alanlar bozulmasın). */
