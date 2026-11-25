@@ -49,8 +49,8 @@ kontrol('color-scheme bildirimi', /color-scheme:\s*light/.test(css) && /color-sc
 /* ---------------------------------------------------------------- */
 bolum('2) Hero ve hibrit arama');
 kontrol('hero rozet şeridi', /hero-rozet/.test(html) && /\.hero-rozet\s*\{/.test(css));
-kontrol('hero sade teknik kart arka planı', /\.hero\s*\{[^}]*background:\s*var\(--kart\)/s.test(css));
-kontrol('hero h1 net vurgu rengi', /\.hero h1 b\s*\{[^}]*color:\s*var\(--ana\)/s.test(css));
+kontrol('hero kobalt mühendislik yüzeyi', /\.hero\s*\{[^}]*background:\s*linear-gradient\([^)]*#1E40AF/s.test(css));
+kontrol('hero h1 net vurgu rengi', /\.hero h1 b\s*\{[^}]*color:\s*#6EE7B7/s.test(css));
 kontrol('tek hibrit form', /class="hibrit-form"/.test(html) && /id="karsilastirForm"/.test(html));
 kontrol('hibrit girdi açıklaması link + ürün adı', /Ürün linki yapıştır ya da ürün adı yaz/.test(html));
 kontrol('"Fiyatları Bul" butonu', /id="araBtn"[^>]*>Fiyatları Bul</.test(html));

@@ -185,8 +185,9 @@ html[data-theme="dark"] .logo-gorsel {
 .giris-kart:hover { box-shadow: var(--kart-golge-uzerinde); }
 .giris-kart h1, .giris-kart .kart-ana-baslik { margin: 0 0 8px; font-size: 23px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
 .kart-ikon {
-  font-size: 20px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
-  background: var(--ana-acik); border-radius: 12px; flex: none;
+  font-size: 18px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ana-acik); color: var(--ana); border: 1px solid color-mix(in srgb, var(--ana) 16%, transparent);
+  border-radius: 8px; flex: none;
 }
 .aciklama { color: var(--gri-metin); margin: 0 0 18px; max-width: 720px; font-size: 14.5px; }
 
@@ -2006,55 +2007,67 @@ html[data-theme="dark"] .tema-degistir .tema-ikon-gun { display: inline-block; }
 .tema-degistir:hover { background: var(--zemin-2); border-color: var(--cizgi-koyu); color: var(--metin); }
 .tema-degistir:active { transform: scale(0.97); }
 
-/* ---------- Hero (unslop: kalibreli teknik başlık yüzeyi, gradyan yok) ---------- */
+/* ---------- Hero (unslop: kalibreli kobalt atölye yüzeyi + CAD ızgara, mor parlama yok) ---------- */
 .hero {
   position: relative; overflow: hidden;
-  background: var(--kart);
+  background: linear-gradient(155deg, #1E40AF 0%, #1E3A8A 58%, #172554 100%);
   border-radius: var(--radius); margin-top: 20px; margin-bottom: 0;
-  box-shadow: var(--kart-golge);
-  border: 1px solid var(--cizgi);
-  color: var(--metin);
+  box-shadow: 0 12px 28px -14px rgba(17, 24, 39, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
-.hero::before,
-.hero::after { display: none; }
-.hero-ic { position: relative; z-index: 1; padding: 28px 28px 24px; max-width: 100%; }
+html[data-theme="dark"] .hero {
+  background: linear-gradient(155deg, #172554 0%, #0F172A 100%);
+  border-color: var(--cizgi-koyu);
+  box-shadow: var(--kart-golge);
+}
+.hero::before { display: none; }
+.hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+  background-size: 20px 20px; opacity: 0.45;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 80%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 80%);
+}
+.hero-ic { position: relative; z-index: 1; padding: 36px 32px 44px; max-width: 100%; }
 .hero-rozet {
   display: inline-flex; align-items: center; gap: 8px;
   font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.01em;
-  color: var(--gri-metin-hafif); background: transparent;
-  border: 0; padding: 0; border-radius: 0; margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.88); background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 4px 10px; border-radius: 6px; margin-bottom: 14px;
 }
 .hero-rozet::before {
   content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none;
-  background: var(--yesil-parlak);
+  background: #34D399;
 }
 .hero h1 {
-  margin: 0 0 10px; color: var(--metin); max-width: 720px;
-  font-size: clamp(24px, 3.3vw, 34px); line-height: 1.15; font-weight: 600;
+  margin: 0 0 10px; color: #fff; max-width: 740px;
+  font-size: clamp(26px, 3.6vw, 38px); line-height: 1.14; font-weight: 700;
   letter-spacing: -0.025em;
   overflow-wrap: break-word;
 }
 .hero h1 b {
-  text-decoration: none; white-space: normal; font-weight: 600;
-  color: var(--ana);
+  text-decoration: none; white-space: normal; font-weight: 700;
+  color: #6EE7B7;
 }
 .hero p {
-  margin: 0; color: var(--gri-metin);
-  font-size: 15px; max-width: 640px; font-weight: 400; line-height: 1.55;
+  margin: 0; color: rgba(255, 255, 255, 0.86);
+  font-size: 15.5px; max-width: 640px; font-weight: 400; line-height: 1.55;
 }
-.hero p b { color: var(--metin); font-weight: 500; }
+.hero p b { color: #fff; font-weight: 600; }
 .hero-istatistik {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
-  margin-top: 16px; padding-top: 14px;
-  border-top: 1px solid var(--cizgi);
+  margin-top: 18px; padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
 .hero-istatistik span {
   display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; color: var(--gri-metin);
+  background: transparent; color: rgba(255, 255, 255, 0.84);
   border: 0; padding: 0; border-radius: 0;
   font-family: var(--mono); font-size: 12px; font-weight: 400; backdrop-filter: none;
 }
-.hero-istatistik b { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--metin); font-variant-numeric: tabular-nums; }
+.hero-istatistik b { font-family: var(--mono); font-size: 12px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
 
 /* ---------- Hibrit arama kartı ---------- */
 .giris-kart {
@@ -2067,11 +2080,11 @@ html[data-theme="dark"] .tema-degistir .tema-ikon-gun { display: inline-block; }
 }
 .giris-kart:hover { border-color: var(--cizgi-koyu); }
 .hibrit-kart {
-  margin-top: 16px; transform: none; margin-bottom: 16px;
+  margin-top: 0; transform: translateY(-22px); margin-bottom: -4px;
   position: relative; z-index: 3;
   padding: 16px;
   border-radius: var(--radius);
-  box-shadow: var(--kart-golge);
+  box-shadow: 0 10px 28px -12px rgba(17, 24, 39, 0.16), var(--kart-golge);
 }
 .hibrit-form {
   display: flex; align-items: center; gap: 10px;
