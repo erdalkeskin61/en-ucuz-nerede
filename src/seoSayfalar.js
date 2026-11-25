@@ -1098,7 +1098,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       }
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=19" />
   <style>
     .seo-kapsam { max-width: 1080px; margin: 24px auto 48px; padding: 0 24px; }
     .seo-yol { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--gri-metin); margin-bottom: 16px; }

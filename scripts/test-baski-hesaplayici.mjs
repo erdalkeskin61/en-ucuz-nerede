@@ -181,7 +181,7 @@ for (const id of zorunluId) {
   kontrol(`HTML: #${id}`, html.includes(`id="${id}"`));
 }
 
-kontrol('HTML: maliyet.css bağlı', /href="\/maliyet\.css"/.test(html));
+kontrol('HTML: maliyet.css bağlı', /href="\/maliyet\.css(?:\?v=\d+)?"/.test(html));
 kontrol('HTML: maliyet.js bağlı', /src="\/maliyet\.js"/.test(html));
 kontrol('HTML: erisim.js önce yükleniyor (anahtar)', html.indexOf('/erisim.js') < html.indexOf('/maliyet.js'));
 kontrol('HTML: gramaj slider 1–1000', /id="gramajKaydirici"[^>]*min="1"[^>]*max="1000"/.test(html));

@@ -932,7 +932,7 @@ app.get([
   const kayit = globalAracSayfasiBul(req.path);
   if (!kayit) return res.redirect('/maliyet.html');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=120');
+  res.setHeader('Cache-Control', 'private, no-cache');
   res.send(kayit.olustur(yayinKoku(req)));
 });
 
