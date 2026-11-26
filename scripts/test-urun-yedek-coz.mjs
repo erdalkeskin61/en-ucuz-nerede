@@ -3,7 +3,7 @@
  * Ağ isteği atmaz; geçici snapshot yazıp temizler.
  */
 import fs from 'node:fs';
-import { seoUrunYedekCoz, urunSayfasiHtml } from '../src/seoSayfalar.js';
+import { seoUrunYedekCoz, urunSayfasiHtml, urunIndekslenebilirMi, sitemapKayitlari } from '../src/seoSayfalar.js';
 import { rehberSayfasiBul, rehberSitemapKayitlari, rehberDiziniHtml } from '../src/rehberSayfalar.js';
 import { slugYap } from '../src/util.js';
 import { anlikYaz, snapshotSil, anahtarCikar } from '../src/anlikOnbellek.js';
@@ -186,6 +186,52 @@ kontrol('Rehber dizini yeni sayfaları listeler', dizinHtml.includes('/karsilast
 
 const serverKaynak = fs.readFileSync('server.js', 'utf8');
 kontrol("server.js /rehber/en-ucuz-petg-tpu-filament -> 301 yönlendirmesi içerir", serverKaynak.includes("'/rehber/en-ucuz-petg-tpu-filament'") && serverKaynak.includes("res.redirect(301, '/rehber/en-ucuz-petg-ve-tpu-filamentler')"));
+
+console.log('\n8) 🌍 Çok dilli ürün kanoniği & ince sayfa noindex filtresi');
+const enUrunHtml = urunSayfasiHtml({
+  id: 'en-k1c',
+  market: 'us',
+  paraBirimi: 'USD',
+  ad: 'Creality K1C 3D Printer',
+  sorgu: 'Creality K1C',
+  kategoriSlug: '3d-yazici',
+  slug: 'creality-k1c-3d-printer',
+  yol: '/urun/creality-k1c-3d-printer',
+  enUcuzFiyat: 499,
+  enUcuzSite: 'Creality US',
+  stokluSayisi: 2,
+  teklifler: [
+    { site: 'Creality US', fiyat: 499, paraBirimi: 'USD', stokta: true, url: 'https://store.creality.com/k1c' },
+    { site: 'Amazon US', fiyat: 529, paraBirimi: 'USD', stokta: true, url: 'https://amazon.com/k1c' },
+  ],
+}, 'https://baskihesap.tech', [{ id: 'en-k1', ad: 'Creality K1', kategoriSlug: '3d-yazici', slug: 'creality-k1', yol: '/urun/creality-k1', enUcuzFiyat: 399 }], { dil: 'en' });
+kontrol('EN ürün sayfası self-canonical /en/urun/... basar (TR /urun/ kaçağı yok)',
+  enUrunHtml.includes('<link rel="canonical" href="https://baskihesap.tech/en/urun/creality-k1c-3d-printer" />')
+  && enUrunHtml.includes('href="/en?url=Creality%20K1C"')
+  && enUrunHtml.includes('href="/en/urun/creality-k1"')
+  && !enUrunHtml.includes('content="noindex'));
+
+const tekMagazaBeslemeHtml = urunSayfasiHtml({
+  id: 'feed-tek',
+  kaynakTip: 'besleme',
+  ad: 'Tek Magaza PLA Siyah 1kg',
+  kategoriSlug: 'pla-filament',
+  slug: 'tek-magaza-pla-siyah-1kg',
+  yol: '/urun/tek-magaza-pla-siyah-1kg',
+  enUcuzFiyat: 450,
+  enUcuzSite: 'Robotistan',
+  stokluSayisi: 1,
+  teklifler: [{ site: 'Robotistan', fiyat: 450, stokta: true, url: 'https://robotistan.com/pla' }],
+}, 'https://baskihesap.tech', []);
+kontrol('Tek mağazalı besleme ürünü noindex, follow alır',
+  tekMagazaBeslemeHtml.includes('<meta name="robots" content="noindex, follow" />')
+  && !urunIndekslenebilirMi({ kaynakTip: 'besleme', enUcuzFiyat: 450, stokluSayisi: 1, teklifler: [{}] })
+  && urunIndekslenebilirMi({ kaynakTip: 'besleme', enUcuzFiyat: 450, stokluSayisi: 2, teklifler: [{}, {}] })
+  && !urunIndekslenebilirMi({ kaynakTip: 'radar', enUcuzFiyat: 0, stokluSayisi: 0, teklifler: [] }));
+
+const trSitemap = sitemapKayitlari();
+kontrol('sitemapKayitlari temel rotaları içerir ve tekli beslemeyi dışlar',
+  trSitemap.some(k => k.yol === '/') && trSitemap.some(k => k.yol === '/maliyet.html'));
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

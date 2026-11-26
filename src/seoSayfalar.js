@@ -912,6 +912,21 @@ export function seoUrunYedekCoz(slugOrId, tumUrunler = null) {
   return { tip: 'yonlendir', hedef: '/urunler' };
 }
 
+/**
+ * Yalnızca gerçek karşılaştırma veya aktif fiyat içeriği taşıyan ürün sayfaları
+ * dizine ve sitemap'e girer; fiyatsız ya da tek mağazalı otomatik katalog
+ * kayıtları tarama bütçesini tüketmemek için `noindex, follow` alır.
+ */
+export function urunIndekslenebilirMi(urun) {
+  if (!urun || !(Number(urun.enUcuzFiyat) > 0)) return false;
+  const teklifSay = Math.max(
+    Number(urun.stokluSayisi || 0),
+    Array.isArray(urun.teklifler) ? urun.teklifler.length : 0,
+  );
+  if (teklifSay >= 2) return true;
+  return urun.kaynakTip !== 'besleme';
+}
+
 export function sitemapKayitlari() {
   const bugun = new Date().toISOString().slice(0, 10);
   const kayitlar = [
@@ -925,6 +940,7 @@ export function sitemapKayitlari() {
     kayitlar.push({ yol: `/kategori/${kat.slug}`, oncelik: '0.85', siklik: 'daily', lastmod: bugun });
   }
   for (const u of seoUrunListesi()) {
+    if (!urunIndekslenebilirMi(u)) continue;
     kayitlar.push({ yol: u.yol, oncelik: '0.8', siklik: 'daily', lastmod: u.lastmod || bugun });
   }
   return kayitlar;
@@ -1777,10 +1793,15 @@ function cokRenkliUrunBolumuHtml(urun, kat, dil) {
 export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
   const dil = normalizeDil(opts.dil || urun.dil || dilByMarket(urun.market || 'tr'));
   const sz = sozlukGetir(dil);
+  const nav = navYollariGetir(dil);
   const kat = SEO_KATEGORILER.find(c => c.slug === urun.kategoriSlug) || SEO_KATEGORILER[0];
   const paraBirimi = paraBirimiNormalize(urun.paraBirimi || urun.currency || sz.para.kod);
   const fiyatMetni = (v) => urunFiyatMetni(v, paraBirimi);
-  const canliTaraUrl = `/?url=${encodeURIComponent(urun.sorgu || urun.ad)}`;
+  const hamUrunYol = String(urun.yol || (urun.slug ? `/urun/${urun.slug}` : ''));
+  const urunYol = (dil !== 'tr' && hamUrunYol.startsWith('/urun/'))
+    ? `/${dil}${hamUrunYol}`
+    : hamUrunYol;
+  const canliTaraUrl = `${nav.ana}?url=${encodeURIComponent(urun.sorgu || urun.ad)}`;
   const enUcuzEk = urun.enUcuzFiyat > 0 ? ` (${fiyatMetni(urun.enUcuzFiyat)})` : '';
   const title = `${urun.ad} ${sz.baslik.enUcuzBaslikEk}${enUcuzEk} — ${sz.meta.siteAdi}`;
   const description = urun.enUcuzFiyat > 0
@@ -1809,7 +1830,6 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
     .filter(x => x.id !== urun.id && x.kategoriSlug === urun.kategoriSlug)
     .slice(0, 6);
 
-  const nav = navYollariGetir(dil);
   const katYol = kategoriYoluGetir(kat.slug, dil);
   const katAdYerel = dil !== 'tr'
     ? (GLOBAL_KAT_CEVIRI[dil]?.kategoriler?.[kat.slug]?.ad || kat.ad)
@@ -1821,7 +1841,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: sz.nav.anaSayfa, item: `${tabanUrl}${nav.ana}` },
         { '@type': 'ListItem', position: 2, name: katAdYerel, item: `${tabanUrl}${katYol}` },
-        { '@type': 'ListItem', position: 3, name: urun.ad, item: `${tabanUrl}${urun.yol}` },
+        { '@type': 'ListItem', position: 3, name: urun.ad, item: `${tabanUrl}${urunYol}` },
       ],
     },
   ];
@@ -1837,7 +1857,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
       availability: 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
       seller: { '@type': 'Organization', name: t.site },
-      url: t.url || `${tabanUrl}${urun.yol}`,
+      url: t.url || `${tabanUrl}${urunYol}`,
     }));
     const barkodTemiz = /^\d{8,14}$/.test(String(urun.barkod || '').trim())
       ? String(urun.barkod).trim()
@@ -1849,7 +1869,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
       name: urun.ad,
       description,
       category: kat.ad,
-      url: `${tabanUrl}${urun.yol}`,
+      url: `${tabanUrl}${urunYol}`,
       image: [urun.gorsel || `${tabanUrl}/og-gorsel.png`],
       ...(urun.marka ? { brand: { '@type': 'Brand', name: urun.marka } } : {}),
       ...(urun.modelKodu ? { sku: String(urun.modelKodu), mpn: String(urun.modelKodu) } : {}),
@@ -1861,7 +1881,7 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
         ...(urun.enPahaliFiyat > 0 ? { highPrice: Number(urun.enPahaliFiyat).toFixed(paraBirimi === 'JPY' ? 0 : 2) } : {}),
         offerCount: Math.max(1, urun.stokluSayisi || stokluTeklifler.length),
         availability: 'https://schema.org/InStock',
-        url: `${tabanUrl}${urun.yol}`,
+        url: `${tabanUrl}${urunYol}`,
         ...(altTeklifler.length ? { offers: altTeklifler } : {}),
       },
     };
@@ -1931,19 +1951,23 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
     ${benzerler.length ? `<section class="seo-kart">
       <h2 style="margin-top:0">${htmlKacis(sz.baslik.benzerUrunler)}</h2>
       <div class="seo-izgara">
-        ${benzerler.map(b => seoUrunKartiHtml(b)).join('')}
+        ${benzerler.map(b => seoUrunKartiHtml(b, false, dil)).join('')}
       </div>
     </section>` : ''}
   `;
 
-  const extraMeta = urun.enUcuzFiyat > 0
+  const fiyatMeta = urun.enUcuzFiyat > 0
     ? `<meta property="product:price:amount" content="${Number(urun.enUcuzFiyat).toFixed(paraBirimi === 'JPY' ? 0 : 2)}" />\n  <meta property="product:price:currency" content="${htmlKacis(paraBirimi)}" />`
     : '';
+  const robotsMeta = urunIndekslenebilirMi(urun)
+    ? ''
+    : '<meta name="robots" content="noindex, follow" />';
+  const extraMeta = [robotsMeta, fiyatMeta].filter(Boolean).join('\n  ');
 
   return sayfaIskeleti({
     title,
     description,
-    canonicalUrl: `${tabanUrl}${urun.yol}`,
+    canonicalUrl: `${tabanUrl}${urunYol}`,
     ogImage: urun.gorsel || `${tabanUrl}/og-gorsel.png`,
     ogType: urun.enUcuzFiyat > 0 ? 'product' : 'website',
     extraMeta,
