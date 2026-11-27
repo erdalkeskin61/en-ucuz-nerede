@@ -70,6 +70,7 @@ import {
   globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SEPET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
+import { guvenSayfasiBul, guvenSayfaSitemapKayitlari } from './src/guvenSayfalar.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
@@ -584,8 +585,8 @@ app.get('/sitemap-:dil.xml', (req, res, next) => {
   try {
     const taban = yayinKoku(req);
     const sayfalar = dil === 'tr'
-      ? [...sitemapKayitlari(), ...rehberSitemapKayitlari()]
-      : [...globalAracSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil)];
+      ? [...sitemapKayitlari(), ...rehberSitemapKayitlari(), ...guvenSayfaSitemapKayitlari('tr')]
+      : [...globalAracSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil), ...guvenSayfaSitemapKayitlari(dil)];
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(sitemapUrlSetXml(taban, sayfalar));
@@ -614,6 +615,7 @@ function tumIndexNowYollari() {
     ...globalAracSitemapKayitlari(),
     ...globalRehberSitemapKayitlari(),
     ...globalKategoriSitemapKayitlari(),
+    ...guvenSayfaSitemapKayitlari(),
   ].map(s => s.yol).filter(Boolean);
   return [...new Set(ham)];
 }
@@ -939,6 +941,31 @@ app.get([
 app.get('/sepet-paylas.html', (req, res, next) => (
   statikHtmlSun(req, res, next, 'sepet-paylas.html', { canonicalEkle: false })
 ));
+
+/* Güven, gizlilik & kurumsal iletişim sayfaları (TR / EN / FR / JA) */
+app.get([
+  '/hakkimizda', '/en/about', '/fr/a-propos', '/ja/about',
+  '/gizlilik', '/en/privacy', '/fr/confidentialite', '/ja/privacy',
+  '/iletisim', '/en/contact', '/fr/contact', '/ja/contact',
+], (req, res) => {
+  const sayfa = guvenSayfasiBul(req.path);
+  if (!sayfa) return res.status(404).type('text/plain').send('Sayfa bulunamadı');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.send(sayfa.olustur(yayinKoku(req)));
+});
+
+const GUVEN_YONLENDIRME_HARITASI = Object.freeze({
+  '/about': '/en/about',
+  '/privacy': '/en/privacy',
+  '/privacy-policy': '/en/privacy',
+  '/contact': '/en/contact',
+  '/gizlilik-politikasi': '/gizlilik',
+});
+app.get(Object.keys(GUVEN_YONLENDIRME_HARITASI), (req, res) => {
+  const temiz = String(req.path || '').replace(/\/+$/, '').toLowerCase();
+  return res.redirect(301, GUVEN_YONLENDIRME_HARITASI[temiz] || '/en/about');
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 

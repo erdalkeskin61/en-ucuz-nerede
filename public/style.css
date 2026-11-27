@@ -725,7 +725,7 @@ html[data-theme="dark"] .footer-marka-logo { box-shadow: 0 0 0 1px rgba(148, 163
 /* 🔗 2026-11-22: Footer Hub — kategoriler, rehberler ve araçlar iç link ağı */
 .footer-hub {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px 24px;
   margin: 4px 0 18px;
   padding-bottom: 18px;

@@ -4,6 +4,7 @@
  */
 import fs from 'node:fs';
 import { seoUrunYedekCoz, urunSayfasiHtml, urunIndekslenebilirMi, sitemapKayitlari } from '../src/seoSayfalar.js';
+import { guvenSayfasiBul, guvenSayfaSitemapKayitlari } from '../src/guvenSayfalar.js';
 import { rehberSayfasiBul, rehberSitemapKayitlari, rehberDiziniHtml } from '../src/rehberSayfalar.js';
 import { slugYap } from '../src/util.js';
 import { anlikYaz, snapshotSil, anahtarCikar } from '../src/anlikOnbellek.js';
@@ -232,6 +233,26 @@ kontrol('Tek mağazalı besleme ürünü noindex, follow alır',
 const trSitemap = sitemapKayitlari();
 kontrol('sitemapKayitlari temel rotaları içerir ve tekli beslemeyi dışlar',
   trSitemap.some(k => k.yol === '/') && trSitemap.some(k => k.yol === '/maliyet.html'));
+
+console.log('\n9) 🛡️ Hakkımızda, Gizlilik & İletişim (info@baskihesap.tech) sayfaları');
+const guvenYollar = [
+  '/hakkimizda', '/en/about', '/fr/a-propos', '/ja/about',
+  '/gizlilik', '/en/privacy', '/fr/confidentialite', '/ja/privacy',
+  '/iletisim', '/en/contact', '/fr/contact', '/ja/contact',
+];
+for (const gy of guvenYollar) {
+  const rec = guvenSayfasiBul(gy);
+  const html = rec ? rec.olustur('https://baskihesap.tech') : '';
+  kontrol(`guvenSayfasiBul(${gy}) geçerli HTML ve info@baskihesap.tech üretir`,
+    !!rec
+    && html.includes(`lang="${rec.dil}"`)
+    && html.includes(`<link rel="canonical" href="https://baskihesap.tech${gy}" />`)
+    && html.includes('hreflang="en"')
+    && html.includes('info@baskihesap.tech'));
+}
+kontrol('guvenSayfaSitemapKayitlari 12 URL üretir (4 dil × 3 sayfa)',
+  guvenSayfaSitemapKayitlari().length === 12
+  && guvenSayfaSitemapKayitlari('en').length === 3);
 
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);

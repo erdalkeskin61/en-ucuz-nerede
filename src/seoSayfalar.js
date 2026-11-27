@@ -985,6 +985,15 @@ export const FOOTER_HUB_HTML = `
             <li><a href="/ayarlar.html">Fiyat Alarmlarım</a></li>
           </ul>
         </div>
+        <div>
+          <h3 class="footer-hub-baslik">Kurumsal &amp; Şeffaflık</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="/hakkimizda">Hakkımızda &amp; Metodoloji</a></li>
+            <li><a href="/gizlilik">Gizlilik &amp; Affiliate Açıklaması</a></li>
+            <li><a href="/iletisim">İletişim &amp; Mağaza Başvurusu</a></li>
+            <li><a href="mailto:info@baskihesap.tech">info@baskihesap.tech</a></li>
+          </ul>
+        </div>
       </nav>`;
 
 /** Seçili dil için ortak Footer İç Link Ağı üretir. */
@@ -994,22 +1003,25 @@ export function footerHubHtml(dil = 'tr') {
   const yol = navYollariGetir(kod);
   const etiket = {
     en: {
-      kat: 'Categories', rehber: 'Guides & Versus', arac: 'Tools',
+      kat: 'Categories', rehber: 'Guides & Versus', arac: 'Tools', kurumsal: 'Trust & Legal',
       k3d: '3D Printers', kpla: 'PLA & PLA+ Filament', kpetg: 'PETG, TPU & ABS', kyedek: 'Spare Parts & Nozzles', krecine: 'UV Resin & Dryers', ktum: 'Full Product Catalog',
       g1: 'Bambu Lab P1S vs Creality K1C', g2: 'A1 Mini vs Ender 3 V3 KE', g3: 'Ender 3 V3 KE vs Neptune 4 Pro', g4: 'Best Budget 3D Printers', g5: 'Cheapest PLA Filaments', gtum: 'All 3D Buying Guides',
       a1: 'Live Price Comparison', a2: '3D Print Cost Calculator', a3: 'Smart Basket & Shipping', a4: 'Cura & Slicer Plugin', a5: 'Price Alerts',
+      hakkimizda: 'About & Methodology', hakYol: '/en/about', gizlilik: 'Privacy & Affiliate Disclosure', gizYol: '/en/privacy', iletisim: 'Contact & Partnerships', iltYol: '/en/contact',
     },
     fr: {
-      kat: 'Catégories', rehber: 'Guides & Duels', arac: 'Outils',
+      kat: 'Catégories', rehber: 'Guides & Duels', arac: 'Outils', kurumsal: 'Informations & Légal',
       k3d: 'Imprimantes 3D', kpla: 'Filaments PLA & PLA+', kpetg: 'PETG, TPU & ABS', kyedek: 'Pièces détachées & Buses', krecine: 'Résines UV & Séchoirs', ktum: 'Catalogue complet',
       g1: 'Bambu Lab P1S vs Creality K1C', g2: 'A1 Mini vs Ender 3 V3 KE', g3: 'Ender 3 V3 KE vs Neptune 4 Pro', g4: 'Meilleures imprimantes 3D', g5: 'Filaments PLA pas chers', gtum: 'Tous les guides 3D',
       a1: 'Comparateur de prix en direct', a2: 'Calculateur de coût STL', a3: 'Panier intelligent & port', a4: 'Extension Cura & Slicer', a5: 'Alertes de prix',
+      hakkimizda: 'À propos & Méthodologie', hakYol: '/fr/a-propos', gizlilik: 'Confidentialité & Affiliation', gizYol: '/fr/confidentialite', iletisim: 'Contact & Partenariats', iltYol: '/fr/contact',
     },
     ja: {
-      kat: 'カテゴリー', rehber: 'ガイド＆徹底比較', arac: 'ツール',
+      kat: 'カテゴリー', rehber: 'ガイド＆徹底比較', arac: 'ツール', kurumsal: '運営・規約',
       k3d: '3Dプリンター価格', kpla: 'PLA・PLA+ フィラメント', kpetg: 'PETG・TPU・ABS', kyedek: '交換パーツ・ノズル', krecine: 'UVレジン・乾燥機', ktum: '全製品カタログ',
       g1: 'Bambu Lab P1S vs Creality K1C', g2: 'A1 Mini vs Ender 3 V3 KE', g3: 'Ender 3 V3 KE vs Neptune 4 Pro', g4: '初心者向けおすすめ3Dプリンター', g5: '最安PLAフィラメント', gtum: '3Dプリントガイド一覧',
       a1: 'リアルタイム価格比較', a2: '3Dプリント原価計算', a3: 'スマートカート＆送料最適化', a4: 'Cura・スライサー連携', a5: '価格アラート',
+      hakkimizda: '運営情報・比較基準', hakYol: '/ja/about', gizlilik: 'プライバシー・開示表記', gizYol: '/ja/privacy', iletisim: 'お問い合わせ', iltYol: '/ja/contact',
     },
   }[kod];
   return `
@@ -1044,6 +1056,15 @@ export function footerHubHtml(dil = 'tr') {
             <li><a href="${yol.sepet}">${etiket.a3}</a></li>
             <li><a href="${yol.slicer}">${etiket.a4}</a></li>
             <li><a href="${yol.ayarlar}">${etiket.a5}</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer-hub-baslik">${etiket.kurumsal}</h3>
+          <ul class="footer-hub-liste">
+            <li><a href="${etiket.hakYol}">${etiket.hakkimizda}</a></li>
+            <li><a href="${etiket.gizYol}">${etiket.gizlilik}</a></li>
+            <li><a href="${etiket.iltYol}">${etiket.iletisim}</a></li>
+            <li><a href="mailto:info@baskihesap.tech">info@baskihesap.tech</a></li>
           </ul>
         </div>
       </nav>`;
@@ -1114,7 +1135,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       }
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="/style.css?v=19" />
+  <link rel="stylesheet" href="/style.css?v=20" />
   <style>
     .seo-kapsam { max-width: 1080px; margin: 24px auto 48px; padding: 0 24px; }
     .seo-yol { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--gri-metin); margin-bottom: 16px; }
