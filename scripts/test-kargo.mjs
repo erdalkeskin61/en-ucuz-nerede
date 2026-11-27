@@ -51,6 +51,7 @@ const BEKLENEN = {
   deneystore: { fee: 199.99, freeOver: 3000 },
   // 2026-11-27 kullanıcı bildirimi
   filamentvakti: { fee: 149, freeOver: 3500 },
+  filamenthane: { fee: 99.9, freeOver: 2000 },
 };
 for (const [site, b] of Object.entries(BEKLENEN)) {
   const k = SITE_KARGO_VARSAYILANLARI[site];

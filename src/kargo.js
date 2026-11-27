@@ -331,6 +331,12 @@ export const SITE_KARGO_VARSAYILANLARI = {
     applies: true,
     note: 'Kargo 149 TL · 3.500 TL ve üzeri ücretsiz',
   },
+  'filamenthane': {
+    fee: 99.9,
+    freeOver: 2000,
+    applies: true,
+    note: 'Kargo 99.90 TL · 2.000 TL ve üzeri ücretsiz',
+  },
 };
 
 /**
