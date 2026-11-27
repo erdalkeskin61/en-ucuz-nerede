@@ -41,6 +41,10 @@ export const SITE_AGLARI = {
   elegoo_us: 'impact',
   elegoo_eu: 'impact',
   elegoo_jp: 'impact',
+  snapmaker_us: 'impact',
+  snapmaker_fr: 'impact',
+  snapmaker_eu: 'impact',
+  heygears_us: 'impact',
 };
 
 /**
@@ -162,6 +166,10 @@ const VARSAYILAN_SITE_SABLONLARI = Object.freeze({
   elegoo_us: 'https://elegoo.sjv.io/c/8295867/1692726/19663?u={url}',
   elegoo_eu: 'https://elegoo.sjv.io/c/8295867/1692726/19663?u={url}',
   elegoo_jp: 'https://elegoo.sjv.io/c/8295867/1692726/19663?u={url}',
+  snapmaker_us: 'https://snapmaker.sjv.io/c/8295867/1346054/16240?u={url}',
+  snapmaker_fr: 'https://snapmaker.sjv.io/c/8295867/1346054/16240?u={url}',
+  snapmaker_eu: 'https://snapmaker.sjv.io/c/8295867/1346054/16240?u={url}',
+  heygears_us: 'https://heygears.pxf.io/c/8295867/3929807/53995?u={url}',
 });
 
 /** Kayıtlı ayarları varsayılanlarla birleştirir (eksik alanlar bozulmasın). */

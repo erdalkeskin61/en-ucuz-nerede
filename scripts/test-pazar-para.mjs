@@ -491,6 +491,8 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazo
   && detectSite('https://store.sunlu.com/fr/products/sunlu-pla')?.id === 'sunlu_fr'
   && detectSite('https://us.snapmaker.com/products/snapmaker-artisan')?.id === 'snapmaker_us'
   && detectSite('https://eu.snapmaker.com/fr/products/snapmaker-artisan')?.id === 'snapmaker_fr'
+  && detectSite('https://eu.snapmaker.com/products/snapmaker-artisan')?.id === 'snapmaker_eu'
+  && detectSite('https://store.heygears.com/products/ultracraft-reflex-rs-3d-printer')?.id === 'heygears_us'
   && detectSite('https://overture3d.com/en-eu/products/overture-pla')?.id === 'overture_fr'
   && detectSite('https://eu.flashforge.com/fr/products/ad5x-3d-imprimante')?.id === 'flashforge_fr'
   && detectSite('https://store.landu3d.com/fr/products/matte-pla-filament')?.id === 'landu_fr'
@@ -1360,14 +1362,22 @@ console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi i
     const elegooUsLink = afiliyeLink('elegoo_us', 'https://us.elegoo.com/products/elegoo-neptune-4-pro');
     const elegooEuLink = afiliyeLink('elegoo_eu', 'https://eu.elegoo.com/products/elegoo-neptune-4-pro');
     const elegooJpLink = afiliyeLink('elegoo_jp', 'https://jp.elegoo.com/products/elegoo-neptune-4-pro');
-    kontrol('Varsayılan Impact ortaklıkları (Flashforge, Sovol 3D, Creality Official, ELEGOO) ?u= ile çalışır',
+    const snapUsLink = afiliyeLink('snapmaker_us', 'https://us.snapmaker.com/products/snapmaker-artisan');
+    const snapFrLink = afiliyeLink('snapmaker_fr', 'https://eu.snapmaker.com/fr/products/snapmaker-artisan');
+    const snapEuLink = afiliyeLink('snapmaker_eu', 'https://eu.snapmaker.com/products/snapmaker-artisan');
+    const hgUsLink = afiliyeLink('heygears_us', 'https://store.heygears.com/products/ultracraft-reflex-rs-3d-printer');
+    kontrol('Varsayılan Impact ortaklıkları (Flashforge, Sovol 3D, Creality Official, ELEGOO, Snapmaker, HeyGears) ?u= ile çalışır',
       ffLink.startsWith('https://flashforge.sjv.io/c/8295867/3092803/38200?u=')
       && sovolLink.startsWith('https://sovol3d.sjv.io/c/8295867/3963679/55332?u=')
       && crealityLink.startsWith('https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u=')
       && elegooUsLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
       && elegooEuLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
-      && elegooJpLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u='),
-      JSON.stringify({ ffLink, sovolLink, crealityLink, elegooUsLink, elegooEuLink, elegooJpLink }));
+      && elegooJpLink.startsWith('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
+      && snapUsLink.startsWith('https://snapmaker.sjv.io/c/8295867/1346054/16240?u=')
+      && snapFrLink.startsWith('https://snapmaker.sjv.io/c/8295867/1346054/16240?u=')
+      && snapEuLink.startsWith('https://snapmaker.sjv.io/c/8295867/1346054/16240?u=')
+      && hgUsLink.startsWith('https://heygears.pxf.io/c/8295867/3929807/53995?u='),
+      JSON.stringify({ ffLink, sovolLink, crealityLink, elegooUsLink, elegooEuLink, elegooJpLink, snapUsLink, hgUsLink }));
 
     const { createHash } = await import('node:crypto');
     const cCode = 'challenge_123';
