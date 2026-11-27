@@ -498,7 +498,6 @@ kontrol('detectSite US/FR/EU/JP Shopify, WooCommerce, PrestaShop, Prusa3D, Amazo
   && detectSite('https://store.landu3d.com/fr/products/matte-pla-filament')?.id === 'landu_fr'
   && detectSite('https://store.landu3d.com/products/landu-pla-filament')?.id === 'landu_us'
   && detectSite('https://siraya.tech/products/build-sonic-4k-resin')?.id === 'siraya_us'
-  && detectSite('https://jayo3d.com/products/jayo-pla')?.id === 'jayo_us'
   && detectSite('https://eryone3d.com/products/matte-pla')?.id === 'eryone_us'
   && detectSite('https://eryone3d.com/fr/products/matte-pla')?.id === 'eryone_fr'
   && detectSite('https://iiidmax.com/products/iiid-max-classic-pla')?.id === 'iiidmax'

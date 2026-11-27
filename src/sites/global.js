@@ -41,7 +41,6 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   { id: 'snapmaker_us', name: 'Snapmaker (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://us.snapmaker.com', extraHosts: ['shop.snapmaker.com'] },
   { id: 'heygears_us', name: 'HeyGears (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.heygears.com', extraHosts: ['heygears.com', 'www.heygears.com'] },
   { id: 'siraya_us', name: 'Siraya Tech', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://siraya.tech' },
-  { id: 'jayo_us', name: 'JAYO 3D', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://jayo3d.com' },
   { id: 'eryone_us', name: 'ERYONE (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://eryone3d.com' },
   { id: 'iiidmax', name: 'IIID Max', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://iiidmax.com' },
   { id: 'inslogic_us', name: 'Inslogic (US)', market: 'us', currency: 'USD', tur: 'shopify', base: 'https://store.inslogic3d.com' },
@@ -107,7 +106,8 @@ export const GLOBAL_MAGAZA_TANIMLARI = Object.freeze([
   // 🇯🇵 Japonya (JPY) — 7 mağaza (+ creality_jp + prusa_ja = 9)
   // =========================================================================
   { id: '3dprintersdepot_jp', name: '3DPrintersDepot (JP)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://3dprintersdepot.com/en-jp', pathPrefix: '/en-jp' },
-  { id: 'inslogic_jp', name: 'Inslogic (JP)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://store.inslogic3d.com/ja', pathPrefix: '/ja', currencyQuery: true },
+  // store.inslogic3d.com/ja Shopify Markets TR/global IP'ye USD döndürdüğü için gerçek para birimi USD'dir.
+  { id: 'inslogic_jp', name: 'Inslogic (JP)', market: 'jp', currency: 'USD', tur: 'shopify', base: 'https://store.inslogic3d.com/ja', pathPrefix: '/ja' },
   { id: 'skhonpo_jp', name: 'SK本舗 (SK Honpo)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://skhonpo.com' },
   { id: 'sunstella_jp', name: 'サンステラ (Sunstella)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://sunstella.co.jp' },
   { id: 'elegoo_jp', name: 'ELEGOO (JP)', market: 'jp', currency: 'JPY', tur: 'shopify', base: 'https://jp.elegoo.com' },

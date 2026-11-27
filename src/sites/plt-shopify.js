@@ -186,6 +186,23 @@ export function enIyiVaryant(variants, kaynak = null) {
   return enIyi;
 }
 
+const TERIM_ESANLAMLILARI = {
+  filament: ['filament', 'フィラメント', 'bobine'],
+};
+
+/**
+ * `/products.json` yedeğinde çok dilli ürün eşleşmesi (başlık, tip, marka, etiket).
+ * `filament` gibi sorgular JP (`フィラメント`) / FR (`bobine`) kataloglarını da kapsar.
+ */
+function shopifyUrunSorguyaUyar(p, kelimeler) {
+  if (!kelimeler.length) return true;
+  const bas = `${p.vendor || ''} ${p.title || ''} ${p.product_type || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+  return kelimeler.every(w => {
+    const alternatifler = TERIM_ESANLAMLILARI[w];
+    return alternatifler ? alternatifler.some(t => bas.includes(t)) : bas.includes(w);
+  });
+}
+
 export function shopifySite(cfg) {
   const { id, name, hosts, base, pathPrefix = null, currencyQuery = false } = cfg;
   const market = cfg.market || 'tr';
@@ -226,22 +243,26 @@ export function shopifySite(cfg) {
     },
 
     async searchProducts(query, ctx) {
-      const url = base + '/search/suggest.json?q=' + encodeURIComponent(query)
-        + '&resources[type]=product&resources[limit]=10&resources[options][fields]=title,product_type,variants.title,tag';
-      try {
-        const r = await fetchPage(url, { site: this.id, purpose: 'arama' });
-        ctx.spend += r.requestsSpent;
-        const data = guvenliJsonAyristir(r.body, 'Shopify arama yanıtı JSON değil.');
-        const urunler = data?.resources?.results?.products || [];
-        if (urunler.length) {
-          return urunler.map(u => ({
-            title: markaliBaslik(u.vendor, u.title, this.id, this.name),
-            url: base + '/products/' + u.handle,
-            price: u.price != null ? jsonFiyatOku(u.price, false) : null,
-            brand: gercekMarkaBul(u.vendor, u.title, this.id, this.name),
-          })).filter(u => u.title && u.url);
-        }
-      } catch { /* suggest.json devre dışı (ör. JP mağazaları → 417): products.json yedeğine geç */ }
+      // Shopify JP mağazaları `/search/suggest.json` ucunda HTTP 417
+      // ("Unsupported buyer locale") döndürebilir; JP/JPY için doğrudan /products.json'a geç.
+      if (market !== 'jp' && currency !== 'JPY') {
+        const url = base + '/search/suggest.json?q=' + encodeURIComponent(query)
+          + '&resources[type]=product&resources[limit]=10&resources[options][fields]=title,product_type,variants.title,tag';
+        try {
+          const r = await fetchPage(url, { site: this.id, purpose: 'arama' });
+          ctx.spend += r.requestsSpent;
+          const data = guvenliJsonAyristir(r.body, 'Shopify arama yanıtı JSON değil.');
+          const urunler = data?.resources?.results?.products || [];
+          if (urunler.length) {
+            return urunler.map(u => ({
+              title: markaliBaslik(u.vendor, u.title, this.id, this.name),
+              url: base + '/products/' + u.handle,
+              price: u.price != null ? jsonFiyatOku(u.price, false) : null,
+              brand: gercekMarkaBul(u.vendor, u.title, this.id, this.name),
+            })).filter(u => u.title && u.url);
+          }
+        } catch { /* suggest.json devre dışı: products.json yedeğine geç */ }
+      }
 
       // Yedek: /products.json?limit=250 içinden sorgu kelimeleriyle eşleşen ürünleri çıkar.
       const rp = await fetchPage(base + '/products.json?limit=250', { site: this.id, purpose: 'arama' });
@@ -250,11 +271,7 @@ export function shopifySite(cfg) {
       const tumu = Array.isArray(pJson?.products) ? pJson.products : [];
       const kelimeler = String(query || '').toLowerCase().split(/\s+/).filter(w => w.length >= 2);
       return tumu
-        .filter(p => {
-          const bas = `${p.vendor || ''} ${p.title || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
-          return !kelimeler.length || kelimeler.every(w => bas.includes(w));
-        })
-        .slice(0, 12)
+        .filter(p => shopifyUrunSorguyaUyar(p, kelimeler))
         .map(p => {
           const v0 = (p.variants || []).find(v => v.available !== false) || p.variants?.[0] || {};
           return {
@@ -263,7 +280,9 @@ export function shopifySite(cfg) {
             price: jsonFiyatOku(v0.price, false),
             brand: gercekMarkaBul(p.vendor, p.title, this.id, this.name),
           };
-        });
+        })
+        .filter(u => u.title && u.url && u.price > 0)
+        .slice(0, 12);
     },
 
     async getProduct(url, ctx, opts = {}) {

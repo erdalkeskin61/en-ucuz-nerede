@@ -731,6 +731,12 @@ async function rawFetch(targetUrl, opts = {}) {
         directResult = tekrar;
       }
 
+      // 417 (ör. Shopify JP mağazalarında /search/suggest.json -> "Unsupported buyer locale"):
+      // kesin istemci/yerel ayar cevabıdır; proxy/tarayıcı denemek sadece 45-90 sn zaman aşımı yaratır.
+      // Diğer uçlar (/products.json) aynı alan adında çalıştığı için yumuşak engel cooldown konmaz.
+      if (directResult.status === 417) {
+        return directResult;
+      }
       // 404/410 KESİN cevaptır: sayfa yok VEYA site bizi yumuşak engelliyor (T-Soft/
       // IdeaSoft WAF'ı 404 + ~180 KB hata sayfası döndürüyor). Bu durumda sağlayıcı ya
       // da tarayıcı denemek anlamsız: SPA siteler aynı hata sayfasını HTTP 200 ile

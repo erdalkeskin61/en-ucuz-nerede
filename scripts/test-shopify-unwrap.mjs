@@ -274,6 +274,34 @@ try {
   kontrol('1kg siyah varyantı seçilir', agir.varyant.id === 9001, String(agir.varyant.id));
 
   kontrol('ağ stub’ı gerçekten kullanıldı (>=6 istek)', istekSayisi >= 6, String(istekSayisi));
+
+  // JP Shopify mağazası (JPY): suggest.json atlanır, /products.json içinden
+  // product_type + Japonca 'フィラメント' eşleştirilir, fiyatı 0 olanlar elenir.
+  const jpHost = testHost('jp.elegoo.example');
+  const jpUrls = [];
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    jpUrls.push(u);
+    if (u.includes('/products.json')) {
+      return new Response(JSON.stringify({
+        products: [
+          { title: 'PLA Plus 10KG', vendor: 'ELEGOO', product_type: '3D Filaments', tags: ['PLA'], handle: 'pla-plus-10kg', variants: [{ price: '14790', available: true }] },
+          { title: 'Inslogic MetalFill PLAフィラメント', vendor: 'Inslogic', product_type: 'フィラメント', tags: [], handle: 'metalfill-pla', variants: [{ price: '3990', available: true }] },
+          { title: 'Vitrin PLA Filament', vendor: 'JAYO', product_type: '3D Filaments', tags: [], handle: 'vitrin-0', variants: [{ price: '0.00', available: true }] },
+        ],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    return new Response('{}', { status: 417 });
+  };
+  const jpSite = shopifySite({ id: 'elegoo_jp', name: 'ELEGOO (JP)', market: 'jp', currency: 'JPY', hosts: [jpHost], base: 'https://' + jpHost });
+  const jpUsdSite = shopifySite({ id: 'inslogic_jp', name: 'Inslogic (JP)', market: 'jp', currency: 'USD', hosts: [jpHost], base: 'https://' + jpHost });
+  const jpSonuc = await jpSite.searchProducts('pla filament', { spend: 0 });
+  const jpUsdSonuc = await jpUsdSite.searchProducts('pla filament', { spend: 0 });
+  kontrol('JP mağazalar (JPY/USD) /search/suggest.json isteği ATMAZ', !jpUrls.some(u => u.includes('suggest.json')), jpUrls.join(', '));
+  kontrol('JPY mağaza /products.json üzerinden 2 geçerli ürün bulur (0 fiyat elenir)',
+    Array.isArray(jpSonuc) && jpSonuc.length === 2 && jpUsdSonuc.length === 2, `${jpSonuc?.length}/${jpUsdSonuc?.length}`);
+  kontrol('JPY mağazada Japonca フィラメント + product_type eşleşir',
+    jpSonuc.some(u => /MetalFill PLAフィラメント/.test(u.title)) && jpSonuc.some(u => /PLA Plus 10KG/.test(u.title)));
 } finally {
   globalThis.fetch = gercekFetch;
 }
@@ -343,6 +371,8 @@ kontrol('healthPulse.js: porima3d d3 listesinde',
   /'samm',[\s\S]{0,220}'porima3d'/.test(healthSrc));
 kontrol('healthPulse.js: sorguGrubu export edilir',
   /export function sorguGrubu/.test(healthSrc));
+kontrol('scraper.js: HTTP 417 hızlı dönüşü tanımlı',
+  /directResult\.status === 417/.test(oku('src/scraper.js')));
 
 /* ------------------------------------------------------------------ */
 bolum('7) 🌐 CANLI adaptör sağlığı (--canli)');
