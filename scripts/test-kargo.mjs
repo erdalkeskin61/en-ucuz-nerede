@@ -49,6 +49,8 @@ const BEKLENEN = {
   tou3d: { fee: 175, freeOver: 2000 },
   // 2026-10-28 beşinci grup
   deneystore: { fee: 199.99, freeOver: 3000 },
+  // 2026-11-27 kullanıcı bildirimi
+  filamentvakti: { fee: 149, freeOver: 3500 },
 };
 for (const [site, b] of Object.entries(BEKLENEN)) {
   const k = SITE_KARGO_VARSAYILANLARI[site];

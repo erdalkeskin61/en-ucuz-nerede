@@ -324,6 +324,13 @@ export const SITE_KARGO_VARSAYILANLARI = {
     applies: true,
     note: 'Kargo 99 TL · 1.500 TL ve üzeri ücretsiz',
   },
+  // ---- 2026-11-27 (kullanıcı bildirimi) ----
+  'filamentvakti': {
+    fee: 149,
+    freeOver: 3500,
+    applies: true,
+    note: 'Kargo 149 TL · 3.500 TL ve üzeri ücretsiz',
+  },
 };
 
 /**
