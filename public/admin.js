@@ -608,6 +608,7 @@ function waKanalFormDegeri() {
     phoneNumberId: $('#waKanalPhoneId')?.value.trim() || '',
     apiVersion: $('#waKanalApiVersion')?.value.trim() || 'v21.0',
     resimliGonder: $('#waKanalResimli')?.checked !== false,
+    davetUrl: $('#waKanalDavetUrl')?.value.trim() || '',
     token: $('#waKanalToken')?.value.trim() || undefined,
   };
 }
@@ -646,7 +647,7 @@ function waKanalKaydetGecikmeli() {
 (function waKanalOlaylari() {
   const alanlar = ['#waKanalEnabled', '#waKanalProvider', '#waKanalChannelId',
     '#waKanalApiUrl', '#waKanalToken', '#waKanalPhoneId',
-    '#waKanalApiVersion', '#waKanalResimli'];
+    '#waKanalApiVersion', '#waKanalResimli', '#waKanalDavetUrl'];
   for (const sel of alanlar) {
     const el = $(sel);
     if (!el) continue;
@@ -742,6 +743,8 @@ async function ayarlariYukle() {
     waKanalMetaGorunumu();
     if ($('#firsatEnabled')) $('#firsatEnabled').checked = !!s.firsat?.enabled;
     if ($('#firsatKanal')) $('#firsatKanal').value = s.firsat?.kanal || '';
+    if ($('#firsatDavetUrl')) $('#firsatDavetUrl').value = s.firsat?.davetUrl || '';
+    if ($('#waKanalDavetUrl')) $('#waKanalDavetUrl').value = s.whatsapp?.davetUrl || '';
     if ($('#firsatMinIndirim')) $('#firsatMinIndirim').value = s.firsat?.minIndirim ?? 15;
     if ($('#firsatGunlukMax')) $('#firsatGunlukMax').value = s.firsat?.gunlukMax ?? 12;
     if ($('#firsatSaatAraligi')) $('#firsatSaatAraligi').value = s.firsat?.saatAraligi ?? 2;
@@ -793,6 +796,7 @@ $('#kaydetBtn')?.addEventListener('click', async () => {
     firsat: {
       enabled: $('#firsatEnabled')?.checked || false,
       kanal: $('#firsatKanal')?.value.trim() || '',
+      davetUrl: $('#firsatDavetUrl')?.value.trim() || '',
       minIndirim: parseInt($('#firsatMinIndirim')?.value, 10) || 15,
       gunlukMax: parseInt($('#firsatGunlukMax')?.value, 10) || 12,
       saatAraligi: parseInt($('#firsatSaatAraligi')?.value, 10) || 2,
@@ -1061,6 +1065,7 @@ function firsatFormDegeri() {
   return {
     enabled: $('#firsatEnabled')?.checked === true,
     kanal: $('#firsatKanal')?.value.trim() || '',
+    davetUrl: $('#firsatDavetUrl')?.value.trim() || '',
     minIndirim: sinirla('#firsatMinIndirim', 15, 1, 95),
     gunlukMax: sinirla('#firsatGunlukMax', 12, 1, 100),
     saatAraligi: sinirla('#firsatSaatAraligi', 2, 1, 24),
@@ -1104,7 +1109,7 @@ $('#firsatEnabled')?.addEventListener('change', () => {
   clearTimeout(firsatKaydetTimer);
   firsatAyarlariniKaydet();
 });
-for (const sel of ['#firsatKanal', '#firsatMinIndirim', '#firsatGunlukMax', '#firsatSaatAraligi']) {
+for (const sel of ['#firsatKanal', '#firsatDavetUrl', '#firsatMinIndirim', '#firsatGunlukMax', '#firsatSaatAraligi']) {
   $(sel)?.addEventListener('input', firsatKaydetGecikmeli);
   $(sel)?.addEventListener('change', firsatKaydetGecikmeli);
 }

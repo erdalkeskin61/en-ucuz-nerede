@@ -821,6 +821,16 @@ let sitelerHazir = (async () => {
       const el = document.getElementById(id);
       if (el) el.textContent = SITE_SIRASI.length;
     }
+    // Fırsat kanalı çapraz bağlantısı (/api/durum'dan yalnızca açık davet linki)
+    if (d.kanallar && typeof d.kanallar === 'object') {
+      const tgBtn = document.getElementById('kanalTelegramBtn');
+      const waBtn = document.getElementById('kanalWhatsappBtn');
+      if (tgBtn && d.kanallar.telegramUrl) tgBtn.href = d.kanallar.telegramUrl;
+      if (waBtn && d.kanallar.whatsappUrl) {
+        waBtn.href = d.kanallar.whatsappUrl;
+        waBtn.hidden = false;
+      }
+    }
     // Sepet hızlı modu etiketi ve tooltip'i (bölge & güncel mağaza sayısıyla uyumlu)
     const hizliLbl = document.querySelector('label.sepet-hizli');
     const hizliCb = document.getElementById('sepetHizli');

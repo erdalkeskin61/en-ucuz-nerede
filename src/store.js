@@ -467,6 +467,7 @@ const DEFAULT_SETTINGS = {
     phoneNumberId: '',          // yalnızca meta
     apiVersion: 'v21.0',        // yalnızca meta
     resimliGonder: true,        // fiyat grafiği varsa caption olarak gönder
+    davetUrl: '',               // herkese açık WhatsApp Kanal davet linki (isteğe bağlı)
   },
   alarmCheckMinutes: config.alarmCheckMinutes,
   alarmSaatleri: DEFAULT_ALARM_SAATLERI,
@@ -475,6 +476,7 @@ const DEFAULT_SETTINGS = {
   firsat: {
     enabled: false,
     kanal: '',
+    davetUrl: '',
     minIndirim: 15,
     gunlukMax: 12,
     saatAraligi: 2,
@@ -545,11 +547,11 @@ const WHATSAPP_ANAHTARLARI = [
   'enabled', 'webhookUrl', 'phone',
   // 📢 Otonom fırsat kanalı (2026-11-05)
   'firsatKanalEnabled', 'provider', 'channelId', 'apiUrl', 'token',
-  'phoneNumberId', 'apiVersion', 'resimliGonder',
+  'phoneNumberId', 'apiVersion', 'resimliGonder', 'davetUrl',
 ];
 const TELEGRAM_ANAHTARLARI = ['enabled', 'botToken', 'chatId'];
 const FIRSAT_ANAHTARLARI = [
-  'enabled', 'kanal', 'minIndirim', 'gunlukMax',
+  'enabled', 'kanal', 'davetUrl', 'minIndirim', 'gunlukMax',
   'saatAraligi', 'cooldownSaat', 'maxTarama', 'donguBasina',
 ];
 const RADAR_ANAHTARLARI = [
@@ -566,6 +568,34 @@ const DBBAKIM_ANAHTARLARI = ['sonCalisma', 'sureMs', 'ok', 'temizlenenDosya', 'k
  * API'ye `minIndirim: 999` gönderildiğinde veritabanına 999 yazılıyor ve panel
  * bunu "kaydedildi" diye gösteriyordu. Artık TEK kaynak: yazma anında sınırlanır.
  */
+function guvenliKanalUrl(ham, regex) {
+  const s = String(ham || '').trim();
+  if (!s || !regex.test(s)) return '';
+  return s.slice(0, 220);
+}
+
+/**
+ * Herkese açık (/api/durum ve ürün sayfaları) fırsat kanalı davet linklerini döndürür.
+ * Token, özel webhook URL'i veya sayısal -100... grup kimlikleri ASLA sızdırılmaz.
+ */
+export function kanallarPublicOzet() {
+  const s = getSettings();
+  const f = s.firsat || {};
+  const wa = s.whatsapp || {};
+  let telegramUrl = guvenliKanalUrl(f.davetUrl, /^https:\/\/t\.me\//i);
+  if (!telegramUrl && /^@[a-zA-Z][a-zA-Z0-9_]{3,60}$/.test(String(f.kanal || '').trim())) {
+    telegramUrl = 'https://t.me/' + String(f.kanal).trim().slice(1);
+  }
+  if (!telegramUrl) {
+    telegramUrl = 'https://t.me/erdal_fiyat_takip_bot';
+  }
+  const whatsappUrl = guvenliKanalUrl(
+    wa.davetUrl,
+    /^https:\/\/(?:whatsapp\.com|chat\.whatsapp\.com|wa\.me)\//i,
+  );
+  return { telegramUrl, whatsappUrl };
+}
+
 function firsatSinirla(nesne) {
   const k = sinirla(nesne, FIRSAT_ANAHTARLARI);
   const v = DEFAULT_SETTINGS.firsat;
@@ -577,6 +607,7 @@ function firsatSinirla(nesne) {
   return {
     enabled: k.enabled === true,
     kanal: typeof k.kanal === 'string' ? k.kanal.trim().slice(0, 120) : '',
+    davetUrl: guvenliKanalUrl(k.davetUrl, /^https:\/\/t\.me\//i),
     minIndirim: sayi(k.minIndirim, v.minIndirim, 1, 95),
     gunlukMax: Math.round(sayi(k.gunlukMax, v.gunlukMax, 1, 100)),
     saatAraligi: sayi(k.saatAraligi, v.saatAraligi, 0.5, 24),
@@ -631,11 +662,15 @@ function radarSinirla(nesne) {
 
 export function saveSettings(patch) {
   const cur = getSettings();
+  const waHam = sinirla({ ...cur.whatsapp, ...(patch.whatsapp || {}) }, WHATSAPP_ANAHTARLARI);
+  if ('davetUrl' in waHam) {
+    waHam.davetUrl = guvenliKanalUrl(waHam.davetUrl, /^https:\/\/(?:whatsapp\.com|chat\.whatsapp\.com|wa\.me)\//i);
+  }
   const next = {
     alarmEmail: typeof patch.alarmEmail === 'string' ? patch.alarmEmail.trim() : cur.alarmEmail,
     smtp: sinirla({ ...cur.smtp, ...(patch.smtp || {}) }, SMTP_ANAHTARLARI),
     telegram: sinirla({ ...cur.telegram, ...(patch.telegram || {}) }, TELEGRAM_ANAHTARLARI),
-    whatsapp: sinirla({ ...cur.whatsapp, ...(patch.whatsapp || {}) }, WHATSAPP_ANAHTARLARI),
+    whatsapp: waHam,
     alarmCheckMinutes: Number(patch.alarmCheckMinutes) > 0 ? Number(patch.alarmCheckMinutes) : cur.alarmCheckMinutes,
     alarmSaatleri: Array.isArray(patch.alarmSaatleri) && patch.alarmSaatleri.length
       ? patch.alarmSaatleri.filter(s => /^\d{1,2}:\d{2}$/.test(s)).slice(0, 8)

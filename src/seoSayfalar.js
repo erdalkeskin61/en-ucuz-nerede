@@ -21,7 +21,7 @@ import { formatTL, formatPara, paraBirimiNormalize, parcaMi, slugYap } from './u
 export { slugYap };
 import { birimFiyatHesapla } from './birimFiyat.js';
 import { afiliyeLink, afiliyeAyarlari, aiModelPartnerLinkleri } from './afiliye.js';
-import { dbBaglantisi } from './store.js';
+import { dbBaglantisi, kanallarPublicOzet } from './store.js';
 import { SITE_KARGO_VARSAYILANLARI } from './kargo.js';
 import { siteNames, adapterById, adapterMarket, normalizeMarket, PAZARLAR } from './sites/index.js';
 import { normalizeDil, dilByMarket, sozlukGetir, t, sssSablonlari, DIL_META, dilParaFormati } from './i18n/index.js';
@@ -1136,7 +1136,7 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       }
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="/style.css?v=20" />
+  <link rel="stylesheet" href="/style.css?v=21" />
   <style>
     .seo-kapsam { max-width: 1080px; margin: 24px auto 48px; padding: 0 24px; }
     .seo-yol { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--gri-metin); margin-bottom: 16px; }
@@ -1914,6 +1914,50 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
   jsonLdList.push(faqSchema);
   const cokRenkliHtml = cokRenkliUrunBolumuHtml(urun, kat, dil);
   const globalCreality = crealityResmiMagazaLink(urun);
+  const kanallar = (() => {
+    try { return kanallarPublicOzet(); } catch { return { telegramUrl: 'https://t.me/erdal_fiyat_takip_bot', whatsappUrl: '' }; }
+  })();
+  const kanalKartMetin = {
+    tr: {
+      rozet: '%15+ DİP & KRİTİK STOK',
+      yazi: 'Anlık %15+ fiyat düşüşleri ve kritik stok uyarıları <strong>Telegram / WhatsApp</strong> kanalında.',
+      tg: '✈️ Telegram Fırsat Kanalı',
+      wa: '💬 WhatsApp Kanalı',
+    },
+    en: {
+      rozet: '15%+ DROPS & LOW STOCK',
+      yazi: 'Instant 15%+ price drops and critical low-stock alerts on our <strong>Telegram / WhatsApp</strong> channel.',
+      tg: '✈️ Telegram Deal Channel',
+      wa: '💬 WhatsApp Channel',
+    },
+    fr: {
+      rozet: '-15 %+ & STOCK CRITIQUE',
+      yazi: 'Baisses de prix de 15 %+ et alertes de stock critique en direct sur notre canal <strong>Telegram / WhatsApp</strong>.',
+      tg: '✈️ Canal Telegram',
+      wa: '💬 Chaîne WhatsApp',
+    },
+    ja: {
+      rozet: '15%以上の値下げ・在庫速報',
+      yazi: '15%以上の大幅値下げや残りわずかの在庫速報を<strong>Telegram / WhatsApp</strong>でリアルタイム配信中。',
+      tg: '✈️ Telegramで受け取る',
+      wa: '💬 WhatsApp',
+    },
+  }[dil] || {
+    rozet: '%15+ DİP & KRİTİK STOK',
+    yazi: 'Anlık %15+ fiyat düşüşleri ve kritik stok uyarıları <strong>Telegram / WhatsApp</strong> kanalında.',
+    tg: '✈️ Telegram Fırsat Kanalı',
+    wa: '💬 WhatsApp Kanalı',
+  };
+  const kanalBannerHtml = `<aside class="kanal-cta-kart" id="seoKanalCta">
+    <div class="kanal-cta-metin">
+      <span class="kanal-cta-rozet">${htmlKacis(kanalKartMetin.rozet)}</span>
+      <p>${kanalKartMetin.yazi}</p>
+    </div>
+    <div class="kanal-cta-butonlar">
+      <a class="kanal-cta-btn tg" href="${htmlKacis(kanallar.telegramUrl)}" target="_blank" rel="noopener">${htmlKacis(kanalKartMetin.tg)}</a>
+      ${kanallar.whatsappUrl ? `<a class="kanal-cta-btn wa" href="${htmlKacis(kanallar.whatsappUrl)}" target="_blank" rel="noopener">${htmlKacis(kanalKartMetin.wa)}</a>` : ''}
+    </div>
+  </aside>`;
 
   const ozetHtml = urun.enUcuzFiyat > 0
     ? `<div class="seo-fiyat-kutu">
@@ -1965,6 +2009,8 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
     ${analizHtml}
 
     ${cokRenkliHtml}
+
+    ${kanalBannerHtml}
 
     ${sssHtml}
 

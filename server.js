@@ -3175,6 +3175,7 @@ app.get('/api/durum', (req, res) => {
     yzHazir: !!config.ai.apiKey,
     yzModel: config.ai.model,
     afiliyeAktif,
+    kanallar: store.kanallarPublicOzet(),
     market: etkinPazar,
     hizliSiteSayisi,
     desteklenenSiteler: piyasaAdaptorleri.map(a => a.id),

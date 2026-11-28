@@ -187,16 +187,28 @@ export function whatsappKartOlustur(d) {
  */
 export function whatsappFirsatKartOlustur(f) {
   if (!f || typeof f !== 'object') return '';
+  const kritik = f.sinyalTur === 'kritik_stok';
+  const yuzdeStr = String(f.indirim ?? '—').replace('.', ',');
   const satirlar = [
-    `🔥 *GÜNÜN FIRSATI: ${whatsappKac(f.urun)}*`,
+    kritik
+      ? `🚨 *KRİTİK STOK UYARISI: ${whatsappKac(f.urun)}*`
+      : `🔥 *GÜNÜN FIRSATI: ${whatsappKac(f.urun)}*`,
     CIZGI,
     `🏪 *Mağaza:* ${whatsappKac(f.site)}`,
-    `💰 *Fiyat:* ${ustuCizili(para(f.referans))} ➔ *${para(f.fiyat)}*`,
-    `📉 *İndirim:* %${String(f.indirim ?? '—').replace('.', ',')} `
-      + `(tasarruf ${para(f.fark)})`,
+    f.referans > f.fiyat
+      ? `💰 *Fiyat:* ${ustuCizili(para(f.referans))} ➔ *${para(f.fiyat)}*`
+      : `💰 *Güncel Fiyat:* *${para(f.fiyat)}*`,
+  ];
+  if (f.birimMetni) {
+    satirlar.push(`⚖️ *Birim (kargo dahil):* *${whatsappKac(f.birimMetni)}*${f.indirim > 0 ? ` (dipten %${yuzdeStr} aşağı düştü)` : ''}`);
+  }
+  if (f.indirim > 0) {
+    satirlar.push(`📉 *İndirim:* %${yuzdeStr} (tasarruf ${para(f.fark)})`);
+  }
+  satirlar.push(
     `📦 *Kargo:* ${whatsappKac(f.kargo || 'Bilinmiyor')}`,
     `🏷️ *Durum:* ${whatsappKac(f.durum || 'Stokta')}`,
-  ];
+  );
   if (f.url) {
     satirlar.push(CIZGI, '🛒 *Fırsatı İncele ve Satın Al:*', String(f.url));
   }

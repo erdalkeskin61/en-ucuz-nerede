@@ -7050,6 +7050,50 @@ html[data-theme="dark"] .stl-hizli-cta {
   font-weight: 600;
 }
 
+/* 📢 Fırsat Radarı Çapraz Bağlantı Kartı (Motor 6) */
+.kanal-cta-kart {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.kanal-cta-metin { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1 1 280px; }
+.kanal-cta-metin p { margin: 0; font-size: 13.5px; color: var(--metin); line-height: 1.45; }
+.kanal-cta-rozet {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ana-acik);
+  color: var(--ana);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.kanal-cta-butonlar { display: flex; gap: 8px; flex-wrap: wrap; }
+.kanal-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--cizgi);
+  transition: transform .12s ease, opacity .12s ease;
+}
+.kanal-cta-btn:hover { transform: translateY(-1px); opacity: 0.94; }
+.kanal-cta-btn.tg { background: #0088cc; color: #fff; border-color: #0088cc; }
+.kanal-cta-btn.wa { background: #16a34a; color: #fff; border-color: #16a34a; }
+
+
 
 
 

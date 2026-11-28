@@ -148,6 +148,9 @@ export function firsatAdayiBul(sonuc, opts = {}) {
 
   const fz = o.fiyatZekasi || null;
   const fa = o.fiyatAnalizi || fz || null;
+  const tukenenSayisi = (sonuc.sonuclar || []).filter(r =>
+    r && r.status === 'found' && r.product && r.product.inStock === false).length;
+  const birimMetni = secili.product.birim?.etiket || o.enUcuzBirimMetni || null;
 
   // ---- Referans (eski/ortalama) fiyat: yalnızca GERÇEK veriler ----
   let referans = null;
@@ -168,14 +171,16 @@ export function firsatAdayiBul(sonuc, opts = {}) {
     referans = etiket;
     referansKaynagi = 'mağaza liste fiyatı';
   }
-  if (!referans) {
-    return { uygun: false, neden: 'güvenilir referans fiyat yok (uydurma indirim yapılmaz)' };
-  }
 
-  const indirim = Math.round((referans - urunFiyat) / referans * 1000) / 10;
+  const indirim = referans ? Math.round((referans - urunFiyat) / referans * 1000) / 10 : 0;
   const minIndirim = Number.isFinite(Number(opts.minIndirim))
     ? Number(opts.minIndirim) : firsatAyar().minIndirim;
-  if (indirim < minIndirim) {
+  const kritikStok = opts.kritikStok !== false && adaylar.length === 1 && tukenenSayisi >= 2;
+
+  if (!referans && !kritikStok) {
+    return { uygun: false, neden: 'güvenilir referans fiyat yok (uydurma indirim yapılmaz)' };
+  }
+  if (indirim < minIndirim && !kritikStok) {
     return { uygun: false, neden: `indirim %${indirim} < eşik %${minIndirim}`, indirim };
   }
 
@@ -189,10 +194,13 @@ export function firsatAdayiBul(sonuc, opts = {}) {
     kargoMetni = `${para(kargo.ucret)} Kargo`;
   }
 
+  const sinyalTur = indirim >= minIndirim ? 'dip_indirim' : 'kritik_stok';
   const urun = String(sonuc.kaynak.urun || secili.product.title || 'Ürün');
-  const durumMetni = fz?.durum === 'dip_fiyat'
-    ? '🌟 Son 90 günün en düşük fiyatında!'
-    : `🌟 ${referansKaynagi} %${indirim} altında`;
+  const durumMetni = sinyalTur === 'kritik_stok'
+    ? `🚨 Kritik Stok: Yalnızca 1 mağazada kaldı (${tukenenSayisi} mağazada tükendi)`
+    : (fz?.durum === 'dip_fiyat'
+      ? '🌟 Son 90 günün en düşük fiyatında!'
+      : `🌟 ${referansKaynagi} %${indirim} altında`);
 
   // Ürün kimliği: model kodu → barkod → kanonik URL → başlık.
   const urunId = String(
@@ -207,16 +215,19 @@ export function firsatAdayiBul(sonuc, opts = {}) {
 
   return {
     uygun: true,
+    sinyalTur,
     anahtar: urunId,
     slug: slugYap(urun),
     urun,
     site: secili.siteName || secili.site,
     siteId: secili.site,
     fiyat: urunFiyat,
-    referans,
-    referansKaynagi,
+    referans: referans || null,
+    referansKaynagi: referansKaynagi || null,
     indirim,
-    fark: Math.round((referans - urunFiyat) * 100) / 100,
+    fark: referans ? Math.round((referans - urunFiyat) * 100) / 100 : 0,
+    birimMetni,
+    tukenenSayisi,
     kargo: kargoMetni,
     durum: durumMetni,
     image: secili.product.image || sonuc.kaynak.resim || null,
@@ -257,16 +268,28 @@ export function telegramIstegiOlustur(firsat, opts = {}) {
   };
 }
 
-/** Fırsat mesajını istenen şablonda üretir. */
+/** Fırsat mesajını istenen şablonda üretir (dip indirim veya kritik stok). */
 export function firsatMesajiOlustur(f) {
   const baslik = esc(f.urun);
   const site = esc(f.site);
   const karsilastirUrl = kanonikUrunUrl(f);
+  const kritik = f.sinyalTur === 'kritik_stok';
+  const yuzdeStr = String(f.indirim ?? 0).replace('.', ',');
+  const fiyatSatiri = f.referans > f.fiyat
+    ? `💰 Fiyat: <s>${para(f.referans)}</s> ➔ <b>${para(f.fiyat)}</b>`
+    : `💰 Güncel Fiyat: <b>${para(f.fiyat)}</b>`;
   const satirlar = [
-    `🔥 <b>GÜNÜN FIRSATI: ${baslik}</b>`,
-    `🏪 Mağaza: ${site} (En Ucuz)`,
-    `💰 Fiyat: <s>${para(f.referans)}</s> ➔ <b>${para(f.fiyat)}</b>`,
-    `📉 İndirim: %${String(f.indirim).replace('.', ',')} Tasarruf (-${para(f.fark)})`,
+    kritik
+      ? `🚨 <b>KRİTİK STOK UYARISI: ${baslik}</b>`
+      : `🔥 <b>GÜNÜN FIRSATI: ${baslik}</b>`,
+    `🏪 Mağaza: ${site} (${kritik ? 'Stoktaki Son Mağaza' : 'En Ucuz'})`,
+    fiyatSatiri,
+    ...(f.birimMetni
+      ? [`⚖️ Birim (kargo dahil): <b>${esc(f.birimMetni)}</b>${f.indirim > 0 ? ` — dipten %${yuzdeStr} aşağı düştü` : ''}`]
+      : []),
+    ...(f.indirim > 0
+      ? [`📉 İndirim: %${yuzdeStr} Tasarruf (-${para(f.fark)})`]
+      : []),
     `📦 Kargo: ${esc(f.kargo)}`,
     `🏷️ Durum: ${esc(f.durum)}`,
     '👉 Fırsatı İncele ve Satın Al:',

@@ -2133,7 +2133,7 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
       </details>`,
     )
     .replace(
-      /<div class="takip-alani" id="takipAlani">[\s\S]*?<\/div>\s*<\/section>/,
+      /<div class="takip-alani" id="takipAlani">[\s\S]*?<\/section>/,
       `<div class="takip-alani" id="takipAlani">
         <h3 class="bolum-baslik">${b.alarmBaslik}</h3>
         <div class="takip-satir">
@@ -2147,6 +2147,20 @@ function anaBolumleriYerellestirHtml(kod, nav, cikti) {
         </div>
         <div id="takipMesaj" class="takip-mesaj"></div>
       </div>
+      <aside class="kanal-cta-kart" id="kanalCtaKart">
+        <div class="kanal-cta-metin">
+          <span class="kanal-cta-rozet">${kod === 'fr' ? '-15 %+ &amp; STOCK CRITIQUE' : (kod === 'ja' ? '15%以上の値下げ・在庫速報' : '15%+ DROPS &amp; LOW STOCK')}</span>
+          <p>${kod === 'fr'
+            ? 'Baisses de prix de 15 %+ et alertes de stock critique en direct sur notre canal <strong>Telegram / WhatsApp</strong>.'
+            : (kod === 'ja'
+              ? '15%以上の大幅値下げや残りわずかの在庫速報を<strong>Telegram / WhatsApp</strong>でリアルタイム配信中。'
+              : 'Instant 15%+ price drops and critical low-stock alerts on our <strong>Telegram / WhatsApp</strong> channel.')}</p>
+        </div>
+        <div class="kanal-cta-butonlar">
+          <a id="kanalTelegramBtn" class="kanal-cta-btn tg" href="https://t.me/erdal_fiyat_takip_bot" target="_blank" rel="noopener">✈️ ${kod === 'fr' ? 'Canal Telegram' : (kod === 'ja' ? 'Telegramで受け取る' : 'Telegram Deal Channel')}</a>
+          <a id="kanalWhatsappBtn" class="kanal-cta-btn wa" href="https://whatsapp.com/channel/" target="_blank" rel="noopener" hidden>💬 WhatsApp</a>
+        </div>
+      </aside>
     </section>`,
     )
     .replace('<small>ebat (mm)</small>', `<small>${b.stlEbatKucuk}</small>`)

@@ -20,12 +20,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from '../src/config.js';
-import { getSettings, closeDatabase, DEFAULT_ALARM_SAATLERI } from '../src/store.js';
+import { getSettings, closeDatabase, DEFAULT_ALARM_SAATLERI, kanallarPublicOzet } from '../src/store.js';
 import {
   firsatAdayiBul, firsatMesajiOlustur, telegramIstegiOlustur,
   spamKontrolu, firsatKaydet, firsatAyar, firsatKapat, firsatTestGonder,
   FIRSAT_VARSAYILAN,
 } from '../src/firsatKanali.js';
+import { whatsappFirsatKartOlustur } from '../src/whatsappKanal.js';
 import { afiliyeLink } from '../src/afiliye.js';
 
 let gecen = 0, toplam = 0;
@@ -327,6 +328,49 @@ bolum('7) Sunucu / arayüz sözleşmesi');
   kontrol('ayarlar: test butonu isteği', /\/api\/firsat\/test/.test(js));
   kontrol('ayarlar: ayarlar kaydında firsat nesnesi', /firsat:\s*\{[\s\S]{0,240}minIndirim/.test(js));
   kontrol('ayarlar: kanal durumu gösteriliyor', /firsatDurumuYukle/.test(js));
+
+  // Motor 6: Birim fiyat (₺/kg), Kritik Stok sinyali ve çapraz bağlantı banner'ı
+  const birimSonuc = sonucOlustur({ fiyat: 480, ortalama: 595, yeterliVeri: true });
+  birimSonuc.kaynak.urun = 'eSUN PLA+ Siyah 1kg';
+  birimSonuc.sonuclar[1].product.birim = { etiket: '₺480,00 / kg' };
+  const birimFirsat = firsatAdayiBul(birimSonuc);
+  const birimTg = firsatMesajiOlustur(birimFirsat);
+  const birimWa = whatsappFirsatKartOlustur(birimFirsat);
+  kontrol('₺/kg birim fiyatı Telegram ve WhatsApp fırsat kartında gösterilir',
+    birimFirsat.uygun === true
+    && birimFirsat.sinyalTur === 'dip_indirim'
+    && birimTg.includes('₺480,00 / kg')
+    && birimTg.includes('dipten %19,3 aşağı düştü')
+    && birimWa.includes('₺480,00 / kg'));
+
+  const kritikSonuc = {
+    kaynak: { site: 'kaynak', siteName: 'Kaynak', url: 'https://kaynak.test/u2', urun: 'Bambu Lab P1S', modelKodu: 'BL-P1S' },
+    sonuclar: [
+      { site: 'kaynak', siteName: 'Kaynak', status: 'found', renkAyni: true, product: { url: 'https://kaynak.test/u2', sellingPrice: 28000, inStock: false } },
+      { site: 'a', siteName: 'Mağaza A', status: 'found', renkAyni: true, product: { url: 'https://a.test/u2', sellingPrice: 28500, inStock: false } },
+      { site: 'b', siteName: 'Mağaza B', status: 'found', renkAyni: true, product: { url: 'https://b.test/u2', sellingPrice: 27999, inStock: true, pricing: { toplam: 27999, kargo: { uygulanir: false } } } },
+    ],
+    ozet: { enUcuzSite: 'Mağaza B', enUcuzFiyat: 27999, bulunanSiteSayisi: 3, tamamiTukendi: false, taranmayanSiteSayisi: 0 },
+  };
+  const kritik = firsatAdayiBul(kritikSonuc);
+  kontrol('kritik stok sinyali (1 stoklu kaldı, 2+ mağaza tükendi) algılanır ve formatlanır',
+    kritik.uygun === true
+    && kritik.sinyalTur === 'kritik_stok'
+    && firsatMesajiOlustur(kritik).includes('KRİTİK STOK UYARISI')
+    && whatsappFirsatKartOlustur(kritik).includes('KRİTİK STOK UYARISI'));
+
+  const kanallar = kanallarPublicOzet();
+  kontrol('kanallarPublicOzet güvenli Telegram linki döndürür ve gizli bilgi sızdırmaz',
+    typeof kanallar.telegramUrl === 'string' && /^https:\/\/t\.me\//.test(kanallar.telegramUrl));
+
+  const indexHtml = oku('public/index.html');
+  const appJs = oku('public/app.js');
+  const seoSrc = oku('src/seoSayfalar.js');
+  kontrol('sonuç alanı altında %15+ Telegram/WhatsApp çapraz bağlantı kartı yer alır',
+    indexHtml.includes('id="kanalCtaKart"')
+    && indexHtml.includes('Anlık %15+ fiyat düşüşleri')
+    && appJs.includes('kanalTelegramBtn')
+    && seoSrc.includes('id="seoKanalCta"'));
 }
 
 /* ---------------------------------------------------------------- */

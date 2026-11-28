@@ -436,6 +436,10 @@
                 <input type="number" id="firsatSaatAraligi" min="1" max="24" step="1" value="2" />
               </div>
             </div>
+            <div style="margin-top:10px">
+              <label for="firsatDavetUrl">Herkese Açık Telegram Kanal Linki (Sitede Gösterilir)</label>
+              <input type="url" id="firsatDavetUrl" placeholder="https://t.me/baskihesapfirsatlari" autocomplete="off" />
+            </div>
           </div>
 
           <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
@@ -512,6 +516,10 @@
             <input type="checkbox" id="waKanalResimli" style="width:auto;margin-right:8px" checked />
             Görsel varsa resim açıklaması (caption) olarak gönder
           </label>
+          <div class="form-satir" style="margin-top:10px">
+            <label for="waKanalDavetUrl">Herkese Açık WhatsApp Kanalı Davet Linki (Sitede Gösterilir)</label>
+            <input type="url" id="waKanalDavetUrl" placeholder="https://whatsapp.com/channel/..." autocomplete="off" />
+          </div>
 
           <div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
             <button type="button" class="kaydet-btn" id="waKanalKaydetBtn">💾 WhatsApp ayarlarını kaydet</button>
