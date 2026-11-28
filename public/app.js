@@ -242,6 +242,7 @@ const VITRIN_YEREL = {
     henuzYok: 'henüz tarama yok',
     radarOnEk: 'Otonom radar · ', sonTarama: (y) => `son tarama ${y}`, canliFiyatlar: 'canlı fiyatlar',
     sayac: (s, t) => `${s} ürün stokta · ${t} kart · 60 sn'de bir yenilenir`,
+    dahaFazla: 'Daha Fazla Ürün Göster (+24)',
   },
   en: {
     azOnce: 'just now', dkOnce: (d) => `${d}m ago`, saOnce: (s) => `${s}h ago`, gunOnce: (g) => `${g}d ago`,
@@ -256,6 +257,7 @@ const VITRIN_YEREL = {
     henuzYok: 'no scan data yet',
     radarOnEk: 'Regional tracker · ', sonTarama: (y) => `updated ${y}`, canliFiyatlar: 'live prices',
     sayac: (s, t) => `${s} in stock · ${t} deals · refreshes every 60s`,
+    dahaFazla: 'Show More Deals (+24)',
   },
   fr: {
     azOnce: 'à l’instant', dkOnce: (d) => `il y a ${d} min`, saOnce: (s) => `il y a ${s} h`, gunOnce: (g) => `il y a ${g} j`,
@@ -270,6 +272,7 @@ const VITRIN_YEREL = {
     henuzYok: 'aucune donnée pour l’instant',
     radarOnEk: 'Suivi régional · ', sonTarama: (y) => `mis à jour ${y}`, canliFiyatlar: 'prix en direct',
     sayac: (s, t) => `${s} en stock · ${t} offres · actualisé toutes les 60 s`,
+    dahaFazla: 'Afficher plus d’offres (+24)',
   },
   ja: {
     azOnce: 'たった今', dkOnce: (d) => `${d}分前`, saOnce: (s) => `${s}時間前`, gunOnce: (g) => `${g}日前`,
@@ -284,6 +287,7 @@ const VITRIN_YEREL = {
     henuzYok: 'スキャンデータ準備中',
     radarOnEk: '地域価格モニター · ', sonTarama: (y) => `最終更新 ${y}`, canliFiyatlar: '最新価格',
     sayac: (s, t) => `在庫あり ${s} 件 · 全 ${t} 件 · 60秒ごとに更新`,
+    dahaFazla: 'さらに表示 (+24件)',
   },
 };
 
@@ -363,6 +367,8 @@ const VITRIN_KATEGORI_SIRA = ['filament', 'yazici', 'genel'];
 
 let vitrinUrunleri = [];
 let vitrinAktifKategori = 'hepsi';
+let vitrinLimit = 24;
+let vitrinKategoriHavuzu = {};
 
 /** Kategori sayılarını çiplere yazar; 0 olan kategoriyi gizler. */
 function vitrinCipleriDoldur(urunler) {
@@ -398,12 +404,19 @@ function vitrinCiz() {
   const grid = document.getElementById('vitrinGrid');
   if (!grid) return;
   const kat = vitrinAktifKategori;
+  const yerel = vitrinUrunleri.filter(u => u.kategori === kat);
   const liste = kat === 'hepsi'
     ? vitrinUrunleri
-    : vitrinUrunleri.filter(u => u.kategori === kat);
+    : ((vitrinKategoriHavuzu[kat]?.length > yerel.length) ? vitrinKategoriHavuzu[kat] : yerel);
   grid.innerHTML = liste.map(vitrinKartHtml).join('');
   if (grid.firstElementChild) {
     grid.firstElementChild.classList.add('vitrin-yeni');
+  }
+  const dahaKap = document.getElementById('vitrinDahaFazlaKap');
+  const dahaBtn = document.getElementById('vitrinDahaFazlaBtn');
+  if (dahaBtn) dahaBtn.textContent = VITRIN_YEREL[vitrinOrtam().dil].dahaFazla;
+  if (dahaKap) {
+    dahaKap.hidden = !(kat === 'hepsi' && vitrinLimit < 48 && vitrinUrunleri.length >= vitrinLimit);
   }
 }
 
@@ -649,11 +662,12 @@ async function vitrinYukle({ sessiz = false } = {}) {
     grid.setAttribute('aria-busy', 'true');
   }
   try {
-    const res = await fetch(`/api/vitrin?limit=12&market=${encodeURIComponent(o.market)}`, { credentials: 'same-origin' });
+    const res = await fetch(`/api/vitrin?limit=${vitrinLimit}&market=${encodeURIComponent(o.market)}`, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
     const urunler = Array.isArray(d?.urunler) ? d.urunler : [];
     vitrinSonYukleme = Date.now();
+    vitrinKategoriHavuzu = {};
     grid.setAttribute('aria-busy', 'false');
     if (!urunler.length) {
       grid.innerHTML = '';
@@ -662,6 +676,8 @@ async function vitrinYukle({ sessiz = false } = {}) {
       vitrinCipleriDoldur([]);
       const sayac = document.getElementById('vitrinSayac');
       if (sayac) sayac.textContent = y.henuzYok;
+      const dahaKap = document.getElementById('vitrinDahaFazlaKap');
+      if (dahaKap) dahaKap.hidden = true;
     } else {
       if (bos) bos.hidden = true;
       vitrinUrunleri = urunler;
@@ -735,6 +751,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('vitrinYenile')?.addEventListener('click', () => {
     vitrinYukle({ sessiz: true });
   });
+  document.getElementById('vitrinDahaFazlaBtn')?.addEventListener('click', () => {
+    vitrinLimit = 48;
+    vitrinYukle({ sessiz: true });
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible'
       && Date.now() - vitrinSonYukleme > VITRIN_ARALIK_MS) {
@@ -764,6 +784,19 @@ document.addEventListener('click', (e) => {
     grid.classList.add('vitrin-gecis');
   }
   vitrinCiz();
+  if (kat !== 'hepsi' && !vitrinKategoriHavuzu[kat]) {
+    const o = vitrinOrtam();
+    fetch(`/api/vitrin?limit=24&kategori=${encodeURIComponent(kat)}&market=${encodeURIComponent(o.market)}`, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const liste = Array.isArray(d?.urunler) ? d.urunler : [];
+        if (liste.length) {
+          vitrinKategoriHavuzu[kat] = liste;
+          if (vitrinAktifKategori === kat) vitrinCiz();
+        }
+      })
+      .catch(() => {});
+  }
 });
 
 // 📢 Vitrin başlığındaki "Fırsatlar" çipi (mobil alt bardan kaldırıldı).

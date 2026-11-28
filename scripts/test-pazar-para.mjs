@@ -1222,11 +1222,16 @@ console.log('\n29) 📊 Çok dilli Canlı Borsa Vitrini (/en /fr /ja):');
   const appSon = fs.readFileSync('public/app.js', 'utf8');
   const srvSon = fs.readFileSync('server.js', 'utf8');
   kontrol('server.js /api/vitrin market parametresi ile globalVitrinVerisi çağırır',
-    srvSon.includes("app.get('/api/vitrin'") && srvSon.includes('globalVitrinVerisi({ limit, market })'));
+    srvSon.includes("app.get('/api/vitrin'") && srvSon.includes('globalVitrinVerisi({ limit, market, kategori, markaSiniri: 2 })'));
   kontrol('public/app.js vitrinYukle global marketlerde gizlemez, ?market= ile çeker ve VITRIN_YEREL kullanır',
     !/if\s*\(\s*BASKI_ORTAM\.market\s*&&\s*BASKI_ORTAM\.market\s*!==\s*'tr'\s*\)\s*\{\s*grid\.setAttribute\('aria-busy'/.test(appSon)
-    && appSon.includes('/api/vitrin?limit=12&market=')
+    && appSon.includes('/api/vitrin?limit=${vitrinLimit}&market=')
     && appSon.includes('VITRIN_YEREL'));
+
+  const trGenis = globalVitrinVerisi({ limit: 48, market: 'tr', markaSiniri: 2 });
+  kontrol('TR katalog vitrini 48\'e kadar çeşitli kart üretebiliyor',
+    trGenis.ok === true && trGenis.urunler.length >= 24,
+    `len=${trGenis.urunler.length}`);
 }
 
 console.log('\n30) 🛒 Resmî eBay Browse API adaptörü & çoklu para birimi işlem hattı:');

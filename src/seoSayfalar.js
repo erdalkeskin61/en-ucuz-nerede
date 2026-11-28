@@ -2575,8 +2575,8 @@ function vitrinKargoYerellestir(kargoHam, dil, paraBirimi, yerel) {
   return null;
 }
 
-/** Bölgesel (EN/FR/JA) ana sayfa canlı borsa vitrini verisini üretir. */
-export function globalVitrinVerisi({ limit = 12, market = 'us', rastgele } = {}) {
+/** Bölgesel (EN/FR/JA ve TR katalog) ana sayfa canlı borsa vitrini verisini üretir. */
+export function globalVitrinVerisi({ limit = 12, market = 'us', rastgele, markaSiniri = 2, kategori = null } = {}) {
   const etkinMarket = normalizeMarket(market);
   const paraBirimi = PAZARLAR[etkinMarket]?.currency || 'USD';
   const dil = dilByMarket(etkinMarket);
@@ -2653,6 +2653,9 @@ export function globalVitrinVerisi({ limit = 12, market = 'us', rastgele } = {})
 
   return vitrinKotadanSec(kartlar, {
     limit,
+    genis: limit > 24,
+    markaSiniri,
+    kategori,
     guncelleme,
     toplam: kartlar.length,
     rastgele,

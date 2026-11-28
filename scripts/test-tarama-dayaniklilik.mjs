@@ -125,8 +125,8 @@ kontrol("rozet \"İndirim\" değil \"Mağazalar arası fark\" diyor",
   /Mağazalar arası %/.test(appJs) && !/%\$\{Number\(u\.indirimYuzde\)\} İndirim/.test(appJs));
 // 2026-11-12: istemci 12 kart ister; "pahalı ürünler kesilmez" güvencesi sunucuda
 // limitin 24'e kadar kabul edilmesidir (kota ölçeklenir).
-kontrol('vitrin limiti 24 (pahalı ürünler kesilmez)',
-  /Math\.min\(24,/.test(radar) && /\/api\/vitrin\?limit=12/.test(appJs));
+kontrol('vitrin limiti en az 24 (geniş 48, pahalı ürünler kesilmez)',
+  /Math\.min\(24,/.test(radar) && /\/api\/vitrin\?limit=\$\{vitrinLimit\}/.test(appJs));
 
 /* ============ 5) Canlı ============ */
 if (CANLI) {

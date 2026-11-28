@@ -3871,6 +3871,8 @@ html[data-theme="dark"] .arama-onerileri {
 }
 .vitrin-cip:hover { border-color: var(--ana); }
 .vitrin-cip:focus-visible { outline: none; box-shadow: var(--halka); }
+.vitrin-daha-fazla { display: flex; justify-content: center; margin-top: 14px; }
+.vitrin-daha-fazla .vitrin-cip { padding: 10px 18px; font-weight: 600; }
 
 .vitrin-yenile {
   width: 36px;

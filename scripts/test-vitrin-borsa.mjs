@@ -460,7 +460,7 @@ try {
   bolum('8) 🔒 Gizlilik — yalnızca herkese açık alanlar');
 
   const izinli = new Set([
-    'id', 'ad', 'kategori', 'ikon', 'site', 'siteId', 'fiyat', 'stokta',
+    'id', 'ad', 'kategori', 'ikon', 'site', 'siteId', 'market', 'paraBirimi', 'fiyat', 'stokta',
     'birimMetni', 'kargo', 'url', 'afiliye', 'dip', 'indirimYuzde', 'tasarruf',
     'gercekFirsat', 'degisim', 'seri', 'ts',
   ]);
@@ -528,7 +528,8 @@ try {
     String((html.match(/class="vitrin-filtre-sayi"/g) || []).length));
   kontrol('HTML: role=tablist', /id="vitrinCipleri"[^>]*role="tablist"/.test(html));
 
-  kontrol('JS: /api/vitrin çağrısı (limit 12)', /fetch\('\/api\/vitrin\?limit=12'/.test(app));
+  kontrol('JS: /api/vitrin çağrısı (varsayılan geniş çeşitlilik 24)', /\/api\/vitrin\?limit=\$\{vitrinLimit\}/.test(app) && /let vitrinLimit = 24/.test(app));
+  kontrol('JS: daha fazla göster & kategori zenginleştirme', /vitrinDahaFazlaBtn/.test(app) && /kategori=/.test(app));
   kontrol('JS: çip doldurma fonksiyonu', /function vitrinCipleriDoldur/.test(app));
   kontrol('JS: filtre çizimi', /function vitrinCiz/.test(app));
   kontrol('JS: kategori durumu', /let vitrinAktifKategori/.test(app));

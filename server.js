@@ -44,6 +44,7 @@ import {
   terfiAdaylariGetir, terfiAdayiReddet,
   radarDurumVerisi,
   vitrinVerisi,
+  vitrinKotadanSec,
   RADAR_VARSAYILAN,
 } from './src/otonomRadar.js';
 import { birimFiyat } from './src/birimFiyat.js';
@@ -2914,11 +2915,39 @@ app.post('/api/ebay/account-deletion', (_req, res) => {
 
 app.get('/api/vitrin', (req, res) => {
   try {
-    const limit = Math.max(1, Math.min(24, Number(req.query.limit) || 12));
+    const limit = Math.max(1, Math.min(48, Number(req.query.limit) || 24));
     const market = normalizeMarket(req.query.market || 'tr');
-    let veri = vitrinVerisi({ limit, market });
-    if (market !== 'tr' && (!Array.isArray(veri?.urunler) || veri.urunler.length < Math.min(4, limit))) {
-      veri = globalVitrinVerisi({ limit, market });
+    const rawKat = String(req.query.kategori || '').toLowerCase();
+    const kategori = ['filament', 'yazici', 'genel'].includes(rawKat) ? rawKat : null;
+    let veri;
+    if (market !== 'tr') {
+      veri = globalVitrinVerisi({ limit, market, kategori, markaSiniri: 2 });
+    } else {
+      const radarVeri = vitrinVerisi({ limit: Math.min(limit, 24), market: 'tr' });
+      const katVeri = globalVitrinVerisi({ limit: 48, market: 'tr', kategori, markaSiniri: 2 });
+      const goruldu = new Set();
+      const birlesik = [];
+      const ekleTekil = (k) => {
+        if (!k || (kategori && k.kategori !== kategori)) return;
+        const anahtar = String(k.ad || '').toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, ' ').trim();
+        if (!anahtar || goruldu.has(anahtar)) return;
+        goruldu.add(anahtar);
+        birlesik.push(k);
+      };
+      for (const k of (radarVeri?.urunler || [])) ekleTekil(k);
+      for (const k of (katVeri?.urunler || [])) ekleTekil(k);
+      veri = birlesik.length
+        ? vitrinKotadanSec(birlesik, {
+            limit,
+            genis: true,
+            markaSiniri: 2,
+            kategori,
+            market: 'tr',
+            paraBirimi: 'TRY',
+            guncelleme: Math.max(Date.parse(radarVeri?.guncelleme || '') || 0, Date.parse(katVeri?.guncelleme || '') || 0),
+            toplam: Math.max(Number(radarVeri?.toplam || 0), Number(katVeri?.toplam || 0)),
+          })
+        : radarVeri;
     }
     res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json(veri);

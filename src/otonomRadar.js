@@ -2397,12 +2397,15 @@ export function vitrinVerisi(opts = {}) {
 
 /** Kart havuzunu kategori kotası + marka sınırıyla dengeli seçerek `/api/vitrin` yanıtı üretir. */
 export function vitrinKotadanSec(kartlar = [], opts = {}) {
-  const limit = Math.max(1, Math.min(24, Number(opts.limit) || 12));
+  const tavan = opts.genis ? 48 : 24;
+  const limit = Math.max(1, Math.min(tavan, Number(opts.limit) || 12));
   const rastgele = typeof opts.rastgele === 'function' ? opts.rastgele : Math.random;
   const guncelleme = Number(opts.guncelleme) || 0;
   const toplam = Number.isFinite(Number(opts.toplam)) ? Number(opts.toplam) : kartlar.length;
   const market = normalizeMarket(opts.market || 'tr');
   const paraBirimi = opts.paraBirimi || PAZARLAR[market]?.currency || 'TRY';
+  const markaSiniri = Number.isFinite(opts.markaSiniri) ? opts.markaSiniri : VITRIN_MARKA_SINIRI;
+  const hedefKategori = ['filament', 'yazici', 'genel'].includes(opts.kategori) ? opts.kategori : null;
 
   const havuzlar = { filament: [], yazici: [], genel: [] };
   for (const k of kartlar) {
@@ -2429,20 +2432,31 @@ export function vitrinKotadanSec(kartlar = [], opts = {}) {
     }
   };
 
-  for (const anahtar of ['filament', 'yazici', 'genel']) {
-    const pay = Math.min(kota[anahtar], limit - secilen.length);
-    if (pay <= 0) continue;
-    ekle(vitrinHavuzdanSec(havuzlar[anahtar], pay, {
-      rastgele, haric: secilenIdler, jitter: VITRIN_JITTER[anahtar],
+  if (hedefKategori) {
+    ekle(vitrinHavuzdanSec(havuzlar[hedefKategori], limit, {
+      rastgele, markaSiniri, haric: secilenIdler, jitter: VITRIN_JITTER[hedefKategori],
     }));
-  }
-
-  if (secilen.length < limit) {
-    for (const anahtar of ['yazici', 'genel', 'filament']) {
-      if (secilen.length >= limit) break;
-      ekle(vitrinHavuzdanSec(havuzlar[anahtar], limit - secilen.length, {
-        rastgele, markaSiniri: 99, haric: secilenIdler, jitter: VITRIN_JITTER[anahtar],
+    if (secilen.length < limit) {
+      ekle(vitrinHavuzdanSec(havuzlar[hedefKategori], limit - secilen.length, {
+        rastgele, markaSiniri: 99, haric: secilenIdler, jitter: VITRIN_JITTER[hedefKategori],
       }));
+    }
+  } else {
+    for (const anahtar of ['filament', 'yazici', 'genel']) {
+      const pay = Math.min(kota[anahtar], limit - secilen.length);
+      if (pay <= 0) continue;
+      ekle(vitrinHavuzdanSec(havuzlar[anahtar], pay, {
+        rastgele, markaSiniri, haric: secilenIdler, jitter: VITRIN_JITTER[anahtar],
+      }));
+    }
+
+    if (secilen.length < limit) {
+      for (const anahtar of ['yazici', 'genel', 'filament']) {
+        if (secilen.length >= limit) break;
+        ekle(vitrinHavuzdanSec(havuzlar[anahtar], limit - secilen.length, {
+          rastgele, markaSiniri: 99, haric: secilenIdler, jitter: VITRIN_JITTER[anahtar],
+        }));
+      }
     }
   }
 
