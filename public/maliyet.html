@@ -69,8 +69,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/style.css?v=20" />
-  <link rel="stylesheet" href="/maliyet.css?v=19" />
+  <link rel="stylesheet" href="/style.css?v=21" />
+  <link rel="stylesheet" href="/maliyet.css?v=20" />
   <script>
     // Tema: ilk boyamadan önce uygula (beyaz parlama yok).
     try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tema') === 'dark' ? 'dark' : 'light'); } catch {}
@@ -234,6 +234,18 @@
           <p class="stl-satin-dipnot" id="stlSatinDipnot">
             Buton yeni sekmede doğrudan en ucuz <b>stoklu</b> mağaza sayfasına gider; fiyat canlı radardan gelir.
           </p>
+        </div>
+
+        <div class="stl-infill-kiyas" id="stlDolulukKiyas" hidden>
+          <div class="stl-infill-ust">
+            <div>
+              <h3 class="stl-infill-baslik" id="stlInfillBaslik">Doluluk Oranına Göre Gramaj &amp; Maliyet</h3>
+              <p class="stl-infill-alt" id="stlInfillAlt">Bir doluluk kartına tıklayarak anında uygula · kWh ve makara fiyatına göre canlı güncellenir</p>
+            </div>
+            <button type="button" class="stl-make-kopyala" id="stlMakeKopyalaBtn">📋 Baskı Kartını Kopyala</button>
+          </div>
+          <div class="stl-infill-izgara" id="stlDolulukIzgara" role="list"></div>
+          <p class="stl-infill-durum" id="stlMakeDurum" role="status" aria-live="polite"></p>
         </div>
 
         <button type="button" class="stl-gramaj-aktar" id="stlAktar">

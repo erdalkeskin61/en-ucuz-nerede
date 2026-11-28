@@ -393,6 +393,7 @@
     }
 
     // --- Varsayım kutusu ---
+    if (stlDurum?.model) stlDolulukKiyasCiz();
     $('varsayimKutu').innerHTML = M_SZ.varsayim
       ? M_SZ.varsayim(h.gucW, kacis(fPara(h.kwhTl)), kacis(fPara(h.yipranmaSaatTl)), h.sureTahmini, GRAM_SAAT)
       : (`<b>Kullanılan varsayımlar:</b> ${h.gucW} W yazıcı gücü · `
@@ -854,6 +855,109 @@
     });
   }
 
+  function stlDolulukKiyasVerisi() {
+    const m = stlDurum.model;
+    if (!m || !stlParser || typeof stlParser.hesaplaGramaj !== 'function') return [];
+    const tlKg = aktifTlKg();
+    const guc = Number(durum.gucW) || 150;
+    const kwhTl = Number(durum.kwhTl) || 0;
+    const yipranma = Number(durum.yipranmaSaatTl) || 0;
+    const fire = Math.max(0, Math.min(100, Number(durum.fireYuzde) || 0));
+    return [10, 15, 25, 50].map((oran) => {
+      const gh = stlParser.hesaplaGramaj(m.hacimCm3, oran, stlDurum.malzeme);
+      const gram = Math.max(0.5, Number(gh?.gram || 0));
+      const sureSa = Math.max(0.1, Math.round((gram / GRAM_SAAT) * 10) / 10);
+      const hammadde = paraYuvarla((gram / 1000) * tlKg);
+      const elektrik = paraYuvarla(((guc * sureSa) / 1000) * kwhTl);
+      const amortisman = paraYuvarla(sureSa * yipranma);
+      const net = paraYuvarla(hammadde + elektrik + amortisman);
+      const toplam = fire > 0 ? paraYuvarla(net * (1 + fire / 100)) : net;
+      return { oran, gram, sureSa, hammadde, toplam };
+    });
+  }
+
+  function stlDolulukKiyasCiz() {
+    const kutu = $('stlDolulukKiyas');
+    const izgara = $('stlDolulukIzgara');
+    if (!kutu || !izgara) return;
+    const satirlar = stlDolulukKiyasVerisi();
+    if (!satirlar.length) {
+      kutu.hidden = true;
+      return;
+    }
+    kutu.hidden = false;
+    const etiketDil = ORTAM_DIL === 'fr' ? 'remplissage' : (ORTAM_DIL === 'ja' ? '充填率' : (ORTAM_DIL === 'en' ? 'infill' : 'doluluk'));
+    const saBir = ORTAM_DIL === 'ja' ? '時間' : (ORTAM_DIL === 'fr' ? 'h' : (ORTAM_DIL === 'en' ? 'h' : 'sa'));
+    const yuzdeGoster = (o) => (ORTAM_DIL === 'tr' ? `%${o}` : `${o}%`);
+
+    izgara.innerHTML = '';
+    for (const s of satirlar) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('role', 'listitem');
+      btn.className = 'stl-infill-kart' + (Math.abs(Number(stlDurum.doluluk) - s.oran) <= 2 ? ' aktif' : '');
+      const gramMetin = s.gram >= 100 ? Math.round(s.gram) : (Math.round(s.gram * 10) / 10);
+      btn.innerHTML = `
+        <span class="stl-infill-oran">${kacis(yuzdeGoster(s.oran))} ${kacis(etiketDil)}</span>
+        <strong class="stl-infill-gram">${gramMetin} g</strong>
+        <span class="stl-infill-tutar">${kacis(fPara(s.toplam))}</span>
+        <span class="stl-infill-meta">~${s.sureSa} ${kacis(saBir)} · ${kacis(fPara(s.hammadde))}</span>`;
+      btn.addEventListener('click', () => {
+        stlDurum.doluluk = s.oran;
+        const sel = $('stlDoluluk');
+        if (sel) {
+          const secenek = [...(sel.options || [])].find(o => Number(o.value) === s.oran);
+          if (secenek) sel.value = secenek.value;
+        }
+        const kay = $('stlDolulukKaydirici');
+        if (kay) kay.value = String(s.oran);
+        const dlEt = $('stlDolulukEtiket');
+        if (dlEt) dlEt.textContent = yuzdeGoster(s.oran);
+        const g = Math.max(1, Math.round(s.gram * 10) / 10);
+        durum.gramaj = g;
+        durum.sureSaat = s.sureSa;
+        durum.sureTahmini = true;
+        const gs = $('gramajKaydirici');
+        const gn = $('gramaj');
+        const ss = $('sureKaydirici');
+        const sn = $('sure');
+        if (gs) gs.value = String(Math.min(1000, g));
+        if (gn) gn.value = String(g);
+        if (ss) ss.value = String(Math.min(72, s.sureSa));
+        if (sn) sn.value = String(s.sureSa);
+        stlCiz();
+        render();
+      });
+      izgara.appendChild(btn);
+    }
+  }
+
+  function stlMakeOzetiMetni() {
+    const h = stlHesap();
+    const mCalc = hesapla();
+    const gram = h ? (Math.round(h.gram * 10) / 10) : mCalc.gramaj;
+    const sure = Math.max(0.1, Math.round((gram / GRAM_SAAT) * 10) / 10);
+    const tlKg = aktifTlKg();
+    const mat = paraYuvarla((gram / 1000) * tlKg);
+    const elT = paraYuvarla((((Number(durum.gucW) || 150) * sure) / 1000) * (Number(durum.kwhTl) || 0));
+    const amT = paraYuvarla(sure * (Number(durum.yipranmaSaatTl) || 0));
+    const netT = paraYuvarla(mat + elT + amT);
+    const tot = durum.fireYuzde > 0 ? paraYuvarla(netT * (1 + durum.fireYuzde / 100)) : netT;
+    const yol = ORTAM_DIL === 'fr' ? 'baskihesap.tech/fr/calculateur-cout'
+      : (ORTAM_DIL === 'ja' ? 'baskihesap.tech/ja/cost-calculator'
+        : (ORTAM_DIL === 'en' ? 'baskihesap.tech/en/cost-calculator' : 'baskihesap.tech/maliyet.html'));
+    if (ORTAM_DIL === 'fr') {
+      return `Filament : ${stlDurum.malzeme} · ${gram}g (remplissage ${stlDurum.doluluk} %) · Coût total estimé (bobine + électricité + usure) : ${fPara(tot)} — calculé sur ${yol}`;
+    }
+    if (ORTAM_DIL === 'ja') {
+      return `フィラメント: ${stlDurum.malzeme} · ${gram}g (充填率 ${stlDurum.doluluk}%) · 造形総原価 (材料+電気+償却): ${fPara(tot)} — ${yol}`;
+    }
+    if (ORTAM_DIL === 'en') {
+      return `Filament: ${stlDurum.malzeme} · ${gram}g (${stlDurum.doluluk}% infill) · Est. print cost (spool + electricity + wear): ${fPara(tot)} — verified on ${yol}`;
+    }
+    return `Filament: ${stlDurum.malzeme} · ${gram}g (%${stlDurum.doluluk} doluluk) · Tahmini baskı maliyeti (makara + elektrik + amortisman): ${fPara(tot)} — ${yol}`;
+  }
+
   /** Model sonuç kartını çizer. */
   function stlCiz() {
     const m = stlDurum.model;
@@ -886,6 +990,9 @@
       if (kay && Number(kay.value) !== Number(stlDurum.doluluk)) kay.value = String(stlDurum.doluluk);
       const dlEtiket = $('stlDolulukEtiket');
       if (dlEtiket) dlEtiket.textContent = '%' + stlDurum.doluluk;
+
+      // Görsel: STL içindeki doluluk → gramaj & maliyet karşılaştırma matrisi
+      stlDolulukKiyasCiz();
 
       // Akıllı satın alma kartı
       const satin = $('stlSatin');
@@ -1220,6 +1327,34 @@
         d.className = 'stl-durum basarili';
       }
       document.querySelector('.mz-duzen')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    $('stlMakeKopyalaBtn')?.addEventListener('click', async () => {
+      const metin = stlMakeOzetiMetni();
+      const durumEl = $('stlMakeDurum');
+      let ok = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(metin);
+          ok = true;
+        }
+      } catch { ok = false; }
+      if (!ok) {
+        const ta = document.createElement('textarea');
+        ta.value = metin;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch { ok = false; }
+        document.body.removeChild(ta);
+      }
+      if (durumEl) {
+        durumEl.textContent = ok
+          ? ({ en: '✅ Print breakdown copied to clipboard.', fr: '✅ Résumé copié dans le presse-papiers.', ja: '✅ コピーしました。' }[ORTAM_DIL] || '✅ Baskı özeti panoya kopyalandı.')
+          : metin;
+      }
     });
   }
 

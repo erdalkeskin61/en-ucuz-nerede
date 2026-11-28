@@ -1376,3 +1376,66 @@ html[data-theme="dark"] .mz-malzeme-hizli button.aktif {
 .leg-renk { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .mz-leg-sag { font-variant-numeric: tabular-nums; color: var(--gri-metin); white-space: nowrap; }
 .mz-leg-sag b { color: var(--metin); }
+
+/* 📊 STL Doluluk % -> Gramaj & Maliyet Karşılaştırma Matrisi */
+.stl-infill-kiyas {
+  margin: 14px 0 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--zemin-2, #f8fafc);
+  border: 1px solid var(--cizgi);
+}
+.stl-infill-ust {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.stl-infill-baslik { margin: 0 0 2px; font-size: 13.5px; font-weight: 700; color: var(--metin); }
+.stl-infill-alt { margin: 0; font-size: 11.5px; color: var(--gri-metin); }
+.stl-make-kopyala {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--cizgi);
+  background: var(--kart);
+  color: var(--ana);
+  cursor: pointer;
+}
+.stl-make-kopyala:hover { background: var(--ana-acik); }
+.stl-infill-izgara {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .stl-infill-izgara { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.stl-infill-kart {
+  text-align: left;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font: inherit;
+  transition: border-color .14s ease, transform .14s ease;
+}
+.stl-infill-kart:hover { border-color: var(--ana); transform: translateY(-1px); }
+.stl-infill-kart.aktif {
+  border-color: var(--ana);
+  background: var(--ana-acik);
+}
+.stl-infill-oran { font-size: 11.5px; font-weight: 700; color: var(--ana); }
+.stl-infill-gram { font-size: 14px; font-weight: 800; color: var(--metin); font-variant-numeric: tabular-nums; }
+.stl-infill-tutar { font-size: 13px; font-weight: 700; color: var(--yesil, #15803d); font-variant-numeric: tabular-nums; }
+.stl-infill-meta { font-size: 11px; color: var(--gri-metin); font-variant-numeric: tabular-nums; }
+.stl-infill-durum { margin: 6px 0 0; font-size: 11.5px; min-height: 16px; color: var(--yesil, #15803d); }
+
