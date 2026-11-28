@@ -534,6 +534,7 @@ function duelloHtmlOlustur(duello, dil = 'en', tabanUrl = '', tumUrunler = []) {
         inLanguage: kod,
         mainEntityOfPage: canonicalUrl,
         dateModified: new Date().toISOString().slice(0, 10),
+        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.geo-ozet'] },
         author: { '@type': 'Organization', name: 'Baskı Hesap' },
         publisher: { '@type': 'Organization', name: 'Baskı Hesap' },
       },
@@ -559,6 +560,9 @@ function duelloHtmlOlustur(duello, dil = 'en', tabanUrl = '', tumUrunler = []) {
         </div>
       </section>
       <section class="seo-kart">
+        <div class="seo-fiyat-kutu geo-ozet" style="margin-bottom:14px">
+          <div><b>${kod === 'fr' ? 'Réponse rapide' : (kod === 'ja' ? '要点まとめ' : 'Quick Answer')} (${new Date().toISOString().slice(0, 10)}):</b> ${htmlKacis(t.alt)}</div>
+        </div>
         <div class="seo-izgara" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px">
           ${duello.modeller.map(m => modelKartHtml(m, kod, tumUrunler, tabanUrl)).join('')}
         </div>

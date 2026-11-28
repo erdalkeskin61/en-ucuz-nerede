@@ -3,6 +3,10 @@
 
 User-agent: *
 Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /piyasa-endeksi
+Allow: /en/market-index
 Allow: /urunler
 Allow: /urun/
 Allow: /kategori/
@@ -19,6 +23,70 @@ Allow: /fr
 Allow: /fr/
 Allow: /ja
 Allow: /ja/
+
+# Yapay zekâ arama ve indeksleme botları (GEO)
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
+
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
+
+User-agent: Applebot-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /api/
+Disallow: /widget
+Disallow: /sepet-paylas
 
 # Yönetici paneli (kimlik doğrulamalı, dizine girmemeli)
 Disallow: /admin
@@ -38,4 +106,4 @@ Disallow: /sepet-paylas
 Disallow: /widget
 Disallow: /widget-demo.html
 
-Sitemap: /sitemap.xml
+Sitemap: https://baskihesap.tech/sitemap.xml

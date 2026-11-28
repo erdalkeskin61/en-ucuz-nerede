@@ -74,11 +74,18 @@ import {
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SEPET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
 import { guvenSayfasiBul, guvenSayfaSitemapKayitlari } from './src/guvenSayfalar.js';
+import {
+  llmsTxtOlustur, llmsFullTxtOlustur, piyasaEndeksiSayfasiHtml, geoSitemapKayitlari,
+} from './src/geo.js';
 import { indexNowAnahtari, indexNowBildir, indexNowDurum } from './src/indexNow.js';
 import {
   katalogSenkronBaslat, katalogSenkronDurdur, katalogSenkronizeEt,
   katalogSyncDurumu, katalogUrunleriAra,
 } from './src/katalogSync.js';
+import {
+  fiyatHasadiniCalistir, hasatDurumu, hasatHedefSiteleri,
+  hasatZamanlayiciBaslat, hasatZamanlayiciDurdur,
+} from './src/fiyatHasat.js';
 import {
   widgetVerisi, widgetTiklamaKaydet, widgetIstatistik, widgetOrnekUrunler, refTemizle,
 } from './src/widget.js';
@@ -430,6 +437,15 @@ app.get('/api/admin/ozet', adminGerekli, (req, res) => {
           hata: kd.hata,
         };
       })(),
+      // 🔁 Fiyat hasadı: sitemap mağazalarından okunan gerçek fiyat sayısı.
+      hasat: (() => {
+        try {
+          const hd = hasatDurumu();
+          return { bulunan: hd.defter?.fiyat || 0, bekleyen: hd.bekleyen, calisiyor: hd.calisiyor };
+        } catch {
+          return { bulunan: 0, bekleyen: 0, calisiyor: false };
+        }
+      })(),
     });
   } catch (e) {
     res.status(500).json({ ok: false, hata: String(e.message || e) });
@@ -489,6 +505,47 @@ app.get('/api/admin/katalog-ara', adminGerekli, (req, res) => {
       })
       : [];
     res.json({ ok: true, sorgu: q, adet: sonuclar.length, sonuclar });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* 🔁 Fiyat hasadı — SEO ürün sayfalarını besleyen köprü (2026-11-28)  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * GET /api/admin/katalog-hasat → hasat durumu + hedef mağazalar + bekleyen aday.
+ * Sitemap mağazalarının beslemesinde fiyat yoktur; bu uç "kaç ürün fiyatsız,
+ * kaçı hasat edilebilir" sorusunu yanıtlar.
+ */
+app.get('/api/admin/katalog-hasat', adminGerekli, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    res.json({ ok: true, ...hasatDurumu(), siteler: hasatHedefSiteleri() });
+  } catch (e) {
+    res.status(500).json({ ok: false, hata: String(e.message || e) });
+  }
+});
+
+/**
+ * POST /api/admin/katalog-hasat → manuel hasat başlatır (arka planda).
+ * Gövde: { limit?: number, siteler?: string[] }
+ */
+app.post('/api/admin/katalog-hasat', adminGerekli, (req, res) => {
+  try {
+    const d = hasatDurumu();
+    if (d.calisiyor) return res.json({ ok: true, zatenCalisiyor: true, baslangic: d.sonBaslangic });
+
+    const limit = Number(req.body?.limit) > 0 ? Math.min(1000, Number(req.body.limit)) : undefined;
+    const siteler = Array.isArray(req.body?.siteler)
+      ? req.body.siteler.filter(s => typeof s === 'string').slice(0, 40)
+      : undefined;
+
+    fiyatHasadiniCalistir({ limit, siteler, kaynak: 'panel' }).catch((e) => {
+      console.warn('[hasat] panel tetiklemesi hatası:', String(e?.message || e));
+    });
+    res.json({ ok: true, baslatildi: true, limit: limit || d.maksTur, bekleyen: d.bekleyen });
   } catch (e) {
     res.status(500).json({ ok: false, hata: String(e.message || e) });
   }
@@ -588,8 +645,8 @@ app.get('/sitemap-:dil.xml', (req, res, next) => {
   try {
     const taban = yayinKoku(req);
     const sayfalar = dil === 'tr'
-      ? [...sitemapKayitlari(), ...rehberSitemapKayitlari(), ...guvenSayfaSitemapKayitlari('tr')]
-      : [...globalAracSitemapKayitlari(dil), ...globalEmbedSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil), ...guvenSayfaSitemapKayitlari(dil)];
+      ? [...sitemapKayitlari(), ...rehberSitemapKayitlari(), ...guvenSayfaSitemapKayitlari('tr'), ...geoSitemapKayitlari('tr')]
+      : [...globalAracSitemapKayitlari(dil), ...globalEmbedSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil), ...guvenSayfaSitemapKayitlari(dil), ...geoSitemapKayitlari(dil)];
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(sitemapUrlSetXml(taban, sayfalar));
@@ -620,6 +677,7 @@ function tumIndexNowYollari() {
     ...globalRehberSitemapKayitlari(),
     ...globalKategoriSitemapKayitlari(),
     ...guvenSayfaSitemapKayitlari(),
+    ...geoSitemapKayitlari(),
   ].map(s => s.yol).filter(Boolean);
   return [...new Set(ham)];
 }
@@ -962,6 +1020,30 @@ app.get([
 app.get('/sepet-paylas.html', (req, res, next) => (
   statikHtmlSun(req, res, next, 'sepet-paylas.html', { canonicalEkle: false })
 ));
+
+/* 🤖 GEO (Generative Engine Optimization): llms.txt, llms-full.txt & Canlı Piyasa Endeksi */
+app.get('/llms.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(llmsTxtOlustur(yayinKoku(req)));
+});
+
+app.get('/llms-full.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=600');
+  res.send(llmsFullTxtOlustur(yayinKoku(req)));
+});
+
+app.get(['/piyasa-endeksi', '/en/market-index'], (req, res) => {
+  try {
+    const dil = req.path.startsWith('/en') ? 'en' : 'tr';
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(piyasaEndeksiSayfasiHtml(dil, yayinKoku(req)));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Market index generation failed');
+  }
+});
 
 /* Güven, gizlilik & kurumsal iletişim sayfaları (TR / EN / FR / JA) */
 app.get([
@@ -3246,6 +3328,27 @@ app.get('/api/durum', (req, res) => {
         return { toplam: 0, fiyatli: 0, hedefSayisi: 0 };
       }
     })(),
+    // 🔁 Fiyat hasadı özeti (2026-11-28) — SEO ürün sayfalarını besler.
+    hasat: (() => {
+      try {
+        const hd = hasatDurumu();
+        return {
+          calisiyor: hd.calisiyor,
+          bekleyen: hd.bekleyen,
+          bulunan: hd.defter?.fiyat || 0,
+          sonBitis: hd.sonBitis,
+          sonRapor: hd.sonRapor ? {
+            denenen: hd.sonRapor.denenen,
+            fiyat: hd.sonRapor.fiyat,
+            fiyatsiz: hd.sonRapor.fiyatsiz,
+            yok: hd.sonRapor.yok,
+            hata: hd.sonRapor.hata,
+          } : null,
+        };
+      } catch {
+        return { calisiyor: false, bekleyen: 0, bulunan: 0 };
+      }
+    })(),
     // Anlık sonuç önbelleği (2026-10-29)
     anlikSonuc: anlikIstatistik(),
     // Adaptör sağlık nöbetçisi + log rotasyonu (2026-10-29)
@@ -3658,6 +3761,15 @@ app.listen(config.port, config.host, () => {
   } catch (e) {
     console.warn('[katalogSync] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
   }
+  // 🔁 Fiyat hasadı (2026-11-28): sitemap mağazalarının fiyatsız ürünlerini
+  // diğer mağazalardaki fiyatlı eşleriyle buluşturur. Ürün sayfalarından
+  // GERÇEK fiyat okur → "tek teklif" ürünler "iki+ teklif"e çıkar ve SEO
+  // ürün sayfaları dizinlenebilir olur. İlk tur açılıştan 90 sn sonra.
+  try {
+    hasatZamanlayiciBaslat();
+  } catch (e) {
+    console.warn('[hasat] zamanlayıcı başlatılamadı:', String(e.message || e).slice(0, 120));
+  }
   // 🔍 Öneri motorunu ısıt: ilk tuş vuruşunda disk/DB gecikmesi olmasın.
   try { onerileriGetir(''); } catch { /* yoksay */ }
   // Adaptör sağlık nöbetçisi: her gece 04:00 (2026-10-29)
@@ -3703,6 +3815,7 @@ for (const sinyal of ['SIGINT', 'SIGTERM']) {
     try { radarZamanlayiciDurdur(); } catch { /* zamanlayıcı yok */ }
     try { radarKapat(); } catch { /* zaten kapalı */ }
     try { katalogSenkronDurdur(); } catch { /* zamanlayıcı yok */ }
+    try { hasatZamanlayiciDurdur(); } catch { /* zamanlayıcı yok */ }
     try { snapshotKapat(); } catch { /* zaten kapalı */ }
     process.exit(0);
   });

@@ -461,6 +461,9 @@ export function guvenSayfasiHtml(tur, dil = 'tr', tabanUrl = '') {
         url: tabanUrl || 'https://baskihesap.tech',
         email: KURUMSAL_EPOSTA,
         founder: { '@type': 'Person', name: 'Erdal Keskin' },
+        publishingPrinciples: `${tabanUrl || 'https://baskihesap.tech'}/hakkimizda`,
+        areaServed: ['TR', 'US', 'FR', 'EU', 'JP'],
+        knowsAbout: ['3D Printing', 'FDM', 'Resin Printing', 'Filament Pricing', '3D Print Cost Calculation'],
       },
     },
     {

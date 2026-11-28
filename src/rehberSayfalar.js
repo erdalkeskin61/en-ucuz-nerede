@@ -1001,6 +1001,7 @@ function meshyVsHi3dRehberiHtml(tumUrunler, tabanUrl) {
         inLanguage: 'tr',
         mainEntityOfPage: canonicalUrl,
         dateModified: new Date().toISOString().slice(0, 10),
+        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.geo-ozet'] },
         author: { '@type': 'Organization', name: 'Baskı Hesap' },
         publisher: { '@type': 'Organization', name: 'Baskı Hesap' },
       },
@@ -1028,8 +1029,8 @@ function meshyVsHi3dRehberiHtml(tumUrunler, tabanUrl) {
         ],
       })}
       <section class="seo-kart">
-        <div class="seo-fiyat-kutu">
-          <div>💡 <b>Canlı Piyasa Referansı:</b> ${etiketKaynak}${plaPlusUrun && plaPlusUrun !== plaUrun ? ` · En ucuz PLA+: <b>${formatTL(plaPlusKg)}/kg</b> (${htmlKacis(plaPlusUrun.ad)})` : ''}. Kendi STL dosyan yoksa hesaplayıcıdaki 1 tık örneklerle hemen test edebilirsin.</div>
+        <div class="seo-fiyat-kutu geo-ozet">
+          <div>💡 <b>Kısa Karar &amp; Canlı Piyasa Referansı (${new Date().toISOString().slice(0, 10)}):</b> ${etiketKaynak}${plaPlusUrun && plaPlusUrun !== plaUrun ? ` · En ucuz PLA+: <b>${formatTL(plaPlusKg)}/kg</b> (${htmlKacis(plaPlusUrun.ad)})` : ''}. Tek renk figür ve prototiplerde Meshy, çok renkli parçalı baskılarda Hi3D daha az destek/purge firesi verir.</div>
         </div>
         <div class="seo-butonlar">
           <a class="seo-cta" href="/maliyet.html">🧮 Örnek STL ile Maliyet Hesapla →</a>
@@ -1970,6 +1971,7 @@ export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []
         inLanguage: kod,
         mainEntityOfPage: canonicalUrl,
         dateModified: new Date().toISOString().slice(0, 10),
+        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.geo-ozet'] },
         author: { '@type': 'Organization', name: 'Baskı Hesap' },
         publisher: { '@type': 'Organization', name: 'Baskı Hesap' },
       },
@@ -1997,7 +1999,7 @@ export function globalAi3dRehberiHtml(dil = 'en', tabanUrl = '', tumUrunler = []
         ],
       })}
       <section class="seo-kart">
-        <div class="seo-fiyat-kutu"><div>${canliMetin}</div></div>
+        <div class="seo-fiyat-kutu geo-ozet"><div><b>${kod === 'fr' ? 'Réponse rapide' : (kod === 'ja' ? '要点まとめ' : 'Quick Answer')} (${new Date().toISOString().slice(0, 10)}):</b> ${canliMetin}</div></div>
         <div class="seo-butonlar">
           <a class="seo-cta" href="${htmlKacis(malYol)}">${t.ctaCalc}</a>
           <a class="seo-cta ikincil" href="${htmlKacis(aiLink.meshyUrl)}" target="_blank" rel="${meshyRel}" data-afiliye-site="meshy">${t.ctaMeshy}${aiLink.meshyPromo ? ` · ${htmlKacis(aiLink.meshyPromo)}` : ''}</a>

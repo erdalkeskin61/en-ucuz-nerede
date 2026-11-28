@@ -125,7 +125,17 @@ export function dilSeciciHtml(aktifDil = 'tr', yolHaritasi = null) {
 
 const SNAPSHOT_MAX_YAS_MS = Math.max(BAYAT_SWR_MAX_YAS_MS, 30 * 86400000);
 const SEO_CACHE_TTL_MS = 60 * 1000;
-const BESLEME_MAKS_URUN = 550;
+/**
+ * Beslemeden üretilecek en fazla SEO ürün sayfası.
+ *
+ * 2026-11-28: 550 → 1500. Neden: fiyat hasadı (src/fiyatHasat.js) sitemap
+ * mağazalarından gerçek fiyat çekmeye başladı; ürünler "tek teklif"ten
+ * "iki+ teklif"e çıkıyor ve dizinlenebilir oluyor. Tavan 550'de kalınca bu
+ * yeni çok teklifli ürünlerin çoğu kesiliyordu (sitemap 49'da tıkanmıştı).
+ * Sıralama zaten "en çok teklif → kategori önceliği → tazelik" olduğu için
+ * tavan yalnızca ince/tek teklifli kuyruğu keser.
+ */
+const BESLEME_MAKS_URUN = 1500;
 let _seoListeOnbellek = new Map();
 
 export function seoOnbelleginiTemizle() {
@@ -1959,6 +1969,24 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
     </div>
   </aside>`;
 
+  const geoTekCumle = (() => {
+    if (!(urun.enUcuzFiyat > 0)) return '';
+    const fiyatStr = fiyatMetni(urun.enUcuzFiyat);
+    const siteStr = urun.enUcuzSite || '—';
+    const adet = urun.stokluSayisi || 1;
+    const birimEk = urun.birimMetni ? ` (${urun.birimMetni})` : '';
+    if (dil === 'en') {
+      return `As of ${urun.lastmod}, the lowest verified in-stock price for ${urun.ad} is ${fiyatStr}${birimEk} at ${siteStr} across ${adet} compared store offer${adet === 1 ? '' : 's'}.`;
+    }
+    if (dil === 'fr') {
+      return `Au ${urun.lastmod}, le meilleur prix en stock vérifié pour ${urun.ad} est de ${fiyatStr}${birimEk} chez ${siteStr} (${adet} offre${adet > 1 ? 's' : ''} comparée${adet > 1 ? 's' : ''}).`;
+    }
+    if (dil === 'ja') {
+      return `${urun.lastmod} 時点の ${urun.ad} の在庫あり最安値は ${siteStr} の ${fiyatStr}${birimEk} です（比較対象 ${adet} 件）。`;
+    }
+    return `${urun.lastmod} itibarıyla ${urun.ad} için doğrulanan en düşük stoklu fiyat ${siteStr} mağazasında ${fiyatStr}${birimEk} olup ${adet} stoklu teklif karşılaştırılmıştır.`;
+  })();
+
   const ozetHtml = urun.enUcuzFiyat > 0
     ? `<div class="seo-fiyat-kutu">
          <div>
@@ -1970,7 +1998,8 @@ export function urunSayfasiHtml(urun, tabanUrl, tumUrunler = [], opts = {}) {
            <div><b>${htmlKacis(sz.baslik.stokluTeklif)}:</b> ${urun.stokluSayisi || 1}${urun.birimMetni ? ` · <b>${htmlKacis(sz.baslik.birimEtiketi)}:</b> ${htmlKacis(urun.birimMetni)}` : ''}</div>
            <div style="color:var(--gri-metin);font-size:12px">${htmlKacis(sz.baslik.sonKontrol)}: ${htmlKacis(urun.lastmod)}</div>
          </div>
-       </div>`
+       </div>
+       <p class="geo-ozet" style="margin:10px 0 0;font-size:13.5px;color:var(--metin-hafif);line-height:1.55">${htmlKacis(geoTekCumle)}</p>`
     : `<div class="seo-fiyat-kutu">
          <div>${htmlKacis(sz.baslik.onbellekYok)}</div>
        </div>`;
