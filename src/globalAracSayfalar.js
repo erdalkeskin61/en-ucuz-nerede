@@ -29,6 +29,7 @@ import {
 import { normalizeDil, sozlukGetir } from './i18n/index.js';
 import { afiliyeLink, afiliyeAyarlari, aiModelPartnerLinkleri } from './afiliye.js';
 import { adaptersByMarket, taramaAdaptersByMarket } from './sites/index.js';
+import { globalDuelloAlternatifHaritasi } from './globalDuelloRehberleri.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let _indexSablon = null;
@@ -2488,6 +2489,7 @@ export function globalAracAlternatifHaritasi() {
     '/en/alerts': ayarlar,
     '/fr/alertes': ayarlar,
     '/ja/alerts': ayarlar,
+    ...globalDuelloAlternatifHaritasi(),
   };
 }
 

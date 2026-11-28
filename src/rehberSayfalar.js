@@ -20,6 +20,7 @@ import {
 import { formatPara, formatTL, parcaMi } from './util.js';
 import { aiModelPartnerLinkleri } from './afiliye.js';
 import { GLOBAL_AI_REHBER_YOLLARI, GLOBAL_MALIYET_YOLLARI } from './globalAracSayfalar.js';
+import { GLOBAL_DUELLO_YOLLARI, globalDuelloSitemapKayitlari } from './globalDuelloRehberleri.js';
 
 function urunBul(tumUrunler, regex) {
   const comboIstendi = /combo/i.test(regex.source);
@@ -1184,14 +1185,17 @@ export function rehberSitemapKayitlari() {
 export function globalRehberSitemapKayitlari(dil = null) {
   const bugun = new Date().toISOString().slice(0, 10);
   const alternates = { ...GLOBAL_AI_REHBER_YOLLARI, 'x-default': GLOBAL_AI_REHBER_YOLLARI.en };
-  const liste = ['en', 'fr', 'ja'].map(d => ({
-    dil: d,
-    yol: GLOBAL_AI_REHBER_YOLLARI[d],
-    oncelik: '0.85',
-    siklik: 'weekly',
-    lastmod: bugun,
-    alternates,
-  }));
+  const liste = [
+    ...['en', 'fr', 'ja'].map(d => ({
+      dil: d,
+      yol: GLOBAL_AI_REHBER_YOLLARI[d],
+      oncelik: '0.85',
+      siklik: 'weekly',
+      lastmod: bugun,
+      alternates,
+    })),
+    ...globalDuelloSitemapKayitlari(),
+  ];
   if (!dil) return liste;
   return liste.filter(x => x.dil === dil);
 }
@@ -1366,6 +1370,45 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
         detayYolu: GLOBAL_AI_REHBER_YOLLARI.en,
         detay: 'When to use Meshy (single-color figurines & Image-to-3D prototypes) vs Hi3D (no-split multi-color physical prints) — plus how multi-color swaps change real filament cost.',
       },
+      {
+        id: 'vs-heygears-saturn',
+        ikon: '🧪',
+        tur: 'Resin Duel',
+        baslik: 'HeyGears Reflex RS vs ELEGOO Saturn 4 Ultra',
+        ozet: 'Industrial 8K force-sensing resin automation vs 12K 150 mm/h tilt-release speed and open third-party resin economics.',
+        band: '222×122×230 vs 219×123×220 mm · MSLA Breakdown',
+        sorgu: 'HeyGears Reflex RS',
+        urunA: 'HeyGears Reflex RS',
+        urunB: 'ELEGOO Saturn 4 Ultra',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['heygears-vs-saturn'].en,
+        detay: 'Resin per-print cost, IPA/FEP waste control, and official store pricing for Reflex RS vs Saturn 4 Ultra.',
+      },
+      {
+        id: 'vs-snapmaker-k1max',
+        ikon: '⚔️',
+        tur: 'Toolchanger VS',
+        baslik: 'Snapmaker Artisan / U1 vs Creality K1 Max',
+        ozet: '4-toolhead SnapSwap™ color printing & 400 mm 3-in-1 CNC/Laser versus 600 mm/s enclosed CoreXY speed.',
+        band: '4-Toolhead CoreXY vs 3-in-1 400 mm vs 600 mm/s K1 Max',
+        sorgu: 'Snapmaker U1',
+        urunA: 'Snapmaker U1',
+        urunB: 'Creality K1 Max',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['snapmaker-vs-k1max'].en,
+        detay: 'Compare multi-material purge savings on the U1, CNC/laser versatility on Artisan, and high-speed enclosed ABS/PLA output on K1 Max.',
+      },
+      {
+        id: 'vs-sv08-ad5m-n4max',
+        ikon: '🏎️',
+        tur: '3-Way FDM VS',
+        baslik: 'Sovol SV08 vs Flashforge AD5M Pro vs ELEGOO Neptune 4 Max',
+        ozet: 'Voron-style 350 mm CoreXY (700 mm/s) vs HEPA-enclosed 220 mm CoreXY vs 420×420×480 mm giant bed-slinger.',
+        band: '350 mm CoreXY vs 220 mm HEPA vs 420 mm Max',
+        sorgu: 'Sovol SV08',
+        urunA: 'Sovol SV08',
+        urunB: 'Flashforge Adventurer 5M Pro',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['sv08-vs-ad5m-vs-n4max'].en,
+        detay: 'Electricity draw, Klipper speed, and build volume trade-offs across Sovol, Flashforge, and ELEGOO.',
+      },
     ],
   },
   fr: {
@@ -1472,6 +1515,45 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
         detayYolu: GLOBAL_AI_REHBER_YOLLARI.fr,
         detay: 'Quand privilégier Meshy (figurines & prototypes mono-couleur) vs Hi3D (impression physique multicouleur sans découpe) et impact sur le coût filament en €.',
       },
+      {
+        id: 'vs-heygears-saturn',
+        ikon: '🧪',
+        tur: 'Duel Résine',
+        baslik: 'HeyGears Reflex RS vs ELEGOO Saturn 4 Ultra',
+        ozet: 'Automatisation MSLA 8K par capteur de force contre vitesse tilt-release 12K et liberté résines en EUR.',
+        band: '222×122×230 vs 219×123×220 mm · Flux Résine',
+        sorgu: 'HeyGears Reflex RS',
+        urunA: 'HeyGears Reflex RS',
+        urunB: 'ELEGOO Saturn 4 Ultra',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['heygears-vs-saturn'].fr,
+        detay: 'Coût par tirage, taux d’échec, solvant IPA et liens officiels HeyGears & ELEGOO EU.',
+      },
+      {
+        id: 'vs-snapmaker-k1max',
+        ikon: '⚔️',
+        tur: 'Duel Multi-outils',
+        baslik: 'Snapmaker Artisan / U1 vs Creality K1 Max',
+        ozet: 'Changeur 4 têtes sans purge massive (U1) & station 400 mm 3-en-1 contre CoreXY fermée à 600 mm/s.',
+        band: '4 têtes CoreXY vs 3-en-1 400 mm vs 600 mm/s',
+        sorgu: 'Snapmaker U1',
+        urunA: 'Snapmaker U1',
+        urunB: 'Creality K1 Max',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['snapmaker-vs-k1max'].fr,
+        detay: 'Économies de purge sur le U1, polyvalence CNC/Laser sur l’Artisan et productivité ABS/PLA sur K1 Max.',
+      },
+      {
+        id: 'vs-sv08-ad5m-n4max',
+        ikon: '🏎️',
+        tur: 'Comparatif 3 FDM',
+        baslik: 'Sovol SV08 vs Flashforge AD5M Pro vs ELEGOO Neptune 4 Max',
+        ozet: 'CoreXY 350 mm type Voron (700 mm/s) contre caisson filtré HEPA 220 mm et plateau XXL 420×420×480 mm.',
+        band: '350 mm CoreXY vs 220 mm HEPA vs 420 mm XXL',
+        sorgu: 'Sovol SV08',
+        urunA: 'Sovol SV08',
+        urunB: 'Flashforge Adventurer 5M Pro',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['sv08-vs-ad5m-vs-n4max'].fr,
+        detay: 'Consommation EDF (0,25 €/kWh), vitesse Klipper et comparaison des volumes utiles.',
+      },
     ],
   },
   ja: {
@@ -1577,6 +1659,45 @@ const GLOBAL_REHBER_KOPYA = Object.freeze({
         urunB: 'SUNLU PLA+ 1kg',
         detayYolu: GLOBAL_AI_REHBER_YOLLARI.ja,
         detay: '単色フィギュア向けのMeshyと分割不要の多色造形向けHi3Dの使い分け、およびAMS等の色替えロスを含めた原価比較。',
+      },
+      {
+        id: 'vs-heygears-saturn',
+        ikon: '🧪',
+        tur: '光造形比較',
+        baslik: 'HeyGears Reflex RS vs ELEGOO Saturn 4 Ultra',
+        ozet: '圧力センサーによる残渣検知8K機と、チルトリリース12K高速機の造形精度・レジンコスト比較。',
+        band: '222×122×230 vs 219×123×220 mm · 光造形',
+        sorgu: 'HeyGears Reflex RS',
+        urunA: 'HeyGears Reflex RS',
+        urunB: 'ELEGOO Saturn 4 Ultra',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['heygears-vs-saturn'].ja,
+        detay: '造形失敗ロスの低減と汎用レジン単価の違いを公式ストア情報付きで比較。',
+      },
+      {
+        id: 'vs-snapmaker-k1max',
+        ikon: '⚔️',
+        tur: '多機能 VS',
+        baslik: 'Snapmaker Artisan / U1 vs Creality K1 Max',
+        ozet: '4独立ヘッド交換式のU1・CNC/レーザー兼用400mm Artisanと、600mm/s密閉型CoreXY K1 Maxを比較。',
+        band: '4ヘッド交換 vs 3in1 400mm vs 600mm/s',
+        sorgu: 'Snapmaker U1',
+        urunA: 'Snapmaker U1',
+        urunB: 'Creality K1 Max',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['snapmaker-vs-k1max'].ja,
+        detay: '多色パージ削減効果、CNC/レーザー兼用、単色高速出力の違いを解説。',
+      },
+      {
+        id: 'vs-sv08-ad5m-n4max',
+        ikon: '🏎️',
+        tur: '3機種比較',
+        baslik: 'Sovol SV08 vs Flashforge AD5M Pro vs ELEGOO Neptune 4 Max',
+        ozet: 'Voron系350mm CoreXY（700mm/s）vs HEPA密閉220mm機 vs 420×420×480mm超大型ベッドスリンガー。',
+        band: '350mm CoreXY vs 220mm密閉 vs 420mm大型',
+        sorgu: 'Sovol SV08',
+        urunA: 'Sovol SV08',
+        urunB: 'Flashforge Adventurer 5M Pro',
+        detayYolu: GLOBAL_DUELLO_YOLLARI['sv08-vs-ad5m-vs-n4max'].ja,
+        detay: '大型加熱ベッドの電気代、Klipper速度、室内ABS適性を3方向から比較。',
       },
     ],
   },

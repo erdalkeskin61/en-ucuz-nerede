@@ -1089,8 +1089,9 @@ export function sayfaIskeleti({ title, description, canonicalUrl, ogImage, ogTyp
       const parcalar = ['tr', 'en', 'fr', 'ja']
         .filter(d => dilYolHaritasi[d])
         .map(d => `<link rel="alternate" hreflang="${d}" href="${htmlKacis(alanKok + dilYolHaritasi[d])}" />`);
-      if (dilYolHaritasi.tr) {
-        parcalar.push(`<link rel="alternate" hreflang="x-default" href="${htmlKacis(alanKok + dilYolHaritasi.tr)}" />`);
+      const xDef = dilYolHaritasi['x-default'] || dilYolHaritasi.tr || dilYolHaritasi.en;
+      if (xDef) {
+        parcalar.push(`<link rel="alternate" hreflang="x-default" href="${htmlKacis(alanKok + xDef)}" />`);
       }
       otoHreflang = parcalar.join('\n  ');
     } else {

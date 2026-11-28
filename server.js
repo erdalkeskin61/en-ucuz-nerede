@@ -65,6 +65,7 @@ import {
   rehberSitemapKayitlari, rehberDiziniHtml, rehberSayfasiBul,
   globalRehberDiziniHtml, globalAi3dRehberiHtml, globalRehberSitemapKayitlari,
 } from './src/rehberSayfalar.js';
+import { GLOBAL_DUELLO_TUM_YOLLAR, globalDuelloBul } from './src/globalDuelloRehberleri.js';
 import { aiModelPartnerLinkleri } from './src/afiliye.js';
 import {
   globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
@@ -712,6 +713,20 @@ app.get([
     res.send(globalAi3dRehberiHtml(dil, yayinKoku(req), tumUrunler));
   } catch (e) {
     res.status(500).type('text/plain').send('AI 3D print cost guide generation failed');
+  }
+});
+
+app.get(GLOBAL_DUELLO_TUM_YOLLAR, (req, res, next) => {
+  const cozum = globalDuelloBul(req.path);
+  if (!cozum) return next();
+  try {
+    const market = cozum.dil === 'fr' ? 'fr' : (cozum.dil === 'ja' ? 'jp' : 'us');
+    const tumUrunler = seoUrunListesi({ market });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.send(cozum.olustur(yayinKoku(req), tumUrunler));
+  } catch (e) {
+    res.status(500).type('text/plain').send('Brand comparison guide generation failed');
   }
 });
 

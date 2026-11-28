@@ -1728,6 +1728,63 @@ console.log('\n35) 🔍 Yeni özellikler için SEO (robots.txt, hreflang, TechAr
     && !fs.readFileSync('public/maliyet.css', 'utf8').includes('#6366f1'));
 }
 
+console.log('\n36) ⚔️ Global Yüksek Komisyonlu Marka Düelloları (EN / FR / JA):');
+{
+  const {
+    GLOBAL_DUELLO_YOLLARI, GLOBAL_DUELLO_TUM_YOLLAR, globalDuelloBul, globalDuelloSitemapKayitlari,
+  } = await import('../src/globalDuelloRehberleri.js');
+  const { globalRehberSitemapKayitlari } = await import('../src/rehberSayfalar.js');
+
+  kontrol('3 marka düellosu EN/FR/JA toplam 9 rota tanımlar',
+    Object.keys(GLOBAL_DUELLO_YOLLARI).length === 3
+    && GLOBAL_DUELLO_TUM_YOLLAR.length === 9
+    && globalDuelloSitemapKayitlari('en').length === 3
+    && globalDuelloSitemapKayitlari('fr').length === 3
+    && globalDuelloSitemapKayitlari('ja').length === 3
+    && globalRehberSitemapKayitlari('en').length === 4);
+
+  const heyEn = globalDuelloBul('/en/guides/heygears-reflex-rs-vs-elegoo-saturn-4-ultra')?.olustur('https://baskihesap.tech', [
+    { ad: 'HeyGears Reflex RS 3D Printer', slug: 'heygears-reflex-rs', sorgu: 'HeyGears Reflex RS', yol: '/en/urun/heygears-reflex-rs', enUcuzFiyat: 499, paraBirimi: 'USD', enUcuzSite: 'HeyGears (US)' },
+  ]) || '';
+  kontrol('HeyGears Reflex RS vs ELEGOO Saturn 4 Ultra EN sayfası çift affiliate + canlı fiyat + hreflang + TechArticle içerir',
+    heyEn.includes('https://heygears.pxf.io/c/8295867/3929807/53995?u=')
+    && heyEn.includes('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
+    && heyEn.includes('$499')
+    && heyEn.includes('rel="noopener sponsored nofollow"')
+    && heyEn.includes('hreflang="x-default" href="https://baskihesap.tech/en/guides/heygears-reflex-rs-vs-elegoo-saturn-4-ultra"')
+    && heyEn.includes('"@type":"TechArticle"')
+    && heyEn.includes('"@type":"FAQPage"'));
+
+  const snapFr = globalDuelloBul('/fr/guides/snapmaker-artisan-u1-vs-creality-k1-max')?.olustur('https://baskihesap.tech', []) || '';
+  kontrol('Snapmaker Artisan / U1 vs Creality K1 Max FR sayfası Snapmaker + Creality FR affiliate linki üretir',
+    snapFr.includes('https://snapmaker.sjv.io/c/8295867/1346054/16240?u=')
+    && snapFr.includes('https://crealityofficialstore.sjv.io/c/8295867/2050362/25652?u=')
+    && snapFr.includes('"inLanguage":"fr"')
+    && snapFr.includes('Questions Fréquentes'));
+
+  const svJa = globalDuelloBul('/ja/guides/sovol-sv08-vs-flashforge-ad5m-pro-vs-elegoo-neptune-4-max')?.olustur('https://baskihesap.tech', []) || '';
+  kontrol('Sovol SV08 vs Flashforge AD5M Pro vs ELEGOO Neptune 4 Max JA sayfası 3 ortak linki ve FAQ içerir',
+    svJa.includes('https://sovol3d.sjv.io/c/8295867/3963679/55332?u=')
+    && svJa.includes('https://flashforge.sjv.io/c/8295867/3092803/38200?u=')
+    && svJa.includes('https://elegoo.sjv.io/c/8295867/1692726/19663?u=')
+    && svJa.includes('"inLanguage":"ja"')
+    && svJa.includes('よくある質問'));
+
+  const enDir = globalRehberDiziniHtml('en', 'https://baskihesap.tech', []);
+  const frDir = globalRehberDiziniHtml('fr', 'https://baskihesap.tech', []);
+  const jaDir = globalRehberDiziniHtml('ja', 'https://baskihesap.tech', []);
+  kontrol('/en/guides, /fr/guides ve /ja/guides dizinleri 3 marka düellosunu doğrudan listeler',
+    enDir.includes('/en/guides/heygears-reflex-rs-vs-elegoo-saturn-4-ultra')
+    && enDir.includes('/en/guides/snapmaker-artisan-u1-vs-creality-k1-max')
+    && enDir.includes('/en/guides/sovol-sv08-vs-flashforge-ad5m-pro-vs-elegoo-neptune-4-max')
+    && frDir.includes('/fr/guides/heygears-reflex-rs-vs-elegoo-saturn-4-ultra')
+    && jaDir.includes('/ja/guides/sovol-sv08-vs-flashforge-ad5m-pro-vs-elegoo-neptune-4-max'));
+
+  const serverSrc2 = fs.readFileSync('server.js', 'utf8');
+  kontrol('server.js GLOBAL_DUELLO_TUM_YOLLAR rotasını bağlar',
+    serverSrc2.includes('GLOBAL_DUELLO_TUM_YOLLAR') && serverSrc2.includes('globalDuelloBul'));
+}
+
 closeDatabase();
 console.log('\n──────────────────────────────────────────────');
 console.log(`Sonuç: ${gecen}/${gecen + kalan} kontrol geçti`);
