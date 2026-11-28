@@ -399,6 +399,12 @@ let yazmaHazir = null;
 
 function yazmaDeyimi(db) {
   if (yazmaHazir) return yazmaHazir;
+  // ⚠️ 2026-11-28 KRİTİK DÜZELTME: sitemap beslemeleri fiyat YAYINLAMAZ
+  // (fiyat = NULL). Düz `fiyat = excluded.fiyat` upsert'i, fiyat hasadıyla
+  // (src/fiyatHasat.js) ürün sayfasından okunmuş GERÇEK fiyatı her senkron
+  // turunda siliyordu → SEO sayfaları tekrar "tek teklif"e düşüyordu.
+  // Artık: gelen satırda fiyat yoksa ve mevcut kayıt hasattan geldiyse
+  // ('sayfa'), mevcut fiyat/stok/çekim zamanı KORUNUR.
   yazmaHazir = db.prepare(`
     INSERT INTO katalog_urunleri
       (siteId, urunUrl, baslik, temizBaslik, marka, fiyat, stokta,
@@ -408,12 +414,24 @@ function yazmaDeyimi(db) {
       baslik = excluded.baslik,
       temizBaslik = excluded.temizBaslik,
       marka = excluded.marka,
-      fiyat = excluded.fiyat,
-      stokta = excluded.stokta,
+      fiyat = CASE
+        WHEN excluded.fiyat IS NULL AND katalog_urunleri.kaynakTur = 'sayfa'
+          THEN katalog_urunleri.fiyat
+        ELSE excluded.fiyat END,
+      stokta = CASE
+        WHEN excluded.fiyat IS NULL AND katalog_urunleri.kaynakTur = 'sayfa'
+          THEN katalog_urunleri.stokta
+        ELSE excluded.stokta END,
       gorselUrl = excluded.gorselUrl,
       paraBirimi = excluded.paraBirimi,
-      kaynakTur = excluded.kaynakTur,
-      guncellemeTs = excluded.guncellemeTs
+      kaynakTur = CASE
+        WHEN excluded.fiyat IS NULL AND katalog_urunleri.kaynakTur = 'sayfa'
+          THEN 'sayfa'
+        ELSE excluded.kaynakTur END,
+      guncellemeTs = CASE
+        WHEN excluded.fiyat IS NULL AND katalog_urunleri.kaynakTur = 'sayfa'
+          THEN katalog_urunleri.guncellemeTs
+        ELSE excluded.guncellemeTs END
   `);
   return yazmaHazir;
 }

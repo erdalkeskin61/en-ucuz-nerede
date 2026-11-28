@@ -171,8 +171,11 @@ kontrol('telegram: tümü tükendiyse uyarı', /Tüm mağazalarda tükendi/.test
 // filtre artık yardımcı fonksiyon içerdiği için satır bazlı doğrulanır.
 kontrol('pipeline: en ucuz adayları stokta olanlardan',
   /const eligible = found\.filter\(r => [^;]*inStock !== false\)/.test(pipe));
+// 2026-11-28: fiyat kuralı yardımcı fonksiyondan satır içine alındı.
+// Tek kaynak ilkesi korunuyor: her yerde `karsilastirmaFiyati()` kullanılır.
 kontrol('pipeline: fiyat kuralı tek kaynak (karsilastirmaFiyati)',
-  /uygunFiyatli = \(r\) => Number\.isFinite\(karsilastirmaFiyati\(r\)\)/.test(pipe));
+  /Number\.isFinite\(karsilastirmaFiyati\(/.test(pipe)
+  && (pipe.match(/karsilastirmaFiyati\(/g) || []).length >= 2);
 
 /* ============ 5) Web arayüzü ============ */
 bolum('5) Web arayüzü sözleşmesi');
@@ -191,8 +194,12 @@ kontrol('fiyat alanında "Tükendi" rozeti', /stok-fiyat-rozet/.test(app));
 kontrol('"son bilinen fiyat" dipnotu', /son bilinen fiyat/.test(app));
 kontrol('tükendi butonu: Mağazada Gör (Tükendi)', /Mağazada Gör \(Tükendi\)/.test(app));
 kontrol('özet: Tüm Mağazalarda Tükendi', /Tüm Mağazalarda Tükendi/.test(app));
-kontrol('özet: En ucuz (stokta var) + mağaza sayısı', /En ucuz \(stokta var\)/.test(app) && /mağazada stokta/.test(app));
-kontrol('filtre çipleri dinamik sayaçlı', /Stokta Var \(\$\{stoktaVarSayisi\}\)/.test(app) && /Stokta Yok \(\$\{stoktaYokSayisi\}\)/.test(app));
+// 2026-11-28: özet metinleri i18n sözlüğüne taşındı (CANLI_YEREL.ozetEnUcuzDahil
+// / ozetEnUcuzKargo). Sabit Türkçe metin yerine sözlük anahtarını doğruluyoruz.
+kontrol('özet: En ucuz (kargo dahil) + mağaza sayısı',
+  /ozetEnUcuzDahil:/.test(app) && /ozetEnUcuzKargo:/.test(app));
+kontrol('filtre çipleri dinamik sayaçlı',
+  /filtreStoktaVar\(stoktaVarSayisi\)/.test(app) && /filtreStoktaYok\(stoktaYokSayisi\)/.test(app));
 kontrol('tablo stok hücresi (🟢 Var / 🔴 Yok)', /🟢 Var/.test(app) && /🔴 Yok/.test(app));
 kontrol('tablo satırı tr.stok-yok', /<tr class="\$\{stoktaYok \? 'stok-yok' : ''\}">/.test(app));
 kontrol('tablo başlığında <th>Stok</th>', /<th>Stok<\/th>/.test(html));

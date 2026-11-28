@@ -286,7 +286,10 @@ kontrol('admin.js: indeks arama testi', /api\/admin\/katalog-ara/.test(adminJs))
 const appSrc = oku('public/app.js');
 kontrol('app.js: katalog faz notu gösterir', /katalogFazNotu/.test(appSrc));
 kontrol('app.js: katalog yaşı kullanıcıya yazılır', /katalog indeksinden bulundu/.test(appSrc));
-kontrol('app.js: kartta katalog etiketi', /🗂️ katalog \(\$\{/.test(appSrc));
+kontrol('app.js: kartta katalog etiketi',
+  // 2026-11-28: rozet metni i18n'e taşındı (BASKI_ORTAM.dil ile katalog/catalog/
+  // catalogue/カタログ). Sabit metin yerine rozetin varlığını doğruluyoruz.
+  /r\.katalog \?/.test(appSrc) && appSrc.includes('🗂️'));
 
 /* ================================================================== */
 if (CANLI) {

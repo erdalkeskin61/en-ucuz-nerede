@@ -236,6 +236,29 @@ db.exec(`
     ON katalog_urunleri(guncellemeTs DESC);
   CREATE INDEX IF NOT EXISTS idx_katalog_urun_site
     ON katalog_urunleri(siteId, guncellemeTs DESC);
+
+  -- ------------------------------------------------------------------
+  -- 🔁 Fiyat hasadı defteri (2026-11-28)
+  --
+  -- Sitemap mağazalarının (robotistan, robitshop, 3dcim …) beslemesinde
+  -- fiyat YOKTUR; yalnızca ürün URL'si gelir. Bu ürünler başka bir mağazada
+  -- fiyatlıysa, ürün sayfasından GERÇEK fiyatı bir kez okuyup indeksi
+  -- zenginleştiriyoruz (tek teklif → çok teklif → dizinlenebilir sayfa).
+  --
+  -- Bu tablo, aynı URL'yi her turda yeniden denememek için tutulur:
+  -- 404/410 dönen ya da fiyatı okunamayan sayfalar uzun süre atlanır.
+  -- ------------------------------------------------------------------
+  CREATE TABLE IF NOT EXISTS katalog_hasat (
+    siteId TEXT NOT NULL,
+    urunUrl TEXT NOT NULL,
+    sonDenemeTs INTEGER NOT NULL,
+    durum TEXT NOT NULL,          -- fiyat | fiyatsiz | yok | hata
+    fiyat REAL,
+    not_ TEXT,
+    PRIMARY KEY (siteId, urunUrl)
+  );
+  CREATE INDEX IF NOT EXISTS idx_katalog_hasat_durum
+    ON katalog_hasat(durum, sonDenemeTs DESC);
 `);
 
 /* ------------------------------------------------------------------ */

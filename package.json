@@ -54,7 +54,8 @@
     "deploy:paket": "node scripts/deploy-paket.mjs",
     "check:impit": "node scripts/check-impit.mjs",
     "test:oneri-akis": "node scripts/test-oneri-akis.mjs",
-    "test:admin": "node scripts/test-admin-panel.mjs"
+    "test:admin": "node scripts/test-admin-panel.mjs",
+    "test:hasat": "node scripts/test-fiyat-hasat.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

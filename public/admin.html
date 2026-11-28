@@ -401,6 +401,45 @@
         </div>
 
         <div class="ayar-kart">
+          <h2>🔁 Fiyat Hasadı (SEO ürün sayfalarını besler)</h2>
+          <p class="alt-not">
+            Sitemap mağazaları (robotistan, robitshop, 3dcim, matersan, robotizmo, kirpilab,
+            efilament) ürün URL'si yayınlar ama <b>fiyat yayınlamaz</b>. Bu ürünler başka bir
+            mağazada fiyatlıysa, ürün sayfasından <b>gerçek fiyatı bir kez okuruz</b>: ürün
+            "tek teklif"ten "iki teklif"e çıkar, SEO ürün sayfası dizinlenebilir olur ve
+            sitemap büyür. Fiyat okunamazsa <b>uydurulmaz</b> — kayıt fiyatsız kalır.
+          </p>
+
+          <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:12px">
+            <span>✅ Bulunan fiyat: <b id="hasatBulunan">—</b></span>
+            <span>⏳ Bekleyen aday: <b id="hasatBekleyen">—</b></span>
+            <span>🕒 Son tur: <b id="hasatSonBitis">—</b></span>
+          </div>
+
+          <div class="form-satir">
+            <div class="ikili">
+              <div>
+                <label for="hasatLimit">Tur başına sayfa (nazik mod)</label>
+                <input type="number" id="hasatLimit" min="10" max="1000" step="10" value="300" />
+              </div>
+              <div>
+                <label for="hasatSite">Yalnızca mağaza (opsiyonel)</label>
+                <select id="hasatSite">
+                  <option value="">Tümü</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button type="button" class="kaydet-btn" id="hasatBtn">🔁 Hasadı Başlat</button>
+            <span id="hasatMesaj" class="durum-mesaji" aria-live="polite"></span>
+          </div>
+          <p id="hasatDurum" class="alt-not" style="margin-top:8px">—</p>
+          <div id="hasatSiteListe" class="radar-katalog-liste" style="margin-top:10px"></div>
+        </div>
+
+        <div class="ayar-kart">
           <h2>📢 Otonom Fırsat Kanalı (Telegram)</h2>
           <p class="alt-not">
             Gerçek taramalarda ortaya çıkan fırsatları Telegram kanalınıza otomatik paylaşır.

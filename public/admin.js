@@ -1748,6 +1748,153 @@ document.addEventListener('admin:yetkili', () => {
       }
     });
   }
+
+  /* ---------------------------------------------------------------- */
+  /* 🔁 Fiyat hasadı paneli (2026-11-28)                               */
+  /* ---------------------------------------------------------------- */
+
+  const hasatBtn = $('#hasatBtn');
+  if (hasatBtn && !hasatBtn.dataset.bagli) {
+    hasatBtn.dataset.bagli = '1';
+    hasatBtn.addEventListener('click', async () => {
+      const mesaj = $('#hasatMesaj');
+      const limit = Number($('#hasatLimit')?.value) || 300;
+      const site = String($('#hasatSite')?.value || '').trim();
+      hasatBtn.disabled = true;
+      hasatBtn.textContent = '⏳ Başlatılıyor…';
+      try {
+        const govde = { limit };
+        if (site) govde.siteler = [site];
+        const res = await fetch('/api/admin/katalog-hasat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(govde),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.hata || `Sunucu hatası (${res.status})`);
+        if (mesaj) {
+          mesaj.className = 'durum-mesaji';
+          mesaj.textContent = d.zatenCalisiyor
+            ? '⏳ Zaten bir hasat çalışıyor.'
+            : `⏳ Hasat başlatıldı (${sayi(d.bekleyen)} aday, tur başına ${sayi(d.limit)} sayfa).`;
+        }
+        hasatPollBaslat();
+      } catch (e) {
+        if (mesaj) { mesaj.className = 'durum-mesaji hata'; mesaj.textContent = 'Başlatılamadı: ' + e.message; }
+        hasatBtn.disabled = false;
+        hasatBtn.textContent = '🔁 Hasadı Başlat';
+      }
+    });
+  }
+});
+
+/* ======================================================================
+   🔁 Fiyat hasadı — durum çizimi ve polling
+   ====================================================================== */
+
+let hasatPollTimer = null;
+
+function hasatDurumCiz(d) {
+  if (!d) return;
+  const defter = d.defter || {};
+  if ($('#hasatBulunan')) $('#hasatBulunan').textContent = sayi(defter.fiyat || 0);
+  if ($('#hasatBekleyen')) $('#hasatBekleyen').textContent = sayi(d.bekleyen || 0);
+  if ($('#hasatSonBitis')) {
+    $('#hasatSonBitis').textContent = d.sonBitis ? tarih(new Date(d.sonBitis).toISOString()) : '—';
+  }
+
+  const durumEl = $('#hasatDurum');
+  if (durumEl) {
+    if (d.calisiyor) {
+      const r = d.sonRapor;
+      durumEl.textContent = '⏳ Hasat sürüyor…'
+        + (r ? ` (${sayi(r.denenen)} denendi, ${sayi(r.fiyat)} fiyat bulundu)` : '');
+    } else if (d.sonRapor) {
+      const r = d.sonRapor;
+      durumEl.textContent = `Son tur: ${sayi(r.denenen)} sayfa denendi · `
+        + `${sayi(r.fiyat)} fiyat · ${sayi(r.fiyatsiz)} fiyatsız · `
+        + `${sayi(r.yok)} yok · ${sayi(r.hata)} hata · `
+        + `${Math.round((d.sonSureMs || 0) / 1000)} sn`;
+    } else {
+      durumEl.textContent = 'Henüz hasat çalışmadı.';
+    }
+  }
+
+  // Mağaza bazlı "fiyatsız ürün" listesi
+  const listeEl = $('#hasatSiteListe');
+  if (listeEl) {
+    const siteler = Array.isArray(d.siteler) ? d.siteler : [];
+    listeEl.innerHTML = siteler.length
+      ? siteler.map(s => `<li class="radar-katalog-oge">
+          <span class="radar-katalog-ad">${esc(s.ad || s.siteId)}</span>
+          <span class="alt-not">${sayi(s.fiyatsiz)} fiyatsız / ${sayi(s.toplam)} ürün</span>
+        </li>`).join('')
+      : '<li class="alt-not">Fiyatsız ürünü olan mağaza yok.</li>';
+  }
+
+  // Mağaza seçimini doldur (bir kez)
+  const secEl = $('#hasatSite');
+  if (secEl && secEl.options.length <= 1 && Array.isArray(d.siteler) && d.siteler.length) {
+    for (const s of d.siteler) {
+      const opt = document.createElement('option');
+      opt.value = s.siteId;
+      opt.textContent = `${s.ad || s.siteId} (${sayi(s.fiyatsiz)})`;
+      secEl.appendChild(opt);
+    }
+  }
+
+  if ($('#hasatBtn')) {
+    $('#hasatBtn').disabled = !!d.calisiyor;
+    $('#hasatBtn').textContent = d.calisiyor ? '⏳ Hasat sürüyor…' : '🔁 Hasadı Başlat';
+  }
+}
+
+async function hasatDurumYukle() {
+  try {
+    const res = await fetch('/api/admin/katalog-hasat', { cache: 'no-store' });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.hata || `Sunucu hatası (${res.status})`);
+    hasatDurumCiz(d);
+    if (d.calisiyor) hasatPollBaslat();
+    return d;
+  } catch (e) {
+    const el = $('#hasatDurum');
+    if (el) el.textContent = 'Hasat durumu okunamadı: ' + e.message;
+    return null;
+  }
+}
+
+function hasatPollDurdur() {
+  if (hasatPollTimer) clearInterval(hasatPollTimer);
+  hasatPollTimer = null;
+}
+
+function hasatPollBaslat() {
+  hasatPollDurdur();
+  hasatPollTimer = setInterval(async () => {
+    let d = null;
+    try {
+      const res = await fetch('/api/admin/katalog-hasat', { cache: 'no-store' });
+      d = await res.json();
+    } catch { return; }
+    hasatDurumCiz(d);
+    if (!d || !d.calisiyor) {
+      hasatPollDurdur();
+      const mesaj = $('#hasatMesaj');
+      if (mesaj && d?.sonRapor) {
+        mesaj.className = 'durum-mesaji ok';
+        mesaj.textContent = `✅ Bitti — ${sayi(d.sonRapor.fiyat)} fiyat bulundu.`;
+        setTimeout(() => { mesaj.textContent = ''; }, 6000);
+      }
+    }
+  }, 3000);
+}
+
+document.addEventListener('admin:yetkili', () => {
+  if (!document.querySelector('#hasatBtn') || document.querySelector('#hasatBtn').dataset.yuklendi) return;
+  const b = document.querySelector('#hasatBtn');
+  b.dataset.yuklendi = '1';
+  hasatDurumYukle();
 });
 
 function radarPollDurdur() {

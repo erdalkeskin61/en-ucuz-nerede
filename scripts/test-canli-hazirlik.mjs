@@ -69,7 +69,9 @@ for (const yol of ['/api/vitrin', '/api/widget', '/api/embed/oner', '/api/sponso
   kontrol(`istisna korunur: ${yol}`, new RegExp(`'${yol.replace(/\//g, '\\/')}'`).test(serverSrc));
 }
 kontrol('/api/vitrin kendi public başlığını korur',
-  /app\.get\('\/api\/vitrin'[\s\S]{0,400}public, max-age=60/.test(serverSrc));
+  // 2026-11-28: rota büyüdü (pazar/kategori parametreleri) → başlık artık
+  // 400 karakterden sonra geliyor. Pencere 4000'e çıkarıldı.
+  /app\.get\('\/api\/vitrin'[\s\S]{0,4000}public, max-age=60/.test(serverSrc));
 
 /* ================================================================== */
 bolum('3) 🚦 IP bazlı hız sınırı');

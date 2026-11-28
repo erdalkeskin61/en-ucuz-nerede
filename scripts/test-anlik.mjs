@@ -152,7 +152,11 @@ kontrol('anlık sonuç yanıtta dönüyor', /sonuc: anlik\.payload/.test(server)
 kontrol('arka plan tazeleme başlatılıyor', /karsilastirmaCalistir\(url, job, formatSonuc\)\s*\n\s*\.then\(\(yeni\)/.test(server));
 kontrol('tazeleme farkı hesaplanıyor', /fiyatFarki\(anlik\.payload, yeni\)/.test(server));
 kontrol('tazeleme hatası ayrı raporlanıyor', /tazelemeHatasi/.test(server));
-kontrol('snapshot tarama sonunda yazılıyor', /anlikYaz\(url, result\)/.test(server));
+// 2026-11-28: snapshot yazımı tek noktada ve `kayitUrl` (kanonik/kaynak URL)
+// üzerinden yapılıyor — `url` yerine `kayitUrl` kullanılıyor (yönlendirme ve
+// kaynak-adı aramalarında doğru anahtarı yazmak için).
+kontrol('snapshot tarama sonunda yazılıyor',
+  /if \(tamTarama && bulunanVar && kayitUrl\) anlikYaz\(kayitUrl, result\)/.test(server));
 kontrol('tazeleme sürerken de iptal edilebilir', /job\.status !== 'running' && !job\.tazeleniyor/.test(server));
 kontrol('tazelenen iş budanmıyor', /!j\.tazeleniyor/.test(server));
 kontrol('poll yanıtı sürüm/tazeleme alanları içeriyor', /surum: job\.surum/.test(server) && /tazeleniyor: !!job\.tazeleniyor/.test(server));
@@ -161,7 +165,9 @@ kontrol('taze zorlama (taze:true) önbelleği atlar', /req\.body\?\.taze === tru
 /* ---------- 9) Dürüstlük: eksik/boş tarama önbelleğe YAZILMAZ ---------- */
 kontrol('iptal edilen tarama snapshot olmaz', /!result\.ozet\?\.iptalEdildi/.test(server));
 kontrol('taranmayan site varsa snapshot olmaz', /taranmayanSiteSayisi > 0/.test(server));
-kontrol('hiç bulunamayan sonuç snapshot olmaz', /bulunanVar/.test(server) && /if \(tamTarama && bulunanVar\)/.test(server));
+kontrol('hiç bulunamayan sonuç snapshot olmaz',
+  // 2026-11-28: koşul `bulunanVar && kayitUrl` ile genişledi (aynı dürüstlük kuralı).
+  /bulunanVar/.test(server) && /if \(tamTarama && bulunanVar && kayitUrl\)/.test(server));
 
 /* ---------- 8) Ön yüz davranışı ---------- */
 const app = fs.readFileSync('public/app.js', 'utf8');

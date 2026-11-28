@@ -188,11 +188,12 @@ const radar = fs.readFileSync('src/otonomRadar.js', 'utf8');
 
 kontrol('urunArama: sorguKademeleriUret dışa açık',
   /export function sorguKademeleriUret/.test(urunArama));
-// 3D hedef listesi 2026-11-14'te genişletildi (hızlı 3D mağazaları öne alındı);
-// test artık sıraya değil İÇERİĞE bakar: n11 + porima3d birlikte olmalı.
-const ucDHedefListe = (urunArama.match(/const hedefSiteler = is3D\s*\n?\s*\? \[([^\]]+)\]/) || [])[1] || '';
+// 3D hedef listesi pazar/izin filtreleriyle yeniden düzenlendi (2026-11-28):
+// sıra ve içerik değişiyor, bu yüzden sıraya değil İÇERİĞE bakıyoruz.
+const ucDHedefListe = (urunArama.match(/is3D\s*\n?\s*\?\s*\[([^\]]+)\]/) || [])[1] || '';
 kontrol('urunArama: 3D hedef sitelerde n11 var',
-  ucDHedefListe.includes("'n11'") && ucDHedefListe.includes("'porima3d'"), ucDHedefListe.slice(0, 120));
+  ucDHedefListe.includes("'n11'") && ucDHedefListe.includes("'porima3d'"),
+  ucDHedefListe.replace(/\s+/g, ' ').slice(0, 120));
 kontrol('urunArama: kademeli döngü (for … kademeler)',
   /for \(let i = 0; i < kademeler\.length; i\+\+\)/.test(urunArama));
 kontrol('urunArama: ilk başarılı kademede durur (return)',
