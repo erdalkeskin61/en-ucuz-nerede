@@ -69,6 +69,7 @@ import { GLOBAL_DUELLO_TUM_YOLLAR, globalDuelloBul } from './src/globalDuelloReh
 import { aiModelPartnerLinkleri } from './src/afiliye.js';
 import {
   globalAracSayfasiBul, globalAracSitemapKayitlari, globalKategoriSitemapKayitlari, globalAracAlternatifHaritasi,
+  globalEmbedSitemapKayitlari,
   GLOBAL_ANA_YOLLARI, GLOBAL_MALIYET_YOLLARI, GLOBAL_SEPET_YOLLARI, GLOBAL_SLICER_YOLLARI,
 } from './src/globalAracSayfalar.js';
 import { guvenSayfasiBul, guvenSayfaSitemapKayitlari } from './src/guvenSayfalar.js';
@@ -587,7 +588,7 @@ app.get('/sitemap-:dil.xml', (req, res, next) => {
     const taban = yayinKoku(req);
     const sayfalar = dil === 'tr'
       ? [...sitemapKayitlari(), ...rehberSitemapKayitlari(), ...guvenSayfaSitemapKayitlari('tr')]
-      : [...globalAracSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil), ...guvenSayfaSitemapKayitlari(dil)];
+      : [...globalAracSitemapKayitlari(dil), ...globalEmbedSitemapKayitlari(dil), ...globalRehberSitemapKayitlari(dil), ...globalKategoriSitemapKayitlari(dil), ...guvenSayfaSitemapKayitlari(dil)];
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=1800');
     res.send(sitemapUrlSetXml(taban, sayfalar));
@@ -614,6 +615,7 @@ function tumIndexNowYollari() {
     ...sitemapKayitlari(),
     ...rehberSitemapKayitlari(),
     ...globalAracSitemapKayitlari(),
+    ...globalEmbedSitemapKayitlari(),
     ...globalRehberSitemapKayitlari(),
     ...globalKategoriSitemapKayitlari(),
     ...guvenSayfaSitemapKayitlari(),
@@ -945,6 +947,9 @@ app.get([
   '/en/alerts',
   '/fr/alertes',
   '/ja/alerts',
+  '/en/embed',
+  '/fr/embed',
+  '/ja/embed',
 ], (req, res) => {
   const kayit = globalAracSayfasiBul(req.path);
   if (!kayit) return res.redirect('/maliyet.html');
@@ -2590,6 +2595,10 @@ app.get('/api/widget', (req, res) => {
       q: req.query.q,
       ref: req.query.ref,
       tema: req.query.tema,
+      lang: req.query.lang,
+      market: req.query.market,
+      mod: req.query.mod,
+      sade: req.query.sade,
       tabanUrl: config.publicUrl,
     });
     res.json(veri);
@@ -2611,6 +2620,10 @@ app.get('/widget/git', (req, res) => {
       q: req.query.q,
       ref: req.query.ref,
       tema: req.query.tema,
+      lang: req.query.lang,
+      market: req.query.market,
+      mod: req.query.mod,
+      sade: req.query.sade,
       tabanUrl: config.publicUrl,
     });
     if (!veri.bulundu || !veri.hedef) {
@@ -2637,10 +2650,10 @@ app.get('/api/widget/istatistik', (req, res) => {
   }
 });
 
-/** Widget oluşturucu önizlemesi: gerçek fiyatlı ilk ürünler. */
+/** Widget oluşturucu önizlemesi: gerçek fiyatlı ilk ürünler (pazar bazlı). */
 app.get('/api/widget/ornekler', (req, res) => {
   try {
-    res.json({ ok: true, urunler: widgetOrnekUrunler({ limit: req.query.limit }) });
+    res.json({ ok: true, urunler: widgetOrnekUrunler({ limit: req.query.limit, market: req.query.market }) });
   } catch (e) {
     res.status(500).json({ ok: false, hata: String(e.message || e) });
   }

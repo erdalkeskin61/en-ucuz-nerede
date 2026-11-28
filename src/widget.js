@@ -14,6 +14,9 @@
  */
 import { dbBaglantisi } from './store.js';
 import { afiliyeLink, afiliyeAyarlari } from './afiliye.js';
+import { seoUrunListesi } from './seoSayfalar.js';
+import { normalizeDil, dilByMarket } from './i18n/index.js';
+import { normalizeMarket, PAZARLAR } from './sites/index.js';
 
 /* ------------------------------------------------------------------ */
 /* Yardımcılar                                                         */
@@ -83,57 +86,87 @@ function katalogSatirlari() {
   return _katalogOnbellek;
 }
 
-/**
- * Ürünü kimliğine göre çözer.
- *
- * Sıra: `id` (kesin) → `slug` (slug eşitliği) → `q` (slug/başlık içerme).
- * Eşitlik aramaları önce denenir; hiçbiri tutmazsa `null` döner. YANLIŞ ÜRÜN
- * göstermektense "bulunamadı" demek tercih edilir (widget bir bloga gömülür,
- * hata kalıcı olur).
- *
- * @param {{id?:string|number, slug?:string, q?:string}} [opts]
- * @returns {object|null}
- */
-export function widgetUrunBul(opts = {}) {
-  const satirlar = katalogSatirlari();
-  if (!satirlar.length) return null;
+const NEDEN_METNI = Object.freeze({
+  tr: {
+    bulunamadi: 'Ürün radar kataloğunda bulunamadı.',
+    taranmadi: 'Bu ürün henüz taranmadı; fiyat bilgisi yok.',
+    fiyatsiz: 'Ürün için geçerli fiyat kaydı yok.',
+    baglantisiz: 'Ürün bağlantısı kayıtlı değil.',
+  },
+  en: {
+    bulunamadi: 'No tracked product matched your query in this market.',
+    taranmadi: 'Live pricing for this item has not been collected yet.',
+    fiyatsiz: 'No valid in-stock price record is available right now.',
+    baglantisiz: 'Store link is not available for this item.',
+  },
+  fr: {
+    bulunamadi: 'Aucun produit suivi ne correspond à cette recherche.',
+    taranmadi: 'Le prix en direct n’a pas encore été relevé pour cet article.',
+    fiyatsiz: 'Aucun tarif valide n’est disponible pour le moment.',
+    baglantisiz: 'Le lien vers la boutique est indisponible.',
+  },
+  ja: {
+    bulunamadi: '対象マーケットで一致する商品が見つかりませんでした。',
+    taranmadi: 'この商品のリアルタイム価格データはまだ収集されていません。',
+    fiyatsiz: '有効な価格データが現在ありません。',
+    baglantisiz: 'ショップURLが登録されていません。',
+  },
+});
 
-  const id = Number(opts.id);
-  if (Number.isFinite(id) && id > 0) {
-    return satirlar.find(r => Number(r.id) === id) || null;
+/** Widget opts içinden market (`tr|us|fr|jp|eu`), dil (`tr|en|fr|ja`) ve mod (`varsayilan|karsilastir`) çözer. */
+export function widgetPazarCoz(opts = {}) {
+  const hamMarket = opts.market != null && String(opts.market).trim() !== '' ? String(opts.market).trim() : null;
+  const hamDil = opts.lang != null && String(opts.lang).trim() !== '' ? String(opts.lang).trim() : null;
+  const sayisalId = Number.isFinite(Number(opts.id)) && Number(opts.id) > 0;
+  const market = hamMarket
+    ? normalizeMarket(hamMarket)
+    : (sayisalId ? 'tr' : (hamDil ? normalizeMarket(hamDil) : 'tr'));
+  const lang = hamDil ? normalizeDil(hamDil) : dilByMarket(market);
+  const hamMod = String(opts.mod || '').trim().toLowerCase();
+  const mod = (hamMod === 'karsilastir' || hamMod === 'compare' || opts.sade === '1' || opts.sade === true)
+    ? 'karsilastir'
+    : 'varsayilan';
+  const currency = PAZARLAR[market]?.currency || 'TRY';
+  return { market, lang, mod, currency };
+}
+
+function urunSatirindanAra(satirlar, opts = {}) {
+  if (!Array.isArray(satirlar) || !satirlar.length) return null;
+
+  const idSayi = Number(opts.id);
+  if (Number.isFinite(idSayi) && idSayi > 0) {
+    return satirlar.find(r => Number(r.id) === idSayi) || null;
+  }
+  const idHam = opts.id != null ? String(opts.id).trim() : '';
+  if (idHam) {
+    return satirlar.find(r => String(r.id) === idHam) || null;
   }
 
   const slug = slugYap(opts.slug || '');
   if (slug) {
-    // 1) Birebir slug
-    const tam = satirlar.find(r => slugYap(r.ad) === slug);
+    const tam = satirlar.find(r => (r.slug || slugYap(r.ad)) === slug);
     if (tam) return tam;
-    // 2) Slug içeriyor ("bambu-p1s" → "Bambu Lab P1S 3D Yazıcı")
-    const kismi = satirlar.find(r => slugYap(r.ad).includes(slug));
+    const kismi = satirlar.find(r => (r.slug || slugYap(r.ad)).includes(slug));
     if (kismi) return kismi;
-    // 3) Tersten: ürün slug'ı aranan metni içeriyor (uzun sorgu)
     if (slug.length >= 6) {
-      const ters = satirlar.find(r => slug.includes(slugYap(r.ad)));
+      const ters = satirlar.find(r => slug.includes(r.slug || slugYap(r.ad)));
       if (ters) return ters;
     }
-    // 4) Kelime kapsamı: "pla-plus" ↔ "pla" gibi yazım farkları tolere edilir.
     const kelimeler = slug.split('-').filter(w => w.length >= 2);
     if (kelimeler.length) {
       let enIyi = null;
       let enIyiOran = 0;
       for (const r of satirlar) {
-        const hedef = new Set(slugYap(r.ad).split('-').filter(Boolean));
+        const hedef = new Set((r.slug || slugYap(r.ad)).split('-').filter(Boolean));
         if (!hedef.size) continue;
         let eslesen = 0;
         for (const w of kelimeler) {
           if (hedef.has(w)) eslesen++;
-          // "plus" ↔ "+" farkı: token yoksa kısmi önek de kabul (pla ~ plaplus).
           else if ([...hedef].some(h => h.startsWith(w) || w.startsWith(h))) eslesen += 0.5;
         }
         const oran = eslesen / kelimeler.length;
         if (oran > enIyiOran) { enIyiOran = oran; enIyi = r; }
       }
-      // En az %60 kapsama: alakasız ürün göstermektense "bulunamadı" iyidir.
       if (enIyi && enIyiOran >= 0.6) return enIyi;
     }
   }
@@ -148,7 +181,6 @@ export function widgetUrunBul(opts = {}) {
       let eslesen = 0;
       for (const w of kelimeler) if (metin.includes(w)) eslesen++;
       const oran = eslesen / kelimeler.length;
-      // Tam ifade eşleşmesi ya da kelime kapsamı ≥%60 (alakasız ürün gösterme).
       if (metin.includes(q) || oran >= 0.6) puanli.push({ r, oran });
     }
     if (puanli.length) {
@@ -160,6 +192,34 @@ export function widgetUrunBul(opts = {}) {
   return null;
 }
 
+/**
+ * Ürünü kimliğine göre çözer (yerel TR radar + küresel seoUrunListesi).
+ *
+ * @param {{id?:string|number, slug?:string, q?:string, market?:string, lang?:string}} [opts]
+ * @returns {object|null}
+ */
+export function widgetUrunBul(opts = {}) {
+  const { market } = widgetPazarCoz(opts);
+  if (market === 'tr') {
+    const radar = urunSatirindanAra(katalogSatirlari(), opts);
+    if (radar) return radar;
+    // Parametresiz veya geçersiz sayısal id fallback'e düşmesin (yanlış eşleşmeyi önler).
+    const idSayi = Number(opts.id);
+    if (Number.isFinite(idSayi) && idSayi > 0) return null;
+    if (!opts.slug && !opts.q) return null;
+    try {
+      return urunSatirindanAra(seoUrunListesi({ market: 'tr' }), opts);
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return urunSatirindanAra(seoUrunListesi({ market }), opts);
+  } catch {
+    return null;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Widget yükü                                                         */
 /* ------------------------------------------------------------------ */
@@ -167,19 +227,27 @@ export function widgetUrunBul(opts = {}) {
 /**
  * Widget için HERKESE AÇIK ürün yükü.
  *
- * @param {{id?:string|number, slug?:string, q?:string, ref?:string, tabanUrl?:string}} [opts]
+ * @param {{id?:string|number, slug?:string, q?:string, ref?:string, tema?:string, market?:string, lang?:string, mod?:string, sade?:string|boolean, tabanUrl?:string}} [opts]
  * @returns {{
  *   ok:boolean, bulundu:boolean, neden:string|null,
+ *   lang:string, market:string, mod:string, currency:string, karsilastirUrl:string|null,
  *   urun:object|null, afiliye:boolean, gitUrl:string|null, guncelleme:number|null
  * }}
  */
 export function widgetVerisi(opts = {}) {
   const ref = refTemizle(opts.ref);
   const taban = String(opts.tabanUrl || '').replace(/\/+$/, '');
+  const { market, lang, mod, currency } = widgetPazarCoz(opts);
+  const msg = NEDEN_METNI[lang] || NEDEN_METNI.tr;
   const bos = (neden) => ({
     ok: true,
     bulundu: false,
     neden,
+    lang,
+    market,
+    mod,
+    currency,
+    karsilastirUrl: null,
     urun: null,
     afiliye: false,
     gitUrl: null,
@@ -187,24 +255,55 @@ export function widgetVerisi(opts = {}) {
   });
 
   let kayit = null;
-  try { kayit = widgetUrunBul(opts); } catch { kayit = null; }
-  if (!kayit) return bos('Ürün radar kataloğunda bulunamadı.');
+  try { kayit = widgetUrunBul({ ...opts, market, lang }); } catch { kayit = null; }
+  if (!kayit) return bos(msg.bulunamadi);
 
-  let d = null;
-  try { d = JSON.parse(kayit.veri); } catch { d = null; }
-  if (!d || typeof d !== 'object') {
-    return bos('Bu ürün henüz taranmadı; fiyat bilgisi yok.');
+  let fiyat = null;
+  let stokta = false;
+  let hamUrl = null;
+  let site = null;
+  let siteId = null;
+  let birimMetni = null;
+  let kargo = null;
+  let gercekFirsat = false;
+  let guncelleme = null;
+  let ad = String(kayit.ad || 'Product').slice(0, 160);
+  let kategori = String(kayit.kategori || 'genel');
+  const radarSatirMi = Object.prototype.hasOwnProperty.call(kayit, 'veri');
+  const slug = kayit.slug ? String(kayit.slug) : slugYap(kayit.ad);
+
+  if (radarSatirMi) {
+    let d = null;
+    try { d = JSON.parse(kayit.veri); } catch { d = null; }
+    if (!d || typeof d !== 'object') return bos(msg.taranmadi);
+    fiyat = say(d.fiyat);
+    if (fiyat == null) return bos(msg.fiyatsiz);
+    stokta = d.stokta === true;
+    hamUrl = d.hamUrl || d.afiliyeUrl || null;
+    if (!hamUrl) return bos(msg.baglantisiz);
+    site = d.site || null;
+    siteId = d.siteId || null;
+    birimMetni = d.birimMetni || null;
+    kargo = d.kargo || null;
+    gercekFirsat = d.sahteIndirim?.gercekFirsat === true;
+    guncelleme = Number(d.ts) || null;
+    ad = String(d.ad || kayit.ad || 'Ürün').slice(0, 160);
+    kategori = String(d.kategori || kayit.kategori || 'genel');
+  } else {
+    const teklifler = Array.isArray(kayit.teklifler) ? kayit.teklifler : [];
+    const enIyiTeklif = teklifler.find(t => t.stokta && Number(t.fiyat) > 0) || teklifler[0] || null;
+    fiyat = say(kayit.enUcuzFiyat ?? enIyiTeklif?.fiyat);
+    if (fiyat == null) return bos(msg.fiyatsiz);
+    stokta = Boolean(enIyiTeklif?.stokta || (Number(kayit.stokluSayisi) > 0 && fiyat > 0));
+    hamUrl = kayit.enUcuzUrl || enIyiTeklif?.url || null;
+    if (!hamUrl) return bos(msg.baglantisiz);
+    site = enIyiTeklif?.site || kayit.enUcuzSite || null;
+    siteId = enIyiTeklif?.siteId || null;
+    birimMetni = kayit.birimMetni || null;
+    kargo = enIyiTeklif?.kargo || null;
+    gercekFirsat = false;
+    guncelleme = Number(kayit.sonTs) || Date.now();
   }
-
-  const fiyat = say(d.fiyat);
-  if (fiyat == null) return bos('Ürün için geçerli fiyat kaydı yok.');
-
-  const stokta = d.stokta === true;
-  const hamUrl = d.hamUrl || d.afiliyeUrl || null;
-  if (!hamUrl) return bos('Ürün bağlantısı kayıtlı değil.');
-
-  const site = d.site || null;
-  const siteId = d.siteId || null;
 
   let hedef = hamUrl;
   let afiliye = false;
@@ -213,34 +312,49 @@ export function widgetVerisi(opts = {}) {
     if (bagli && bagli !== hamUrl) { hedef = bagli; afiliye = true; }
   } catch { /* afiliye yoksa ham link kullanılır */ }
 
-  // Tıklama sayımı + kampanya atfı için kendi yönlendiricimizden geçir.
-  // Doğrudan dış link vermek yerine `ref` kaydı burada tutulur.
+  const numericId = Number.isFinite(Number(kayit.id)) && Number(kayit.id) > 0 ? Number(kayit.id) : null;
   const parametreler = new URLSearchParams();
-  parametreler.set('id', String(kayit.id));
+  if (numericId) parametreler.set('id', String(numericId));
+  else parametreler.set('urun', slug);
+  if (market !== 'tr') parametreler.set('market', market);
+  if (lang !== 'tr') parametreler.set('lang', lang);
+  if (mod === 'karsilastir') parametreler.set('mod', 'karsilastir');
   if (ref) parametreler.set('ref', ref);
   if (opts.tema) parametreler.set('tema', String(opts.tema));
   const gitUrl = taban ? `${taban}/widget/git?${parametreler.toString()}` : null;
+
+  const karsilastirYol = market === 'tr'
+    ? `/urun/${slug}`
+    : `/${dilByMarket(market)}/urun/${slug}`;
+  const karsilastirUrl = (taban ? `${taban}${karsilastirYol}` : karsilastirYol)
+    + (ref ? `?ref=${encodeURIComponent(ref)}` : '');
 
   return {
     ok: true,
     bulundu: true,
     neden: null,
-    guncelleme: Number(d.ts) || null,
+    lang,
+    market,
+    mod,
+    currency: kayit.paraBirimi || currency,
+    karsilastirUrl,
+    guncelleme,
     afiliye,
     hedef,
     gitUrl: gitUrl || hedef,
     urun: {
-      id: Number(kayit.id),
-      slug: slugYap(kayit.ad),
-      ad: String(d.ad || kayit.ad || 'Ürün').slice(0, 160),
-      kategori: String(d.kategori || kayit.kategori || 'genel'),
+      id: numericId,
+      slug,
+      ad,
+      kategori,
       site,
       siteId,
       fiyat,
+      currency: kayit.paraBirimi || currency,
       stokta,
-      birimMetni: d.birimMetni || null,
-      kargo: d.kargo || null,
-      gercekFirsat: d.sahteIndirim?.gercekFirsat === true,
+      birimMetni,
+      kargo,
+      gercekFirsat,
       dip: null, // widget'ta "en dip" iddiası gösterilmez; yalnızca doğrulanmış gercekFirsat
     },
   };
@@ -306,22 +420,46 @@ export function widgetIstatistik({ gun = 30 } = {}) {
   }
 }
 
-/** Çoklu ürün önizlemesi (modal canlı önizleme için). */
-export function widgetOrnekUrunler({ limit = 6 } = {}) {
-  const satirlar = katalogSatirlari();
+/** Çoklu ürün önizlemesi (modal & /en/embed canlı önizleme için). */
+export function widgetOrnekUrunler({ limit = 6, market = 'tr' } = {}) {
+  const max = Math.max(1, Math.min(20, Number(limit) || 6));
+  const m = normalizeMarket(market);
+  const currency = PAZARLAR[m]?.currency || 'TRY';
   const cikti = [];
-  for (const r of satirlar) {
-    if (cikti.length >= Math.max(1, Math.min(20, Number(limit) || 6))) break;
-    let d = null;
-    try { d = JSON.parse(r.veri); } catch { continue; }
-    if (!d || !(Number(d.fiyat) > 0)) continue;
-    cikti.push({
-      id: Number(r.id),
-      slug: slugYap(r.ad),
-      ad: String(d.ad || r.ad || ''),
-      site: d.site || null,
-      fiyat: say(d.fiyat),
-    });
+  if (m === 'tr') {
+    for (const r of katalogSatirlari()) {
+      if (cikti.length >= max) break;
+      let d = null;
+      try { d = JSON.parse(r.veri); } catch { continue; }
+      if (!d || !(Number(d.fiyat) > 0)) continue;
+      cikti.push({
+        id: Number(r.id),
+        slug: slugYap(r.ad),
+        ad: String(d.ad || r.ad || ''),
+        site: d.site || null,
+        fiyat: say(d.fiyat),
+        currency,
+        market: m,
+      });
+    }
+    if (cikti.length >= max) return cikti;
   }
+  try {
+    const goruldu = new Set(cikti.map(x => x.slug));
+    for (const u of seoUrunListesi({ market: m })) {
+      if (cikti.length >= max) break;
+      if (!(Number(u.enUcuzFiyat) > 0) || !u.slug || goruldu.has(u.slug)) continue;
+      goruldu.add(u.slug);
+      cikti.push({
+        id: Number.isFinite(Number(u.id)) && Number(u.id) > 0 ? Number(u.id) : null,
+        slug: u.slug,
+        ad: String(u.ad || ''),
+        site: u.enUcuzSite || null,
+        fiyat: say(u.enUcuzFiyat),
+        currency: u.paraBirimi || currency,
+        market: m,
+      });
+    }
+  } catch { /* katalog boşsa sessizce dön */ }
   return cikti;
 }

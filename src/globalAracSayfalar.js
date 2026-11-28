@@ -88,6 +88,12 @@ export const GLOBAL_AYARLAR_YOLLARI = Object.freeze({
   ja: '/ja/alerts',
 });
 
+export const GLOBAL_EMBED_YOLLARI = Object.freeze({
+  en: '/en/embed',
+  fr: '/fr/embed',
+  ja: '/ja/embed',
+});
+
 const CREALITY_MAGAZA_KOK = Object.freeze({
   en: { siteId: 'creality_us', base: 'https://store.creality.com', searchYol: '/search?q=' },
   fr: { siteId: 'creality_fr', base: 'https://store.creality.com/fr', searchYol: '/search?q=' },
@@ -2436,6 +2442,318 @@ export function globalAyarlarSayfasiHtml(dil = 'en', tabanUrl = '') {
   return cikti;
 }
 
+const EMBED_KOPYA = Object.freeze({
+  en: {
+    title: 'Embed Live 3D Printer & Filament Price Widget — Baski Hesap',
+    desc: 'Add a lightweight (<15 KB), zero-tracker live price widget to your 3D printing review blog. Shows real-time lowest in-stock prices across US, EU/FR, JP and TR stores.',
+    rozet: 'For 3D Printing Blogs, Reviewers & YouTubers',
+    h1: 'Embed a <b>Live Price Box</b> that never goes out of date',
+    alt: 'Stop maintaining broken store links in older 3D printer reviews. Drop one 320x180 iframe and show readers live stock, shipping, and currency-localized pricing.',
+    ayarBaslik: '1. Configure your widget',
+    marketLbl: 'Region & Currency',
+    modLbl: 'Button Mode (Affiliate-Friendly)',
+    modTam: 'Full Card — Cheapest Store Buy CTA',
+    modSade: 'Blogger-Friendly — "Compare all stores" only (keeps your Buy button primary)',
+    temaLbl: 'Theme',
+    temaKoyu: 'Dark',
+    temaAcik: 'Light',
+    urunLbl: 'Product name or slug',
+    urunPh: 'e.g. Bambu Lab P1S, ELEGOO Saturn 4 Ultra, eSUN PLA+',
+    refLbl: 'Your blog tag (optional ref)',
+    refPh: 'e.g. my-3d-blog',
+    ornekBaslik: 'Live tracked products in this region (click to load):',
+    ornekYukle: 'Loading live products…',
+    ornekBos: 'No pre-cached items in this market yet — type any product query above.',
+    onizlemeBaslik: '2. Live preview & iframe code',
+    kopyalaBtn: 'Copy <iframe> HTML',
+    kopyalandi: 'Copied!',
+    notBaslik: 'Optional editorial credit snippet:',
+    kopyalaAtifBtn: 'Copy credit',
+    nedenBaslik: 'Why reviewers & editors add Baski Hesap',
+    nedenler: [
+      ['<15 KB & Zero Trackers', 'Pure vanilla HTML/CSS/JS inside a sandboxed iframe. No cookies, no third-party analytics, lazy-loaded by default.'],
+      ['Keep Your Primary Affiliate Link', 'Switch Mode to "Compare all stores" so readers keep clicking your main Buy button while seeing multi-store price verification alongside it.'],
+      ['US · FR/EU · JP · TR Multi-Currency', 'Automatically formats USD ($), EUR (€), JPY (¥), or TRY (₺) from verified live store inventory.'],
+    ],
+  },
+  fr: {
+    title: 'Intégrer un Widget Prix Imprimante 3D & Filament en Direct — Baski Hesap',
+    desc: 'Ajoutez un encart prix léger (<15 Ko, zéro traceur) dans vos tests d’imprimantes 3D : stock et meilleur tarif en direct.',
+    rozet: 'Pour Blogs Impression 3D & Testeurs',
+    h1: 'Intégrez un <b>bloc prix en direct</b> toujours à jour',
+    alt: 'Fini les liens cassés dans vos anciens tests. Une seule balise iframe affiche le stock et le tarif le plus bas en € / $ / ¥.',
+    ayarBaslik: '1. Configurer le widget',
+    marketLbl: 'Région & Devise',
+    modLbl: 'Mode du bouton CTA',
+    modTam: 'Complet — Bouton Boutique la moins chère',
+    modSade: 'Mode Blogueur — "Comparer les boutiques" uniquement (préserve votre lien principal)',
+    temaLbl: 'Thème',
+    temaKoyu: 'Sombre',
+    temaAcik: 'Clair',
+    urunLbl: 'Produit ou mot-clé',
+    urunPh: 'ex: Bambu Lab P1S, ELEGOO Saturn 4 Ultra',
+    refLbl: 'Identifiant blog (ref optionnel)',
+    refPh: 'ex: mon-blog-3d',
+    ornekBaslik: 'Produits suivis en direct dans cette région :',
+    ornekYukle: 'Chargement des produits…',
+    ornekBos: 'Saisissez un nom de produit ci-dessus pour prévisualiser.',
+    onizlemeBaslik: '2. Aperçu en direct & code iframe',
+    kopyalaBtn: 'Copier le code <iframe>',
+    kopyalandi: 'Copié !',
+    notBaslik: 'Mention éditoriale optionnelle :',
+    kopyalaAtifBtn: 'Copier la mention',
+    nedenBaslik: 'Pourquoi les testeurs l’adoptent',
+    nedenler: [
+      ['<15 Ko sans traceur', 'Aucun script externe ni cookie : chargement différé (`loading="lazy"`).'],
+      ['Compatible avec vos liens affiliés', 'Le mode « Comparer les boutiques » complète votre bouton d’achat principal sans le concurrencer.'],
+      ['Multi-devises (€ / $ / ¥ / ₺)', 'Affichage automatique selon la région choisie.'],
+    ],
+  },
+  ja: {
+    title: '3Dプリンター・フィラメントリアルタイム価格ウィジェット埋め込み — Baski Hesap',
+    desc: 'ブログやレビュー記事に軽量（15KB未満・トラッカー無し）のリアルタイム最安値iframeカードを1行で埋め込めます。',
+    rozet: '3Dプリンターレビュー・ブログ編集者向け',
+    h1: '記事の価格リンク切れを防ぐ<b>リアルタイム価格ウィジェット</b>',
+    alt: '過去のレビュー記事でも常に最新の在庫と最安ショップを表示。アフィリエイトリンクと競合しない「全ショップ比較」モードにも対応。',
+    ayarBaslik: '1. ウィジェット設定',
+    marketLbl: '地域・通貨',
+    modLbl: 'CTAボタンモード',
+    modTam: '標準 — 最安ショップ購入ボタン',
+    modSade: 'ブロガー向け — 「全ショップを比較」のみ（既存リンクと競合しません）',
+    temaLbl: 'テーマ',
+    temaKoyu: 'ダーク',
+    temaAcik: 'ライト',
+    urunLbl: '商品名・検索キーワード',
+    urunPh: '例: Bambu Lab P1S, eSUN PLA+',
+    refLbl: 'ブログ識別タグ（任意 ref）',
+    refPh: '例: my-3d-blog',
+    ornekBaslik: 'この地域の追跡中商品（クリックで選択）:',
+    ornekYukle: '読み込み中…',
+    ornekBos: '上の入力欄に商品名を入力してください。',
+    onizlemeBaslik: '2. ライブプレビュー & iframeコード',
+    kopyalaBtn: '<iframe> コードをコピー',
+    kopyalandi: 'コピーしました',
+    notBaslik: '任意の出典クレジット表記:',
+    kopyalaAtifBtn: '表記をコピー',
+    nedenBaslik: '導入メリット',
+    nedenler: [
+      ['15KB未満・外部トラッカー無し', '軽量なスタンドアロンiframeでページ表示速度に影響しません。'],
+      ['既存アフィリエイトと両立', '「全ショップを比較」モードを使えば、記事内のメイン購入ボタンを邪魔しません。'],
+      ['多通貨対応（$ / € / ¥ / ₺）', '市場に合わせて自動通貨フォーマット。'],
+    ],
+  },
+});
+
+export function globalEmbedSayfasiHtml(dil = 'en', tabanUrl = '') {
+  const kod = EMBED_KOPYA[dil] ? normalizeDil(dil) : 'en';
+  const c = EMBED_KOPYA[kod] || EMBED_KOPYA.en;
+  const yol = GLOBAL_EMBED_YOLLARI[kod] || '/en/embed';
+  const canonicalUrl = `${tabanUrl}${yol}`;
+  const varsayilanMarket = kod === 'fr' ? 'fr' : (kod === 'ja' ? 'jp' : 'us');
+
+  const govdeHtml = `
+    <style>
+      .emb-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:20px;align-items:start;margin-top:18px}
+      @media(max-width:860px){.emb-grid{grid-template-columns:1fr}}
+      .emb-panel{background:var(--kart);border:1px solid var(--cizgi);border-radius:16px;padding:18px;box-shadow:var(--golge-yumusak)}
+      .emb-panel h2{margin:0 0 12px;font-size:17px}
+      .emb-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+      @media(max-width:560px){.emb-row{grid-template-columns:1fr}}
+      .emb-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+      .emb-field label{font-size:12.5px;font-weight:700;color:var(--metin-hafif)}
+      .emb-field input,.emb-field select{font:inherit;font-size:13.5px;padding:9px 11px;border-radius:10px;border:1px solid var(--cizgi-koyu);background:var(--zemin-2);color:var(--metin)}
+      .emb-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+      .emb-pill{font:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--cizgi-koyu);background:var(--zemin-2);color:var(--metin-hafif);cursor:pointer}
+      .emb-pill:hover,.emb-pill.aktif{background:var(--ana);color:#fff;border-color:var(--ana)}
+      .emb-prev-wrap{display:flex;justify-content:center;padding:18px 12px;border-radius:14px;background:var(--zemin-2);border:1px dashed var(--cizgi-koyu);margin-bottom:14px}
+      .emb-code{width:100%;min-height:86px;padding:10px 12px;border-radius:10px;border:1px solid var(--cizgi);background:var(--zemin-2);color:var(--metin);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical}
+      .emb-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+      .emb-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}
+      @media(max-width:780px){.emb-cards{grid-template-columns:1fr}}
+      .emb-card{background:var(--kart);border:1px solid var(--cizgi);border-radius:14px;padding:15px}
+      .emb-card h3{margin:0 0 6px;font-size:14.5px}
+      .emb-card p{margin:0;font-size:13px;color:var(--gri-metin);line-height:1.55}
+    </style>
+    <section class="hero seo-hero">
+      <div class="hero-ic">
+        <span class="hero-rozet">${c.rozet}</span>
+        <h1>${c.h1}</h1>
+        <p>${htmlKacis(c.alt)}</p>
+      </div>
+    </section>
+
+    <div class="emb-grid">
+      <section class="emb-panel">
+        <h2>${htmlKacis(c.ayarBaslik)}</h2>
+        <div class="emb-row">
+          <div class="emb-field">
+            <label for="embMarket">${htmlKacis(c.marketLbl)}</label>
+            <select id="embMarket">
+              <option value="us|en"${varsayilanMarket === 'us' ? ' selected' : ''}>🇺🇸 US · USD ($) · English</option>
+              <option value="fr|fr"${varsayilanMarket === 'fr' ? ' selected' : ''}>🇫🇷 France / EU · EUR (€) · Français</option>
+              <option value="jp|ja"${varsayilanMarket === 'jp' ? ' selected' : ''}>🇯🇵 Japan · JPY (¥) · 日本語</option>
+              <option value="tr|tr">🇹🇷 Turkey · TRY (₺) · Türkçe</option>
+            </select>
+          </div>
+          <div class="emb-field">
+            <label for="embTheme">${htmlKacis(c.temaLbl)}</label>
+            <select id="embTheme">
+              <option value="dark">${htmlKacis(c.temaKoyu)}</option>
+              <option value="light">${htmlKacis(c.temaAcik)}</option>
+            </select>
+          </div>
+        </div>
+        <div class="emb-field">
+          <label for="embMode">${htmlKacis(c.modLbl)}</label>
+          <select id="embMode">
+            <option value="varsayilan">${htmlKacis(c.modTam)}</option>
+            <option value="karsilastir">${htmlKacis(c.modSade)}</option>
+          </select>
+        </div>
+        <div class="emb-row">
+          <div class="emb-field">
+            <label for="embQuery">${htmlKacis(c.urunLbl)}</label>
+            <input id="embQuery" type="text" placeholder="${htmlKacis(c.urunPh)}" value="Bambu Lab P1S" />
+          </div>
+          <div class="emb-field">
+            <label for="embRef">${htmlKacis(c.refLbl)}</label>
+            <input id="embRef" type="text" placeholder="${htmlKacis(c.refPh)}" />
+          </div>
+        </div>
+        <div class="emb-field" style="margin-bottom:0">
+          <label>${htmlKacis(c.ornekBaslik)}</label>
+          <div id="embExamples" class="emb-pills">${htmlKacis(c.ornekYukle)}</div>
+        </div>
+      </section>
+
+      <section class="emb-panel">
+        <h2>${htmlKacis(c.onizlemeBaslik)}</h2>
+        <div class="emb-prev-wrap">
+          <iframe id="embPrev" width="320" height="180" frameborder="0" title="Live 3D Price Widget Preview"></iframe>
+        </div>
+        <textarea id="embCode" class="emb-code" readonly aria-label="Iframe HTML snippet"></textarea>
+        <div class="emb-actions">
+          <button type="button" id="embCopyBtn" class="seo-cta">${htmlKacis(c.kopyalaBtn)}</button>
+          <span id="embStatus" style="font-size:12.5px;font-weight:700;color:var(--yesil)"></span>
+        </div>
+        <div class="emb-field" style="margin-top:14px;margin-bottom:0">
+          <label for="embAttr">${htmlKacis(c.notBaslik)}</label>
+          <textarea id="embAttr" class="emb-code" style="min-height:54px" readonly></textarea>
+        </div>
+      </section>
+    </div>
+
+    <section style="margin-top:24px">
+      <h2 class="bolum-baslik">${htmlKacis(c.nedenBaslik)}</h2>
+      <div class="emb-cards">
+        ${c.nedenler.map(([b, ac]) => `<article class="emb-card"><h3>${htmlKacis(b)}</h3><p>${htmlKacis(ac)}</p></article>`).join('')}
+      </div>
+    </section>
+
+    <script>
+      (function () {
+        var marketEl = document.getElementById('embMarket');
+        var themeEl = document.getElementById('embTheme');
+        var modeEl = document.getElementById('embMode');
+        var queryEl = document.getElementById('embQuery');
+        var refEl = document.getElementById('embRef');
+        var prevEl = document.getElementById('embPrev');
+        var codeEl = document.getElementById('embCode');
+        var attrEl = document.getElementById('embAttr');
+        var exEl = document.getElementById('embExamples');
+        var copyBtn = document.getElementById('embCopyBtn');
+        var statusEl = document.getElementById('embStatus');
+        var emptyTxt = ${JSON.stringify(c.ornekBos)};
+        var copiedTxt = ${JSON.stringify(c.kopyalandi)};
+        var baseUrl = location.origin;
+        var selectedSlug = '';
+
+        function render() {
+          var pair = String(marketEl.value || 'us|en').split('|');
+          var market = pair[0] || 'us';
+          var lang = pair[1] || 'en';
+          var qs = new URLSearchParams();
+          qs.set('market', market);
+          qs.set('lang', lang);
+          if (selectedSlug) qs.set('urun', selectedSlug);
+          else if (queryEl.value.trim()) qs.set('q', queryEl.value.trim());
+          if (modeEl.value === 'karsilastir') qs.set('mod', 'karsilastir');
+          if (themeEl.value === 'light') qs.set('tema', 'light');
+          var refVal = refEl.value.trim().replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 40);
+          if (refVal) qs.set('ref', refVal);
+
+          var rel = '/widget?' + qs.toString();
+          var full = baseUrl + rel;
+          prevEl.src = rel;
+          codeEl.value = '<iframe src="' + full + '" width="320" height="180" frameborder="0" loading="lazy" title="' + (queryEl.value.trim() || 'Live 3D Printer & Filament Price').replace(/"/g, '') + '"></iframe>';
+          var creditUrl = baseUrl + (lang === 'tr' ? '/' : '/' + lang);
+          attrEl.value = '<p style="font-size:12px">Live stock & store comparison via <a href="' + creditUrl + '" rel="noopener">Baski Hesap</a></p>';
+        }
+
+        function loadExamples() {
+          var market = String(marketEl.value || 'us|en').split('|')[0];
+          fetch('/api/widget/ornekler?market=' + encodeURIComponent(market) + '&limit=10')
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+              var list = d && Array.isArray(d.urunler) ? d.urunler : [];
+              exEl.innerHTML = '';
+              if (!list.length) {
+                exEl.textContent = emptyTxt;
+                return;
+              }
+              list.forEach(function (u, idx) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'emb-pill' + (idx === 0 ? ' aktif' : '');
+                btn.textContent = u.ad.slice(0, 42);
+                btn.addEventListener('click', function () {
+                  selectedSlug = u.slug || '';
+                  queryEl.value = u.ad || '';
+                  exEl.querySelectorAll('.emb-pill').forEach(function (x) { x.classList.remove('aktif'); });
+                  btn.classList.add('aktif');
+                  render();
+                });
+                exEl.appendChild(btn);
+              });
+              selectedSlug = list[0].slug || '';
+              queryEl.value = list[0].ad || queryEl.value;
+              render();
+            })
+            .catch(function () { exEl.textContent = emptyTxt; render(); });
+        }
+
+        marketEl.addEventListener('change', function () { selectedSlug = ''; loadExamples(); });
+        themeEl.addEventListener('change', render);
+        modeEl.addEventListener('change', render);
+        refEl.addEventListener('input', render);
+        queryEl.addEventListener('input', function () { selectedSlug = ''; render(); });
+        copyBtn.addEventListener('click', function () {
+          codeEl.select();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(codeEl.value).catch(function () { document.execCommand('copy'); });
+          } else {
+            document.execCommand('copy');
+          }
+          statusEl.textContent = copiedTxt;
+          setTimeout(function () { statusEl.textContent = ''; }, 2000);
+        });
+
+        loadExamples();
+      })();
+    </script>`;
+
+  return sayfaIskeleti({
+    title: c.title,
+    description: c.desc,
+    canonicalUrl,
+    ogImage: `${tabanUrl}/og-gorsel.png`,
+    dil: kod,
+    dilYolHaritasi: { ...GLOBAL_EMBED_YOLLARI, 'x-default': GLOBAL_EMBED_YOLLARI.en },
+    aktifNav: 'rehber',
+    govdeHtml,
+  });
+}
+
 export function globalAracSayfasiBul(yol) {
   const temiz = String(yol || '').replace(/\/+$/, '');
   for (const [dil, rYol] of Object.entries(GLOBAL_ANA_YOLLARI)) {
@@ -2452,6 +2770,9 @@ export function globalAracSayfasiBul(yol) {
   }
   for (const [dil, rYol] of Object.entries(GLOBAL_AYARLAR_YOLLARI)) {
     if (rYol === temiz) return { dil, tur: 'ayarlar', olustur: (tabanUrl) => globalAyarlarSayfasiHtml(dil, tabanUrl) };
+  }
+  for (const [dil, rYol] of Object.entries(GLOBAL_EMBED_YOLLARI)) {
+    if (rYol === temiz) return { dil, tur: 'embed', olustur: (tabanUrl) => globalEmbedSayfasiHtml(dil, tabanUrl) };
   }
   return null;
 }
@@ -2473,6 +2794,7 @@ export function globalAracAlternatifHaritasi() {
   const katalog = { ...GLOBAL_KATALOG_YOLLARI, 'x-default': '/' + GLOBAL_KATALOG_YOLLARI.en.replace(/^\//, '') };
   const rehber = { ...GLOBAL_REHBER_YOLLARI, 'x-default': '/' + GLOBAL_REHBER_YOLLARI.en.replace(/^\//, '') };
   const aiRehber = { ...GLOBAL_AI_REHBER_YOLLARI, 'x-default': GLOBAL_AI_REHBER_YOLLARI.en };
+  const embed = { ...GLOBAL_EMBED_YOLLARI, 'x-default': GLOBAL_EMBED_YOLLARI.en };
   return {
     '/': ana,
     '/en': ana,
@@ -2506,6 +2828,9 @@ export function globalAracAlternatifHaritasi() {
     '/en/alerts': ayarlar,
     '/fr/alertes': ayarlar,
     '/ja/alerts': ayarlar,
+    '/en/embed': embed,
+    '/fr/embed': embed,
+    '/ja/embed': embed,
     ...globalDuelloAlternatifHaritasi(),
   };
 }
@@ -2530,6 +2855,18 @@ export function globalAracSitemapKayitlari(dil = null) {
       hepsi.push({ dil: d, yol, oncelik: g.oncelik, siklik: g.siklik, lastmod: bugun, alternates: altHarita[yol] });
     }
   }
+  if (!dil) return hepsi;
+  const hedef = normalizeDil(dil);
+  return hepsi.filter(x => x.dil === hedef);
+}
+
+/** Çok dilli widget oluşturucu (/en/embed, /fr/embed, /ja/embed) sitemap kayıtları. */
+export function globalEmbedSitemapKayitlari(dil = null) {
+  const bugun = new Date().toISOString().slice(0, 10);
+  const altHarita = globalAracAlternatifHaritasi();
+  const hepsi = Object.entries(GLOBAL_EMBED_YOLLARI).map(([d, yol]) => ({
+    dil: d, yol, oncelik: '0.80', siklik: 'weekly', lastmod: bugun, alternates: altHarita[yol],
+  }));
   if (!dil) return hepsi;
   const hedef = normalizeDil(dil);
   return hepsi.filter(x => x.dil === hedef);

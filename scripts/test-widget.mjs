@@ -19,9 +19,10 @@
  */
 import fs from 'node:fs';
 import {
-  slugYap, refTemizle, widgetVerisi, widgetUrunBul,
+  slugYap, refTemizle, widgetPazarCoz, widgetVerisi, widgetUrunBul,
   widgetTiklamaKaydet, widgetIstatistik, widgetOrnekUrunler,
 } from '../src/widget.js';
+import { globalEmbedSayfasiHtml, globalAracSayfasiBul } from '../src/globalAracSayfalar.js';
 import { dbBaglantisi, closeDatabase } from '../src/store.js';
 
 let gecen = 0, toplam = 0;
@@ -235,6 +236,64 @@ kontrol('JS: önizleme iframe\'i src taşımadan üretilir',
   /id="embedOnizleme" width="320" height="180" frameborder="0" '[\s\S]{0,60}title="Widget önizleme"/.test(appJs)
   && !/embedOnizleme" src=/.test(appJs));
 kontrol('JS: tema değişince önizleme yenilenir', /cerceve\.src = embedOnizlemeUrl\(q, tema\)/.test(appJs));
+
+/* ------------------------------------------------------------------ */
+bolum('8) 🌍 Çoklu Pazar / Dil / Blogçu Modu + /en/embed');
+
+const cUs = widgetPazarCoz({ market: 'us', lang: 'en', mod: 'karsilastir' });
+kontrol('pazar çözümü us/en/USD/karsilastir',
+  cUs.market === 'us' && cUs.lang === 'en' && cUs.currency === 'USD' && cUs.mod === 'karsilastir',
+  JSON.stringify(cUs));
+const cFr = widgetPazarCoz({ market: 'fr' });
+kontrol('pazar çözümü fr -> EUR + fr', cFr.currency === 'EUR' && cFr.lang === 'fr');
+const cJp = widgetPazarCoz({ market: 'jp', sade: '1' });
+kontrol('pazar çözümü jp + sade=1', cJp.currency === 'JPY' && cJp.lang === 'ja' && cJp.mod === 'karsilastir');
+
+const vMod = widgetVerisi({
+  id: hedef.id, lang: 'en', mod: 'karsilastir', ref: 'wp-blog', tabanUrl: 'https://baskihesap.tech',
+});
+kontrol('mod=karsilastir karsilastirUrl üretiyor',
+  vMod.bulundu === true
+  && vMod.mod === 'karsilastir'
+  && vMod.lang === 'en'
+  && String(vMod.karsilastirUrl).startsWith('https://baskihesap.tech/urun/')
+  && String(vMod.karsilastirUrl).includes('ref=wp-blog'),
+  `${vMod.bulundu}:${vMod.karsilastirUrl}`);
+
+const vYokEn = widgetVerisi({ q: 'zzz-qqq-olmayan', market: 'us', lang: 'en' });
+kontrol('bilinmeyen EN ürün İngilizce mesaj + USD döner',
+  vYokEn.bulundu === false && vYokEn.currency === 'USD' && /tracked product/i.test(vYokEn.neden),
+  vYokEn.neden);
+
+const usOrnek = widgetOrnekUrunler({ market: 'us', limit: 3 });
+if (usOrnek.length > 0) {
+  const vUs = widgetVerisi({
+    slug: usOrnek[0].slug, market: 'us', lang: 'en', ref: 'en-blog', tabanUrl: 'https://baskihesap.tech',
+  });
+  const yukUs = JSON.stringify(vUs);
+  kontrol('US ürün widgetVerisi bulundu + USD', vUs.bulundu === true && vUs.currency === 'USD', vUs.neden);
+  kontrol('US widgetVerisi kaynakUrl sızdırmıyor', !yukUs.includes('kaynakUrl'));
+  kontrol('US gitUrl market & slug taşıyor',
+    String(vUs.gitUrl).includes('/widget/git?') && String(vUs.gitUrl).includes('market=us'),
+    vUs.gitUrl);
+}
+
+kontrol('widget.js çoklu para birimi ($, €, ¥, ₺)',
+  js.includes('$') && js.includes('€') && js.includes('¥') && js.includes('₺'));
+kontrol('widget.js Compare all stores modu', /Compare all stores/.test(js) && /karsilastirUrl/.test(js));
+kontrol('server.js /en/embed rotası tanımlı', /'\/en\/embed'/.test(server));
+kontrol('server.js /api/widget lang+market+mod geçiriyor',
+  /req\.query\.lang/.test(server) && /req\.query\.market/.test(server) && /req\.query\.mod/.test(server));
+
+const embedKayit = globalAracSayfasiBul('/en/embed');
+const embedHtml = embedKayit ? embedKayit.olustur('https://baskihesap.tech') : globalEmbedSayfasiHtml('en', 'https://baskihesap.tech');
+kontrol('/en/embed çözülüyor', !!embedKayit && embedKayit.tur === 'embed');
+kontrol('/en/embed HTML lang=en ve önizleme taşıyor',
+  /<html lang="en"/.test(embedHtml)
+  && embedHtml.includes('id="embMarket"')
+  && embedHtml.includes('id="embMode"')
+  && embedHtml.includes('Compare all stores')
+  && embedHtml.includes('/api/widget/ornekler'));
 
 /* ------------------------------------------------------------------ */
 console.log('\n' + '─'.repeat(46));
